@@ -733,7 +733,11 @@ class AgentExecutionService:
             raise
         except Exception as err:
             logger.exception("turn_stream_error", error=str(err), thread_id=thread_id)
-            yield self.format_error_event("An error occurred during turn execution.")
+            err_str = str(err).lower()
+            if "file is not a database" in err_str:
+                yield self.format_error_event("Database error: file is not a database")
+            else:
+                yield self.format_error_event("An error occurred during turn execution.")
             return
 
         # 7. Post-Execution Safety Verification and Done Event
