@@ -1,9 +1,9 @@
 site_name: Carefold
 site_description: Healthcare AI Agent Marketplace & Local-First Runtime
 site_author: Spectrayan
-site_url: https://carefold.github.io/carefold/
-repo_name: carefold/carefold
-repo_url: https://github.com/carefold/carefold
+site_url: https://spectrayan.github.io/carefold/
+repo_name: spectrayan/carefold
+repo_url: https://github.com/spectrayan/carefold
 copyright: "Copyright &copy; 2026 Spectrayan. All rights reserved."
 
 theme:
