@@ -36,6 +36,7 @@ from carefold.constants.paths import SYSTEM_AGENTS_DIR
 from carefold.loaders.agent_loader import (
     ManifestValidationError,
     extract_fallback_description,
+    find_agent_dir,
     load_agent,
     load_agent_readme,
     load_agent_starters,
@@ -161,20 +162,12 @@ async def get_agent(
 
     agents_dir = settings.get_agents_dir().resolve()
     skills_dir = settings.get_skills_dir().resolve()
-    agent_dir = (agents_dir / agent_id).resolve()
+    agent_dir = find_agent_dir(agents_dir, agent_id)
 
-    if not agent_dir.is_relative_to(agents_dir):
+    if not agent_dir or not agent_dir.is_dir():
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Agent '{agent_id}' not found.")
 
-    is_system = False
-    if not agent_dir.is_dir():
-        system_candidate = (agents_dir / SYSTEM_AGENTS_DIR / agent_id).resolve()
-        if system_candidate.is_relative_to(agents_dir) and system_candidate.is_dir():
-            agent_dir = system_candidate
-            is_system = True
-
-    if not agent_dir.is_dir():
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Agent '{agent_id}' not found.")
+    is_system = agent_dir.parent.name == SYSTEM_AGENTS_DIR
 
     try:
         agent, effective_tools, skills = load_agent(agent_dir, skills_dir)

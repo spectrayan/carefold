@@ -29,7 +29,7 @@ from typing import Any, Dict, Optional, Sequence
 from carefold.workflows.state import AgentState, get_last_user_prompt_text
 
 _PATH_REDACT_REGEX = re.compile(
-    r"/(?:[a-zA-Z0-9_.-]+/)*(?:Users|home|root|var|etc|tmp)/[^\s,;'\"]+",
+    r"/(?:private/)?(?:Users|home|root|var|etc|tmp)/[^\s,;'\"]+",
     re.IGNORECASE,
 )
 _SECRET_REDACT_REGEX = re.compile(

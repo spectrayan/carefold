@@ -71,12 +71,10 @@ class ToolNode(BaseNode):
         agent_id = str(state.get("current_agent") or state.get("agent_id") or "carefold-agent")
 
         from carefold.engine.runner import ExecutionContext
-        from carefold.loaders.agent_loader import load_agent
+        from carefold.loaders.agent_loader import find_agent_dir, load_agent
 
         try:
-            agent_dir = ws_root / "agents" / agent_id
-            if not agent_dir.is_dir() and (ws_root / "agents" / "_system" / agent_id).is_dir():
-                agent_dir = ws_root / "agents" / "_system" / agent_id
+            agent_dir = find_agent_dir(ws_root / "agents", str(agent_id)) or (ws_root / "agents" / "visit-steward").resolve()
             agent_obj, _, skills_list = load_agent(agent_dir, skills_dir)
             ctx = ExecutionContext(
                 workspace_root=ws_root,

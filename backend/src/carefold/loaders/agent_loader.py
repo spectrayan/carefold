@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -33,7 +34,7 @@ from carefold.constants.paths import (
     SYSTEM_AGENTS_DIR,
     TEMPLATE_DIR,
 )
-from carefold.loaders.skill_loader import ManifestValidationError, load_skill
+from carefold.loaders.skill_loader import ManifestValidationError, find_skill_dir, load_skill
 from carefold.loaders.union import (
     ToolValidationError,
     compute_effective_tools,
@@ -119,6 +120,42 @@ def extract_fallback_description(persona: Union[str, Dict[str, Any], Any]) -> st
             return line
 
     return ""
+
+
+def find_agent_dir(agents_dir: Union[Path, str], agent_id: str) -> Optional[Path]:
+    """Safely resolves an agent directory from a trusted agents directory without path injection."""
+    if not agent_id or not isinstance(agent_id, str):
+        return None
+    raw_id = os.path.basename(agent_id.strip())
+    if not SLUG_REGEX.match(raw_id) or raw_id.startswith("."):
+        return None
+
+    base_dir = Path(agents_dir).resolve()
+    if not base_dir.is_dir():
+        return None
+
+    for entry in base_dir.iterdir():
+        if entry.is_dir() and entry.name == raw_id and not entry.name.startswith((".", "_")):
+            resolved_entry = entry.resolve()
+            if resolved_entry.is_relative_to(base_dir):
+                return resolved_entry
+
+    system_dir = (base_dir / SYSTEM_AGENTS_DIR).resolve()
+    if system_dir.is_dir():
+        for entry in system_dir.iterdir():
+            if entry.is_dir() and entry.name == raw_id and not entry.name.startswith("."):
+                resolved_entry = entry.resolve()
+                if resolved_entry.is_relative_to(base_dir):
+                    return resolved_entry
+
+    # Allow custom or template dirs (e.g. _template) if exact match
+    for entry in base_dir.iterdir():
+        if entry.is_dir() and entry.name == raw_id:
+            resolved_entry = entry.resolve()
+            if resolved_entry.is_relative_to(base_dir):
+                return resolved_entry
+
+    return None
 
 
 def load_agent(
@@ -216,14 +253,10 @@ def load_agent(
             raise ManifestValidationError(
                 f'Invalid declared skill ID "{skill_id}": Skill IDs must be alphanumeric slugs.'
             )
-        skill_path = (resolved_skills_dir / skill_id).resolve()
-        if not skill_path.is_relative_to(resolved_skills_dir):
+        skill_path = find_skill_dir(resolved_skills_dir, skill_id)
+        if not skill_path or not skill_path.is_dir():
             raise ManifestValidationError(
-                f'Path traversal detected in declared skill: "{skill_id}"'
-            )
-        if not skill_path.is_dir():
-            raise ManifestValidationError(
-                f'Missing declared skill: {skill_id} (looked in "{skill_path}")'
+                f'Missing declared skill: {skill_id} (looked in "{resolved_skills_dir}")'
             )
 
         skill = load_skill(skill_path)

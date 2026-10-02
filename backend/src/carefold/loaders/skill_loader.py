@@ -53,7 +53,28 @@ def _normalize_tags(tags_input: Any) -> List[str]:
         return [t.strip() for t in tags_input.split(",") if t.strip()]
     if isinstance(tags_input, (list, tuple, set)):
         return [str(t).strip() for t in tags_input if str(t).strip()]
-    return []
+SLUG_REGEX = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+def find_skill_dir(skills_dir: Union[Path, str], skill_id: str) -> Optional[Path]:
+    """Safely resolves a skill directory from a trusted skills directory without path injection."""
+    if not skill_id or not isinstance(skill_id, str):
+        return None
+    raw_id = os.path.basename(skill_id.strip())
+    if not SLUG_REGEX.match(raw_id) or raw_id.startswith("."):
+        return None
+
+    base_dir = Path(skills_dir).resolve()
+    if not base_dir.is_dir():
+        return None
+
+    for entry in base_dir.iterdir():
+        if entry.is_dir() and entry.name == raw_id:
+            resolved_entry = entry.resolve()
+            if resolved_entry.is_relative_to(base_dir):
+                return resolved_entry
+
+    return None
 
 
 def load_skill(skill_dir: Union[Path, str]) -> SkillManifest:

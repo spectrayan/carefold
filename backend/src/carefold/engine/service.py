@@ -78,7 +78,7 @@ from carefold.engine.graph import (
     resolve_checkpointer_path,
 )
 from carefold.engine.prompt_builder import build_system_prompt
-from carefold.loaders.agent_loader import load_agent
+from carefold.loaders.agent_loader import find_agent_dir, load_agent
 from carefold.model.factory import create_chat_model
 from carefold.safety.classifier import check_safety_refusal, is_hard_refusal_reason
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
@@ -440,13 +440,11 @@ class AgentExecutionService:
         ws_root = self.workspace_root.resolve()
         agents_dir = (ws_root / AGENTS_DIR).resolve()
         skills_dir = (ws_root / SKILLS_DIR).resolve()
-        agent_dir = (agents_dir / effective_agent_id).resolve()
-        if not agent_dir.is_relative_to(agents_dir):
-            agent_dir = (agents_dir / "visit-steward").resolve()
-        if not agent_dir.is_dir():
-            system_candidate = (agents_dir / SYSTEM_AGENTS_DIR / effective_agent_id).resolve()
-            if system_candidate.is_relative_to(agents_dir) and system_candidate.is_dir():
-                agent_dir = system_candidate
+        agent_dir = (
+            find_agent_dir(agents_dir, effective_agent_id)
+            or find_agent_dir(agents_dir, "visit-steward")
+            or (agents_dir / "visit-steward").resolve()
+        )
 
         effective_store_bodies = store_bodies if store_bodies is not None else self.store_bodies
         resolved_log_path = (

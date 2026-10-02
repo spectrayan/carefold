@@ -29,7 +29,12 @@ from carefold.constants.api import (
     ROUTE_SKILL_DETAIL,
     ROUTE_SKILLS,
 )
-from carefold.loaders.skill_loader import ManifestValidationError, load_all_skills, load_skill
+from carefold.loaders.skill_loader import (
+    ManifestValidationError,
+    find_skill_dir,
+    load_all_skills,
+    load_skill,
+)
 from carefold.schemas.manifest import RiskClass, SkillDetailResponse, SkillSummary
 
 router = APIRouter(tags=["Skills"])
@@ -95,9 +100,9 @@ async def list_skills(
 async def get_skill(skill_id: str) -> SkillDetailResponse:
     """Returns detailed information, instructions, and references for a specific skill."""
     skills_dir = settings.get_skills_dir()
-    skill_dir = skills_dir / skill_id
+    skill_dir = find_skill_dir(skills_dir, skill_id)
 
-    if not skill_dir.is_dir():
+    if not skill_dir or not skill_dir.is_dir():
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Skill '{skill_id}' not found.")
 
     try:

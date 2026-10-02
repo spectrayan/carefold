@@ -260,10 +260,11 @@ async def tools_node(state: AgentState) -> Dict[str, Any]:
 
     # Build ExecutionContext required by sandbox tools
     from carefold.engine.runner import ExecutionContext
-    from carefold.loaders.agent_loader import load_agent
+    from carefold.loaders.agent_loader import find_agent_dir, load_agent
 
     try:
-        agent_obj, _, skills_list = load_agent(ws_root / "agents" / agent_id, skills_dir)
+        agent_dir = find_agent_dir(ws_root / "agents", str(agent_id)) or (ws_root / "agents" / "visit-steward").resolve()
+        agent_obj, _, skills_list = load_agent(agent_dir, skills_dir)
         ctx = ExecutionContext(
             workspace_root=ws_root,
             skills_dir=skills_dir,
