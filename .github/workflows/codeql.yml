@@ -7,26 +7,14 @@ on:
       - 'docs/**'
       - '*.md'
       - 'LICENSE'
-      - '.github/**'
       - '**/*.txt'
-      - '**/*.json'
-      - '**/*.yml'
-      - '**/*.yaml'
-      - '!.github/workflows/**'
-      - '!.github/codeql/**'
   pull_request:
     branches: [main]
     paths-ignore:
       - 'docs/**'
       - '*.md'
       - 'LICENSE'
-      - '.github/**'
       - '**/*.txt'
-      - '**/*.json'
-      - '**/*.yml'
-      - '**/*.yaml'
-      - '!.github/workflows/**'
-      - '!.github/codeql/**'
   schedule:
     - cron: '30 3 * * 1'  # Weekly Monday 3:30 AM UTC
   workflow_dispatch:
