@@ -28,7 +28,7 @@ A primary architectural achievement of Carefold is the strict separation between
 
 The end-to-end lifecycle follows five discrete, verifiable phases:
 
-$$\text{Phase 1: Context Load} \longrightarrow \text{Phase 2: Validate \& Gate} \longrightarrow \text{Phase 3: Plan \& Provision} \longrightarrow \text{Phase 4: Multi-Agent Dispatch} \longrightarrow \text{Phase 5: Synthesize \& Guard}$$
+$$\text{Phase 1: Context Load} \longrightarrow \text{Phase 2: Validate and Gate} \longrightarrow \text{Phase 3: Plan and Provision} \longrightarrow \text{Phase 4: Multi-Agent Dispatch} \longrightarrow \text{Phase 5: Synthesize and Guard}$$
 
 ```mermaid
 flowchart TD

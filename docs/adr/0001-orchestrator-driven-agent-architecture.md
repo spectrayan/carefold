@@ -49,7 +49,7 @@ Carefold required a scalable, modular architecture capable of orchestrating 20+ 
 
 ### Option 3: Unified Orchestrator-Driven 5-Phase Lifecycle (Selected)
 * **Description**: Centralize routing, gating, dynamic provisioning, dispatching, and response synthesis into an explicit 5-phase lifecycle:
-  $$\text{Context Load} \longrightarrow \text{Validate \& Gate} \longrightarrow \text{Plan \& Provision} \longrightarrow \text{Dispatch} \longrightarrow \text{Synthesize}$$
+  $$\text{Context Load} \longrightarrow \text{Validate and Gate} \longrightarrow \text{Plan and Provision} \longrightarrow \text{Dispatch} \longrightarrow \text{Synthesize}$$
 * **Pros**:
   - Enforces 100% Persona Purity across all 22 agents.
   - Dynamically provisions reference documents directly into prompt context.
