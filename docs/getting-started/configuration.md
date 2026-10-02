@@ -98,3 +98,21 @@ Carefold automatically locates workspace directories relative to `CAREFOLD_WORKS
 - **Audit Logs**: `${CAREFOLD_WORKSPACE_ROOT}/logs/audit.jsonl`
 
 All file operations inside the sandbox are strictly guarded against path traversal attacks (`../`, null bytes, and symlink escapes).
+
+---
+
+## Web App Environment Variables
+
+The Next.js web app (`apps/web`) reads two environment variables of its own. They are separate from the backend `CAREFOLD_*` settings above.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `BACKEND_URL` | `str` | `http://127.0.0.1:8000` | Base URL of the Carefold backend that the web app's server routes call. Set it when the backend runs somewhere other than the default, such as a remote server. The Docker Compose `web` service already sets it to `http://backend:8000`. |
+| `CAREFOLD_WORKSPACE` | `Path` | Detected automatically | Location of the repository workspace. By default the app walks up from the current working directory to find the repo. Set it if the app starts from a place where it cannot find the repo on its own. |
+
+For example, to run the web app against a remote backend:
+
+```bash
+BACKEND_URL=https://carefold.example.com
+```
+
