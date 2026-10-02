@@ -83,57 +83,61 @@ export async function executeAttachRead(
     const attachmentsDir = path.resolve(wsRoot, 'attachments');
     const safeFilePath = await resolveSandboxedPath(attachmentsDir, rawPath, { mustExist: true });
 
-    const stats = await fs.stat(safeFilePath);
-    if (!stats.isFile()) {
-      return { success: false, output: null, error: `Path "${rawPath}" is a directory, not a file.` };
-    }
-
-    if (stats.size > MAX_FILE_SIZE) {
-      return { success: false, output: null, error: 'File size exceeds maximum allowed limit (10MB).' };
-    }
-
     const ext = path.extname(safeFilePath).toLowerCase();
+    const handle = await fs.open(safeFilePath, 'r');
+    try {
+      const stats = await handle.stat();
+      if (!stats.isFile()) {
+        return { success: false, output: null, error: `Path "${rawPath}" is a directory, not a file.` };
+      }
 
-    // Text File Handling
-    if (ALLOWED_TEXT_EXTS.has(ext)) {
-      const text = await fs.readFile(safeFilePath, 'utf8');
-      return {
-        success: true,
-        output: {
-          path: rawPath,
-          format: 'text',
-          size_bytes: stats.size,
-          content: text
+      if (stats.size > MAX_FILE_SIZE) {
+        return { success: false, output: null, error: 'File size exceeds maximum allowed limit (10MB).' };
+      }
+
+      // Text File Handling
+      if (ALLOWED_TEXT_EXTS.has(ext)) {
+        const text = await handle.readFile('utf8');
+        return {
+          success: true,
+          output: {
+            path: rawPath,
+            format: 'text',
+            size_bytes: stats.size,
+            content: text
+          }
+        };
+      }
+
+      // PDF File Handling
+      if (ext === '.pdf') {
+        const buffer = await handle.readFile();
+        const text = extractTextFromPdfBuffer(buffer);
+
+        if (!text || text.length === 0) {
+          return {
+            success: true,
+            output: {
+              path: rawPath,
+              format: 'pdf',
+              size_bytes: stats.size,
+              content: '[Notice: PDF document contains no extractable text layer or is image-scanned.]'
+            }
+          };
         }
-      };
-    }
 
-    // PDF File Handling
-    if (ext === '.pdf') {
-      const buffer = await fs.readFile(safeFilePath);
-      const text = extractTextFromPdfBuffer(buffer);
-
-      if (!text || text.length === 0) {
         return {
           success: true,
           output: {
             path: rawPath,
             format: 'pdf',
             size_bytes: stats.size,
-            content: '[Notice: PDF document contains no extractable text layer or is image-scanned.]'
+            content: text
           }
         };
       }
-
-      return {
-        success: true,
-        output: {
-          path: rawPath,
-          format: 'pdf',
-          size_bytes: stats.size,
-          content: text
-        }
-      };
+    } finally {
+      await handle.close();
     }
 
     return {

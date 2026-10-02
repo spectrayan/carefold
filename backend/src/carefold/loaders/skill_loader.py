@@ -62,8 +62,8 @@ def load_skill(skill_dir: Union[Path, str]) -> SkillManifest:
     if not skill_path.is_dir():
         raise ManifestValidationError(f'Skill directory not found: "{skill_path}"')
 
-    skill_md_path = skill_path / SKILL_MANIFEST_FILENAME
-    if not skill_md_path.is_file():
+    skill_md_path = (skill_path / SKILL_MANIFEST_FILENAME).resolve()
+    if not skill_md_path.is_relative_to(skill_path) or not skill_md_path.is_file():
         raise ManifestValidationError(f'Missing required SKILL.md in "{skill_path}"')
 
     try:
@@ -77,9 +77,9 @@ def load_skill(skill_dir: Union[Path, str]) -> SkillManifest:
     except Exception as err:
         raise ManifestValidationError(f'Invalid frontmatter in "{skill_md_path}": {err}') from err
 
-    carefold_yaml_path = skill_path / CAREFOLD_YAML_FILENAME
+    carefold_yaml_path = (skill_path / CAREFOLD_YAML_FILENAME).resolve()
     cf_data = {}
-    if carefold_yaml_path.is_file():
+    if carefold_yaml_path.is_relative_to(skill_path) and carefold_yaml_path.is_file():
         try:
             raw_yaml = carefold_yaml_path.read_text(encoding="utf-8")
             cf_data = yaml.safe_load(raw_yaml) or {}
@@ -110,7 +110,7 @@ def load_skill(skill_dir: Union[Path, str]) -> SkillManifest:
 
     # 2. Check 3 mandatory intended-use statements
     valid_use, missing_line = check_mandatory_intended_use(raw_markdown)
-    if not valid_use and not (carefold_yaml_path.is_file() and not parsed.frontmatter):
+    if not valid_use and not (carefold_yaml_path.is_relative_to(skill_path) and carefold_yaml_path.is_file() and not parsed.frontmatter):
         raise ManifestValidationError(
             f'Mandatory intended-use line missing in "{skill_path}/SKILL.md": "{missing_line}"'
         )
@@ -120,15 +120,17 @@ def load_skill(skill_dir: Union[Path, str]) -> SkillManifest:
 
     # 3. Check for references
     references: List[str] = []
-    ref_dir = skill_path / REFERENCES_DIR
-    if ref_dir.is_dir():
-        references = sorted([f.name for f in ref_dir.iterdir() if f.is_file() and not f.name.startswith(".")])
+    ref_dir = (skill_path / REFERENCES_DIR).resolve()
+    if ref_dir.is_relative_to(skill_path) and ref_dir.is_dir():
+        references = sorted([
+            f.name for f in ref_dir.iterdir()
+            if f.is_file() and not f.name.startswith(".") and (ref_dir / f.name).resolve().is_relative_to(ref_dir)
+        ])
 
     # 4. Check for carefold.yaml
-    carefold_yaml_path = skill_path / CAREFOLD_YAML_FILENAME
     cf: Optional[CarefoldYaml] = None
     tools: List[str] = []
-    if carefold_yaml_path.is_file():
+    if carefold_yaml_path.is_relative_to(skill_path) and carefold_yaml_path.is_file():
         try:
             raw_yaml = carefold_yaml_path.read_text(encoding="utf-8")
             cf_dict = yaml.safe_load(raw_yaml) or {}

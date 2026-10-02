@@ -109,9 +109,12 @@ async def chat_stream(request: ChatRequestBody) -> StreamingResponse:
                 event_type = event.get("type", SSE_EVENT_MESSAGE)
                 data_str = json.dumps(event)
                 yield f"event: {event_type}\ndata: {data_str}\n\n"
-        except Exception as err:
+        except Exception:
             logger.exception("Unexpected error in chat stream")
-            err_data = json.dumps({"type": SSE_EVENT_ERROR, "message": str(err)})
+            err_data = json.dumps({
+                "type": SSE_EVENT_ERROR,
+                "message": "An unexpected error occurred during chat execution.",
+            })
             yield f"event: {SSE_EVENT_ERROR}\ndata: {err_data}\n\n"
 
     return StreamingResponse(

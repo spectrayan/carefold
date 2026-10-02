@@ -33,7 +33,10 @@ export class OpenAIModelClient implements ModelClient {
   private timeoutMs: number;
 
   constructor(config: ModelClientConfig = {}) {
-    let base = (config.baseUrl || 'http://127.0.0.1:11434/v1').replace(/\/+$/, '');
+    let base = config.baseUrl || 'http://127.0.0.1:11434/v1';
+    while (base.endsWith('/')) {
+      base = base.slice(0, -1);
+    }
     if (!base.endsWith('/v1')) {
       base = `${base}/v1`;
     }

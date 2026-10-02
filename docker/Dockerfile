@@ -8,12 +8,14 @@
 FROM python:3.12-slim AS backend
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backend/ ./backend/
-RUN pip install --no-cache-dir ./backend
+RUN pip install --no-cache-dir ./backend \
+    && pip cache purge \
+    && rm -rf /root/.cache /usr/local/lib/python3.12/site-packages/pip* /usr/local/bin/pip*
 
 COPY agents/ ./agents/
 COPY skills/ ./skills/
@@ -48,12 +50,17 @@ RUN mkdir -p /app/apps/web/public
 
 RUN pnpm install --frozen-lockfile || pnpm install
 RUN pnpm --filter @carefold/web build
+RUN pnpm prune --prod
 
 FROM node:22-alpine AS web
 WORKDIR /app
 
 ENV NODE_ENV=production \
     PORT=3000
+
+# Remove unneeded npm, yarn, and corepack packages from runtime container image
+RUN apk upgrade --no-cache \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx /opt/yarn* /usr/local/bin/yarn* /usr/local/bin/corepack
 
 COPY --from=web-builder /app/apps/web/package.json ./apps/web/
 COPY --from=web-builder /app/packages ./packages/
@@ -76,7 +83,8 @@ CMD ["node", "node_modules/.bin/next", "start", "apps/web", "-p", "3000"]
 FROM python:3.12-slim AS all-in-one
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     gnupg \
@@ -85,10 +93,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install Node.js 22
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/bin/npm /usr/bin/npx
 
 COPY backend/ ./backend/
-RUN pip install --no-cache-dir ./backend
+RUN pip install --no-cache-dir ./backend \
+    && pip cache purge \
+    && rm -rf /root/.cache /usr/local/lib/python3.12/site-packages/pip* /usr/local/bin/pip*
 
 COPY agents/ ./agents/
 COPY skills/ ./skills/

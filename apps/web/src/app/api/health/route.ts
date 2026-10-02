@@ -45,7 +45,8 @@ export async function GET(_req: Request | NextRequest): Promise<NextResponse<Hea
     } catch {}
 
     // Check Ollama status
-    const ollamaEndpoint = config.model?.baseUrl?.replace(/\/v1\/?$/, '') || 'http://127.0.0.1:11434';
+    const rawEndpoint = config.model?.baseUrl;
+    const ollamaEndpoint = typeof rawEndpoint === 'string' && rawEndpoint ? rawEndpoint : 'http://127.0.0.1:11434';
     const ollamaStatus = await checkOllamaHealth(ollamaEndpoint);
 
     const overallStatus: 'ok' | 'degraded' = ollamaStatus.reachable ? 'ok' : 'ok'; // Report ok for healthy app, or degraded if unreachable

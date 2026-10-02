@@ -42,6 +42,7 @@ from carefold.loaders.agent_loader import (
     load_all_agents,
 )
 from carefold.schemas.manifest import (
+    SLUG_REGEX,
     AgentDetailResponse,
     AgentSummary,
     ResolvedSkillSummary,
@@ -155,17 +156,20 @@ async def get_agent(
     allow_clinical: bool = Query(False, description="Explicit consent for clinical assist"),
 ) -> AgentDetailResponse:
     """Returns detailed configuration, persona, tools, and resolved skills for a specific agent."""
-    if agent_id.startswith((".", "_")):
+    if not SLUG_REGEX.match(agent_id) or agent_id.startswith((".", "_")):
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Agent '{agent_id}' not found.")
 
-    agents_dir = settings.get_agents_dir()
-    skills_dir = settings.get_skills_dir()
-    agent_dir = agents_dir / agent_id
+    agents_dir = settings.get_agents_dir().resolve()
+    skills_dir = settings.get_skills_dir().resolve()
+    agent_dir = (agents_dir / agent_id).resolve()
+
+    if not agent_dir.is_relative_to(agents_dir):
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Agent '{agent_id}' not found.")
 
     is_system = False
     if not agent_dir.is_dir():
-        system_candidate = agents_dir / SYSTEM_AGENTS_DIR / agent_id
-        if system_candidate.is_dir():
+        system_candidate = (agents_dir / SYSTEM_AGENTS_DIR / agent_id).resolve()
+        if system_candidate.is_relative_to(agents_dir) and system_candidate.is_dir():
             agent_dir = system_candidate
             is_system = True
 

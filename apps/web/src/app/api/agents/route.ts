@@ -26,11 +26,27 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
   const singleId = url.searchParams.get('id');
 
   try {
-    const targetUrl = singleId
-      ? `${backendUrl}/api/agents/${singleId}`
-      : `${backendUrl}/api/agents${url.search}`;
+    const parsedBackend = new URL(backendUrl);
+    if (parsedBackend.protocol !== 'http:' && parsedBackend.protocol !== 'https:') {
+      return NextResponse.json({ error: 'Invalid backend URL protocol' }, { status: 500 });
+    }
+    parsedBackend.username = '';
+    parsedBackend.password = '';
 
-    const res = await fetch(targetUrl, {
+    let targetUrl: URL;
+    if (singleId) {
+      if (!/^[a-zA-Z0-9_-]+$/.test(singleId)) {
+        return NextResponse.json({ error: 'Invalid agent ID format' }, { status: 400 });
+      }
+      targetUrl = new URL(`/api/agents/${singleId}`, parsedBackend);
+    } else {
+      targetUrl = new URL('/api/agents', parsedBackend);
+      url.searchParams.forEach((val, key) => {
+        targetUrl.searchParams.set(key, val);
+      });
+    }
+
+    const res = await fetch(targetUrl.toString(), {
       method: 'GET',
       headers: { Accept: 'application/json' },
       cache: 'no-store'

@@ -179,7 +179,8 @@ export class MockModelClient implements ModelClient {
         userText.includes('pdf')) &&
       hasAttachRead
     ) {
-      const match = userText.match(/(?:attachments\/)?([a-z0-9_\-]+\.(?:txt|pdf|md|json))/i);
+      const searchTarget = userText.length > 500 ? userText.slice(0, 500) : userText;
+      const match = searchTarget.match(/(?:attachments\/)?([-a-zA-Z0-9_]+\.(?:txt|pdf|md|json))/i);
       const filePath = match ? match[1] : 'plan_summary.txt';
       yield* this.generateChunks(undefined, [
         {

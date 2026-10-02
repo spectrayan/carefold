@@ -21,6 +21,7 @@ import path from 'node:path';
 export interface CarefoldConfig {
   allow_clinical?: boolean;
   model?: {
+    provider?: string;
     baseUrl?: string;
     model?: string;
     apiKey?: string;
@@ -85,9 +86,24 @@ export async function loadWorkspaceConfig(workspaceRoot: string): Promise<Carefo
   try {
     const raw = await fs.readFile(configPath, 'utf8');
     const parsed = JSON.parse(raw);
+    let safeBaseUrl: string | undefined;
+    if (typeof parsed?.model?.baseUrl === 'string') {
+      try {
+        const u = new URL(parsed.model.baseUrl);
+        if (u.protocol === 'http:' || u.protocol === 'https:') {
+          u.username = '';
+          u.password = '';
+          safeBaseUrl = `${u.protocol}//${u.host}`;
+        }
+      } catch {}
+    }
     return {
       allow_clinical: Boolean(parsed?.allow_clinical),
-      model: parsed?.model || {}
+      model: {
+        provider: typeof parsed?.model?.provider === 'string' ? parsed.model.provider : 'ollama',
+        model: typeof parsed?.model?.model === 'string' ? parsed.model.model : undefined,
+        baseUrl: safeBaseUrl
+      }
     };
   } catch {
     return {};

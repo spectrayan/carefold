@@ -4,4 +4,7 @@ paths-ignore:
   - 'docs/**'
   - 'backend/tests/**'
   - 'apps/web/tests/**'
+  - 'packages/runner/tests/**'
+  - 'packages/cli/tests/**'
+  - 'tests/**'
   - 'evals/**'

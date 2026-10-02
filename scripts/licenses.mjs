@@ -222,8 +222,13 @@ Options:
     const missing = [];
 
     for (const filePath of filesToProcess) {
-      if (!fs.existsSync(filePath)) continue;
-      const content = fs.readFileSync(filePath, 'utf-8');
+      let content;
+      try {
+        content = fs.readFileSync(filePath, 'utf-8');
+      } catch (err) {
+        if (err && (err.code === 'ENOENT' || err.code === 'EISDIR')) continue;
+        throw err;
+      }
       const isPy = isPython(filePath);
       if (!hasLicenseHeader(content, isPy)) {
         missing.push(path.relative(REPO_ROOT, filePath));
@@ -256,8 +261,13 @@ Options:
     }
 
     for (const filePath of targetSet) {
-      if (!fs.existsSync(filePath)) continue;
-      const content = fs.readFileSync(filePath, 'utf-8');
+      let content;
+      try {
+        content = fs.readFileSync(filePath, 'utf-8');
+      } catch (err) {
+        if (err && (err.code === 'ENOENT' || err.code === 'EISDIR')) continue;
+        throw err;
+      }
       const isPy = isPython(filePath);
 
       if (hasLicenseHeader(content, isPy)) {

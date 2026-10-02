@@ -16,7 +16,6 @@
  */
 
 import fs from 'node:fs/promises';
-import fsSync from 'node:fs';
 import path from 'node:path';
 import { getWorkspacePaths } from '../utils/workspace.js';
 import { resolveBundledAssets, copyPackDirectory } from '../utils/assets.js';
@@ -34,12 +33,18 @@ export async function initCommand(dirArg?: string, options: InitOptions = {}): P
   const targetDir = path.resolve(process.cwd(), dirArg || '.');
   const paths = getWorkspacePaths(targetDir);
 
-  // 1. Guard against accidental overwrite
-  if (fsSync.existsSync(paths.config) && !options.force) {
-    throw new CliError(
-      `Workspace already initialized at "${targetDir}". Use --force to reinitialize.`,
-      ExitCodes.USER_ERROR
-    );
+  // 1. Guard against accidental overwrite by checking config existence if not force
+  if (!options.force) {
+    try {
+      await fs.access(paths.config);
+      throw new CliError(
+        `Workspace already initialized at "${targetDir}". Use --force to reinitialize.`,
+        ExitCodes.USER_ERROR
+      );
+    } catch (err: any) {
+      if (err instanceof CliError) throw err;
+      // File does not exist, proceed
+    }
   }
 
   // 2. Create core directories
@@ -50,8 +55,10 @@ export async function initCommand(dirArg?: string, options: InitOptions = {}): P
   await fs.mkdir(paths.logs, { recursive: true });
 
   // 3. Create logs/audit.jsonl (append-only audit log)
-  if (!fsSync.existsSync(paths.auditLog) || options.force) {
-    await fs.writeFile(paths.auditLog, '', { flag: 'a', encoding: 'utf8' });
+  try {
+    await fs.writeFile(paths.auditLog, '', { flag: options.force ? 'w' : 'a', encoding: 'utf8' });
+  } catch (err: any) {
+    if (err.code !== 'EEXIST') throw err;
   }
 
   // 4. Create carefold.config.json
@@ -71,7 +78,20 @@ export async function initCommand(dirArg?: string, options: InitOptions = {}): P
     allow_clinical: false,
     telemetry: false
   };
-  await fs.writeFile(paths.config, JSON.stringify(config, null, 2) + '\n', 'utf8');
+  try {
+    await fs.writeFile(paths.config, JSON.stringify(config, null, 2) + '\n', {
+      flag: options.force ? 'w' : 'wx',
+      encoding: 'utf8'
+    });
+  } catch (err: any) {
+    if (err.code === 'EEXIST' && !options.force) {
+      throw new CliError(
+        `Workspace already initialized at "${targetDir}". Use --force to reinitialize.`,
+        ExitCodes.USER_ERROR
+      );
+    }
+    if (err.code !== 'EEXIST') throw err;
+  }
 
   // 5. Create README.md stub with Apache-2.0 notice & intended use
   const readmeContent = `# Carefold Workspace
@@ -89,8 +109,13 @@ You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 `;
-  if (!fsSync.existsSync(paths.readme) || options.force) {
-    await fs.writeFile(paths.readme, readmeContent, 'utf8');
+  try {
+    await fs.writeFile(paths.readme, readmeContent, {
+      flag: options.force ? 'w' : 'wx',
+      encoding: 'utf8'
+    });
+  } catch (err: any) {
+    if (err.code !== 'EEXIST') throw err;
   }
 
   // 6. Copy bundled reference agents and skills unless --no-bundled
@@ -103,16 +128,20 @@ You may obtain a copy of the License at
       for (const skillName of defaultSkills) {
         const src = path.join(assets.skillsDir, skillName);
         const dest = path.join(paths.skills, skillName);
-        if (fsSync.existsSync(src)) {
+        try {
           await copyPackDirectory(src, dest, Boolean(options.force));
+        } catch (err: any) {
+          if (err.code !== 'ENOENT') throw err;
         }
       }
 
       for (const agentName of defaultAgents) {
         const src = path.join(assets.agentsDir, agentName);
         const dest = path.join(paths.agents, agentName);
-        if (fsSync.existsSync(src)) {
+        try {
           await copyPackDirectory(src, dest, Boolean(options.force));
+        } catch (err: any) {
+          if (err.code !== 'ENOENT') throw err;
         }
       }
     } catch (err: any) {

@@ -68,6 +68,23 @@ function formatModelLabel(name: string, details?: OllamaTagModel['details']): st
   return `${formattedTitle}${tagInfo}`;
 }
 
+function getValidatedOllamaBase(rawUrl?: string | null): URL {
+  const defaultUrl = new URL('http://127.0.0.1:11434');
+  if (!rawUrl || typeof rawUrl !== 'string') return defaultUrl;
+  try {
+    const parsed = new URL(rawUrl.trim());
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      parsed.username = '';
+      parsed.password = '';
+      parsed.search = '';
+      parsed.hash = '';
+      parsed.pathname = parsed.pathname.replace(/\/v1\/?$/, '').replace(/\/+$/, '');
+      return parsed;
+    }
+  } catch {}
+  return defaultUrl;
+}
+
 export async function GET(req: Request | NextRequest): Promise<NextResponse> {
   const url = new URL(req.url);
   const provider = (url.searchParams.get('provider') || 'ollama') as ProviderType;
@@ -92,18 +109,15 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
       endpoint = config.model?.baseUrl;
     } catch {}
   }
-  if (!endpoint) {
-    endpoint = 'http://127.0.0.1:11434';
-  }
 
-  // Strip /v1 to talk to Ollama native /api/tags
-  const cleanEndpoint = endpoint.replace(/\/+$/, '').replace(/\/v1\/?$/, '');
+  const safeBase = getValidatedOllamaBase(endpoint);
+  const tagsUrl = new URL('/api/tags', safeBase);
 
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
 
-    const res = await fetch(`${cleanEndpoint}/api/tags`, {
+    const res = await fetch(tagsUrl.toString(), {
       method: 'GET',
       signal: controller.signal
     });
@@ -147,7 +161,8 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
     }
 
     // Fallback: try /v1/models if native /api/tags fails
-    const resV1 = await fetch(`${cleanEndpoint}/v1/models`, {
+    const v1Url = new URL('/v1/models', safeBase);
+    const resV1 = await fetch(v1Url.toString(), {
       method: 'GET',
       signal: AbortSignal.timeout(2000)
     });

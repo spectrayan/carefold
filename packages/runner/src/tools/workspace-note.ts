@@ -80,17 +80,13 @@ export async function executeWorkspaceNote(
 
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
 
-    // Defense-in-depth: verify target is not a symlink prior to writing
-    const existingStat = await fs.lstat(targetPath).catch(() => null);
-    if (existingStat && existingStat.isSymbolicLink()) {
-      return {
-        success: false,
-        output: null,
-        error: `Path traversal forbidden: Target note "${filename}" is a symlink.`
-      };
+    // Open file handle directly to prevent TOCTOU file system race conditions
+    const handle = await fs.open(targetPath, 'w', 0o644);
+    try {
+      await handle.writeFile(frontmatter, 'utf8');
+    } finally {
+      await handle.close();
     }
-
-    await fs.writeFile(targetPath, frontmatter, { encoding: 'utf8', flag: 'w' });
 
     const relPath = path.relative(wsRoot, targetPath);
 

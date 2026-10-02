@@ -17,17 +17,35 @@
 
 import type { OllamaHealthStatus } from '../types/api.js';
 
+function getValidatedOllamaUrl(endpoint?: string): URL {
+  const defaultUrl = new URL('http://127.0.0.1:11434');
+  if (!endpoint || typeof endpoint !== 'string') return defaultUrl;
+  try {
+    const parsed = new URL(endpoint.trim());
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      parsed.username = '';
+      parsed.password = '';
+      parsed.search = '';
+      parsed.hash = '';
+      parsed.pathname = parsed.pathname.replace(/\/v1\/?$/, '').replace(/\/+$/, '');
+      return parsed;
+    }
+  } catch {}
+  return defaultUrl;
+}
+
 export async function checkOllamaHealth(
   endpoint = 'http://127.0.0.1:11434',
   timeoutMs = 2500
 ): Promise<OllamaHealthStatus> {
-  const cleanEndpoint = endpoint.replace(/\/+$/, '');
+  const safeBase = getValidatedOllamaUrl(endpoint);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     // Probe Ollama /api/tags to get installed model tags
-    const res = await fetch(`${cleanEndpoint}/api/tags`, {
+    const tagsUrl = new URL('/api/tags', safeBase);
+    const res = await fetch(tagsUrl.toString(), {
       method: 'GET',
       signal: controller.signal
     });
@@ -39,7 +57,7 @@ export async function checkOllamaHealth(
       const activeModel = models.find((m) => m.startsWith('llama3.2')) || models[0] || 'default';
       return {
         status: 'connected',
-        endpoint: cleanEndpoint,
+        endpoint: safeBase.origin,
         reachable: true,
         activeModel,
         availableModels: models
@@ -47,7 +65,8 @@ export async function checkOllamaHealth(
     }
 
     // Fallback: probe OpenAI compatible /v1/models
-    const resV1 = await fetch(`${cleanEndpoint}/v1/models`, {
+    const v1Url = new URL('/v1/models', safeBase);
+    const resV1 = await fetch(v1Url.toString(), {
       method: 'GET',
       signal: AbortSignal.timeout(1500)
     });
@@ -56,7 +75,7 @@ export async function checkOllamaHealth(
       const models = (dataV1.data || []).map((m) => m.id);
       return {
         status: 'connected',
-        endpoint: cleanEndpoint,
+        endpoint: safeBase.origin,
         reachable: true,
         activeModel: models[0] || 'default',
         availableModels: models
@@ -65,7 +84,7 @@ export async function checkOllamaHealth(
 
     return {
       status: 'error',
-      endpoint: cleanEndpoint,
+      endpoint: safeBase.origin,
       reachable: false,
       error: `HTTP ${res.status}: ${res.statusText}`
     };
@@ -73,7 +92,7 @@ export async function checkOllamaHealth(
     clearTimeout(timer);
     return {
       status: 'unreachable',
-      endpoint: cleanEndpoint,
+      endpoint: safeBase.origin,
       reachable: false,
       error: err.name === 'AbortError' ? 'Connection timed out' : 'Ollama not reachable'
     };
