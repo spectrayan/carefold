@@ -733,7 +733,7 @@ class AgentExecutionService:
             raise
         except Exception as err:
             logger.exception("turn_stream_error", error=str(err), thread_id=thread_id)
-            yield self.format_error_event(str(err))
+            yield self.format_error_event("An error occurred during turn execution.")
             return
 
         # 7. Post-Execution Safety Verification and Done Event

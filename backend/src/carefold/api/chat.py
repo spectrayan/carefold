@@ -171,6 +171,6 @@ async def get_thread_history(thread_id: str) -> Dict[str, Any]:
             }
     except HTTPException:
         raise
-    except Exception as err:
+    except Exception:
         logger.exception("Failed to load thread history")
-        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to load thread: {err}")
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to load thread history.")
