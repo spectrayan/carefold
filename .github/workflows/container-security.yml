@@ -1,0 +1,86 @@
+name: Container Security Scan
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker/**'
+      - 'backend/**'
+      - 'apps/web/**'
+      - 'packages/**'
+      - '**/Dockerfile*'
+      - '.github/workflows/container-security.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docker/**'
+      - 'backend/**'
+      - 'apps/web/**'
+      - 'packages/**'
+      - '**/Dockerfile*'
+      - '.github/workflows/container-security.yml'
+  schedule:
+    - cron: '0 4 * * 1'  # Weekly Monday 4:00 AM UTC
+  workflow_dispatch:
+
+concurrency:
+  group: container-security-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    name: Docker Container Vulnerability Scan (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [backend, web]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build local Docker image for scanning
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: ${{ matrix.target }}
+          load: true
+          tags: carefold/${{ matrix.target }}:scan-target
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan Docker image with Trivy (Console & Step Summary)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'carefold/${{ matrix.target }}:scan-target'
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+          ignore-unfixed: true
+          exit-code: '0'
+
+      - name: Generate Trivy SARIF Report
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'carefold/${{ matrix.target }}:scan-target'
+          format: 'sarif'
+          output: 'trivy-${{ matrix.target }}-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+          ignore-unfixed: true
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-${{ matrix.target }}-results.sarif'
+          category: 'container-${{ matrix.target }}'
