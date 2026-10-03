@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Deep Adversarial Challenger Test Suite for Phase 0 Tool Sandbox and Runtime Security.
+"""Deep Adversarial Test Suite for Tool Sandbox and Runtime Security.
 
-Milestone 1 Iteration 11 Empirical Challenger Suite verifying:
+Verifies:
 1. attach-read: Path traversal permutations, encoding attacks, scheme injections,
    extension controls, size bounds, corrupt PDF robustness, and multi-hop symlink escapes.
 2. workspace-note: Malicious title fuzzing, directory traversal sanitization, external/internal

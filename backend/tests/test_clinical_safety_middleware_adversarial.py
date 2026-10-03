@@ -192,7 +192,7 @@ class TestClinicalSafetyMiddlewareToolBoundaries:
         assert res == "executed_successfully"
 
     def test_secondary_field_tool_bypass_vulnerability(self):
-        """M3-DEFECT-01: Tests whether an adversarial skill can hide unauthorized tools in secondary fields."""
+        """Tests whether an adversarial skill can hide unauthorized tools in secondary fields."""
         mw = ClinicalSafetyMiddleware()
         state = {
             "skills_metadata": [
@@ -216,7 +216,7 @@ class TestClinicalSafetyMiddlewareToolBoundaries:
             mw.before_agent(state)
 
     def test_wrap_tool_call_fail_open_on_empty_name(self):
-        """M3-DEFECT-02: Tests fail-closed behavior when tool request has empty or missing name."""
+        """Tests fail-closed behavior when tool request has empty or missing name."""
         mw = ClinicalSafetyMiddleware()
         handler = MagicMock(return_value="executed")
         # An empty tool name should fail closed with ToolValidationError, not pass to handler
@@ -285,7 +285,7 @@ class TestClinicalSafetyMiddlewareRiskAndDisclaimers:
         assert updates == {"carefold_risk_class": "clinical_assist"}
 
     def test_risk_class_case_insensitivity(self):
-        """M3-DEFECT-03: Verifies case-insensitive normalization of risk_class in metadata."""
+        """Verifies case-insensitive normalization of risk_class in metadata."""
         mw = ClinicalSafetyMiddleware()
         state = {
             "skills_metadata": [
@@ -340,7 +340,7 @@ class TestClinicalSafetyMiddlewareRiskAndDisclaimers:
         assert updates is None
 
     def test_disclaimer_enforcement_on_native_deep_agents_state(self):
-        """M3-DEFECT-04: Verifies after_agent enforces disclaimers on native DeepAgentState with messages list."""
+        """Verifies after_agent enforces disclaimers on native DeepAgentState with messages list."""
         mw = ClinicalSafetyMiddleware()
         # Native DeepAgentState has messages, not an 'output' string
         state = {
@@ -362,7 +362,7 @@ class TestCarefoldSkillsMiddlewareFuzzing:
     """Fuzzes CarefoldSkillsMiddleware template formatting and skill discovery."""
 
     def test_prompt_template_formatting_unescaped_placeholder(self):
-        """M3-DEFECT-05: Verifies CAREFOLD_SKILLS_PROMPT formats successfully without KeyError."""
+        """Verifies CAREFOLD_SKILLS_PROMPT formats successfully without KeyError."""
         # Deep Agents SkillsMiddleware formats system_prompt_template with exactly these 3 args:
         formatted = CAREFOLD_SKILLS_PROMPT.format(
             skills_locations="skills/",
@@ -373,7 +373,7 @@ class TestCarefoldSkillsMiddlewareFuzzing:
         assert "cardiology-prep" in formatted
 
     def test_modify_request_runtime_crash(self):
-        """M3-DEFECT-06: Verifies CarefoldSkillsMiddleware.modify_request executes without crash."""
+        """Verifies CarefoldSkillsMiddleware.modify_request executes without crash."""
         backend = FilesystemBackend(".")
         mw = create_carefold_skills_middleware(backend=backend, sources=["skills"])
 
@@ -385,12 +385,12 @@ class TestCarefoldSkillsMiddlewareFuzzing:
         assert modified is not None
 
     def test_chrooted_filesystem_backend_path_resolution(self):
-        """M3-DEFECT-07: Verifies create_carefold_skills_middleware discovers repo skills."""
+        """Verifies create_carefold_skills_middleware discovers repo skills."""
         mw = create_carefold_skills_middleware(SKILLS_DIR)
         state: Dict[str, Any] = {}
         res = mw.before_agent(state, None, None)
         assert res is not None
-        # Should discover the 23 repo skills, not fail with path_not_found
+        # Should discover the repo skills, not fail with path_not_found
         assert len(res.get("skills_metadata", [])) > 0
         assert res.get("skills_load_errors") == []
 
@@ -421,7 +421,7 @@ class TestEngineMiddlewareIntegration:
     """Verifies Slot 1 replacement in Deep Agents and harness profile loading."""
 
     def test_slot1_inplace_replacement_behavior(self):
-        """M3-DEFECT-08: Verifies CarefoldSkillsMiddleware replaces built-in SkillsMiddleware at Slot 1."""
+        """Verifies CarefoldSkillsMiddleware replaces built-in SkillsMiddleware at Slot 1."""
         backend = FilesystemBackend(".")
         default_sm = SkillsMiddleware(backend=backend, sources=["skills"])
         fs_mw = FilesystemMiddleware(backend=backend)
@@ -439,7 +439,7 @@ class TestEngineMiddlewareIntegration:
         assert len(resolved_stack) == 2, f"Expected 2 middlewares, got {len(resolved_stack)}"
 
     def test_agent_factory_harness_profile_loading(self):
-        """M3-DEFECT-09: Verifies HarnessProfileConfig.from_dict() cleanly parses carefold-profile.yaml."""
+        """Verifies HarnessProfileConfig.from_dict() cleanly parses carefold-profile.yaml."""
         profile_path = Path("carefold-profile.yaml").resolve()
         profile_data = yaml.safe_load(profile_path.read_text(encoding="utf-8"))
 
@@ -450,7 +450,7 @@ class TestEngineMiddlewareIntegration:
         assert cfg.general_purpose_subagent.enabled is False
 
     def test_create_carefold_agent_compiles_graph(self):
-        """Verifies create_carefold_agent compiles a full graph with all 20 subagents."""
+        """Verifies create_carefold_agent compiles a full graph with registered subagents."""
         from langchain_core.language_models.fake_chat_models import FakeChatModel
         from carefold.engine.agent_factory import create_carefold_agent
         from langgraph.graph.state import CompiledStateGraph

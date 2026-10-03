@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""End-to-End Adversarial Challenge Suite for Catalog API Fuzzing & SQL Injection.
+"""Security Test Suite for Catalog API Fuzzing & SQL Injection Hardening.
 
-Empirically tests the entire integrated lifecycle:
+Tests the integrated lifecycle:
 1. Filesystem agent & skill loading (including _system/ separation, template skipping, and taxonomy metadata).
 2. SqliteCatalogAdapter indexing and taxonomy parity (get_category_tree() vs filesystem manifests).
 3. Adversarial FTS query sanitization and SQL injection hardening.

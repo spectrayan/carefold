@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Adversarial Challenger Test Suite for LangChain Multi-Provider Model Factory (M6 / Requirement R1).
+"""Adversarial Test Suite for LangChain Multi-Provider Model Factory.
 
-Empirically challenges:
+Challenges:
 1. Client Key Overrides & Process Environment Isolation (no os.environ leak or mutation)
 2. Ollama Endpoint Resilience & Dummy Key Handling
 3. Custom Endpoint Handling (trailing slashes, scheme preservation, fallback hierarchy)

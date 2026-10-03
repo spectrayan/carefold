@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Milestone 6 Empirical Challenger 2 Test Suite.
+"""Document Extraction and Grounding Tools Test Suite.
 
-Authoritative stress-testing and empirical verification for:
+Authoritative stress-testing and verification for:
 1. SanitizePIITool:
    - Direct identifier masking: SSN (hyphenated, dotted, space, unhyphenated 9-digit, labeled context),
      MRN (token, labeled), phone (US, intl, ext), address (street, unit, PO box, contextual), email.
@@ -748,15 +748,14 @@ class TestConcurrencyAndStressHarness:
 
 
 # ============================================================================
-# 7. Empirical Defects Reproduction Tests
+# 7. Extraction Edge Cases & Defect Remediation Tests
 # ============================================================================
 
-class TestEmpiricalDefectsVerification:
-    """Verifies remediation of defects in _heuristic_dossier_extractor."""
+class TestExtractionEdgeCasesVerification:
+    """Verifies remediation of edge cases in _heuristic_dossier_extractor."""
 
-    def test_empirical_defect_1_uncommad_4digit_dollar_figure_truncation(self):
-        r"""DEFECT 1 REMEDIATION:
-        In _heuristic_dossier_extractor, regex r'(\$?\d+(?:,\d{3})*)' fully captures
+    def test_uncommad_4digit_dollar_figure_truncation(self):
+        r"""In _heuristic_dossier_extractor, regex r'(\$?\d+(?:,\d{3})*)' fully captures
         uncomma'd 4-digit dollar figures without truncation (e.g. $1000 -> $1000, $6000 -> $6000).
         """
         # Uncomma'd figures are fully captured without truncation:
@@ -770,9 +769,8 @@ class TestEmpiricalDefectsVerification:
         d_comma = _heuristic_dossier_extractor("Deductible: $1,000", "insurance")
         assert d_comma.deductible == "$1,000"
 
-    def test_empirical_defect_2_labeled_copay_with_colon_or_is_dropped_or_misclassified(self):
-        r"""DEFECT 2 REMEDIATION:
-        In _heuristic_dossier_extractor, copay regex correctly matches phrases with 'copay:'
+    def test_labeled_copay_with_colon_or_is_dropped_or_misclassified(self):
+        r"""In _heuristic_dossier_extractor, copay regex correctly matches phrases with 'copay:'
         and accurately classifies primary care and specialist copays.
         """
         # When labeled with 'copay:', primary_care and specialist are accurately parsed

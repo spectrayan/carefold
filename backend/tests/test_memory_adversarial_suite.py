@@ -14,8 +14,6 @@
 # limitations under the License.
 
 """Comprehensive Adversarial Test Suite for SqliteMemoryAdapter and memory/factory.py.
-
-Milestone M14 Empirical Challenger 2.
 Target components:
 - SqliteMemoryAdapter:
   1. Namespace collision & delimiter injection

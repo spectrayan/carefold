@@ -97,7 +97,7 @@ class TestBoundary02ReflectionLoopThreshold:
     async def test_b06_reflection_count_below_ceiling_continues(self):
         node_mod = _try_import("carefold.workflows.nodes.reflection_node")
         if node_mod is None:
-            pytest.skip("F-28: ReflectionNode pending Milestone M3")
+            pytest.skip("F-28: ReflectionNode pending implementation")
         node = node_mod.ReflectionNode()
         out = await node.execute({"reflection_count": 2, "max_reflections": 3})
         assert out.get("next_step") != "done"
@@ -106,7 +106,7 @@ class TestBoundary02ReflectionLoopThreshold:
     async def test_b07_reflection_count_exact_ceiling_halts(self):
         node_mod = _try_import("carefold.workflows.nodes.reflection_node")
         if node_mod is None:
-            pytest.skip("F-28: ReflectionNode pending Milestone M3")
+            pytest.skip("F-28: ReflectionNode pending implementation")
         node = node_mod.ReflectionNode()
         out = await node.execute({"reflection_count": 3, "max_reflections": 3})
         assert out.get("next_step") in ("done", "fallback", "refusal")
@@ -115,7 +115,7 @@ class TestBoundary02ReflectionLoopThreshold:
     async def test_b08_reflection_count_negative_normalized(self):
         node_mod = _try_import("carefold.workflows.nodes.reflection_node")
         if node_mod is None:
-            pytest.skip("F-28: ReflectionNode pending Milestone M3")
+            pytest.skip("F-28: ReflectionNode pending implementation")
         node = node_mod.ReflectionNode()
         out = await node.execute({"reflection_count": -5, "max_reflections": 3})
         assert out.get("reflection_count", 0) >= 0
@@ -124,7 +124,7 @@ class TestBoundary02ReflectionLoopThreshold:
     async def test_b09_reflection_count_zero_initial_state(self):
         node_mod = _try_import("carefold.workflows.nodes.reflection_node")
         if node_mod is None:
-            pytest.skip("F-28: ReflectionNode pending Milestone M3")
+            pytest.skip("F-28: ReflectionNode pending implementation")
         node = node_mod.ReflectionNode()
         out = await node.execute({"reflection_count": 0, "max_reflections": 3})
         assert out.get("reflection_count") == 1
@@ -133,7 +133,7 @@ class TestBoundary02ReflectionLoopThreshold:
     async def test_b10_reflection_max_retries_zero_bypass(self):
         node_mod = _try_import("carefold.workflows.nodes.reflection_node")
         if node_mod is None:
-            pytest.skip("F-28: ReflectionNode pending Milestone M3")
+            pytest.skip("F-28: ReflectionNode pending implementation")
         node = node_mod.ReflectionNode()
         out = await node.execute({"reflection_count": 0, "max_reflections": 0})
         assert out.get("next_step") in ("done", "fallback")
@@ -221,7 +221,7 @@ class TestBoundary05PiiMaskingBoundaries:
     def test_b21_pii_adjacent_ssn_and_mrn(self):
         san_mod = _try_import("carefold.workflows.subgraphs.extraction.sanitizer")
         if san_mod is None:
-            pytest.skip("F-35: PII Sanitizer pending Milestone M4")
+            pytest.skip("F-35: PII Sanitizer pending implementation")
         fn = getattr(san_mod, "sanitize_pii", None)
         out = fn("SSN: 123-45-6789MRN: MRN998877")
         assert "123-45-6789" not in out
@@ -230,13 +230,13 @@ class TestBoundary05PiiMaskingBoundaries:
     def test_b22_pii_unhyphenated_9_digit_ssn(self):
         san_mod = _try_import("carefold.workflows.subgraphs.extraction.sanitizer")
         if san_mod is None:
-            pytest.skip("F-35: PII Sanitizer pending Milestone M4")
+            pytest.skip("F-35: PII Sanitizer pending implementation")
         pass
 
     def test_b23_pii_international_phone_number(self):
         san_mod = _try_import("carefold.workflows.subgraphs.extraction.sanitizer")
         if san_mod is None:
-            pytest.skip("F-35: PII Sanitizer pending Milestone M4")
+            pytest.skip("F-35: PII Sanitizer pending implementation")
         fn = getattr(san_mod, "sanitize_pii", None)
         out = fn("Contact +1-555-432-1098 today")
         assert "+1-555-432-1098" not in out or "REDACTED" in out
@@ -244,13 +244,13 @@ class TestBoundary05PiiMaskingBoundaries:
     def test_b24_pii_mixed_case_address(self):
         san_mod = _try_import("carefold.workflows.subgraphs.extraction.sanitizer")
         if san_mod is None:
-            pytest.skip("F-35: PII Sanitizer pending Milestone M4")
+            pytest.skip("F-35: PII Sanitizer pending implementation")
         pass
 
     def test_b25_pii_subtly_malformed_ssn_non_leak(self):
         san_mod = _try_import("carefold.workflows.subgraphs.extraction.sanitizer")
         if san_mod is None:
-            pytest.skip("F-35: PII Sanitizer pending Milestone M4")
+            pytest.skip("F-35: PII Sanitizer pending implementation")
         pass
 
 
@@ -264,7 +264,7 @@ class TestBoundary06GroundingTolerances:
     def test_b26_grounding_zero_dollar_amount(self):
         grd_mod = _try_import("carefold.workflows.subgraphs.extraction.grounding")
         if grd_mod is None:
-            pytest.skip("F-37: GroundingValidator pending Milestone M4")
+            pytest.skip("F-37: GroundingValidator pending implementation")
         cls = grd_mod.GroundingValidator
         res = cls.validate_numerical_value("$0", "Preventive care has $0 copay.")
         assert res.is_grounded is True
@@ -272,7 +272,7 @@ class TestBoundary06GroundingTolerances:
     def test_b27_grounding_million_dollar_amount(self):
         grd_mod = _try_import("carefold.workflows.subgraphs.extraction.grounding")
         if grd_mod is None:
-            pytest.skip("F-37: GroundingValidator pending Milestone M4")
+            pytest.skip("F-37: GroundingValidator pending implementation")
         cls = grd_mod.GroundingValidator
         res = cls.validate_numerical_value("$1,000,000", "Lifetime benefit ceiling is 1000000.")
         assert res.is_grounded is True
@@ -280,7 +280,7 @@ class TestBoundary06GroundingTolerances:
     def test_b28_grounding_fractional_coinsurance_percentage(self):
         grd_mod = _try_import("carefold.workflows.subgraphs.extraction.grounding")
         if grd_mod is None:
-            pytest.skip("F-37: GroundingValidator pending Milestone M4")
+            pytest.skip("F-37: GroundingValidator pending implementation")
         cls = grd_mod.GroundingValidator
         res = cls.validate_numerical_value("20.5%", "Special coinsurance is 20.5 percent.")
         assert res.is_grounded is True
@@ -288,7 +288,7 @@ class TestBoundary06GroundingTolerances:
     def test_b29_grounding_comma_formatted_vs_unformatted(self):
         grd_mod = _try_import("carefold.workflows.subgraphs.extraction.grounding")
         if grd_mod is None:
-            pytest.skip("F-37: GroundingValidator pending Milestone M4")
+            pytest.skip("F-37: GroundingValidator pending implementation")
         cls = grd_mod.GroundingValidator
         res = cls.validate_numerical_value("3500", "Out of pocket max is $3,500.")
         assert res.is_grounded is True
@@ -296,7 +296,7 @@ class TestBoundary06GroundingTolerances:
     def test_b30_grounding_transposed_digits_rejection(self):
         grd_mod = _try_import("carefold.workflows.subgraphs.extraction.grounding")
         if grd_mod is None:
-            pytest.skip("F-37: GroundingValidator pending Milestone M4")
+            pytest.skip("F-37: GroundingValidator pending implementation")
         cls = grd_mod.GroundingValidator
         res = cls.validate_numerical_value("1050", "Out of pocket max is $1,500.")
         assert res.is_grounded is False
@@ -341,13 +341,13 @@ class TestBoundary08DossierSchemaLimits:
     def test_b36_dossier_negative_copay_handling(self):
         dos_mod = _try_import("carefold.workflows.subgraphs.extraction.dossiers")
         if dos_mod is None:
-            pytest.skip("F-36: Dossiers pending Milestone M4")
+            pytest.skip("F-36: Dossiers pending implementation")
         pass
 
     def test_b37_dossier_empty_sections_list(self):
         dos_mod = _try_import("carefold.workflows.subgraphs.extraction.dossiers")
         if dos_mod is None:
-            pytest.skip("F-36: Dossiers pending Milestone M4")
+            pytest.skip("F-36: Dossiers pending implementation")
         cls = dos_mod.GenericDocumentDossier
         d = cls(summary="Summary", key_numerical_values={}, sections=[])
         assert d.sections == []
@@ -355,7 +355,7 @@ class TestBoundary08DossierSchemaLimits:
     def test_b38_dossier_extreme_string_length(self):
         dos_mod = _try_import("carefold.workflows.subgraphs.extraction.dossiers")
         if dos_mod is None:
-            pytest.skip("F-36: Dossiers pending Milestone M4")
+            pytest.skip("F-36: Dossiers pending implementation")
         cls = dos_mod.ClinicalVisitDossier
         d = cls(reason_for_visit="A" * 5000, physician_instructions=[], follow_up_timeline="", questions_to_ask=[])
         assert len(d.reason_for_visit) == 5000
@@ -363,7 +363,7 @@ class TestBoundary08DossierSchemaLimits:
     def test_b39_dossier_special_characters_in_reason(self):
         dos_mod = _try_import("carefold.workflows.subgraphs.extraction.dossiers")
         if dos_mod is None:
-            pytest.skip("F-36: Dossiers pending Milestone M4")
+            pytest.skip("F-36: Dossiers pending implementation")
         cls = dos_mod.ClinicalVisitDossier
         d = cls(reason_for_visit="Patient reports: <script>alert(1)</script> & special chars", physician_instructions=[], follow_up_timeline="", questions_to_ask=[])
         assert "<script>" in d.reason_for_visit
@@ -371,7 +371,7 @@ class TestBoundary08DossierSchemaLimits:
     def test_b40_dossier_extra_fields_ignored_or_rejected(self):
         dos_mod = _try_import("carefold.workflows.subgraphs.extraction.dossiers")
         if dos_mod is None:
-            pytest.skip("F-36: Dossiers pending Milestone M4")
+            pytest.skip("F-36: Dossiers pending implementation")
         pass
 
 
@@ -385,7 +385,7 @@ class TestBoundary09SseStreamingBoundaries:
     def test_b41_sse_empty_text_delta_suppressed(self):
         api_const = _try_import("carefold.constants.api")
         if api_const is None:
-            pytest.skip("F-06: Constants pending Milestone M1")
+            pytest.skip("F-06: Constants pending implementation")
         assert hasattr(api_const, "SSE_EVENT_TEXT_DELTA") or hasattr(api_const, "EVENT_TEXT_DELTA")
 
     def test_b42_sse_single_character_deltas(self):
@@ -414,7 +414,7 @@ class TestBoundary10ToolOutputTruncation:
     async def test_b46_tool_output_exact_limit_unmodified(self):
         node_mod = _try_import("carefold.workflows.nodes.tool_validator_node")
         if node_mod is None:
-            pytest.skip("F-26: ToolValidatorNode pending Milestone M3")
+            pytest.skip("F-26: ToolValidatorNode pending implementation")
         node = node_mod.ToolValidatorNode(max_chars=100)
         out = await node.execute({"tool_output": "x" * 100})
         res_text = out.get("sanitized_output", out.get("tool_output", ""))
@@ -424,7 +424,7 @@ class TestBoundary10ToolOutputTruncation:
     async def test_b47_tool_output_limit_plus_one_truncated(self):
         node_mod = _try_import("carefold.workflows.nodes.tool_validator_node")
         if node_mod is None:
-            pytest.skip("F-26: ToolValidatorNode pending Milestone M3")
+            pytest.skip("F-26: ToolValidatorNode pending implementation")
         node = node_mod.ToolValidatorNode(max_chars=100)
         out = await node.execute({"tool_output": "x" * 101})
         res_text = out.get("sanitized_output", out.get("tool_output", ""))
@@ -437,7 +437,7 @@ class TestBoundary10ToolOutputTruncation:
     async def test_b49_tool_output_empty_string_safe(self):
         node_mod = _try_import("carefold.workflows.nodes.tool_validator_node")
         if node_mod is None:
-            pytest.skip("F-26: ToolValidatorNode pending Milestone M3")
+            pytest.skip("F-26: ToolValidatorNode pending implementation")
         node = node_mod.ToolValidatorNode()
         out = await node.execute({"tool_output": ""})
         assert out is not None
@@ -446,7 +446,7 @@ class TestBoundary10ToolOutputTruncation:
     async def test_b50_tool_output_control_characters_cleansed(self):
         node_mod = _try_import("carefold.workflows.nodes.tool_validator_node")
         if node_mod is None:
-            pytest.skip("F-26: ToolValidatorNode pending Milestone M3")
+            pytest.skip("F-26: ToolValidatorNode pending implementation")
         node = node_mod.ToolValidatorNode()
         out = await node.execute({"tool_output": "\x1b[31mRed Text\x1b[0m"})
         text = out.get("sanitized_output", "")

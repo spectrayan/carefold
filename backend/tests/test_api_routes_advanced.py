@@ -13,9 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Challenger Test Suite for Milestone M16: API Routes & Edge Cases.
-
-Challenger: m16_challenger_1 (Adversarial Testing Specialist)
+"""API Routes and Edge Cases Test Suite.
 Target Endpoints:
 - GET /api/agents/categories
 - GET /api/agents
@@ -23,7 +21,7 @@ Target Endpoints:
 - GET /api/skills
 - GET /api/skills/{skill_id}
 
-Scope of Empirical Challenges:
+Scope of Tests:
 1. Route Shadowing & Path Routing:
    - GET /api/agents/categories returns category tree with 200 OK (not shadowed by /{agent_id}).
    - GET /api/agents/benefits-guide returns 200 OK detail.

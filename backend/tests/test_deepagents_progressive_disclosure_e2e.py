@@ -192,7 +192,7 @@ class TestFeatureCoverage:
     # -------------------------------------------------------------------------
 
     def test_valid_frontmatter_metadata_parsing(self, tmp_path: Path):
-        """T1-META-01: Verifies valid SKILL.md frontmatter with metadata: dict parses accurately."""
+        """Verifies valid SKILL.md frontmatter with metadata: dict parses accurately."""
         content = """---
 name: cardiology-prep
 description: Guides patients through pre-visit preparation for cardiology consultations.
@@ -232,7 +232,7 @@ Do not change medication without the prescribing clinician.
         assert meta["author"] == "spectrayan"
 
     def test_field_extraction_into_manifest_schema(self, tmp_path: Path):
-        """T1-META-02: Verifies metadata fields correctly map into SkillManifest representation."""
+        """Verifies metadata fields correctly map into SkillManifest representation."""
         content = """---
 name: pulmonology-prep
 description: Respiratory consultation visit prep.
@@ -278,7 +278,7 @@ Do not change medication without the prescribing clinician.
         assert manifest.forbidden == ["diagnose"]
 
     def test_arbitrary_metadata_keys_preserved(self):
-        """T1-META-03: Verifies arbitrary key-value pairs adhere to Agent Skills specification."""
+        """Verifies arbitrary key-value pairs adhere to Agent Skills specification."""
         content = """---
 name: custom-clinical-skill
 description: Custom clinical skill with domain extensions.
@@ -303,7 +303,7 @@ Do not change medication without the prescribing clinician.
         assert meta["telemetry_tags"] == ["cardiac", "vitals"]
 
     def test_license_presence_in_frontmatter(self):
-        """T1-META-04: Verifies Apache-2.0 license declaration in frontmatter."""
+        """Verifies Apache-2.0 license declaration in frontmatter."""
         content = """---
 name: visit-prep
 description: General pre-visit preparation.
@@ -319,7 +319,7 @@ Do not change medication without the prescribing clinician.
         assert parsed.frontmatter.get("license") == "Apache-2.0"
 
     def test_backward_compatibility_with_migrated_manifest(self, tmp_path: Path):
-        """T1-META-05: Verifies loader functions when carefold.yaml is archived to carefold.yaml.migrated."""
+        """Verifies loader functions when carefold.yaml is archived to carefold.yaml.migrated."""
         skill_dir = tmp_path / "cardiology-prep"
         skill_dir.mkdir(parents=True)
 
@@ -360,7 +360,7 @@ Do not change medication without the prescribing clinician.
     # -------------------------------------------------------------------------
 
     def test_single_allowed_tool_declaration(self):
-        """T1-TOOL-01: Verifies single tool declared in allowed-tools string."""
+        """Verifies single tool declared in allowed-tools string."""
         raw = "allowed-tools: skill-docs"
         parsed_yaml = yaml.safe_load(raw)
         tools = parse_allowed_tools(parsed_yaml.get("allowed-tools"))
@@ -368,7 +368,7 @@ Do not change medication without the prescribing clinician.
         validate_tools_in_phase0(tools, "test_skill")
 
     def test_multiple_space_separated_allowed_tools(self):
-        """T1-TOOL-02: Verifies space-separated string in allowed-tools parses into discrete tool list."""
+        """Verifies space-separated string in allowed-tools parses into discrete tool list."""
         raw = "allowed-tools: skill-docs attach-read workspace-note"
         parsed_yaml = yaml.safe_load(raw)
         tools = parse_allowed_tools(parsed_yaml.get("allowed-tools"))
@@ -376,7 +376,7 @@ Do not change medication without the prescribing clinician.
         validate_tools_in_phase0(tools, "test_skill")
 
     def test_alignment_between_allowed_tools_and_metadata_tools(self):
-        """T1-TOOL-03: Verifies congruence between allowed-tools string and metadata.tools list."""
+        """Verifies congruence between allowed-tools string and metadata.tools list."""
         content = """---
 name: benefits-explainer
 description: Insurance benefits explainer.
@@ -398,7 +398,7 @@ Do not change medication without the prescribing clinician.
         assert set(allowed_list).issubset(PHASE_0_REGISTRY)
 
     def test_enforces_phase0_registry_subset(self):
-        """T1-TOOL-04: Verifies all declared tools in allowed-tools belong strictly to PHASE_0_REGISTRY."""
+        """Verifies all declared tools in allowed-tools belong strictly to PHASE_0_REGISTRY."""
         valid_tools = ["attach-read", "skill-docs", "sanitize_pii", "validate_grounding"]
         validate_tools_in_phase0(valid_tools, "valid_manifest")
 
@@ -407,7 +407,7 @@ Do not change medication without the prescribing clinician.
         assert "unauthorized_exec" in str(exc_info.value)
 
     def test_empty_or_omitted_allowed_tools_defaults_safely(self):
-        """T1-TOOL-05: Verifies omitted allowed-tools defaults to empty list safely."""
+        """Verifies omitted allowed-tools defaults to empty list safely."""
         content = """---
 name: passive-guide
 description: Informational guide without tools.
@@ -429,7 +429,7 @@ Do not change medication without the prescribing clinician.
     # -------------------------------------------------------------------------
 
     def test_persona_contains_role_and_scope(self):
-        """T1-SLIM-01: Verifies persona_slim.md preserves ROLE & EMPATHY and CLINICAL SCOPE & FOCUS."""
+        """Verifies persona_slim.md preserves ROLE & EMPATHY and CLINICAL SCOPE & FOCUS."""
         persona_slim = """# ROLE & EMPATHY
 You are the Cardiology Pre-Visit Navigator. You listen with profound warmth, clarity,
 and patience to help patients structure their concerns ahead of cardiovascular appointments.
@@ -442,7 +442,7 @@ and patient question formulation.
         assert "CLINICAL SCOPE & FOCUS" in persona_slim
 
     def test_persona_excludes_structured_protocol(self):
-        """T1-SLIM-02: Verifies STRUCTURED INTERACTION PROTOCOL is relocated out of persona_slim.md."""
+        """Verifies STRUCTURED INTERACTION PROTOCOL is relocated out of persona_slim.md."""
         persona_slim = """# ROLE & EMPATHY
 You are the Dermatology Pre-Visit Guide.
 
@@ -453,7 +453,7 @@ You assist patients with rash chronology and lesion preparation questions.
         assert "4-step protocol" not in persona_slim.lower()
 
     def test_persona_excludes_universal_safety_boundaries(self):
-        """T1-SLIM-03: Verifies STRICT NON-CLINICAL BOUNDARIES is relocated to root profile suffix."""
+        """Verifies STRICT NON-CLINICAL BOUNDARIES is relocated to root profile suffix."""
         persona_slim = """# ROLE & EMPATHY
 Cardiology navigator.
 
@@ -463,7 +463,7 @@ Pre-visit cardiology agenda.
         assert "STRICT NON-CLINICAL BOUNDARIES" not in persona_slim
 
     def test_persona_excludes_emergency_red_flags(self):
-        """T1-SLIM-04: Verifies EXPLICIT EMERGENCY RED FLAGS is relocated to root profile suffix."""
+        """Verifies EXPLICIT EMERGENCY RED FLAGS is relocated to root profile suffix."""
         persona_slim = """# ROLE & EMPATHY
 Pulmonology navigator.
 
@@ -473,7 +473,7 @@ Dyspnea log preparation.
         assert "EXPLICIT EMERGENCY RED FLAGS" not in persona_slim
 
     def test_persona_compact_token_budget_verification(self):
-        """T1-SLIM-05: Empirically measures word/token count of slim persona (strictly ≤ 600 words)."""
+        """Empirically measures word/token count of slim persona (strictly ≤ 600 words)."""
         sample_slim = """# ROLE & EMPATHY
 You are the Carefold Cardiology Navigator. You approach every interaction with deep clinical empathy,
 calm reassurance, and structured precision. You assist patients who are preparing for visits with cardiologists,
@@ -492,7 +492,7 @@ You explain standard cardiology intake terminology in plain English and support 
     # -------------------------------------------------------------------------
 
     def test_profile_yaml_loads_harness_config(self):
-        """T1-PROF-01: Verifies carefold-profile.yaml loads cleanly via profile config parser."""
+        """Verifies carefold-profile.yaml loads cleanly via profile config parser."""
         raw_yaml = """harness:
   system_prompt_suffix: |
     # UNIVERSAL CLINICAL SAFETY BOUNDARIES
@@ -507,7 +507,7 @@ You explain standard cardiology intake terminology in plain English and support 
         assert parsed["general_purpose_subagent"].get("enabled") is False
 
     def test_profile_contains_universal_non_clinical_boundaries(self):
-        """T1-PROF-02: Verifies profile suffix contains strict non-clinical boundaries."""
+        """Verifies profile suffix contains strict non-clinical boundaries."""
         raw_yaml = """system_prompt_suffix: |
   STRICT NON-CLINICAL BOUNDARIES:
   - You NEVER diagnose medical conditions or interpret clinical laboratory results.
@@ -521,7 +521,7 @@ You explain standard cardiology intake terminology in plain English and support 
         assert "NEVER instruct patients to start, stop, adjust" in suffix
 
     def test_profile_contains_emergency_red_flags(self):
-        """T1-PROF-03: Verifies profile suffix contains acute emergency red-flag instructions."""
+        """Verifies profile suffix contains acute emergency red-flag instructions."""
         raw_yaml = """system_prompt_suffix: |
   EXPLICIT EMERGENCY RED FLAGS:
   If a user describes acute, potentially life-threatening symptoms — including crushing chest pain;
@@ -535,7 +535,7 @@ You explain standard cardiology intake terminology in plain English and support 
         assert "stroke" in suffix
 
     def test_profile_disables_general_purpose_subagent(self):
-        """T1-PROF-04: Verifies profile disables general_purpose_subagent to enforce specialist routing."""
+        """Verifies profile disables general_purpose_subagent to enforce specialist routing."""
         raw_yaml = """general_purpose_subagent:
   enabled: false
 """
@@ -543,7 +543,7 @@ You explain standard cardiology intake terminology in plain English and support 
         assert parsed["general_purpose_subagent"].get("enabled") is False
 
     def test_profile_suffix_appends_after_caller_system_prompt(self):
-        """T1-PROF-05: Verifies system_prompt_suffix merges after the agent's base system prompt."""
+        """Verifies system_prompt_suffix merges after the agent's base system prompt."""
         base_prompt = "You are Cardiology Guide."
         suffix = "\n\n# UNIVERSAL SAFETY\nNever diagnose."
         combined = f"{base_prompt}{suffix}"
@@ -555,7 +555,7 @@ You explain standard cardiology intake terminology in plain English and support 
     # -------------------------------------------------------------------------
 
     def test_slot7_allows_phase0_tools(self):
-        """T1-SLOT7-01: Verifies slot 7 middleware allows valid Phase 0 tools without exception."""
+        """Verifies slot 7 middleware allows valid Phase 0 tools without exception."""
         middleware = get_slot7_middleware()
         state = {
             "skills_metadata": [
@@ -573,7 +573,7 @@ You explain standard cardiology intake terminology in plain English and support 
         assert updates.get("carefold_risk_class") == "clinical_assist"
 
     def test_slot7_rejects_unauthorized_tools(self):
-        """T1-SLOT7-02: Verifies slot 7 middleware raises ToolValidationError on unauthorized tools."""
+        """Verifies slot 7 middleware raises ToolValidationError on unauthorized tools."""
         middleware = get_slot7_middleware()
         state = {
             "skills_metadata": [
@@ -591,7 +591,7 @@ You explain standard cardiology intake terminology in plain English and support 
         assert "bash_exec" in str(exc_info.value)
 
     def test_slot7_dynamic_risk_elevation_for_clinical_skills(self):
-        """T1-SLOT7-03: Elevates thread risk class to clinical_assist when clinical skill is loaded."""
+        """Elevates thread risk class to clinical_assist when clinical skill is loaded."""
         middleware = get_slot7_middleware()
         state = {
             "skills_metadata": [
@@ -608,7 +608,7 @@ You explain standard cardiology intake terminology in plain English and support 
         assert updates == {"carefold_risk_class": "clinical_assist"}
 
     def test_slot7_retains_admin_for_purely_administrative_skills(self):
-        """T1-SLOT7-04: Retains admin risk class when only navigation/admin skills are loaded."""
+        """Retains admin risk class when only navigation/admin skills are loaded."""
         middleware = get_slot7_middleware()
         state = {
             "skills_metadata": [
@@ -625,7 +625,7 @@ You explain standard cardiology intake terminology in plain English and support 
         assert updates is None or updates.get("carefold_risk_class") != "clinical_assist"
 
     def test_slot7_position_in_middleware_pipeline(self):
-        """T1-SLOT7-05: Confirms Slot 7 position in the Deep Agents middleware pipeline architecture."""
+        """Confirms Slot 7 position in the Deep Agents middleware pipeline architecture."""
         middleware = get_slot7_middleware()
         assert getattr(middleware, "slot", 7) == 7
 
@@ -634,7 +634,7 @@ You explain standard cardiology intake terminology in plain English and support 
     # -------------------------------------------------------------------------
 
     def test_disclaimer_all_three_statements_present_passes(self):
-        """T1-DISC-01: Verifies content containing all 3 mandatory clinical disclaimers passes."""
+        """Verifies content containing all 3 mandatory clinical disclaimers passes."""
         body = """# Skill Content
 Not a clinician and not emergency care.
 If this is an emergency, contact local emergency services immediately.
@@ -645,7 +645,7 @@ Do not change medication without the prescribing clinician.
         assert missing is None
 
     def test_disclaimer_missing_not_clinician_fails(self):
-        """T1-DISC-02: Fails validation when 'Not a clinician' statement is omitted."""
+        """Fails validation when 'Not a clinician' statement is omitted."""
         body = """# Skill Content
 If this is an emergency, contact local emergency services.
 Do not change medication without the prescribing clinician.
@@ -655,7 +655,7 @@ Do not change medication without the prescribing clinician.
         assert missing == "Not a clinician and not emergency care"
 
     def test_disclaimer_missing_emergency_statement_fails(self):
-        """T1-DISC-03: Fails validation when emergency services statement is omitted."""
+        """Fails validation when emergency services statement is omitted."""
         body = """# Skill Content
 Not a clinician and not emergency care.
 Do not change medication without the prescribing clinician.
@@ -665,7 +665,7 @@ Do not change medication without the prescribing clinician.
         assert missing == "If this is an emergency, contact local emergency services"
 
     def test_disclaimer_missing_medication_statement_fails(self):
-        """T1-DISC-04: Fails validation when medication consultation statement is omitted."""
+        """Fails validation when medication consultation statement is omitted."""
         body = """# Skill Content
 Not a clinician and not emergency care.
 If this is an emergency, contact local emergency services.
@@ -675,7 +675,7 @@ If this is an emergency, contact local emergency services.
         assert missing == "Do not change medication without the prescribing clinician"
 
     def test_disclaimer_semantic_variants_accepted(self):
-        """T1-DISC-05: Accepts approved semantic variants such as 'call 911' or 'without your doctor'."""
+        """Accepts approved semantic variants such as 'call 911' or 'without your doctor'."""
         body = """# Guidance
 I am not a clinician and this is not emergency care.
 If you have an emergency, please call 911 or visit the emergency room.
@@ -694,7 +694,7 @@ class TestBoundaryCases:
     """Tier 2: Boundary, corner, and adversarial stress verification."""
 
     def test_boundary_empty_or_missing_frontmatter_name(self):
-        """T2-BND-01: Verifies validation failure on missing or blank skill name in frontmatter."""
+        """Verifies validation failure on missing or blank skill name in frontmatter."""
         content = """---
 description: Missing name field entirely.
 metadata:
@@ -709,7 +709,7 @@ Do not change medication without the prescribing clinician.
             SkillFrontmatter(**parsed.frontmatter)
 
     def test_boundary_missing_metadata_dictionary(self):
-        """T2-BND-02: Skill frontmatter without metadata: dict falls back safely."""
+        """Skill frontmatter without metadata: dict falls back safely."""
         content = """---
 name: basic-guide
 description: Guide without metadata dictionary.
@@ -725,14 +725,14 @@ Do not change medication without the prescribing clinician.
         assert meta.get("risk_class", "wellness") == "wellness"
 
     def test_boundary_unauthorized_tools_outside_phase0(self):
-        """T2-BND-03: Tests adversarial tools outside Phase 0 (python_exec, sh, rm_rf)."""
+        """Tests adversarial tools outside Phase 0 (python_exec, sh, rm_rf)."""
         adversarial_tools = ["sh", "python_exec", "curl", "system_exec", "rm_rf"]
         for tool in adversarial_tools:
             with pytest.raises(ToolValidationError):
                 validate_tools_in_phase0([tool], "adversarial_test")
 
     def test_boundary_malformed_yaml_frontmatter(self):
-        """T2-BND-04: Malformed YAML syntax raises ValueError during frontmatter parse."""
+        """Malformed YAML syntax raises ValueError during frontmatter parse."""
         malformed = """---
 name: broken-yaml
 description: "Unclosed string quote
@@ -745,7 +745,7 @@ Body content.
             parse_frontmatter(malformed)
 
     def test_boundary_path_traversal_in_skill_resolution(self, tmp_path: Path):
-        """T2-BND-05: Attempts path traversal in skill paths are blocked fail-closed."""
+        """Attempts path traversal in skill paths are blocked fail-closed."""
         from carefold.loaders.skill_loader import find_skill_dir
 
         skills_dir = tmp_path / "skills"
@@ -758,7 +758,7 @@ Body content.
         assert find_skill_dir(skills_dir, "..") is None
 
     def test_boundary_missing_profile_configuration(self, tmp_path: Path):
-        """T2-BND-06: Nonexistent carefold-profile.yaml handled cleanly with default fallback."""
+        """Nonexistent carefold-profile.yaml handled cleanly with default fallback."""
         nonexistent = tmp_path / "nonexistent-profile.yaml"
         assert not nonexistent.exists()
         # Default safety fallback
@@ -766,7 +766,7 @@ Body content.
         assert "Universal Fallback Boundary" in fallback["system_prompt_suffix"]
 
     def test_boundary_missing_persona_file_reference(self, tmp_path: Path):
-        """T2-BND-07: Missing persona_slim.md reference in agent.yaml handled without crash."""
+        """Missing persona_slim.md reference in agent.yaml handled without crash."""
         agent_dir = tmp_path / "test-agent"
         agent_dir.mkdir()
         (agent_dir / "agent.yaml").write_text(
@@ -778,7 +778,7 @@ Body content.
         assert subagent["system_prompt"] == ""
 
     def test_boundary_crlf_and_extreme_whitespace(self):
-        """T2-BND-08: Windows CRLF and extreme whitespace parsed robustly."""
+        """Windows CRLF and extreme whitespace parsed robustly."""
         content = "---\r\nname: crlf-skill\r\ndescription:   CRLF with spaces   \r\nmetadata:\r\n  risk_class:  admin  \r\n---\r\n\r\nNot a clinician and not emergency care.\r\nIf this is an emergency, contact local emergency services.\r\nDo not change medication without the prescribing clinician.\r\n"
         parsed = parse_frontmatter(content)
         assert parsed.frontmatter["name"] == "crlf-skill"
@@ -788,12 +788,12 @@ Body content.
         assert valid is True
 
     def test_boundary_empty_tools_list_defaults(self):
-        """T2-BND-09: Empty tools declaration tools: [] resolves without error."""
+        """Empty tools declaration tools: [] resolves without error."""
         effective = compute_effective_tools(agent_tools=[], skills=[])
         assert effective == []
 
     def test_boundary_duplicate_skill_declarations(self, tmp_path: Path):
-        """T2-BND-10: Duplicate skill entries in agent.yaml deduplicated cleanly."""
+        """Duplicate skill entries in agent.yaml deduplicated cleanly."""
         agent_dir = tmp_path / "dup-agent"
         agent_dir.mkdir()
         (agent_dir / "agent.yaml").write_text(
@@ -814,14 +814,14 @@ class TestCrossFeatureCombinations:
     """Tier 3: Multi-feature interactions and progressive disclosure contracts."""
 
     def test_cross_feature_multi_skill_loading_tool_union(self):
-        """T3-XFT-01: Multi-skill loading unions declared tools within PHASE_0_REGISTRY."""
+        """Multi-skill loading unions declared tools within PHASE_0_REGISTRY."""
         skill_1_tools = ["skill-docs", "attach-read"]
         skill_2_tools = ["skill-docs", "workspace-note"]
         effective = compute_effective_tools(agent_tools=["list_agents"], skills=[skill_1_tools, skill_2_tools])
         assert set(effective) == {"list_agents", "skill-docs", "attach-read", "workspace-note"}
 
     def test_cross_feature_dynamic_risk_elevation_with_disclaimers(self):
-        """T3-XFT-02: Mixed admin + clinical skills elevate risk to clinical_assist and enforce disclaimers."""
+        """Mixed admin + clinical skills elevate risk to clinical_assist and enforce disclaimers."""
         middleware = get_slot7_middleware()
         state = {
             "skills_metadata": [
@@ -833,7 +833,7 @@ class TestCrossFeatureCombinations:
         assert updates.get("carefold_risk_class") == "clinical_assist"
 
     def test_cross_feature_agent_delegation_skill_isolation(self):
-        """T3-XFT-03: Inter-agent delegation preserves skill boundaries and tool constraints."""
+        """Inter-agent delegation preserves skill boundaries and tool constraints."""
         orchestrator_tools = ["delegate_to_agent", "list_agents"]
         specialist_tools = ["skill-docs", "attach-read"]
 
@@ -842,7 +842,7 @@ class TestCrossFeatureCombinations:
         validate_tools_in_phase0(orchestrator_tools + specialist_tools, "delegation_chain")
 
     def test_cross_feature_composite_prompt_assembly(self, tmp_path: Path):
-        """T3-XFT-04: Validates complete composite prompt assembly across all 3 tiers."""
+        """Validates complete composite prompt assembly across all 3 tiers."""
         # 1. Slim persona
         persona = "# ROLE & EMPATHY\nCardiology Navigator.\n\n# CLINICAL SCOPE & FOCUS\nPre-visit prep."
         # 2. Skills catalog metadata (Tier 1 disclosure)
@@ -856,7 +856,7 @@ class TestCrossFeatureCombinations:
         assert full_prompt.endswith("Never diagnose or prescribe.")
 
     def test_cross_feature_multi_model_harness_registration(self):
-        """T3-XFT-05: Verifies harness profile applies consistently across model keys."""
+        """Verifies harness profile applies consistently across model keys."""
         models = ["ollama:llama3.2", "google_genai:gemini-3.6-flash", "anthropic:claude-sonnet-4-6"]
         profile_data = {"system_prompt_suffix": "STANDARD_CAREFOLD_SAFETY_SUFFIX"}
         for m in models:
@@ -864,13 +864,13 @@ class TestCrossFeatureCombinations:
             assert cfg["system_prompt_suffix"] == "STANDARD_CAREFOLD_SAFETY_SUFFIX"
 
     def test_cross_feature_pii_sanitization_with_clinical_skill(self):
-        """T3-XFT-06: PII sanitization tool remains authorized alongside clinical skill execution."""
+        """PII sanitization tool remains authorized alongside clinical skill execution."""
         tools = ["sanitize_pii", "skill-docs", "attach-read"]
         validate_tools_in_phase0(tools, "pii_clinical_interaction")
         assert "sanitize_pii" in PHASE_0_REGISTRY
 
     def test_cross_feature_on_demand_reference_docs_retrieval(self, tmp_path: Path):
-        """T3-XFT-07: Verifies clinical reference docs load on-demand via tools rather than eager injection."""
+        """Verifies clinical reference docs load on-demand via tools rather than eager injection."""
         skill_dir = tmp_path / "cardiology-prep"
         refs_dir = skill_dir / "references"
         refs_dir.mkdir(parents=True)
@@ -885,7 +885,7 @@ class TestCrossFeatureCombinations:
         assert ref_content == "# BP Log Template"
 
     def test_cross_feature_prompt_token_reduction_baseline(self):
-        """T3-XFT-08: Empirically measures ≥60% token reduction in initial prompt compared to eager stuffing."""
+        """Empirically measures ≥60% token reduction in initial prompt compared to eager stuffing."""
         # Legacy eager stuffed prompt (persona + all instructions + all references)
         legacy_stuffed = (
             "SAFETY PREAMBLE\n" + "x " * 200 + "\n"
@@ -915,7 +915,7 @@ class TestClinicalScenarios:
     """Tier 4: Realistic clinical navigation scenarios."""
 
     def test_scenario_cardiology_previsit_consultation(self):
-        """T4-SCN-01: End-to-end cardiology pre-visit preparation session."""
+        """End-to-end cardiology pre-visit preparation session."""
         # 1. State setup
         state = {
             "skills_metadata": [
@@ -952,7 +952,7 @@ class TestClinicalScenarios:
         assert "prescribing clinician" in simulated_response
 
     def test_scenario_dermatology_previsit_consultation(self):
-        """T4-SCN-02: End-to-end dermatology pre-visit preparation session with refusal of diagnostic query."""
+        """End-to-end dermatology pre-visit preparation session with refusal of diagnostic query."""
         state = {
             "skills_metadata": [
                 {
@@ -986,7 +986,7 @@ class TestClinicalScenarios:
         assert valid is True
 
     def test_scenario_benefits_guide_administrative_session(self):
-        """T4-SCN-03: End-to-end benefits guide administrative navigation without clinical risk elevation."""
+        """End-to-end benefits guide administrative navigation without clinical risk elevation."""
         state = {
             "skills_metadata": [
                 {

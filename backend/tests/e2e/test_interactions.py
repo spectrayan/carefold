@@ -83,7 +83,7 @@ class TestCrossFeatureInteractions:
         """Interaction: Dossier Extraction -> Grounding Validator -> AgentState."""
         grd_mod = _try_import("carefold.workflows.subgraphs.extraction.grounding")
         if grd_mod is None:
-            pytest.skip("F-37: GroundingValidator pending Milestone M4")
+            pytest.skip("F-37: GroundingValidator pending implementation")
         val = grd_mod.GroundingValidator.validate_numerical_value("$1,500", sample_insurance_text)
         assert val.is_grounded is True
 
@@ -92,7 +92,7 @@ class TestCrossFeatureInteractions:
         """Interaction: SupervisorNode -> Specialist Subgraph -> State Propagation."""
         node_mod = _try_import("carefold.workflows.nodes.supervisor_node")
         if node_mod is None:
-            pytest.skip("F-23: SupervisorNode pending Milestone M3")
+            pytest.skip("F-23: SupervisorNode pending implementation")
         sup = node_mod.SupervisorNode()
         state = {"messages": [{"role": "user", "content": "Review my doctor's instructions"}]}
         out = await sup.execute(state)
@@ -116,7 +116,7 @@ class TestCrossFeatureInteractions:
         guard_mod = _try_import("carefold.workflows.nodes.output_guardrail_node")
         refl_mod = _try_import("carefold.workflows.nodes.reflection_node")
         if guard_mod is None or refl_mod is None:
-            pytest.skip("M3 nodes pending Milestone M3")
+            pytest.skip("M3 nodes pending implementation")
         refl = refl_mod.ReflectionNode()
         res = await refl.execute({"reflection_count": 0, "max_reflections": 3})
         assert res.get("reflection_count") == 1
@@ -126,7 +126,7 @@ class TestCrossFeatureInteractions:
         """Interaction: Reflection Loop Ceiling -> Fallback Termination."""
         refl_mod = _try_import("carefold.workflows.nodes.reflection_node")
         if refl_mod is None:
-            pytest.skip("F-28: ReflectionNode pending Milestone M3")
+            pytest.skip("F-28: ReflectionNode pending implementation")
         refl = refl_mod.ReflectionNode()
         res = await refl.execute({"reflection_count": 3, "max_reflections": 3})
         assert res.get("next_step") in ("done", "fallback", "refusal")
@@ -135,7 +135,7 @@ class TestCrossFeatureInteractions:
         """Interaction: extract_document_dossier tool -> AgentState['document_dossiers']."""
         tool_mod = _try_import("carefold.workflows.subgraphs.extraction.tool")
         if tool_mod is None:
-            pytest.skip("F-38: Extraction tool pending Milestone M4")
+            pytest.skip("F-38: Extraction tool pending implementation")
         assert hasattr(tool_mod, "extract_document_dossier")
 
     def test_i10_resource_loader_safety_classifier_chat_api(self, e2e_client: TestClient):
@@ -158,7 +158,7 @@ class TestCrossFeatureInteractions:
         """Interaction: SQLite Checkpointer -> Thread State -> Multi-Turn Resumption."""
         bld_mod = _try_import("carefold.engine.builder")
         if bld_mod is None:
-            pytest.skip("F-39: GraphBuilder pending Milestone M5")
+            pytest.skip("F-39: GraphBuilder pending implementation")
         assert hasattr(bld_mod.GraphBuilder, "build_graph")
 
     def test_i13_api_constants_defaults_engine_builder(self):
@@ -166,7 +166,7 @@ class TestCrossFeatureInteractions:
         api_const = _try_import("carefold.constants.api")
         def_const = _try_import("carefold.constants.defaults")
         if api_const is None or def_const is None:
-            pytest.skip("M1 Constants pending Milestone M1")
+            pytest.skip("M1 Constants pending implementation")
         assert hasattr(api_const, "CHAT_ENDPOINT")
         assert hasattr(def_const, "MAX_FILE_SIZE_BYTES") or hasattr(def_const, "MAX_ATTACHMENT_SIZE")
 

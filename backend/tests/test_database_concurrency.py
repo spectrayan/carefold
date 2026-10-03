@@ -13,15 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Milestone M17 Concurrency, Boundary Conditions, and Database Lock Resilience Stress Suite.
-
-Empirical Challenger: m17_challenger_2
+"""Database Concurrency, Boundary Conditions, and Lock Resilience Suite.
 Scope:
 1. High-concurrency simultaneous load:
    - 50 concurrent async tasks reading/writing memories across 50 distinct namespaces.
    - 30 concurrent catalog search and indexing operations running simultaneously against SQLite.
    - Verifies PRAGMA WAL mode, busy timeout, and write retry resilience.
-2. Direct empirical verification of _run_write_with_retry:
+2. Verification of _run_write_with_retry:
    - Eliminates transient aiosqlite / sqlite3 "database is locked" and "database is busy" errors.
    - Exponential backoff progression.
    - Re-raising upon max retries exhaustion.
@@ -650,12 +648,12 @@ async def test_adversarial_queries_and_payloads_under_concurrency(tmp_path: Path
 
 
 # ==============================================================================
-# 7. Empirical Comparison: Bare Write (Locks) vs _run_write_with_retry (Absorbs & Succeeds)
+# 7. Comparison: Bare Write (Locks) vs _run_write_with_retry (Absorbs & Succeeds)
 # ==============================================================================
 
 @pytest.mark.asyncio
-async def test_empirical_comparison_bare_write_vs_retry_elimination(tmp_path: Path) -> None:
-    """Empirically prove that without retry, lock conflicts cause OperationalError,
+async def test_comparison_bare_write_vs_retry_elimination(tmp_path: Path) -> None:
+    """Proves that without retry, lock conflicts cause OperationalError,
     whereas _run_write_with_retry absorbs the conflict and succeeds.
     """
     db_file = tmp_path / "comparative_lock_proof.db"
@@ -878,9 +876,9 @@ if __name__ == "__main__":
             await test_adversarial_queries_and_payloads_under_concurrency(temp_dir / "t6")
             print(f" -> PASSED in {time.perf_counter() - t0:.2f}s")
 
-            print("\n[Test 7/9] Empirical Comparison: Bare Write (Locks) vs Retry Elimination...")
+            print("\n[Test 7/9] Comparison: Bare Write (Locks) vs Retry Elimination...")
             t0 = time.perf_counter()
-            await test_empirical_comparison_bare_write_vs_retry_elimination(temp_dir / "t7")
+            await test_comparison_bare_write_vs_retry_elimination(temp_dir / "t7")
             print(f" -> PASSED in {time.perf_counter() - t0:.2f}s")
 
             print("\n[Test 8/9] 150-Task High Concurrency Burst (100 Memory + 50 Catalog)...")

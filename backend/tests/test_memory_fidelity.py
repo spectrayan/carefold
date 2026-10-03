@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Milestone M14 Empirical Challenger 4 Test Suite.
+"""SqliteMemoryAdapter Payload Fidelity and Factory Test Suite.
 
-Adversarial stress-testing of remediated SqliteMemoryAdapter and factory.py:
+Adversarial stress-testing of SqliteMemoryAdapter and factory.py:
 1. Payload type fidelity (JSON string vs dict, int vs str, bool vs str, float vs str, etc.)
 2. reinforce() with non-finite floats (NaN, +Inf, -Inf -> ValueError) and boundary deltas
 3. create_memory_port / create_catalog_port with whitespace ("  "), None, and unsupported backend strings

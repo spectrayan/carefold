@@ -126,19 +126,17 @@ class TestEmergencyRedFlagsNegations:
         "Negative for severe chest pain.",
     ])
     def test_reproduce_qualified_negation_false_positive_defect(self, prompt: str):
-        """EMPIRICAL DEFECT DEMONSTRATION (M2-DEFECT-01):
-
-        When a user negates an emergency with a qualifying adjective (e.g. 'crushing', 'severe'),
+        """When a user negates an emergency with a qualifying adjective (e.g. 'crushing', 'severe'),
         the current regex in NEGATION_PATTERNS fails to match due to rigid whitespace/phrase structure.
         The subsequent CHEST_PATTERNS then catches the adjective+noun and incorrectly generates
         a FALSE POSITIVE emergency red flag for an explicitly negated symptom.
         """
         flag = check_emergency_red_flags(prompt)
-        # Document current empirical defect: flag is unexpectedly NOT None
+        # Document current limitation: flag is unexpectedly NOT None
         assert flag is not None, "Demonstrates current flaw: qualified negation fails to suppress red flag"
         assert flag.category == "acute_chest_pain"
 
-    @pytest.mark.xfail(reason="M2-DEFECT-01: Qualified negations currently cause false-positive emergency red flags")
+    @pytest.mark.xfail(reason="Qualified negations currently cause false-positive emergency red flags")
     @pytest.mark.parametrize("prompt", [
         "I do not have crushing chest pain.",
         "I don't have severe chest tightness.",
@@ -185,18 +183,16 @@ class TestEmergencyRedFlagsMaskingVulnerabilities:
         ),
     ])
     def test_reproduce_global_masking_false_negative_defect(self, prompt: str, expected_emergency_category: str):
-        """EMPIRICAL DEFECT DEMONSTRATION (M2-DEFECT-02):
-
-        `check_emergency_red_flags` evaluates NEGATION_PATTERNS globally across the entire string.
+        """`check_emergency_red_flags` evaluates NEGATION_PATTERNS globally across the entire string.
         If a negation pattern matches ANY symptom (e.g. 'no chest pain') or ANY temporal phrase
         ('years ago', 'months ago') anywhere in the prompt, Step 1 returns None immediately.
         This completely MASKS an acute, life-threatening emergency in the same prompt.
         """
         flag = check_emergency_red_flags(prompt)
-        # Document current empirical defect: returns None despite active emergency
+        # Document current limitation: returns None despite active emergency
         assert flag is None, "Demonstrates current flaw: global negation suppresses acute emergency detection"
 
-    @pytest.mark.xfail(reason="M2-DEFECT-02: Global negation/temporal matching masks real co-occurring acute emergencies")
+    @pytest.mark.xfail(reason="Global negation/temporal matching masks real co-occurring acute emergencies")
     @pytest.mark.parametrize("prompt, expected_emergency_category", [
         (
             "Patient has no chest pain, but has slurred speech and facial droop.",
@@ -244,17 +240,15 @@ class TestEmergencyRedFlagsTerminologyGaps:
         "I think I'm having a stroke right now",
     ])
     def test_reproduce_direct_stroke_keyword_gap(self, prompt: str):
-        """EMPIRICAL DEFECT DEMONSTRATION (M2-DEFECT-03):
-
-        The keyword 'stroke' appears only in NEGATION_PATTERNS to suppress historical mentions.
+        """The keyword 'stroke' appears only in NEGATION_PATTERNS to suppress historical mentions.
         It is completely absent from STROKE_PATTERNS. Thus, a direct statement like
         'I am having a stroke' is not caught by `check_emergency_red_flags`.
         """
         flag = check_emergency_red_flags(prompt)
-        # Document current empirical defect: returns None
+        # Document current limitation: returns None
         assert flag is None, "Demonstrates current flaw: affirmative 'stroke' keyword is not detected"
 
-    @pytest.mark.xfail(reason="M2-DEFECT-03: Direct affirmative 'stroke' keyword is omitted from STROKE_PATTERNS")
+    @pytest.mark.xfail(reason="Direct affirmative 'stroke' keyword is omitted from STROKE_PATTERNS")
     @pytest.mark.parametrize("prompt", [
         "I am having a stroke",
         "Help, my husband is having a stroke",

@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Milestone 5 Adversarial Challenger Test Suite.
+"""Workflow Resilience, State Persistence, and Error Recovery Test Suite.
 
-Empirically verifies and stress-tests:
+Verifies and stress-tests:
 1. AgentExecutionService async SSE streaming and simulated client disconnect (asyncio.CancelledError).
 2. Thread state persistence across multiple turns using SqliteSaver and MemorySaver,
    plus thread isolation under concurrency and clear_thread_state behavior.
@@ -289,8 +289,8 @@ class TestThreadStatePersistence:
                     assert other_secret not in all_text, f"State leaked from {other_tid} into {tid}!"
 
     @pytest.mark.asyncio
-    async def test_clear_thread_state_empirical_behavior(self, temp_workspace: Path):
-        """Empirically documents clear_thread_state behavior on active threads."""
+    async def test_clear_thread_state_behavior(self, temp_workspace: Path):
+        """Documents clear_thread_state behavior on active threads."""
         mock = MockModelClient()
         mock.queue_response("State to clear.")
         service = AgentExecutionService(model=mock, workspace_root=temp_workspace)

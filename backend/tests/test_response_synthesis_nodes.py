@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Test Suite for Response Synthesis & Output Guardrail Nodes.
+"""Adversarial Test Suite for Response Synthesis & Output Guardrail Nodes.
 
 Targets:
 - ResponseSynthesizerNode (Phase 5 of Orchestrator-Driven Architecture)

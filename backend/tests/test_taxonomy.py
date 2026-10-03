@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Challenger Test Suite for Milestone M12 (Agent & Skill Taxonomy).
+"""Agent & Skill Taxonomy Schema and Validation Test Suite.
 
-Empirically tests and stress-tests:
+Tests and stress-tests:
 1. Schema & Enum Validation (AgentDomain & AgentMaturity):
    - Valid enums, edge case strings, and invalid enum values.
    - Pydantic ValidationError enforcement across all 7 manifest and API models.

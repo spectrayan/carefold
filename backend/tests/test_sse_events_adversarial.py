@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Adversarial challenger test suite for Milestone 7 (M7).
+"""Adversarial Test Suite for SSE Streaming and Thread State Isolation.
 
 Aggressively tests:
 1. SQLite Checkpointing & Server Restart Simulation:
@@ -778,7 +778,7 @@ async def test_stream_never_leaks_internal_suggestion_or_orchestrator_tokens(tem
     from carefold.engine.builder import GraphBuilder
     from carefold.engine.service import AgentExecutionService
 
-    class StreamingLeakageChallengerModel(BaseChatModel):
+    class StreamingLeakageTestModel(BaseChatModel):
         def _generate(self, messages, stop=None, run_manager=None, **kwargs):
             raise NotImplementedError
 
@@ -800,9 +800,9 @@ async def test_stream_never_leaks_internal_suggestion_or_orchestrator_tokens(tem
 
         @property
         def _llm_type(self) -> str:
-            return "streaming-leakage-challenger"
+            return "streaming-leakage-test"
 
-    model = StreamingLeakageChallengerModel()
+    model = StreamingLeakageTestModel()
     svc = AgentExecutionService()
     gb = GraphBuilder().with_model(model).with_suggestion_model(model)
     svc.graph = gb.build()

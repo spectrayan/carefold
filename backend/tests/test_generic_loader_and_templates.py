@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical test suite verifying domain-agnostic loader architecture and Handlebars prompt templating.
+"""Test suite verifying domain-agnostic loader architecture and Handlebars prompt templating.
 
 Verifies:
 1. Handlebars TemplateEngine rendering with helper functions (join, eq, upper, lower, etc.).

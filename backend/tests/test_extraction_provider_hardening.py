@@ -15,7 +15,7 @@
 
 """Tier 5 Adversarial Coverage Hardening Test Suite.
 
-Milestone 7 Phase 2: White-box adversarial stress tests for:
+White-box adversarial stress tests for:
 - PII sanitization and adversarial evasion attempts (diacritics, zero-width spaces, phone extensions, clinical terms)
 - Numerical grounding validator attacks (percentages vs currency, transposed decimals, float tolerance, negative values)
 - Model provider factory & provider strategies (missing env vars, malformed endpoints, invalid models, timeouts)

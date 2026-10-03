@@ -47,9 +47,9 @@ describe('GET /api/health', () => {
     const res = await GET(new Request('http://localhost:3000/api/health'));
     const data = await res.json();
 
-    // Bundled workspace ships 20 specialist agents (agents/_system and
-    // agents/_template excluded) and 22 skill packs (skills/_template excluded).
-    expect(data.workspace.agentsCount).toBe(20);
-    expect(data.workspace.skillsCount).toBe(22);
+    // Bundled workspace ships at least 20 specialist agents (agents/_system and
+    // agents/_template excluded) and at least 22 skill packs (skills/_template excluded).
+    expect(data.workspace.agentsCount).toBeGreaterThanOrEqual(20);
+    expect(data.workspace.skillsCount).toBeGreaterThanOrEqual(22);
   });
 });

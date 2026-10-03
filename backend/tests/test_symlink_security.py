@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Adversarial Challenger Test Harness for Internal Symlink Overwrite & Dangling Symlink Resilience.
+"""Security Test Suite for Internal Symlink Overwrite & Dangling Symlink Resilience.
 
 Tests:
 1. Internal symlinks (absolute, relative, multi-hop) targeting existing notes in workspace/notes/
@@ -39,9 +39,9 @@ from carefold.tools.workspace_note import execute_workspace_note
 
 
 class Context:
-    def __init__(self, ws: Path | str, agent_id: str = "challenger-agent"):
+    def __init__(self, ws: Path | str, agent_id: str = "security-test-agent"):
         self.workspace_root = ws
-        self.agent = AgentManifest(id=agent_id, title="Challenger", persona="Role")
+        self.agent = AgentManifest(id=agent_id, title="SecurityTest", persona="Role")
 
 
 @pytest.fixture

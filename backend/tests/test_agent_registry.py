@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for declarative AgentRegistry and catalog formatting (Milestone 6)."""
+"""Tests for declarative AgentRegistry and catalog formatting."""
 
 from pathlib import Path
 import pytest

@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Challenger Test Suite for Milestone 7 (M7 / Requirement R2).
+"""Adversarial Test Suite for Clinical Safety and Tool Allow-List Enforcement.
 
-Empirically tests and documents:
+Tests and documents:
 1. Tool Allow-List Enforcement & Bounding:
    - Arbitrary system tool invocation attempts (bash, sh, subprocess, rm_rf).
    - Phase 0 tool allow-list boundaries per agent (habit-companion blocking attach-read/skill-docs; benefits-guide blocking workspace-note; _template blocking all tools).
@@ -24,10 +24,10 @@ Empirically tests and documents:
 2. Clinical Safety Refusal & Stealth Evasion Vulnerabilities:
    - Successful refusal of direct/overt diagnostic and dosing queries.
    - Post-generation safety refusal and disarming of simultaneous tool calls.
-   - EMPIRICAL EVASION VULNERABILITIES: Stealth phrasings that bypass the pre-generation refusal gate.
+   - EVASION VULNERABILITIES: Stealth phrasings that bypass the pre-generation refusal gate.
 3. Concurrent Graph Execution & SQLite Locking Vulnerability:
    - Multi-agent permission isolation under concurrency.
-   - EMPIRICAL CONCURRENCY VULNERABILITY: SQLite operational lock conflict under concurrent request setup.
+   - CONCURRENCY VULNERABILITY: SQLite operational lock conflict under concurrent request setup.
 """
 
 from __future__ import annotations

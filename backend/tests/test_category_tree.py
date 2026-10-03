@@ -13,9 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical challenger test suite for Milestone M14: Category Tree, Factory Resolution, and Concurrency.
-
-Challenger: Challenger 2 (teamwork_preview_challenger)
+"""Category Tree, Factory Resolution, and Database Concurrency Test Suite.
 Scope:
 1. Category tree hierarchy (0 agents, 1 agent, many agents, canonical domains, multi-level dot categories)
 2. Factory & Settings (sqlite backend, NotImplementedError on spector/postgres, ValueError on invalid, reset_memory_ports)

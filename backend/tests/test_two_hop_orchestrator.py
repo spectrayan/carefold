@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit and integration tests for Two-Hop Orchestrator Routing (Milestone M15 / Requirement R3).
+"""Unit and integration tests for Two-Hop Orchestrator Routing.
 
 Verifies:
 1. DomainClassification schema fields and defaults.

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical stress harness for ResponseSynthesizerNode and Structured Audit Logging.
+"""Stress harness for ResponseSynthesizerNode and Structured Audit Logging.
 
 Tests:
 1. ResponseSynthesizerNode:
