@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Challenge Suite for Milestone M5.
+"""Empirical Adversarial Test Suite for Response Synthesis & Output Guardrail Nodes.
 
 Targets:
 - ResponseSynthesizerNode (Phase 5 of Orchestrator-Driven Architecture)
@@ -39,7 +39,7 @@ from carefold.workflows.nodes.response_synthesizer_node import (
 )
 
 
-class TestM5ConflictingCardiorenalSynthesis:
+class TestConflictingCardiorenalSynthesis:
     """Adversarially challenges ResponseSynthesizerNode with conflicting cardiorenal guidance."""
 
     def test_conflicting_cardiorenal_guidance_synthesis(self):
@@ -161,7 +161,7 @@ class TestM5ConflictingCardiorenalSynthesis:
         assert "Please consult your physician before altering" not in output
 
 
-class TestM5ZeroBodyAuditLogging:
+class TestZeroBodyAuditLogging:
     """Adversarially challenges Zero-Body structured audit logging in ResponseSynthesizerNode."""
 
     @pytest.mark.asyncio
@@ -258,7 +258,7 @@ class TestM5ZeroBodyAuditLogging:
             assert "# Patient Consultation Master Agenda" in entry["completion"]
 
 
-class TestM5PipelineSafetyIntercept:
+class TestPipelineSafetyIntercept:
     """Tests the interaction between ResponseSynthesizerNode and OutputGuardrailNode."""
 
     @pytest.mark.asyncio
@@ -292,7 +292,7 @@ class TestM5PipelineSafetyIntercept:
         assert guard_result["next_step"] == "reflection"
 
 
-class TestM5EdgeCasesAndAdversarialVariations:
+class TestEdgeCasesAndAdversarialVariations:
     """Stress tests and boundary condition mining for ResponseSynthesizerNode."""
 
     def test_single_agent_output_strips_disclaimer_and_appends_canonical(self):

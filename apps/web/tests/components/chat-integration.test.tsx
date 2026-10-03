@@ -53,7 +53,7 @@ const mockAgents: AgentSummary[] = [
   }
 ];
 
-describe('ChatClient M8 Integration (Suggestions, ThreadId, Model & Settings)', () => {
+describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.stubGlobal('fetch', vi.fn());

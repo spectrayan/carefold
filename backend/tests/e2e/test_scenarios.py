@@ -43,7 +43,7 @@ def _try_import(module_path: str, symbol_name: Optional[str] = None) -> Any:
         return None
 
 
-class TestTier4RealWorldScenarios:
+class TestRealWorldScenarios:
     """Complete end-to-end user journey workflows."""
 
     def test_scenario_1_patient_annual_wellness_prep_journey(

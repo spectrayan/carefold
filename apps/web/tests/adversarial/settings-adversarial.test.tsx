@@ -34,7 +34,7 @@ import {
 import { ModelSelector } from '@/components/ModelSelector';
 import { SettingsModal } from '@/components/SettingsModal';
 
-describe('Adversarial Challenger 1: Settings & Model Selection (M8 / R3)', () => {
+describe('Adversarial Suite: Settings & Model Selection', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.restoreAllMocks();

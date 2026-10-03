@@ -65,7 +65,7 @@ function createControlledStream() {
   return { response, sendEvent, closeStream };
 }
 
-describe('M11 Challenger 2 Adversarial Stress Suite: Composer Keyboard & Height Boundaries', () => {
+describe('Adversarial Stress Suite: Composer Keyboard & Height Boundaries', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response('{}', { status: 200 }))));
@@ -415,7 +415,7 @@ describe('M11 Challenger 2 Adversarial Stress Suite: Composer Keyboard & Height 
   });
 });
 
-describe('M11 Challenger 2 Adversarial Stress Suite: Scroll Anti-Hijacking & Unread Counter', () => {
+describe('Adversarial Stress Suite: Scroll Anti-Hijacking & Unread Counter', () => {
   let scrollIntoViewSpy: any;
 
   beforeEach(() => {

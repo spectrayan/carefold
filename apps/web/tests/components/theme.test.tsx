@@ -37,7 +37,7 @@ function ThemeConsumerTest() {
   );
 }
 
-describe('Multi-Theme System (Requirement R1, Features 54, 55, 57)', () => {
+describe('Multi-Theme System', () => {
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.className = '';

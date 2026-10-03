@@ -25,7 +25,7 @@ import { MessageToolbar } from '@/components/chat/MessageToolbar';
 import { CodeBlock, normalizeLanguage, tokenizeCode } from '@/components/chat/CodeBlock';
 import { SAFE_REFUSAL_TEMPLATE } from '@/types/api';
 
-describe('Adversarial Challenge: Milestone M9 Layout, Toolbars & Code Blocks', () => {
+describe('Adversarial Challenge: Layout, Toolbars & Code Blocks', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -231,7 +231,7 @@ describe('Adversarial Challenge: Milestone M9 Layout, Toolbars & Code Blocks', (
       'apps/web/src/components/chat/CodeBlock.tsx'
     ];
 
-    it('verifies ZERO invalid Tailwind CSS v3 classes exist in any M9 files', () => {
+    it('verifies ZERO invalid Tailwind CSS v3 classes exist in layout files', () => {
       const repoRoot = path.resolve(__dirname, '../../../../');
       const violations: Array<{ file: string; line: number; match: string }> = [];
 

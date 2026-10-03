@@ -61,7 +61,7 @@ function calculateContrastRatio(hex1: string, hex2: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-describe('M8 Challenger: Adversarial Stress-Testing for Multi-Theme & Contrast System', () => {
+describe('Adversarial Stress-Testing for Multi-Theme & Contrast System', () => {
   let mockMatchMediaListeners: Array<(e: any) => void> = [];
   let isOsDark = false;
 

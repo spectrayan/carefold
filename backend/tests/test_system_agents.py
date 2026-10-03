@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Standalone Automated Test Suite for Milestone M4 (System Infrastructure & Safety Agents).
+"""Standalone Automated Test Suite for System Infrastructure & Safety Agents Verification Suite.
 
 Verifies:
 1. System Infrastructure Agents Location & Manifest Specification:
@@ -88,7 +88,7 @@ from evals.runner import EvalCase, run_single_eval
 # Authoritative System Agent Specifications
 # ============================================================================
 
-M4_SYSTEM_AGENTS: Dict[str, Dict[str, Any]] = {
+SYSTEM_AGENTS_SPEC: Dict[str, Dict[str, Any]] = {
     "triage-auditor": {
         "title": "Automated Triage Auditor",
         "domain": AgentDomain.CLINICAL,
@@ -149,10 +149,10 @@ def test_client() -> TestClient:
 # 1. Manifest & Directory Structure Conformance
 # ============================================================================
 
-class TestM4SystemAgentsSpecification:
+class TestSystemAgentsSpecification:
     """Verifies directory placement, manifest schema, and system agent restrictions."""
 
-    @pytest.mark.parametrize("agent_id,expected", M4_SYSTEM_AGENTS.items())
+    @pytest.mark.parametrize("agent_id,expected", SYSTEM_AGENTS_SPEC.items())
     def test_system_agents_reside_strictly_in_system_dir(self, repo_root: Path, agent_id: str, expected: Dict[str, Any]):
         """System agents must reside in agents/_system/ and NEVER in top-level agents/."""
         system_dir = repo_root / "agents" / "_system" / agent_id
@@ -162,7 +162,7 @@ class TestM4SystemAgentsSpecification:
         assert not top_level_dir.exists(), f"System agent '{agent_id}' must NOT exist in top-level agents directory: {top_level_dir}"
         assert (system_dir / "agent.yaml").is_file(), f"Missing agent.yaml in {system_dir}"
 
-    @pytest.mark.parametrize("agent_id,expected", M4_SYSTEM_AGENTS.items())
+    @pytest.mark.parametrize("agent_id,expected", SYSTEM_AGENTS_SPEC.items())
     def test_system_agents_manifest_conformance(self, repo_root: Path, agent_id: str, expected: Dict[str, Any]):
         """System agents must have hidden=True, empty skills, empty tools, and risk_class=admin."""
         system_dir = repo_root / "agents" / "_system" / agent_id
@@ -191,10 +191,10 @@ class TestM4SystemAgentsSpecification:
 # 2. Persona Deep Validation (Requirement R5)
 # ============================================================================
 
-class TestM4SystemAgentsPersonas:
+class TestSystemAgentsPersonas:
     """Verifies persona length, mandatory uppercase headers, and safety boundaries."""
 
-    @pytest.mark.parametrize("agent_id", list(M4_SYSTEM_AGENTS.keys()))
+    @pytest.mark.parametrize("agent_id", list(SYSTEM_AGENTS_SPEC.keys()))
     def test_persona_word_count_and_mandatory_headers(self, repo_root: Path, agent_id: str):
         """Persona must be >= 250 words and include all 5 uppercase headers verbatim."""
         system_dir = repo_root / "agents" / "_system" / agent_id
@@ -211,7 +211,7 @@ class TestM4SystemAgentsPersonas:
                 f"Agent '{agent_id}' persona missing mandatory header '{header}'"
             )
 
-    @pytest.mark.parametrize("agent_id", list(M4_SYSTEM_AGENTS.keys()))
+    @pytest.mark.parametrize("agent_id", list(SYSTEM_AGENTS_SPEC.keys()))
     def test_persona_safety_boundaries_and_emergency_clauses(self, repo_root: Path, agent_id: str):
         """Persona must explicitly forbid clinical diagnosis/prescribing and mandate 911/emergency escalation."""
         system_dir = repo_root / "agents" / "_system" / agent_id
@@ -236,7 +236,7 @@ class TestM4SystemAgentsPersonas:
 # 3. Loaders & Registry Discovery
 # ============================================================================
 
-class TestM4SystemAgentsLoadersAndRegistry:
+class TestSystemAgentsLoadersAndRegistry:
     """Verifies discovery and indexing by load_all_agents() and AgentRegistry."""
 
     def test_load_all_agents_discovers_system_agents_as_hidden(self, repo_root: Path):
@@ -247,7 +247,7 @@ class TestM4SystemAgentsLoadersAndRegistry:
         summaries = load_all_agents(agents_dir, skills_dir)
         by_id = {s.id: s for s in summaries}
 
-        for agent_id, expected in M4_SYSTEM_AGENTS.items():
+        for agent_id, expected in SYSTEM_AGENTS_SPEC.items():
             assert agent_id in by_id, f"System agent '{agent_id}' not discovered by load_all_agents()"
             summary = by_id[agent_id]
             assert summary.hidden is True
@@ -264,7 +264,7 @@ class TestM4SystemAgentsLoadersAndRegistry:
         skills_dir = repo_root / "skills"
         registry = AgentRegistry(agents_dir, skills_dir)
 
-        for agent_id, expected in M4_SYSTEM_AGENTS.items():
+        for agent_id, expected in SYSTEM_AGENTS_SPEC.items():
             assert registry.has_agent(agent_id) is True
             assert agent_id in registry
 
@@ -288,7 +288,7 @@ class TestM4SystemAgentsLoadersAndRegistry:
 # 4. SqliteCatalogAdapter Indexing & Hidden Filtering
 # ============================================================================
 
-class TestM4SystemAgentsCatalogIndexing:
+class TestSystemAgentsCatalogIndexing:
     """Verifies SQLite catalog indexing, hidden agent counting, FTS5 retrieval, and category tree."""
 
     @pytest.mark.asyncio
@@ -324,7 +324,7 @@ class TestM4SystemAgentsCatalogIndexing:
         assert edu_all[0].id == "quality-reviewer"
 
         # FTS5 full-text search filtering
-        for agent_id, expected in M4_SYSTEM_AGENTS.items():
+        for agent_id, expected in SYSTEM_AGENTS_SPEC.items():
             query_term = expected["fts_query"]
             fts_public = await catalog.search_agents(query=query_term, include_hidden=False)
             fts_all = await catalog.search_agents(query=query_term, include_hidden=True)
@@ -349,7 +349,7 @@ class TestM4SystemAgentsCatalogIndexing:
 # 5. Marketplace REST API Endpoints
 # ============================================================================
 
-class TestM4SystemAgentsApiEndpoints:
+class TestSystemAgentsApiEndpoints:
     """Verifies public API exclusion, include_hidden param, 404 on _system, and detail endpoints."""
 
     def test_api_list_agents_excludes_system_by_default(self, test_client: TestClient):
@@ -359,7 +359,7 @@ class TestM4SystemAgentsApiEndpoints:
         data = response.json()
         ids = [a["id"] for a in data]
 
-        for agent_id in M4_SYSTEM_AGENTS.keys():
+        for agent_id in SYSTEM_AGENTS_SPEC.keys():
             assert agent_id not in ids, f"System agent '{agent_id}' must NOT be present in default GET /api/agents"
 
     def test_api_list_agents_includes_system_with_param(self, test_client: TestClient):
@@ -369,7 +369,7 @@ class TestM4SystemAgentsApiEndpoints:
         data = response.json()
         by_id = {a["id"]: a for a in data}
 
-        for agent_id, expected in M4_SYSTEM_AGENTS.items():
+        for agent_id, expected in SYSTEM_AGENTS_SPEC.items():
             assert agent_id in by_id, f"System agent '{agent_id}' missing in GET /api/agents?include_hidden=true"
             agent_data = by_id[agent_id]
             assert agent_data["hidden"] is True
@@ -383,7 +383,7 @@ class TestM4SystemAgentsApiEndpoints:
         response = test_client.get("/api/agents/_system")
         assert response.status_code == HTTP_404_NOT_FOUND
 
-    @pytest.mark.parametrize("agent_id,expected", M4_SYSTEM_AGENTS.items())
+    @pytest.mark.parametrize("agent_id,expected", SYSTEM_AGENTS_SPEC.items())
     def test_api_get_agent_detail_resolves_system_agent(self, test_client: TestClient, agent_id: str, expected: Dict[str, Any]):
         """GET /api/agents/{agent_id} resolves system agents directly and returns hidden=True."""
         response = test_client.get(f"/api/agents/{agent_id}")
@@ -405,10 +405,10 @@ class TestM4SystemAgentsApiEndpoints:
 # 6. Offline Evaluation Engine Compatibility (`evals/runner.py`)
 # ============================================================================
 
-class TestM4SystemAgentsEvalCompatibility:
+class TestSystemAgentsEvalCompatibility:
     """Verifies that offline evals and safety refusal checks run on system agents without errors."""
 
-    @pytest.mark.parametrize("agent_id", list(M4_SYSTEM_AGENTS.keys()))
+    @pytest.mark.parametrize("agent_id", list(SYSTEM_AGENTS_SPEC.keys()))
     @pytest.mark.asyncio
     async def test_offline_eval_benign_prompt_allows_execution(self, repo_root: Path, agent_id: str):
         """Benign navigation/review queries execute cleanly with empty tool calls."""
@@ -425,7 +425,7 @@ class TestM4SystemAgentsEvalCompatibility:
         assert "Allowed and executed correctly" in msg
         assert "Tools: []" in msg
 
-    @pytest.mark.parametrize("agent_id", list(M4_SYSTEM_AGENTS.keys()))
+    @pytest.mark.parametrize("agent_id", list(SYSTEM_AGENTS_SPEC.keys()))
     @pytest.mark.asyncio
     async def test_offline_eval_clinical_safety_refusal_triggered(self, repo_root: Path, agent_id: str):
         """Prescription dosing prompts trigger safety refusal gates and substitute SAFE_REFUSAL_TEMPLATE."""
@@ -446,10 +446,10 @@ class TestM4SystemAgentsEvalCompatibility:
 # 7. Execution Service & Audit Logging
 # ============================================================================
 
-class TestM4SystemAgentsExecutionAndAudit:
+class TestSystemAgentsExecutionAndAudit:
     """Verifies streaming execution turns, tool isolation, and audit events."""
 
-    @pytest.mark.parametrize("agent_id", list(M4_SYSTEM_AGENTS.keys()))
+    @pytest.mark.parametrize("agent_id", list(SYSTEM_AGENTS_SPEC.keys()))
     @pytest.mark.asyncio
     async def test_execute_agent_run_streaming_and_no_tools(self, repo_root: Path, agent_id: str):
         """execute_agent_run streams tokens, executes zero tools, and emits terminal done event."""

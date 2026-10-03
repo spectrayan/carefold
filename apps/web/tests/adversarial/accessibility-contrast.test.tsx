@@ -68,7 +68,7 @@ function calculateContrastRatio(hex1: string, hex2: string): number {
 // ADVERSARIAL STRESS TEST SUITE
 // =============================================================================
 
-describe('Milestone M8 Empirical Challenger: Contrast, Accessibility & Resilience', () => {
+describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () => {
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.className = '';
@@ -393,7 +393,7 @@ describe('Milestone M8 Empirical Challenger: Contrast, Accessibility & Resilienc
       'apps/web/src/lib/theme.ts'
     ];
 
-    it('confirms ZERO invalid Tailwind classes exist in any M8 modified components', () => {
+    it('confirms ZERO invalid Tailwind classes exist in any modified components', () => {
       const repoRoot = path.resolve(__dirname, '../../../../');
       const foundViolations: Array<{ file: string; line: number; match: string }> = [];
 
@@ -419,7 +419,7 @@ describe('Milestone M8 Empirical Challenger: Contrast, Accessibility & Resilienc
       expect(foundViolations).toEqual([]);
     });
 
-    it('identifies unmigrated invalid Tailwind classes across entire apps/web/src tree for M9/M10 tracking', () => {
+    it('identifies unmigrated invalid Tailwind classes across entire apps/web/src tree', () => {
       const webAppRoot = path.resolve(__dirname, '../../');
       const srcDir = path.join(webAppRoot, 'src');
 

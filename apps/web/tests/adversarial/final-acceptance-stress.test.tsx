@@ -44,7 +44,7 @@ function ThemeStressConsumer() {
   );
 }
 
-describe('M11 Final E2E Acceptance & Adversarial Stress Test Suite', () => {
+describe('Final E2E Acceptance & Adversarial Stress Test Suite', () => {
   let isOsDark = false;
   let matchMediaListeners: Array<(e: any) => void> = [];
 

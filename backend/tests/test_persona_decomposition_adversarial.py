@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Challenger Test Suite for Milestone M2 (Root Profile & Agent Decomposition).
+"""Empirical Adversarial Test Suite for Root Profile & Agent Persona Decomposition.
 
 Adversarial Stress Invariants:
 1. Decomposed Persona Integrity:

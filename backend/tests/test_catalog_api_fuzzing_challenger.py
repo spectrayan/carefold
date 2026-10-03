@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""End-to-End Adversarial Challenge Suite (Milestone M17).
+"""End-to-End Adversarial Challenge Suite for Catalog API Fuzzing & SQL Injection.
 
 Empirically tests the entire integrated lifecycle:
 1. Filesystem agent & skill loading (including _system/ separation, template skipping, and taxonomy metadata).
@@ -72,7 +72,7 @@ from tests.fixtures.fake_model import FakeListChatModel
 # Part 1: Filesystem Loading & Metadata Verification
 # ============================================================================
 
-def test_m17_filesystem_agent_loading_and_taxonomy_metadata(repo_root: Path):
+def test_filesystem_agent_loading_and_taxonomy_metadata(repo_root: Path):
     """Verify loading directly from filesystem respects _system separation and extracts rich taxonomy."""
     agents_dir = repo_root / "agents"
     skills_dir = repo_root / "skills"
@@ -139,7 +139,7 @@ def test_m17_filesystem_agent_loading_and_taxonomy_metadata(repo_root: Path):
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_m17_catalog_indexing_and_category_tree_parity(repo_root: Path, tmp_path: Path):
+async def test_catalog_indexing_and_category_tree_parity(repo_root: Path, tmp_path: Path):
     """Verify SqliteCatalogAdapter indexes all agents and taxonomy tree parity with filesystem."""
     agents_dir = repo_root / "agents"
     skills_dir = repo_root / "skills"
@@ -223,7 +223,7 @@ async def test_m17_catalog_indexing_and_category_tree_parity(repo_root: Path, tm
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_m17_adversarial_fts_query_sanitization_and_sql_injection(tmp_path: Path):
+async def test_adversarial_fts_query_sanitization_and_sql_injection(tmp_path: Path):
     """Adversarially challenge FTS5 query parser with injection payloads and hostile text."""
     catalog = SqliteCatalogAdapter(db_path=tmp_path / "adversarial_fts.db")
 
@@ -297,7 +297,7 @@ def make_manifest(
 
 
 @pytest.mark.asyncio
-async def test_m17_two_hop_routing_across_all_five_domains(tmp_path: Path):
+async def test_two_hop_routing_across_all_five_domains(tmp_path: Path):
     """Empirically test Tier-1 classification and Tier-2 candidate retrieval across all 5 domains."""
     catalog = SqliteCatalogAdapter(db_path=tmp_path / "all_domains.db")
 
@@ -397,7 +397,7 @@ async def test_m17_two_hop_routing_across_all_five_domains(tmp_path: Path):
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_m17_adversarial_two_hop_fallback_chain(tmp_path: Path):
+async def test_adversarial_two_hop_fallback_chain(tmp_path: Path):
     """Stress-test the full 4-step fallback chain under degraded/hostile conditions."""
     catalog = SqliteCatalogAdapter(db_path=tmp_path / "fallback_chain.db")
 
@@ -440,7 +440,7 @@ async def test_m17_adversarial_two_hop_fallback_chain(tmp_path: Path):
 # Part 6: FastAPI REST Endpoints & Schema Validation
 # ============================================================================
 
-def test_m17_fastapi_endpoints_schemas_and_filters(client: TestClient):
+def test_fastapi_endpoints_schemas_and_filters(client: TestClient):
     """Empirically test /api/agents/categories, /api/agents, and /api/skills endpoints."""
 
     # 1. GET /api/agents/categories
@@ -568,7 +568,7 @@ def test_m17_fastapi_endpoints_schemas_and_filters(client: TestClient):
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_m17_adversarial_candidate_limit_and_concurrency(tmp_path: Path):
+async def test_adversarial_candidate_limit_and_concurrency(tmp_path: Path):
     """Verify candidate list is strictly capped at <= 8 and concurrent routing does not lock/corrupt catalog."""
     import asyncio
     catalog = SqliteCatalogAdapter(db_path=tmp_path / "candidate_limit.db")
@@ -626,7 +626,7 @@ async def test_m17_adversarial_candidate_limit_and_concurrency(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_m17_adversarial_malformed_llm_markdown_and_hallucinations(tmp_path: Path):
+async def test_adversarial_malformed_llm_markdown_and_hallucinations(tmp_path: Path):
     """Stress-test markdown json extraction, unparseable LLM output, and hallucinated candidate IDs."""
     catalog = SqliteCatalogAdapter(db_path=tmp_path / "markdown_test.db")
 
@@ -659,7 +659,7 @@ async def test_m17_adversarial_malformed_llm_markdown_and_hallucinations(tmp_pat
         await catalog.close()
 
 
-def test_m17_adversarial_api_fuzzing_and_malicious_query_params(client: TestClient):
+def test_adversarial_api_fuzzing_and_malicious_query_params(client: TestClient):
     """Fuzz API query parameters to ensure schema safety, injection resistance, and proper error codes."""
     # 1. Negative or 0 page / per_page must return 422 Unprocessable Entity
     assert client.get("/api/agents?page=0").status_code == 422

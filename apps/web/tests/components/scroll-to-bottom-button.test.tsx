@@ -54,7 +54,7 @@ function createMockSSEResponse(events: Array<{ event?: string; data: Record<stri
   });
 }
 
-describe('ScrollToBottomButton Component (R5 / F-64)', () => {
+describe('ScrollToBottomButton Component', () => {
   it('applies opacity-0 and pointer-events-none when visible is false', () => {
     const { container } = render(<ScrollToBottomButton visible={false} onClick={vi.fn()} />);
     const wrapper = container.firstChild as HTMLElement;
@@ -123,7 +123,7 @@ describe('ScrollToBottomButton Component (R5 / F-64)', () => {
   });
 });
 
-describe('ChatClient Scroll Tracking & Viewport Integration (R4 & R5)', () => {
+describe('ChatClient Scroll Tracking & Viewport Integration', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.stubGlobal('fetch', vi.fn());

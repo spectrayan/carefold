@@ -68,7 +68,7 @@ function createControlledStream() {
   return { response, sendEvent, closeStream };
 }
 
-describe('M10 Adversarial Stress Test: Scroll Tracking & Anti-Hijack Guarantee', () => {
+describe('Adversarial Stress Test: Scroll Tracking & Anti-Hijack Guarantee', () => {
   let scrollIntoViewSpy: any;
 
   beforeEach(() => {
@@ -228,7 +228,7 @@ describe('M10 Adversarial Stress Test: Scroll Tracking & Anti-Hijack Guarantee',
   });
 });
 
-describe('M10 Adversarial Stress Test: Mobile Responsiveness, 100dvh & Double Scrollbars', () => {
+describe('Adversarial Stress Test: Mobile Responsiveness, 100dvh & Double Scrollbars', () => {
   it('container uses dynamic viewport 100dvh with outer overflow-hidden to prevent nested window scrollbars', () => {
     const { container } = render(<ChatClient initialAgents={mockAgents} />);
     const outerContainer = container.querySelector('.flex.flex-col') as HTMLElement;
@@ -285,7 +285,7 @@ describe('M10 Adversarial Stress Test: Mobile Responsiveness, 100dvh & Double Sc
   });
 });
 
-describe('M10 Adversarial Stress Test: Accessible Touch Targets (>= 32px)', () => {
+describe('Adversarial Stress Test: Accessible Touch Targets (>= 32px)', () => {
   it('ScrollToBottomButton has touch target >= 36px', () => {
     render(<ScrollToBottomButton visible={true} onClick={vi.fn()} />);
     const btn = screen.getByTestId('scroll-to-bottom-btn');
@@ -319,7 +319,7 @@ describe('M10 Adversarial Stress Test: Accessible Touch Targets (>= 32px)', () =
   });
 });
 
-describe('M10 Adversarial Stress Test: ThinkingIndicator & ToolTrace Stability', () => {
+describe('Adversarial Stress Test: ThinkingIndicator & ToolTrace Stability', () => {
   it('ThinkingIndicator displays planning status during initial latency and switches to executing status during active tool run', () => {
     const initialMsg: ChatMessage = {
       id: 'assistant-1',
@@ -371,8 +371,8 @@ describe('M10 Adversarial Stress Test: ThinkingIndicator & ToolTrace Stability',
   });
 });
 
-describe('M10 Adversarial Stress Test: Tailwind CSS v3 Hygiene Across Components', () => {
-  it('validates rendered DOM across M10 components contains 0 Tailwind v4 invalid classes', () => {
+describe('Adversarial Stress Test: Tailwind CSS v3 Hygiene Across Components', () => {
+  it('validates rendered DOM across components contains 0 Tailwind v4 invalid classes', () => {
     const { container: c1 } = render(<ThinkingIndicator />);
     const { container: c2 } = render(<ScrollToBottomButton visible={true} onClick={vi.fn()} unreadCount={3} />);
     const { container: c3 } = render(
@@ -398,7 +398,7 @@ describe('M10 Adversarial Stress Test: Tailwind CSS v3 Hygiene Across Components
   });
 });
 
-describe('M10 Adversarial Stress Test: Resilience Under Edge Conditions', () => {
+describe('Adversarial Stress Test: Resilience Under Edge Conditions', () => {
   it('handles iOS rubber-band overscroll gracefully without state corruption', () => {
     const { container } = render(<ChatClient initialAgents={mockAgents} />);
     const scrollContainer = container.querySelector('.overflow-y-auto') as HTMLElement;

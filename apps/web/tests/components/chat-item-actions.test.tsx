@@ -20,7 +20,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 import { ChatMessageItem, type ChatMessage } from '@/components/ChatMessageItem';
 
-describe('ChatMessageItem Hover Action Toolbar (M8 / R3 / Feature 47)', () => {
+describe('ChatMessageItem Hover Action Toolbar', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });

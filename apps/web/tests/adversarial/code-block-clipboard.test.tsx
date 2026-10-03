@@ -22,7 +22,7 @@ import { CodeBlock, normalizeLanguage, tokenizeCode } from '@/components/chat/Co
 import { MessageToolbar } from '@/components/chat/MessageToolbar';
 import { ChatMessageItem, formatMessageTimestamp, type ChatMessage } from '@/components/ChatMessageItem';
 
-describe('Adversarial Stress Suite: Code Blocks, Streaming & Clipboard Edge Cases (M9)', () => {
+describe('Adversarial Stress Suite: Code Blocks, Streaming & Clipboard Edge Cases', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });

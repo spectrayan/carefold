@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tier 1 to Tier 4 E2E Tests for Requirement R4: Multi-Agent Execution Engine.
+"""End-to-End Tests for Multi-Agent Execution Engine.
 
 Verifies:
 1. ExecutionDispatcher Topologies:
@@ -143,13 +143,15 @@ def get_dispatcher(agent_runner=None):
 # ============================================================================
 # Tier 1: Feature Coverage (R4)
 # ============================================================================
+# Tier 1: Feature Coverage: Multi-Agent Execution
+# ============================================================================
 
-class TestR4MultiAgentExecutionFeatureCoverage:
+class TestMultiAgentExecutionFeatureCoverage:
     """Tier 1: Feature coverage for single, parallel, and pipeline execution topologies."""
 
     @pytest.mark.asyncio
-    async def test_f_r4_01_dispatcher_single_specialist_fast_path(self):
-        """F-R4.01: Verifies single specialist direct fast-path execution."""
+    async def test_dispatcher_single_specialist_fast_path(self):
+        """Verifies single specialist direct fast-path execution."""
         dispatcher = get_dispatcher()
         plan = DispatchPlan(
             mode=ExecutionMode.SINGLE,
@@ -165,8 +167,8 @@ class TestR4MultiAgentExecutionFeatureCoverage:
         assert state["specialist_outputs"] == outputs
 
     @pytest.mark.asyncio
-    async def test_f_r4_02_dispatcher_parallel_fan_out_asyncio_gather(self):
-        """F-R4.02: Multimorbid query triggers concurrent parallel execution across multiple specialists."""
+    async def test_dispatcher_parallel_fan_out_asyncio_gather(self):
+        """Multimorbid query triggers concurrent parallel execution across multiple specialists."""
         call_times: Dict[str, float] = {}
 
         def timed_runner(agent_id: str, context: Dict[str, Any]) -> str:
@@ -197,8 +199,8 @@ class TestR4MultiAgentExecutionFeatureCoverage:
         assert max(t_values) - min(t_values) < 0.1
 
     @pytest.mark.asyncio
-    async def test_f_r4_03_dispatcher_sequential_pipeline_chaining(self):
-        """F-R4.03: Pipeline mode executes sequentially, passing upstream outputs to downstream agents."""
+    async def test_dispatcher_sequential_pipeline_chaining(self):
+        """Pipeline mode executes sequentially, passing upstream outputs to downstream agents."""
         pipeline_log: List[str] = []
 
         def chained_runner(agent_id: str, context: Dict[str, Any]) -> str:
@@ -227,8 +229,8 @@ class TestR4MultiAgentExecutionFeatureCoverage:
         assert pipeline_log == ["ortho-guide", "prior-auth-navigator", "formulary-guide"]
         assert len(outputs) == 3
 
-    def test_f_r4_04_prompt_template_renders_provisioned_clinical_references(self, e2e_repo_root: Path):
-        """F-R4.04: Validates agent_execution_prompt.hbs renders `# PROVISIONED CLINICAL REFERENCES`."""
+    def test_prompt_template_renders_provisioned_clinical_references(self, e2e_repo_root: Path):
+        """Validates agent_execution_prompt.hbs renders `# PROVISIONED CLINICAL REFERENCES`."""
         template_file = e2e_repo_root / "backend" / "src" / "carefold" / "resources" / "prompts" / "templates" / "agent_execution_prompt.hbs"
         assert template_file.is_file(), "agent_execution_prompt.hbs must exist"
         template_content = template_file.read_text(encoding="utf-8")
@@ -280,8 +282,8 @@ class TestR4MultiAgentExecutionFeatureCoverage:
             assert "hypertension_log_template.md" in rendered
 
     @pytest.mark.asyncio
-    async def test_f_r4_05_dispatcher_specialist_partial_failure_resilience(self):
-        """F-R4.05: Failure in one parallel specialist does not crash or corrupt healthy sibling agents."""
+    async def test_dispatcher_specialist_partial_failure_resilience(self):
+        """Failure in one parallel specialist does not crash or corrupt healthy sibling agents."""
         def fault_tolerant_runner(agent_id: str, context: Dict[str, Any]) -> str:
             if agent_id == "failing-agent":
                 raise RuntimeError("Specialist execution timeout or LLM failure")
@@ -307,14 +309,14 @@ class TestR4MultiAgentExecutionFeatureCoverage:
 
 
 # ============================================================================
-# Tier 2: Boundary & Corner Cases (R4)
+# Tier 2: Boundary & Corner Cases: Multi-Agent Execution
 # ============================================================================
 
-class TestR4MultiAgentExecutionBoundaries:
-    """Tier 2: Boundary conditions, concurrency limits, and negative tests for R4."""
+class TestMultiAgentExecutionBoundaries:
+    """Tier 2: Boundary conditions, concurrency limits, and negative tests for multi-agent execution."""
 
     @pytest.mark.asyncio
-    async def test_r4_b01_dispatcher_empty_target_agents(self):
+    async def test_dispatcher_empty_target_agents(self):
         """Dispatches empty agent list without throwing unhandled exceptions."""
         dispatcher = get_dispatcher()
         plan = DispatchPlan(mode=ExecutionMode.PARALLEL, target_agents=[], tasks=[])
@@ -324,7 +326,7 @@ class TestR4MultiAgentExecutionBoundaries:
         assert outputs == {}
 
     @pytest.mark.asyncio
-    async def test_r4_b02_high_concurrency_fan_out(self):
+    async def test_high_concurrency_fan_out(self):
         """Verifies parallel dispatcher executes cleanly with 10 concurrent agents."""
         dispatcher = get_dispatcher()
         agents = [f"specialist-{i}" for i in range(10)]
@@ -341,7 +343,7 @@ class TestR4MultiAgentExecutionBoundaries:
             assert a in outputs
 
     @pytest.mark.asyncio
-    async def test_r4_b03_pipeline_empty_upstream_output_handling(self):
+    async def test_pipeline_empty_upstream_output_handling(self):
         """Downstream pipeline agent handles empty string upstream output safely."""
         def empty_first_runner(agent_id: str, context: Dict[str, Any]) -> str:
             if agent_id == "step1":
@@ -361,7 +363,7 @@ class TestR4MultiAgentExecutionBoundaries:
         assert outputs["step1"] == ""
         assert "step2" in outputs
 
-    def test_r4_b04_template_rendering_with_special_characters(self):
+    def test_template_rendering_with_special_characters(self):
         """Template handles HTML tags, brackets, and quotes in provisioned references without breaking."""
         template = (
             "# PROVISIONED CLINICAL REFERENCES\n"
@@ -384,14 +386,14 @@ class TestR4MultiAgentExecutionBoundaries:
 
 
 # ============================================================================
-# Tier 3: Cross-Feature Combinations (R4)
+# Tier 3: Cross-Feature Combinations: Multi-Agent Execution
 # ============================================================================
 
-class TestR4MultiAgentExecutionCrossFeature:
+class TestMultiAgentExecutionCrossFeature:
     """Tier 3: Pairwise integration between Dispatcher and Template Rendering."""
 
     @pytest.mark.asyncio
-    async def test_r4_c01_dispatch_with_provisioned_references_injection(self):
+    async def test_dispatch_with_provisioned_references_injection(self):
         """Provisioned references in state are passed into agent execution context."""
         captured_contexts: Dict[str, Any] = {}
 
@@ -421,14 +423,14 @@ class TestR4MultiAgentExecutionCrossFeature:
 
 
 # ============================================================================
-# Tier 4: Real-World Application Scenarios (R4)
+# Tier 4: Real-World Application Scenarios: Multi-Agent Execution
 # ============================================================================
 
-class TestR4MultiAgentExecutionRealWorldScenarios:
+class TestMultiAgentExecutionRealWorldScenarios:
     """Tier 4: Realistic multi-agent workflow topologies."""
 
     @pytest.mark.asyncio
-    async def test_r4_s01_orthopedic_prior_auth_formulary_pipeline(self):
+    async def test_orthopedic_prior_auth_formulary_pipeline(self):
         """Real-world 3-agent clinical-to-administrative sequential pipeline."""
         def clinical_pipeline_runner(agent_id: str, context: Dict[str, Any]) -> str:
             if agent_id == "ortho-guide":

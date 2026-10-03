@@ -52,7 +52,7 @@ function createMockSSEResponse(events: Array<{ event?: string; data: Record<stri
   });
 }
 
-describe('ChatClient Composer (Auto-Expanding Textarea & Mobile Ergonomics - R5 & R4)', () => {
+describe('ChatClient Composer (Auto-Expanding Textarea & Mobile Ergonomics)', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.stubGlobal('fetch', vi.fn());

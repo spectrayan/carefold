@@ -30,7 +30,7 @@ import {
 } from '@carefold/runner';
 import path from 'node:path';
 
-describe('08: Adversarial Challenger Test Suite (Milestone M9 / Requirement R4)', () => {
+describe('09: Adversarial Test Suite for CLI Run Execution', () => {
   let ws: CliTestWorkspace;
 
   beforeEach(async () => {

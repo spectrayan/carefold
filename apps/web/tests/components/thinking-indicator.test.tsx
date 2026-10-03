@@ -21,7 +21,7 @@ import React from 'react';
 import { ThinkingIndicator } from '@/components/chat/ThinkingIndicator';
 import { ChatMessageItem, type ChatMessage } from '@/components/ChatMessageItem';
 
-describe('ThinkingIndicator Component (R3 / F-61)', () => {
+describe('ThinkingIndicator Component', () => {
   it('renders default text and 3 pulsing dots with accessibility attributes', () => {
     render(<ThinkingIndicator />);
 

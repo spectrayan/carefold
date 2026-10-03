@@ -81,7 +81,7 @@ const mockAgents: AgentSummary[] = [
   }
 ];
 
-describe('Marketplace Home Screen (CF-S01, CF-S48, CF-S50, R4)', () => {
+describe('Marketplace Home Screen', () => {
   it('renders grid of installed agents with Bundled badges', () => {
     render(<MarketplaceClient initialAgents={mockAgents} />);
 

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tier 1 to Tier 4 E2E Tests for Requirement R1: Persona Purification & Separation of Concerns.
+"""End-to-End Tests for Persona Purification & Separation of Concerns.
 
 Verifies that all agent personas in `agents/*/persona.md` and `agents/_template/persona.md`
 are completely purified of operational tool invocation syntax, skill slugs, reference document
@@ -171,14 +171,14 @@ def inspect_persona_violations(persona_text: str) -> Dict[str, List[str]]:
 
 
 # ============================================================================
-# Tier 1: Feature Coverage (R1)
+# Tier 1: Feature Coverage: Persona Purity
 # ============================================================================
 
-class TestR1PersonaPurityFeatureCoverage:
-    """Tier 1: Comprehensive feature coverage verifying R1 persona purity requirements."""
+class TestPersonaPurityFeatureCoverage:
+    """Tier 1: Comprehensive feature coverage verifying persona purity requirements."""
 
-    def test_f_r1_01_all_personas_contain_zero_tool_invocations(self, e2e_repo_root: Path):
-        """F-R1.01: Verifies zero operational tool invocations (attach-read, workspace-note, skill-docs)."""
+    def test_all_personas_contain_zero_tool_invocations(self, e2e_repo_root: Path):
+        """Verifies zero operational tool invocations (attach-read, workspace-note, skill-docs)."""
         persona_paths = get_all_persona_paths(e2e_repo_root)
         assert len(persona_paths) >= 20, f"Expected >= 20 personas, found {len(persona_paths)}"
 
@@ -193,8 +193,8 @@ class TestR1PersonaPurityFeatureCoverage:
             f"Found forbidden tool invocation directives in {len(failures)} personas: {failures}"
         )
 
-    def test_f_r1_02_all_personas_contain_zero_skill_slugs(self, e2e_repo_root: Path):
-        """F-R1.02: Verifies zero skill slugs or skill_id attributes in persona text."""
+    def test_all_personas_contain_zero_skill_slugs(self, e2e_repo_root: Path):
+        """Verifies zero skill slugs or skill_id attributes in persona text."""
         persona_paths = get_all_persona_paths(e2e_repo_root)
         failures = {}
         for p in persona_paths:
@@ -207,8 +207,8 @@ class TestR1PersonaPurityFeatureCoverage:
             f"Found forbidden skill slug references in {len(failures)} personas: {failures}"
         )
 
-    def test_f_r1_03_all_personas_contain_zero_document_filenames(self, e2e_repo_root: Path):
-        """F-R1.03: Verifies zero .md document filenames in persona text."""
+    def test_all_personas_contain_zero_document_filenames(self, e2e_repo_root: Path):
+        """Verifies zero .md document filenames in persona text."""
         persona_paths = get_all_persona_paths(e2e_repo_root)
         failures = {}
         for p in persona_paths:
@@ -221,8 +221,8 @@ class TestR1PersonaPurityFeatureCoverage:
             f"Found forbidden reference document filenames in {len(failures)} personas: {failures}"
         )
 
-    def test_f_r1_04_all_personas_contain_zero_filesystem_paths(self, e2e_repo_root: Path):
-        """F-R1.04: Verifies zero filesystem paths (attachments/, notes/) in persona text."""
+    def test_all_personas_contain_zero_filesystem_paths(self, e2e_repo_root: Path):
+        """Verifies zero filesystem paths (attachments/, notes/) in persona text."""
         persona_paths = get_all_persona_paths(e2e_repo_root)
         failures = {}
         for p in persona_paths:
@@ -235,8 +235,8 @@ class TestR1PersonaPurityFeatureCoverage:
             f"Found forbidden filesystem paths in {len(failures)} personas: {failures}"
         )
 
-    def test_f_r1_05_all_personas_meet_minimum_word_count(self, e2e_repo_root: Path):
-        """F-R1.05: Verifies all personas meet minimum >= 40 words requirement."""
+    def test_all_personas_meet_minimum_word_count(self, e2e_repo_root: Path):
+        """Verifies all personas meet minimum >= 40 words requirement."""
         persona_paths = get_all_persona_paths(e2e_repo_root)
         failures = {}
         for p in persona_paths:
@@ -249,8 +249,8 @@ class TestR1PersonaPurityFeatureCoverage:
             f"Found {len(failures)} personas with word count outside [40, 600): {failures}"
         )
 
-    def test_f_r1_06_all_personas_contain_mandatory_five_headers(self, e2e_repo_root: Path):
-        """F-R1.06: Verifies all personas contain all mandatory uppercase headers."""
+    def test_all_personas_contain_mandatory_headers(self, e2e_repo_root: Path):
+        """Verifies all personas contain all mandatory uppercase headers."""
         persona_paths = get_all_persona_paths(e2e_repo_root)
         failures = {}
         for p in persona_paths:
@@ -263,8 +263,8 @@ class TestR1PersonaPurityFeatureCoverage:
             f"Found {len(failures)} personas missing mandatory section headers: {failures}"
         )
 
-    def test_f_r1_07_agent_yaml_declarative_capabilities(self, e2e_repo_root: Path):
-        """F-R1.07: Verifies agents declare tools and skills strictly in agent.yaml."""
+    def test_agent_yaml_declarative_capabilities(self, e2e_repo_root: Path):
+        """Verifies agents declare tools and skills strictly in agent.yaml."""
         agents_dir = e2e_repo_root / "agents"
         failures = []
         for agent_dir in agents_dir.glob("*"):
@@ -284,13 +284,13 @@ class TestR1PersonaPurityFeatureCoverage:
 
 
 # ============================================================================
-# Tier 2: Boundary & Corner Cases (R1)
+# Tier 2: Boundary & Corner Cases: Persona Purity
 # ============================================================================
 
-class TestR1PersonaPurityBoundaries:
-    """Tier 2: Boundary conditions, corner cases, and negative tests for R1."""
+class TestPersonaPurityBoundaries:
+    """Tier 2: Boundary conditions, corner cases, and negative tests for persona purity."""
 
-    def test_r1_b01_word_count_exact_boundary_threshold(self):
+    def test_word_count_exact_boundary_threshold(self):
         """Verifies boundary check: 39 words is rejected, 40 words is accepted."""
         words_39 = " ".join(["word"] * 39)
         words_40 = " ".join(["word"] * 40)
@@ -299,7 +299,7 @@ class TestR1PersonaPurityBoundaries:
         assert count_words(words_39) < 40
         assert count_words(words_40) >= 40
 
-    def test_r1_b02_substring_non_tool_words_allowed(self):
+    def test_substring_non_tool_words_allowed(self):
         """Verifies legitimate English words containing tool substrings do NOT trigger false positives."""
         clean_text = (
             "The patient had an emotional attachment to the old therapy plan. "
@@ -311,7 +311,7 @@ class TestR1PersonaPurityBoundaries:
         assert not violations["skill_slugs"], f"False positive detected: {violations['skill_slugs']}"
         assert not violations["paths"], f"False positive detected: {violations['paths']}"
 
-    def test_r1_b03_header_case_and_punctuation_sensitivity(self):
+    def test_header_case_and_punctuation_sensitivity(self):
         """Verifies headers missing trailing colon or using mixed case are detected as missing."""
         malformed_text = (
             "Role & Empathy:\n"
@@ -321,13 +321,13 @@ class TestR1PersonaPurityBoundaries:
         assert "ROLE & EMPATHY:" in violations["missing_headers"]
         assert "CLINICAL SCOPE & FOCUS:" in violations["missing_headers"]
 
-    def test_r1_b04_empty_persona_handling(self):
+    def test_empty_persona_handling(self):
         """Verifies empty or whitespace personas are rejected on word count and headers."""
         violations = inspect_persona_violations("   \n\t  ")
         assert count_words("   \n\t  ") == 0
         assert len(violations["missing_headers"]) == len(MANDATORY_HEADERS)
 
-    def test_r1_b05_persona_with_codeblocks_and_quotes(self):
+    def test_persona_with_codeblocks_and_quotes(self):
         """Verifies tool mentions inside markdown code blocks or quotes are still flagged."""
         quoted_text = (
             "ROLE & EMPATHY:\nTest.\n"
@@ -342,13 +342,13 @@ class TestR1PersonaPurityBoundaries:
 
 
 # ============================================================================
-# Tier 3: Cross-Feature Combinations (R1)
+# Tier 3: Cross-Feature Combinations: Persona Purity
 # ============================================================================
 
-class TestR1PersonaCrossFeatureCombinations:
+class TestPersonaCrossFeatureCombinations:
     """Tier 3: Pairwise interactions with AgentLoader and schema validation."""
 
-    def test_r1_c01_persona_loading_via_agent_loader(self, e2e_repo_root: Path):
+    def test_persona_loading_via_agent_loader(self, e2e_repo_root: Path):
         """Verifies that purified personas load cleanly through Carefold's AgentLoader."""
         agents_dir = e2e_repo_root / "agents"
         for agent_dir in agents_dir.glob("*"):
@@ -361,10 +361,10 @@ class TestR1PersonaCrossFeatureCombinations:
 
 
 # ============================================================================
-# Tier 4: Real-World Application Scenarios (R1)
+# Tier 4: Real-World Application Scenarios: Persona Purity
 # ============================================================================
 
-class TestR1PersonaRealWorldScenarios:
+class TestPersonaRealWorldScenarios:
     """Tier 4: Realistic persona validation for key clinical specialties."""
 
     @pytest.mark.parametrize("specialist_id", [
@@ -374,7 +374,7 @@ class TestR1PersonaRealWorldScenarios:
         "pulmonology-guide",
         "ortho-guide",
     ])
-    def test_r1_s01_core_specialists_have_clinical_protocols(self, e2e_repo_root: Path, specialist_id: str):
+    def test_core_specialists_have_clinical_protocols(self, e2e_repo_root: Path, specialist_id: str):
         """Verifies core clinical specialists have robust protocol structure and emergency red flags."""
         persona_path = e2e_repo_root / "agents" / specialist_id / "persona.md"
         assert persona_path.is_file(), f"Missing persona for {specialist_id}"

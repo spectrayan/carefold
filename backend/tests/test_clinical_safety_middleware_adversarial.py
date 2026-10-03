@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Challenger Test Suite for Milestone M3.
+"""Empirical Adversarial Test Suite for Clinical Safety Middleware & Tool Registry.
 
 Adversarially fuzzes and stress-tests:
 1. `ClinicalSafetyMiddleware`:

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tier 1 to Tier 4 E2E Tests for Requirement R5: Response Synthesis & Output Guardrailing.
+"""End-to-End Tests for Response Synthesis & Output Guardrailing.
 
 Verifies:
 1. ResponseSynthesizerNode:
@@ -127,11 +127,15 @@ def get_synthesizer():
 # Tier 1: Feature Coverage (R5)
 # ============================================================================
 
-class TestR5ResponseSynthesisFeatureCoverage:
+# ============================================================================
+# Tier 1: Feature Coverage: Response Synthesis
+# ============================================================================
+
+class TestResponseSynthesisFeatureCoverage:
     """Tier 1: Feature coverage for multi-agent synthesis, tradeoff questions, and disclaimers."""
 
-    def test_f_r5_01_single_agent_output_passthrough(self):
-        """F-R5.01: Single agent output passes through with only disclaimer deduplication."""
+    def test_single_agent_output_passthrough(self):
+        """Single agent output passes through with only disclaimer deduplication."""
         synth = get_synthesizer()
         raw_text = (
             "Here is your hypertension checkup agenda:\n"
@@ -150,8 +154,8 @@ class TestR5ResponseSynthesisFeatureCoverage:
         assert output.count("DISCLAIMER:") == 1
         assert CANONICAL_DISCLAIMER in output
 
-    def test_f_r5_02_merges_parallel_specialist_outputs_into_master_agenda(self):
-        """F-R5.02: Merges outputs from multiple specialists into unified patient master agenda."""
+    def test_merges_parallel_specialist_outputs_into_master_agenda(self):
+        """Merges outputs from multiple specialists into unified patient master agenda."""
         synth = get_synthesizer()
         state = {
             "specialist_outputs": {
@@ -168,8 +172,8 @@ class TestR5ResponseSynthesisFeatureCoverage:
         assert "## Endocrinology Guide Guidance" in output
         assert "Review 14-day continuous glucose monitor report." in output
 
-    def test_f_r5_03_cardiorenal_tradeoff_collaborative_doctor_questions(self):
-        """F-R5.03: Frames cardiorenal fluid/sodium contradictions into non-prescriptive doctor-discussion questions."""
+    def test_cardiorenal_tradeoff_collaborative_doctor_questions(self):
+        """Frames cardiorenal fluid/sodium contradictions into non-prescriptive doctor-discussion questions."""
         synth = get_synthesizer()
         state = {
             "specialist_outputs": {
@@ -187,8 +191,8 @@ class TestR5ResponseSynthesisFeatureCoverage:
         # Must not prescribe or recommend specific dosage adjustments
         assert "prescribe" not in output.lower()
 
-    def test_f_r5_04_disclaimer_deduplication_single_canonical_footer(self):
-        """F-R5.04: Strips multiple constituent specialist disclaimers and appends single canonical disclaimer."""
+    def test_disclaimer_deduplication_single_canonical_footer(self):
+        """Strips multiple constituent specialist disclaimers and appends single canonical disclaimer."""
         synth = get_synthesizer()
         state = {
             "specialist_outputs": {
@@ -205,8 +209,8 @@ class TestR5ResponseSynthesisFeatureCoverage:
         assert CANONICAL_DISCLAIMER in output
 
     @pytest.mark.asyncio
-    async def test_f_r5_05_zero_body_audit_logging_enforcement(self, e2e_workspace: Path):
-        """F-R5.05: Structured audit log records events with zero raw request/response body when disabled."""
+    async def test_zero_body_audit_logging_enforcement(self, e2e_workspace: Path):
+        """Structured audit log records events with zero raw request/response body when disabled."""
         log_file = e2e_workspace / "logs" / "test_audit.jsonl"
         log_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -236,20 +240,20 @@ class TestR5ResponseSynthesisFeatureCoverage:
 
 
 # ============================================================================
-# Tier 2: Boundary & Corner Cases (R5)
+# Tier 2: Boundary & Corner Cases: Response Synthesis
 # ============================================================================
 
-class TestR5ResponseSynthesisBoundaries:
-    """Tier 2: Boundary conditions and stress tests for R5."""
+class TestResponseSynthesisBoundaries:
+    """Tier 2: Boundary conditions and stress tests for response synthesis."""
 
-    def test_r5_b01_synthesizer_empty_specialist_outputs(self):
+    def test_synthesizer_empty_specialist_outputs(self):
         """Empty specialist_outputs returns clean fallback message without raising error."""
         synth = get_synthesizer()
         output = synth.synthesize_response({"specialist_outputs": {}})
         assert "No specialist outputs were generated" in output
         assert CANONICAL_DISCLAIMER in output
 
-    def test_r5_b02_ten_duplicate_disclaimers_collapsed_to_one(self):
+    def test_ten_duplicate_disclaimers_collapsed_to_one(self):
         """Ten agents emitting redundant disclaimers are deduplicated into exactly one footer."""
         synth = get_synthesizer()
         outputs = {
@@ -259,7 +263,7 @@ class TestR5ResponseSynthesisBoundaries:
         output = synth.synthesize_response({"specialist_outputs": outputs})
         assert output.count("DISCLAIMER:") == 1
 
-    def test_r5_b03_specialist_output_without_disclaimers(self):
+    def test_specialist_output_without_disclaimers(self):
         """Clean outputs without any existing disclaimers receive the canonical disclaimer."""
         synth = get_synthesizer()
         state = {
@@ -269,7 +273,7 @@ class TestR5ResponseSynthesisBoundaries:
         assert CANONICAL_DISCLAIMER in output
 
     @pytest.mark.asyncio
-    async def test_r5_b04_zero_body_audit_extreme_payload_size(self, e2e_workspace: Path):
+    async def test_zero_body_audit_extreme_payload_size(self, e2e_workspace: Path):
         """Large 200KB payload is completely omitted from audit log."""
         log_file = e2e_workspace / "logs" / "extreme_payload_audit.jsonl"
         log_file.parent.mkdir(parents=True, exist_ok=True)
@@ -288,13 +292,13 @@ class TestR5ResponseSynthesisBoundaries:
 
 
 # ============================================================================
-# Tier 3: Cross-Feature Combinations (R5)
+# Tier 3: Cross-Feature Combinations: Response Synthesis
 # ============================================================================
 
-class TestR5ResponseSynthesisCrossFeature:
+class TestResponseSynthesisCrossFeature:
     """Tier 3: Pairwise integration across Dispatcher and Synthesizer."""
 
-    def test_r5_c01_dispatcher_outputs_fed_into_synthesizer(self):
+    def test_dispatcher_outputs_fed_into_synthesizer(self):
         """Dispatched specialist outputs feed directly into ResponseSynthesizerNode."""
         synth = get_synthesizer()
         state = {
@@ -311,13 +315,13 @@ class TestR5ResponseSynthesisCrossFeature:
 
 
 # ============================================================================
-# Tier 4: Real-World Application Scenarios (R5)
+# Tier 4: Real-World Application Scenarios: Response Synthesis
 # ============================================================================
 
-class TestR5ResponseSynthesisRealWorldScenarios:
+class TestResponseSynthesisRealWorldScenarios:
     """Tier 4: Realistic multimorbid patient synthesis."""
 
-    def test_r5_s01_cardiorenal_patient_agenda_synthesis(self):
+    def test_cardiorenal_patient_agenda_synthesis(self):
         """Multimorbid cardiorenal patient outputs synthesized into prioritized consultation agenda."""
         synth = get_synthesizer()
         state = {

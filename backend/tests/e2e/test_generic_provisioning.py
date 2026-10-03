@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tier 1 to Tier 4 E2E Tests for Requirement R3: Dynamic Planning & Zero-Hardcoding Generic Provisioning.
+"""End-to-End Tests for Dynamic Planning & Zero-Hardcoding Generic Provisioning.
 
 Verifies:
 1. AST Zero-Hardcoding Check: Scans `orchestrator_node.py` to ensure lines 524-564 hardcoded specialty branches are eliminated.
@@ -181,14 +181,14 @@ class ReferenceGenericProvisioner:
 
 
 # ============================================================================
-# Tier 1: Feature Coverage (R3)
+# Tier 1: Feature Coverage: Generic Provisioning
 # ============================================================================
 
-class TestR3GenericProvisioningFeatureCoverage:
+class TestGenericProvisioningFeatureCoverage:
     """Tier 1: Feature coverage for AST zero-hardcoding, ExecutionPlan, and dynamic provisioning."""
 
-    def test_f_r3_01_ast_scanner_detects_violations_in_sample_code(self):
-        """F-R3.01: Verifies the AST scanner accurately catches hardcoded specialty if/elif branches."""
+    def test_ast_scanner_detects_violations_in_sample_code(self):
+        """Verifies the AST scanner accurately catches hardcoded specialty if/elif branches."""
         bad_sample = (
             "def route_docs(agent_skill_ids, prompt_lower):\n"
             "    req_docs = []\n"
@@ -208,26 +208,17 @@ class TestR3GenericProvisioningFeatureCoverage:
                     violations.append(expr)
         assert len(violations) >= 2, "AST scanner must detect hardcoded specialty branches in sample"
 
-    def test_f_r3_02_orchestrator_ast_zero_hardcoded_specialty_branches(self, e2e_repo_root: Path):
-        """F-R3.02: Invariant check ensuring orchestrator_node.py has 0 hardcoded specialty branches."""
+    def test_orchestrator_ast_zero_hardcoded_specialty_branches(self, e2e_repo_root: Path):
+        """Invariant check ensuring orchestrator_node.py has 0 hardcoded specialty branches."""
         orchestrator_file = e2e_repo_root / "backend" / "src" / "carefold" / "workflows" / "nodes" / "orchestrator_node.py"
         assert orchestrator_file.is_file(), "orchestrator_node.py must exist"
 
         violations = scan_ast_for_hardcoded_specialties(orchestrator_file)
 
-        # Progressive testability check: if M3 has not yet eliminated lines 524-564, mark as pending M3
-        if violations:
-            specialty_violations = [v for v in violations if v["type"] == "hardcoded_specialty_branch"]
-            if specialty_violations:
-                pytest.skip(
-                    f"Milestone M3 pending: orchestrator_node.py still contains {len(specialty_violations)} "
-                    f"hardcoded specialty branches at lines {[v['line'] for v in specialty_violations]}"
-                )
-
         assert len(violations) == 0, f"Found hardcoded specialty AST violations: {violations}"
 
-    def test_f_r3_03_execution_plan_pydantic_schema_validation(self):
-        """F-R3.03: Verifies ExecutionPlan validates single, parallel, and pipeline topologies."""
+    def test_execution_plan_pydantic_schema_validation(self):
+        """Verifies ExecutionPlan validates single, parallel, and pipeline topologies."""
         # Single mode
         p_single = RealExecutionPlan(
             mode=RealExecutionMode.SINGLE,
@@ -264,8 +255,8 @@ class TestR3GenericProvisioningFeatureCoverage:
         assert p_pipeline.mode.value == "pipeline"
         assert p_pipeline.tasks[1].dependencies == ["ortho-guide"]
 
-    def test_f_r3_04_generic_reference_provisioner_manifest_scanning(self, e2e_workspace: Path):
-        """F-R3.04: Dynamically resolves references by matching user query against SkillManifest.references."""
+    def test_generic_reference_provisioner_manifest_scanning(self, e2e_workspace: Path):
+        """Dynamically resolves references by matching user query against SkillManifest.references."""
         skill = SkillManifest(
             id="cardiology-prep",
             name="Cardiology Encounter Preparation",
@@ -286,8 +277,8 @@ class TestR3GenericProvisioningFeatureCoverage:
         assert "Hypertension" in doc["title"]
         assert len(doc["content"]) > 0
 
-    def test_f_r3_05_provisioned_references_populated_in_state(self, e2e_workspace: Path):
-        """F-R3.05: State receives provisioned_references dictionary and provisioned_docs list."""
+    def test_provisioned_references_populated_in_state(self, e2e_workspace: Path):
+        """State receives provisioned_references dictionary and provisioned_docs list."""
         skill = SkillManifest(
             id="nephrology-prep",
             name="Nephrology Visit Preparation",
@@ -309,8 +300,8 @@ class TestR3GenericProvisioningFeatureCoverage:
         assert "fluid_and_sodium_tracking_worksheet.md" in state["provisioned_references"]
         assert state["provisioned_docs"] == ["fluid_and_sodium_tracking_worksheet.md"]
 
-    def test_f_r3_06_dynamic_skill_synthesis_fallback_on_missing_reference(self, tmp_path: Path):
-        """F-R3.06: Synthesizes missing reference in-memory when file does not exist on disk."""
+    def test_dynamic_skill_synthesis_fallback_on_missing_reference(self, tmp_path: Path):
+        """Synthesizes missing reference in-memory when file does not exist on disk."""
         empty_skills_dir = tmp_path / "empty_skills"
         empty_skills_dir.mkdir()
 
@@ -334,13 +325,13 @@ class TestR3GenericProvisioningFeatureCoverage:
 
 
 # ============================================================================
-# Tier 2: Boundary & Corner Cases (R3)
+# Tier 2: Boundary & Corner Cases: Generic Provisioning
 # ============================================================================
 
-class TestR3GenericProvisioningBoundaries:
-    """Tier 2: Boundary conditions, corner cases, and negative tests for R3."""
+class TestGenericProvisioningBoundaries:
+    """Tier 2: Boundary conditions, corner cases, and negative tests for generic provisioning."""
 
-    def test_r3_b01_empty_references_manifest(self, e2e_workspace: Path):
+    def test_empty_references_manifest(self, e2e_workspace: Path):
         """Handles agent with empty references list cleanly."""
         skill = SkillManifest(
             id="general-wellness",
@@ -355,7 +346,7 @@ class TestR3GenericProvisioningBoundaries:
         )
         assert provisioned == {}
 
-    def test_r3_b02_query_matching_multiple_skill_references(self, e2e_workspace: Path):
+    def test_query_matching_multiple_skill_references(self, e2e_workspace: Path):
         """Query matching multiple topics resolves multiple reference templates."""
         skill = SkillManifest(
             id="pulmonology-prep",
@@ -373,7 +364,7 @@ class TestR3GenericProvisioningBoundaries:
         assert "dyspnea_symptom_tracker.md" in provisioned
         assert "inhaler_technique_guide.md" in provisioned
 
-    def test_r3_b03_execution_plan_invalid_mode_rejection(self):
+    def test_execution_plan_invalid_mode_rejection(self):
         """Pydantic validation rejects invalid execution mode strings."""
         with pytest.raises(ValidationError):
             RealExecutionPlan(
@@ -383,7 +374,7 @@ class TestR3GenericProvisioningBoundaries:
                 reasoning="Invalid test",
             )
 
-    def test_r3_b04_empty_target_agents_validation(self):
+    def test_empty_target_agents_validation(self):
         """Validates behavior when target_agents list is provided."""
         plan = RealExecutionPlan(
             mode=RealExecutionMode.SINGLE,
@@ -393,7 +384,7 @@ class TestR3GenericProvisioningBoundaries:
         )
         assert len(plan.target_agents) == 1
 
-    def test_r3_b05_query_with_no_matching_keywords(self, e2e_workspace: Path):
+    def test_query_with_no_matching_keywords(self, e2e_workspace: Path):
         """Non-matching general query returns empty provisioned references without error."""
         skill = SkillManifest(
             id="cardiology-prep",
@@ -410,13 +401,13 @@ class TestR3GenericProvisioningBoundaries:
 
 
 # ============================================================================
-# Tier 3: Cross-Feature Combinations (R3)
+# Tier 3: Cross-Feature Combinations: Generic Provisioning
 # ============================================================================
 
-class TestR3GenericProvisioningCrossFeature:
+class TestGenericProvisioningCrossFeature:
     """Tier 3: Pairwise integration across Planning and Provisioning."""
 
-    def test_r3_c01_multimorbid_plan_triggers_multi_skill_provisioning(self, e2e_workspace: Path):
+    def test_multimorbid_plan_triggers_multi_skill_provisioning(self, e2e_workspace: Path):
         """Parallel execution plan coordinates reference provisioning across multiple specialties."""
         plan = RealExecutionPlan(
             mode=RealExecutionMode.PARALLEL,
@@ -446,13 +437,13 @@ class TestR3GenericProvisioningCrossFeature:
 
 
 # ============================================================================
-# Tier 4: Real-World Application Scenarios (R3)
+# Tier 4: Real-World Application Scenarios: Generic Provisioning
 # ============================================================================
 
-class TestR3GenericProvisioningRealWorldScenarios:
+class TestGenericProvisioningRealWorldScenarios:
     """Tier 4: Realistic planning and provisioning scenarios."""
 
-    def test_r3_s01_cardiorenal_multimorbid_planning_and_provisioning(self, e2e_workspace: Path):
+    def test_cardiorenal_multimorbid_planning_and_provisioning(self, e2e_workspace: Path):
         """Multimorbid CHF + CKD patient triggers parallel plan and dynamic multi-doc provisioning."""
         prompt = (
             "I have congestive heart failure and stage 3 chronic kidney disease. "

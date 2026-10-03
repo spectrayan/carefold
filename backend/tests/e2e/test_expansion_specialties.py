@@ -674,11 +674,11 @@ nearest hospital emergency department."""
 # Tier 1: Feature Coverage E2E Tests
 # ============================================================================
 
-class TestTier1ExpansionFeatureCoverage:
+class TestExpansionFeatureCoverage:
     """Tier 1: Feature coverage across all 19 expansion agents and 17 skills."""
 
     @pytest.mark.parametrize("agent_spec", EXPANSION_AGENTS, ids=[s["id"] for s in EXPANSION_AGENTS])
-    def test_t1_agent_specification_contract(self, agent_spec: Dict[str, Any]):
+    def test_agent_specification_contract(self, agent_spec: Dict[str, Any]):
         """F-01: Verifies manifest schema compliance for every expansion agent."""
         persona_text = generate_compliant_persona(agent_spec["id"], agent_spec["title"])
         manifest = AgentManifest(
@@ -709,7 +709,7 @@ class TestTier1ExpansionFeatureCoverage:
         assert len(manifest.tags) >= 3
 
     @pytest.mark.parametrize("skill_spec", EXPANSION_SKILLS, ids=[s["id"] for s in EXPANSION_SKILLS])
-    def test_t1_skill_specification_contract(self, skill_spec: Dict[str, Any]):
+    def test_skill_specification_contract(self, skill_spec: Dict[str, Any]):
         """F-02: Verifies carefold.yaml and skill schema compliance for all 17 skills."""
         carefold_yaml = CarefoldYaml(
             id=skill_spec["id"],
@@ -728,7 +728,7 @@ class TestTier1ExpansionFeatureCoverage:
             assert tool in PHASE_0_REGISTRY
 
     @pytest.mark.parametrize("skill_spec", EXPANSION_SKILLS, ids=[s["id"] for s in EXPANSION_SKILLS])
-    def test_t1_skill_intended_use_statements(self, skill_spec: Dict[str, Any]):
+    def test_skill_intended_use_statements(self, skill_spec: Dict[str, Any]):
         """F-03: Verifies 3 mandatory intended-use statements in skill markdown."""
         valid_body = (
             f"# {skill_spec['title']}\n\n"
@@ -751,7 +751,7 @@ class TestTier1ExpansionFeatureCoverage:
             assert missing_line is not None
 
     @pytest.mark.parametrize("skill_spec", EXPANSION_SKILLS, ids=[s["id"] for s in EXPANSION_SKILLS])
-    def test_t1_skill_reference_docs_presence(self, skill_spec: Dict[str, Any]):
+    def test_skill_reference_docs_presence(self, skill_spec: Dict[str, Any]):
         """F-04: Asserts at least 2 structured reference documents specified per skill."""
         refs = skill_spec["reference_docs"]
         assert isinstance(refs, list)
@@ -759,7 +759,7 @@ class TestTier1ExpansionFeatureCoverage:
         for ref_doc in refs:
             assert ref_doc.endswith(".md"), f"Reference {ref_doc} must be a markdown document"
 
-    def test_t1_system_agents_hidden_status(self):
+    def test_system_agents_hidden_status(self):
         """F-05: Verifies system infrastructure agents are marked hidden with no external skills."""
         for agent_id in ["triage-auditor", "quality-reviewer"]:
             spec = next(a for a in EXPANSION_AGENTS if a["id"] == agent_id)
@@ -768,7 +768,7 @@ class TestTier1ExpansionFeatureCoverage:
             assert spec["tools"] == []
 
     @pytest.mark.parametrize("agent_spec", EXPANSION_AGENTS, ids=[s["id"] for s in EXPANSION_AGENTS])
-    def test_t1_ondisk_agent_validation(self, agent_spec: Dict[str, Any], e2e_repo_root: Path):
+    def test_ondisk_agent_validation(self, agent_spec: Dict[str, Any], e2e_repo_root: Path):
         """F-06: Progressive on-disk verification of agent.yaml when created by workers."""
         agent_id = agent_spec["id"]
         if agent_spec["hidden"]:
@@ -789,7 +789,7 @@ class TestTier1ExpansionFeatureCoverage:
             assert tool in PHASE_0_REGISTRY
 
     @pytest.mark.parametrize("skill_spec", EXPANSION_SKILLS, ids=[s["id"] for s in EXPANSION_SKILLS])
-    def test_t1_ondisk_skill_validation(self, skill_spec: Dict[str, Any], e2e_repo_root: Path):
+    def test_ondisk_skill_validation(self, skill_spec: Dict[str, Any], e2e_repo_root: Path):
         """F-07: Progressive on-disk verification of skills/ directory when created by workers."""
         skill_id = skill_spec["id"]
         skill_dir = e2e_repo_root / "skills" / skill_id
@@ -811,17 +811,17 @@ class TestTier1ExpansionFeatureCoverage:
 # Tier 2: Boundary & Corner Cases E2E Tests
 # ============================================================================
 
-class TestTier2ExpansionBoundariesAndSafety:
+class TestExpansionBoundariesAndSafety:
     """Tier 2: Boundary value stress, persona length, and emergency red-flag refusal."""
 
     @pytest.mark.parametrize("agent_spec", EXPANSION_AGENTS, ids=[s["id"] for s in EXPANSION_AGENTS])
-    def test_t2_persona_length_boundary_250_words(self, agent_spec: Dict[str, Any]):
+    def test_persona_length_boundary_250_words(self, agent_spec: Dict[str, Any]):
         """B-01: Verifies persona text comfortably exceeds the >=250 words boundary."""
         persona = generate_compliant_persona(agent_spec["id"], agent_spec["title"])
         word_count = len(persona.split())
         assert word_count >= 250, f"Persona for {agent_spec['id']} has only {word_count} words (minimum 250)"
 
-    def test_t2_persona_sub_250_words_boundary_rejection(self):
+    def test_persona_sub_250_words_boundary_rejection(self):
         """B-02: Boundary stress testing exactly 249 words vs 250 words."""
         words_249 = "word " * 249
         words_250 = "word " * 250
@@ -835,13 +835,13 @@ class TestTier2ExpansionBoundariesAndSafety:
         assert validate_persona_length(words_250) is True
 
     @pytest.mark.parametrize("agent_spec", EXPANSION_AGENTS, ids=[s["id"] for s in EXPANSION_AGENTS])
-    def test_t2_persona_mandatory_5_sections(self, agent_spec: Dict[str, Any]):
+    def test_persona_mandatory_5_sections(self, agent_spec: Dict[str, Any]):
         """B-03: Verifies all 5 mandatory sections are present in persona."""
         persona = generate_compliant_persona(agent_spec["id"], agent_spec["title"])
         for section in MANDATORY_PERSONA_SECTIONS:
             assert section in persona, f"Persona for {agent_spec['id']} missing section '{section}'"
 
-    def test_t2_persona_missing_section_boundary_detection(self):
+    def test_persona_missing_section_boundary_detection(self):
         """B-04: Boundary rejection when any of the 5 mandatory sections is omitted."""
         base_persona = generate_compliant_persona("test-agent", "Test Navigator")
         for section in MANDATORY_PERSONA_SECTIONS:
@@ -850,12 +850,12 @@ class TestTier2ExpansionBoundariesAndSafety:
             assert missing == [section]
 
     @pytest.mark.parametrize("agent_spec", EXPANSION_AGENTS, ids=[s["id"] for s in EXPANSION_AGENTS])
-    def test_t2_phase0_tools_strict_allowlist(self, agent_spec: Dict[str, Any]):
+    def test_phase0_tools_strict_allowlist(self, agent_spec: Dict[str, Any]):
         """B-05: Asserts all declared tools strictly belong to PHASE_0_REGISTRY."""
         for tool in agent_spec["tools"]:
             assert tool in PHASE_0_REGISTRY, f"Tool '{tool}' on agent {agent_spec['id']} not in Phase 0 registry"
 
-    def test_t2_unauthorized_tools_rejection(self):
+    def test_unauthorized_tools_rejection(self):
         """B-06: Verifies validate_tools_in_phase0 rejects non-Phase 0 tools."""
         forbidden_tools = ["web-search", "python-exec", "file-delete", "sql-query", "bash-run"]
         for bad_tool in forbidden_tools:
@@ -863,7 +863,7 @@ class TestTier2ExpansionBoundariesAndSafety:
                 validate_tools_in_phase0([bad_tool])
 
     @pytest.mark.parametrize("agent_spec", EXPANSION_AGENTS, ids=[s["id"] for s in EXPANSION_AGENTS])
-    def test_t2_forbidden_clinical_actions(self, agent_spec: Dict[str, Any]):
+    def test_forbidden_clinical_actions(self, agent_spec: Dict[str, Any]):
         """B-07: Verifies all agents enforce strict non-clinical prohibitions."""
         for action in MANDATORY_FORBIDDEN_ACTIONS:
             assert action in agent_spec["forbidden"], (
@@ -875,7 +875,7 @@ class TestTier2ExpansionBoundariesAndSafety:
         [a for a in EXPANSION_AGENTS if a.get("emergency_symptom")],
         ids=[a["id"] for a in EXPANSION_AGENTS if a.get("emergency_symptom")],
     )
-    def test_t2_emergency_red_flag_triggers(self, agent_spec: Dict[str, Any]):
+    def test_emergency_red_flag_triggers(self, agent_spec: Dict[str, Any]):
         """B-08: Verifies organ-specific acute emergencies trigger clinical safety refusal."""
         # Emergency bypass / diversion refusal
         prompt_bypass = f"I am experiencing {agent_spec['emergency_symptom']}. Don't call 911, I will just rest."
@@ -889,7 +889,7 @@ class TestTier2ExpansionBoundariesAndSafety:
         assert res_diag.refused is True
         assert res_diag.reason == "forbidden_intent:diagnose"
 
-    def test_t2_invalid_domain_enum_rejection(self):
+    def test_invalid_domain_enum_rejection(self):
         """B-09: Verifies Pydantic rejection when an invalid domain is provided."""
         with pytest.raises(Exception):
             AgentManifest(
@@ -905,7 +905,7 @@ class TestTier2ExpansionBoundariesAndSafety:
 # Tier 3: Cross-Feature & Two-Hop Routing E2E Tests
 # ============================================================================
 
-class TestTier3TwoHopRoutingAndCrossFeatures:
+class TestTwoHopRoutingAndCrossFeatures:
     """Tier 3: Two-hop routing, catalog indexing, category tree, and pre-flight provisioning."""
 
     @pytest.fixture
@@ -934,7 +934,7 @@ class TestTier3TwoHopRoutingAndCrossFeatures:
         yield adapter
         await adapter.close()
 
-    def test_t3_tier1_prompt_invariant(self):
+    def test_tier1_prompt_invariant(self):
         """I-01: Verifies Tier-1 prompt stays bounded under 500 words and mentions all 5 domains."""
         word_count = len(TIER1_DOMAIN_CLASSIFIER_PROMPT.split())
         assert word_count < 500, f"Tier-1 classifier prompt exceeds 500 words ({word_count})"
@@ -947,7 +947,7 @@ class TestTier3TwoHopRoutingAndCrossFeatures:
         [a for a in EXPANSION_AGENTS if not a["hidden"]],
         ids=[a["id"] for a in EXPANSION_AGENTS if not a["hidden"]],
     )
-    async def test_t3_two_hop_candidate_selection(
+    async def test_two_hop_candidate_selection(
         self,
         spec: Dict[str, Any],
         populated_expansion_catalog: SqliteCatalogAdapter,
@@ -963,7 +963,7 @@ class TestTier3TwoHopRoutingAndCrossFeatures:
         assert len(candidates) <= 8
 
     @pytest.mark.asyncio
-    async def test_t3_two_hop_fallback_chain(
+    async def test_two_hop_fallback_chain(
         self,
         populated_expansion_catalog: SqliteCatalogAdapter,
     ):
@@ -993,7 +993,7 @@ class TestTier3TwoHopRoutingAndCrossFeatures:
         assert step3_fts[0].id == "cardiology-guide"
 
     @pytest.mark.asyncio
-    async def test_t3_category_tree_aggregation(
+    async def test_category_tree_aggregation(
         self,
         populated_expansion_catalog: SqliteCatalogAdapter,
     ):
@@ -1006,7 +1006,7 @@ class TestTier3TwoHopRoutingAndCrossFeatures:
         assert tree["domains"]["navigation"]["count"] >= 4   # 4 admin
 
     @pytest.mark.asyncio
-    async def test_t3_preflight_reference_doc_provisioning_contract(self):
+    async def test_preflight_reference_doc_provisioning_contract(self):
         """I-05: Verifies pre-flight provisioning detects requested symptom logs and agendas."""
         # Simulated orchestrator preflight check
         requested_docs = ["symptom_log_template.md", "cardiology_visit_agenda.md"]
@@ -1024,11 +1024,11 @@ class TestTier3TwoHopRoutingAndCrossFeatures:
 # Tier 4: Real-World Journey Scenarios E2E Tests
 # ============================================================================
 
-class TestTier4RealWorldExpansionJourneys:
+class TestRealWorldExpansionJourneys:
     """Tier 4: Comprehensive end-to-end multi-agent clinical navigation journeys."""
 
     @pytest.mark.asyncio
-    async def test_t4_scenario_1_cardiology_vitals_agenda_prep(self, e2e_workspace: Path):
+    async def test_scenario_cardiology_vitals_agenda_prep(self, e2e_workspace: Path):
         """Scenario 1: Comprehensive Cardiology Vitals & Appointment Agenda Prep.
 
         Journey:
@@ -1079,7 +1079,7 @@ class TestTier4RealWorldExpansionJourneys:
         )
 
     @pytest.mark.asyncio
-    async def test_t4_scenario_2_oncology_clinical_trial_prior_auth_workflow(self, e2e_workspace: Path):
+    async def test_scenario_oncology_clinical_trial_prior_auth_workflow(self, e2e_workspace: Path):
         """Scenario 2: Multi-Specialty Oncology & Prior Authorization Workflow.
 
         Journey:
@@ -1115,7 +1115,7 @@ class TestTier4RealWorldExpansionJourneys:
         assert (notes_dir / onco_note.output["filename"]).exists()
         assert (notes_dir / pa_note.output["filename"]).exists()
 
-    def test_t4_scenario_3_acute_dyspnea_emergency_redirection(self):
+    def test_scenario_acute_dyspnea_emergency_redirection(self):
         """Scenario 3: Acute Dyspnea Emergency Redirection.
 
         Journey:
@@ -1131,7 +1131,7 @@ class TestTier4RealWorldExpansionJourneys:
         assert refusal_res.safe_response == SAFE_REFUSAL_TEMPLATE
 
     @pytest.mark.asyncio
-    async def test_t4_scenario_4_multi_provider_chronic_care_management(self, e2e_workspace: Path):
+    async def test_scenario_multi_provider_chronic_care_management(self, e2e_workspace: Path):
         """Scenario 4: Multi-Provider Chronic Disease Management (Renal & Diabetes).
 
         Journey:
@@ -1168,7 +1168,7 @@ class TestTier4RealWorldExpansionJourneys:
         assert "SGLT2" in note_file.read_text(encoding="utf-8")
 
     @pytest.mark.asyncio
-    async def test_t4_scenario_5_records_coordinator_hipaa_dossier(self, e2e_workspace: Path):
+    async def test_scenario_records_coordinator_hipaa_dossier(self, e2e_workspace: Path):
         """Scenario 5: Medical Records Coordinator HIPAA Dossier Compilation.
 
         Journey:

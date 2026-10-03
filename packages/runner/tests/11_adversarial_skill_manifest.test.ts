@@ -38,7 +38,7 @@ import { createTestWorkspace, cleanupTestWorkspace } from './helpers/test-worksp
 
 const execFileAsync = promisify(execFile);
 
-describe('11: Adversarial M1 Challenger 2 — Empirical Runner, CLI & Pack Validation Stress Suite', () => {
+describe('11: Adversarial — Empirical Runner, CLI & Pack Validation Stress Suite', () => {
   let ws: string;
 
   beforeEach(async () => {

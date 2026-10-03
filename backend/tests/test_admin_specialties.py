@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Standalone Automated Verification Suite for Milestone M3 (Healthcare Administration Stewards 1–4).
+"""Standalone Automated Verification Suite for Healthcare Administration Stewards Verification Suite.
 
 Asserts:
 1. All 4 administrative navigation agents in agents/ load cleanly without ManifestValidationError.
@@ -53,10 +53,10 @@ from evals.runner import EvalCase, run_single_eval
 
 
 # ============================================================================
-# Milestone M3 Invariants & Specification Constants
+# Healthcare Administration Invariants & Specification Constants
 # ============================================================================
 
-M3_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
+ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
     "prior-auth-navigator": {
         "title": "Prior Authorization Navigator",
         "companion_skill": "prior-auth-prep",
@@ -126,7 +126,7 @@ FORBIDDEN_TOOLS_FOR_NAVIGATORS: Set[str] = {"delegate_to_agent", "list_agents"}
 # Section 1: Agent Manifest & Loader Validation
 # ============================================================================
 
-class TestM3AgentManifests:
+class TestAdminSpecialtiesManifests:
     """Verifies that all 4 administrative navigation agents load cleanly and conform to schema."""
 
     def test_all_4_agents_exist_and_load_cleanly(self, temp_workspace: Path):
@@ -134,7 +134,7 @@ class TestM3AgentManifests:
         agents_dir = temp_workspace / "agents"
         skills_dir = temp_workspace / "skills"
 
-        for agent_id, spec in M3_EXPECTED_AGENTS.items():
+        for agent_id, spec in ADMIN_EXPECTED_AGENTS.items():
             agent_path = agents_dir / agent_id
             assert agent_path.is_dir(), f"Agent directory missing: {agent_path}"
             assert (agent_path / "agent.yaml").is_file(), f"Missing agent.yaml in {agent_path}"
@@ -165,7 +165,7 @@ class TestM3AgentManifests:
         summaries = load_all_agents(agents_dir, skills_dir)
         summary_ids = {s.id for s in summaries}
 
-        for agent_id in M3_EXPECTED_AGENTS:
+        for agent_id in ADMIN_EXPECTED_AGENTS:
             assert agent_id in summary_ids, f"Agent '{agent_id}' was not discovered by load_all_agents"
 
     def test_all_4_agents_taxonomy_completeness(self, temp_workspace: Path):
@@ -175,7 +175,7 @@ class TestM3AgentManifests:
 
         valid_care_stages = {"pre_visit", "during_visit", "post_visit", "daily_living", "follow_up"}
 
-        for agent_id, spec in M3_EXPECTED_AGENTS.items():
+        for agent_id, spec in ADMIN_EXPECTED_AGENTS.items():
             manifest, _, _ = load_agent(agents_dir / agent_id, skills_dir)
 
             assert isinstance(manifest.care_stages, list) and len(manifest.care_stages) > 0, (
@@ -206,14 +206,14 @@ class TestM3AgentManifests:
 # Section 2: Persona Depth & Mandatory Safety Headers
 # ============================================================================
 
-class TestM3Personas:
+class TestAdminSpecialtiesPersonas:
     """Verifies that all 4 agent personas adhere to canonical persona contracts."""
 
     def test_all_4_personas_word_count_ge_250(self, temp_workspace: Path):
         """All 4 personas must have word count within canonical budget [40, 600]."""
         agents_dir = temp_workspace / "agents"
 
-        for agent_id in M3_EXPECTED_AGENTS:
+        for agent_id in ADMIN_EXPECTED_AGENTS:
             agent_path = agents_dir / agent_id
             manifest, _, _ = load_agent(agent_path)
             persona_text = manifest.persona if isinstance(manifest.persona, str) else str(manifest.persona)
@@ -228,7 +228,7 @@ class TestM3Personas:
         """All 4 canonical personas must contain required sections 1 & 2."""
         agents_dir = temp_workspace / "agents"
 
-        for agent_id in M3_EXPECTED_AGENTS:
+        for agent_id in ADMIN_EXPECTED_AGENTS:
             agent_path = agents_dir / agent_id
             manifest, _, _ = load_agent(agent_path)
             persona_text = manifest.persona if isinstance(manifest.persona, str) else str(manifest.persona)
@@ -263,14 +263,14 @@ class TestM3Personas:
 # Section 3: Skill Manifests & Mandatory Intended-Use Statements
 # ============================================================================
 
-class TestM3Skills:
+class TestAdminSpecialtiesSkills:
     """Verifies that all 4 companion skills load cleanly and contain the 3 intended-use statements."""
 
     def test_all_4_skills_exist_and_load_cleanly(self, temp_workspace: Path):
         """All 4 companion skills must load via load_skill without ManifestValidationError."""
         skills_dir = temp_workspace / "skills"
 
-        for agent_id, spec in M3_EXPECTED_AGENTS.items():
+        for agent_id, spec in ADMIN_EXPECTED_AGENTS.items():
             skill_id = spec["companion_skill"]
             skill_path = skills_dir / skill_id
             assert skill_path.is_dir(), f"Skill directory missing: {skill_path}"
@@ -292,7 +292,7 @@ class TestM3Skills:
         all_skills = load_all_skills(skills_dir)
         discovered_ids = {s.id for s in all_skills}
 
-        for spec in M3_EXPECTED_AGENTS.values():
+        for spec in ADMIN_EXPECTED_AGENTS.values():
             skill_id = spec["companion_skill"]
             assert skill_id in discovered_ids, f"Skill '{skill_id}' was not discovered by load_all_skills"
 
@@ -300,7 +300,7 @@ class TestM3Skills:
         """Every SKILL.md must contain all 3 mandatory intended-use statements verbatim."""
         skills_dir = temp_workspace / "skills"
 
-        for spec in M3_EXPECTED_AGENTS.values():
+        for spec in ADMIN_EXPECTED_AGENTS.values():
             skill_id = spec["companion_skill"]
             skill_md_path = skills_dir / skill_id / "SKILL.md"
             raw_content = skill_md_path.read_text(encoding="utf-8")
@@ -319,7 +319,7 @@ class TestM3Skills:
         """Every skill must contain valid frontmatter metadata with matching ID/name, domain, and category."""
         skills_dir = temp_workspace / "skills"
 
-        for spec in M3_EXPECTED_AGENTS.values():
+        for spec in ADMIN_EXPECTED_AGENTS.values():
             skill_id = spec["companion_skill"]
             skill_md = skills_dir / skill_id / "SKILL.md"
             raw_text = skill_md.read_text(encoding="utf-8")
@@ -337,14 +337,14 @@ class TestM3Skills:
 # Section 4: Skill References Directory Verification
 # ============================================================================
 
-class TestM3SkillReferences:
+class TestAdminSpecialtiesSkillReferences:
     """Verifies that every skill contains references/ with >= 2 structured .md files (each >= 200 bytes)."""
 
     def test_all_4_skills_have_ge_2_reference_documents(self, temp_workspace: Path):
         """Every skill directory must contain references/ with at least 2 structured markdown documents."""
         skills_dir = temp_workspace / "skills"
 
-        for spec in M3_EXPECTED_AGENTS.values():
+        for spec in ADMIN_EXPECTED_AGENTS.values():
             skill_id = spec["companion_skill"]
             ref_dir = skills_dir / skill_id / REFERENCES_DIR
             assert ref_dir.is_dir(), f"references/ directory missing in skill '{skill_id}'"
@@ -368,14 +368,14 @@ class TestM3SkillReferences:
 # Section 5: Tool Restrictions & Closed Phase 0 Registry
 # ============================================================================
 
-class TestM3ToolRestrictions:
+class TestAdminSpecialtiesToolRestrictions:
     """Verifies that all declared tools are strictly within PHASE_0_REGISTRY and no unauthorized tools exist."""
 
     def test_all_4_agents_declare_only_phase0_tools(self, temp_workspace: Path):
         """All 4 agents must only declare allowed Phase 0 tools (subset of attach-read, skill-docs, workspace-note)."""
         agents_dir = temp_workspace / "agents"
 
-        for agent_id in M3_EXPECTED_AGENTS:
+        for agent_id in ADMIN_EXPECTED_AGENTS:
             manifest, _, _ = load_agent(agents_dir / agent_id)
 
             validate_tools_in_phase0(manifest.tools, f"agent '{agent_id}'")
@@ -391,7 +391,7 @@ class TestM3ToolRestrictions:
         """All 4 skills must only declare allowed Phase 0 tools (subset of attach-read, skill-docs)."""
         skills_dir = temp_workspace / "skills"
 
-        for spec in M3_EXPECTED_AGENTS.values():
+        for spec in ADMIN_EXPECTED_AGENTS.values():
             skill_id = spec["companion_skill"]
             skill = load_skill(skills_dir / skill_id)
 
@@ -405,7 +405,7 @@ class TestM3ToolRestrictions:
 # Section 6: SQLite FTS5 Catalog Indexing
 # ============================================================================
 
-class TestM3CatalogIndexing:
+class TestAdminSpecialtiesCatalogIndexing:
     """Verifies that all 4 agents and skills index cleanly into SqliteCatalogAdapter and support FTS search."""
 
     @pytest.mark.asyncio
@@ -417,7 +417,7 @@ class TestM3CatalogIndexing:
         catalog = SqliteCatalogAdapter(db_path=":memory:")
 
         # Index all 4 agents and companion skills
-        for agent_id, spec in M3_EXPECTED_AGENTS.items():
+        for agent_id, spec in ADMIN_EXPECTED_AGENTS.items():
             agent, _, _ = load_agent(agents_dir / agent_id, skills_dir)
             await catalog.index_agent(agent)
 
@@ -427,17 +427,17 @@ class TestM3CatalogIndexing:
         # 1. Search navigation domain
         nav_agents = await catalog.search_agents(domain="navigation", limit=20)
         found_ids = {a.id for a in nav_agents}
-        for agent_id in M3_EXPECTED_AGENTS:
+        for agent_id in ADMIN_EXPECTED_AGENTS:
             assert agent_id in found_ids, f"Agent '{agent_id}' not found in navigation domain query"
 
         # 2. Specific category queries (exact match)
-        for agent_id, spec in M3_EXPECTED_AGENTS.items():
+        for agent_id, spec in ADMIN_EXPECTED_AGENTS.items():
             cat_results = await catalog.search_agents(category=spec["category"])
             assert len(cat_results) == 1, f"Expected 1 agent for category '{spec['category']}', got {len(cat_results)}"
             assert cat_results[0].id == agent_id
 
         # 3. FTS queries on keywords retrieve the expected agent
-        for agent_id, spec in M3_EXPECTED_AGENTS.items():
+        for agent_id, spec in ADMIN_EXPECTED_AGENTS.items():
             fts_results = await catalog.search_agents(query=spec["fts_query"])
             assert len(fts_results) >= 1, f"FTS query '{spec['fts_query']}' returned no results"
             matched_ids = [a.id for a in fts_results]
@@ -454,7 +454,7 @@ class TestM3CatalogIndexing:
         assert "navigation" in tree["domains"], "Navigation domain missing from category tree"
         nav_cats = tree["domains"]["navigation"]["categories"]
 
-        for spec in M3_EXPECTED_AGENTS.values():
+        for spec in ADMIN_EXPECTED_AGENTS.values():
             cat_leaf = spec["category_leaf"]  # e.g. "prior_auth", "claims", "records", "formulary"
             assert cat_leaf in nav_cats, f"Category '{cat_leaf}' missing from navigation category tree"
             assert nav_cats[cat_leaf]["count"] >= 1
@@ -466,7 +466,7 @@ class TestM3CatalogIndexing:
 # Section 7: Offline Golden Evaluations (24 Cases Total)
 # ============================================================================
 
-class TestM3GoldenEvals:
+class TestAdminSpecialtiesGoldenEvals:
     """Verifies that all 4 agents have golden.jsonl files (6 cases each) and pass offline evaluations."""
 
     def test_all_4_golden_eval_files_schema(self, temp_workspace: Path):
@@ -474,7 +474,7 @@ class TestM3GoldenEvals:
         agents_dir = temp_workspace / "agents"
         total_eval_cases = 0
 
-        for agent_id in M3_EXPECTED_AGENTS:
+        for agent_id in ADMIN_EXPECTED_AGENTS:
             golden_path = agents_dir / agent_id / "evals" / "golden.jsonl"
             assert golden_path.is_file(), f"Missing evals/golden.jsonl for agent '{agent_id}'"
 
@@ -507,7 +507,7 @@ class TestM3GoldenEvals:
         total_tested = 0
         failures: List[str] = []
 
-        for agent_id in M3_EXPECTED_AGENTS:
+        for agent_id in ADMIN_EXPECTED_AGENTS:
             golden_path = agents_dir / agent_id / "evals" / "golden.jsonl"
             cases: List[EvalCase] = []
 

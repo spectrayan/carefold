@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tier 1 to Tier 4 E2E Tests for Requirement R2: Context Load & Pre-Validation Gating.
+"""End-to-End Tests for Context Load & Pre-Validation Gating.
 
 Verifies:
 1. ContextLoader: Multi-source ingestion of query, checkpoints, attachments, notes, and catalog summary.
@@ -175,14 +175,14 @@ def get_emergency_detector():
 
 
 # ============================================================================
-# Tier 1: Feature Coverage (R2)
+# Tier 1: Feature Coverage: Context & Safety Gating
 # ============================================================================
 
-class TestR2ContextAndSafetyGatingFeatureCoverage:
+class TestContextAndSafetyGatingFeatureCoverage:
     """Tier 1: Feature coverage for ContextLoader, emergency red flags, and clinical consent."""
 
-    def test_f_r2_01_context_loader_ingests_attachments(self, e2e_workspace: Path):
-        """F-R2.01: Verifies ContextLoader discovers and loads files from attachments/ directory."""
+    def test_context_loader_ingests_attachments(self, e2e_workspace: Path):
+        """Verifies ContextLoader discovers and loads files from attachments/ directory."""
         loader = get_context_loader()
         initial_state = {"prompt": "Review my visit summary", "thread_id": "t1"}
 
@@ -196,8 +196,8 @@ class TestR2ContextAndSafetyGatingFeatureCoverage:
         assert "sample_visit.txt" in attachment_names
         assert "sample_insurance.txt" in attachment_names
 
-    def test_f_r2_02_context_loader_ingests_user_notes(self, e2e_workspace: Path):
-        """F-R2.02: Verifies ContextLoader reads user notes with title, path, and snippet."""
+    def test_context_loader_ingests_user_notes(self, e2e_workspace: Path):
+        """Verifies ContextLoader reads user notes with title, path, and snippet."""
         notes_dir = e2e_workspace / "workspace" / "notes"
         notes_dir.mkdir(parents=True, exist_ok=True)
         note_file = notes_dir / "hypertension_log.md"
@@ -215,8 +215,8 @@ class TestR2ContextAndSafetyGatingFeatureCoverage:
         assert "Blood Pressure Log" in note["snippet"]
         assert Path(note["path"]).exists()
 
-    def test_f_r2_03_context_loader_ingests_catalog_summary(self, e2e_workspace: Path):
-        """F-R2.03: Verifies ContextLoader injects catalog summary of available specialists."""
+    def test_context_loader_ingests_catalog_summary(self, e2e_workspace: Path):
+        """Verifies ContextLoader injects catalog summary of available specialists."""
         loader = get_context_loader()
         initial_state = {"prompt": "Find a heart doctor"}
         result_state = loader.load_context(initial_state, e2e_workspace)
@@ -226,8 +226,8 @@ class TestR2ContextAndSafetyGatingFeatureCoverage:
         assert "cardiology-guide" in summary
         assert "nephrology-guide" in summary
 
-    def test_f_r2_04_emergency_red_flag_acute_chest_pain(self):
-        """F-R2.04: Verifies acute chest pain / radiating pressure triggers immediate 911 refusal."""
+    def test_emergency_red_flag_acute_chest_pain(self):
+        """Verifies acute chest pain / radiating pressure triggers immediate 911 refusal."""
         detector = get_emergency_detector()
         prompt = "I have sudden crushing chest pain radiating to my left arm and jaw."
 
@@ -237,8 +237,8 @@ class TestR2ContextAndSafetyGatingFeatureCoverage:
         assert flag.category == "acute_chest_pain"
         assert "911" in flag.referral_message
 
-    def test_f_r2_05_emergency_red_flag_stroke_fast(self):
-        """F-R2.05: Verifies FAST stroke symptoms trigger immediate 911 emergency referral."""
+    def test_emergency_red_flag_stroke_fast(self):
+        """Verifies FAST stroke symptoms trigger immediate 911 emergency referral."""
         detector = get_emergency_detector()
         prompt = "My mother has sudden facial drooping and slurred speech and can't raise her arm."
 
@@ -248,8 +248,8 @@ class TestR2ContextAndSafetyGatingFeatureCoverage:
         assert flag.category == "stroke_fast"
         assert "911" in flag.referral_message
 
-    def test_f_r2_06_emergency_red_flag_anaphylaxis(self):
-        """F-R2.06: Verifies acute anaphylaxis triggers immediate emergency refusal."""
+    def test_emergency_red_flag_anaphylaxis(self):
+        """Verifies acute anaphylaxis triggers immediate emergency refusal."""
         detector = get_emergency_detector()
         prompt = "I ate peanuts 10 minutes ago, my throat is closing up and my lips are swollen."
 
@@ -259,8 +259,8 @@ class TestR2ContextAndSafetyGatingFeatureCoverage:
         assert flag.category == "anaphylaxis"
         assert "epinephrine" in flag.referral_message.lower() or "911" in flag.referral_message
 
-    def test_f_r2_07_clinical_consent_gating_unconsented(self):
-        """F-R2.07: Clinical domain queries without allow_clinical=True trigger consent gating."""
+    def test_clinical_consent_gating_unconsented(self):
+        """Clinical domain queries without allow_clinical=True trigger consent gating."""
         state = {
             "prompt": "What medication should I take for my blood pressure?",
             "target_domain": "clinical",
@@ -274,8 +274,8 @@ class TestR2ContextAndSafetyGatingFeatureCoverage:
         assert is_refusal is True
         assert refusal_reason == "clinical_consent_required"
 
-    def test_f_r2_08_clinical_consent_gating_consented(self):
-        """F-R2.08: Clinical domain queries with allow_clinical=True proceed uninterrupted."""
+    def test_clinical_consent_gating_consented(self):
+        """Clinical domain queries with allow_clinical=True proceed uninterrupted."""
         state = {
             "prompt": "Help me prepare questions for my cardiologist",
             "target_domain": "clinical",
@@ -285,8 +285,8 @@ class TestR2ContextAndSafetyGatingFeatureCoverage:
         is_refusal = state.get("target_domain") == "clinical" and not state.get("allow_clinical")
         assert is_refusal is False
 
-    def test_f_r2_09_administrative_domain_bypasses_clinical_consent(self):
-        """F-R2.09: Administrative queries (benefits, billing) do not require allow_clinical."""
+    def test_administrative_domain_bypasses_clinical_consent(self):
+        """Administrative queries (benefits, billing) do not require allow_clinical."""
         state = {
             "prompt": "What is my in-network copay for physical therapy?",
             "target_domain": "administrative",
@@ -298,13 +298,13 @@ class TestR2ContextAndSafetyGatingFeatureCoverage:
 
 
 # ============================================================================
-# Tier 2: Boundary & Corner Cases (R2)
+# Tier 2: Boundary & Corner Cases: Context & Safety Gating
 # ============================================================================
 
-class TestR2ContextAndSafetyGatingBoundaries:
-    """Tier 2: Boundary conditions, corner cases, and negative tests for R2."""
+class TestContextAndSafetyGatingBoundaries:
+    """Tier 2: Boundary conditions, corner cases, and negative tests for context & safety gating."""
 
-    def test_r2_b01_missing_attachments_and_notes_directories(self, tmp_path: Path):
+    def test_missing_attachments_and_notes_directories(self, tmp_path: Path):
         """Handles empty or completely missing attachments and notes directories without crashing."""
         empty_root = tmp_path / "empty_workspace"
         empty_root.mkdir()
@@ -315,7 +315,7 @@ class TestR2ContextAndSafetyGatingBoundaries:
         assert state["attachments"] == []
         assert state["notes"] == []
 
-    def test_r2_b02_path_traversal_in_attachment_loading(self, e2e_workspace: Path):
+    def test_path_traversal_in_attachment_loading(self, e2e_workspace: Path):
         """Ensures hidden or dot-dot files are ignored during attachment discovery."""
         att_dir = e2e_workspace / "attachments"
         # Create a hidden file
@@ -327,7 +327,7 @@ class TestR2ContextAndSafetyGatingBoundaries:
         attachment_names = [Path(p).name for p in state["attachments"]]
         assert ".hidden_secret.txt" not in attachment_names
 
-    def test_r2_b03_emergency_red_flag_negation(self):
+    def test_emergency_red_flag_negation(self):
         """Verifies explicit negation does NOT trigger emergency red-flag diversion."""
         detector = get_emergency_detector()
         prompt = "The patient has no chest pain and denies shortness of breath."
@@ -335,7 +335,7 @@ class TestR2ContextAndSafetyGatingBoundaries:
         flag = detector(prompt)
         assert flag is None, "Negated symptoms should not trigger emergency red flag"
 
-    def test_r2_b04_emergency_red_flag_historical_context(self):
+    def test_emergency_red_flag_historical_context(self):
         """Verifies historical past-tense disclosures do not trigger acute 911 diversion."""
         detector = get_emergency_detector()
         prompt = "I had a heart attack 5 years ago, and I need help understanding my insurance deductible."
@@ -343,7 +343,7 @@ class TestR2ContextAndSafetyGatingBoundaries:
         flag = detector(prompt)
         assert flag is None, "Historical medical events should not trigger acute 911 diversion"
 
-    def test_r2_b05_clinical_consent_boundary_values(self):
+    def test_clinical_consent_boundary_values(self):
         """Verifies falsy variations of allow_clinical are properly treated as unconsented."""
         for falsy_val in [False, None, "", 0, "false"]:
             state = {
@@ -356,13 +356,13 @@ class TestR2ContextAndSafetyGatingBoundaries:
 
 
 # ============================================================================
-# Tier 3: Cross-Feature Combinations (R2)
+# Tier 3: Cross-Feature Combinations: Context & Safety Gating
 # ============================================================================
 
-class TestR2ContextAndSafetyGatingCrossFeature:
+class TestContextAndSafetyGatingCrossFeature:
     """Tier 3: Pairwise integration across ContextLoader and Safety Gating."""
 
-    def test_r2_c01_context_load_then_emergency_interception(self, e2e_workspace: Path):
+    def test_context_load_then_emergency_interception(self, e2e_workspace: Path):
         """Context is loaded, but acute emergency in prompt immediately intercepts workflow."""
         loader = get_context_loader()
         detector = get_emergency_detector()
@@ -386,7 +386,7 @@ class TestR2ContextAndSafetyGatingCrossFeature:
         assert loaded_state["is_refusal"] is True
         assert "911" in loaded_state["refusal_message"]
 
-    def test_r2_c02_unconsented_clinical_query_halts_before_planning(self):
+    def test_unconsented_clinical_query_halts_before_planning(self):
         """Unconsented clinical request halts at safety gate before any plan can be executed."""
         state = {
             "prompt": "I have arrhythmia, should I change my beta blocker?",
@@ -404,13 +404,13 @@ class TestR2ContextAndSafetyGatingCrossFeature:
 
 
 # ============================================================================
-# Tier 4: Real-World Application Scenarios (R2)
+# Tier 4: Real-World Application Scenarios: Context & Safety Gating
 # ============================================================================
 
-class TestR2ContextAndSafetyGatingRealWorldScenarios:
+class TestContextAndSafetyGatingRealWorldScenarios:
     """Tier 4: Realistic end-to-end patient entry scenarios."""
 
-    def test_r2_s01_acute_cardiac_emergency_diverted_instantly(self, e2e_workspace: Path):
+    def test_acute_cardiac_emergency_diverted_instantly(self, e2e_workspace: Path):
         """Patient enters with sudden crushing chest pain; immediately routed to 911."""
         detector = get_emergency_detector()
         prompt = (
@@ -422,7 +422,7 @@ class TestR2ContextAndSafetyGatingRealWorldScenarios:
         assert flag.category == "acute_chest_pain"
         assert "emergency room" in flag.referral_message.lower() or "911" in flag.referral_message
 
-    def test_r2_s02_multimodal_chronic_patient_loaded_with_consent(self, e2e_workspace: Path):
+    def test_multimodal_chronic_patient_loaded_with_consent(self, e2e_workspace: Path):
         """Chronic multimorbid patient uploads visit summary and notes with clinical consent."""
         loader = get_context_loader()
         state = {

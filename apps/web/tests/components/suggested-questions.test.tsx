@@ -20,7 +20,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { SuggestedQuestionsChips } from '@/components/SuggestedQuestionsChips';
 
-describe('SuggestedQuestionsChips Component (M8 / R3 / Feature 46)', () => {
+describe('SuggestedQuestionsChips Component', () => {
   const suggestions = [
     'What should I bring to my appointment?',
     'Are there any dietary restrictions for this test?',

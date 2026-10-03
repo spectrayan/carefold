@@ -21,7 +21,7 @@ import React from 'react';
 import { SettingsModal } from '@/components/SettingsModal';
 import { DEFAULT_USER_SETTINGS, CAREFOLD_SETTINGS_STORAGE_KEY, type CarefoldUserSettings } from '@/lib/settings';
 
-describe('SettingsModal Component (M8 / R3 / Feature 45)', () => {
+describe('SettingsModal Component', () => {
   beforeEach(() => {
     localStorage.clear();
   });

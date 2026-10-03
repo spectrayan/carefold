@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Standalone Automated Verification Suite for Milestone M2 (Extended Specialty Navigators 1–5).
+"""Standalone Automated Verification Suite for Extended Specialty Navigators Verification Suite.
 
 Asserts:
 1. All 5 agents in agents/ load cleanly without ManifestValidationError.
@@ -53,10 +53,10 @@ from evals.runner import EvalCase, run_single_eval
 
 
 # ============================================================================
-# Milestone M2 Invariants & Specification Constants
+# Extended Specialty Invariants & Specification Constants
 # ============================================================================
 
-M2_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
+EXTENDED_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
     "oncology-navigator": {
         "title": "Oncology Care Steward",
         "alt_title": "Oncology Navigator",
@@ -125,7 +125,7 @@ FORBIDDEN_TOOLS_FOR_NAVIGATORS: Set[str] = {"delegate_to_agent", "list_agents"}
 # Section 1: Agent Manifest & Loader Validation
 # ============================================================================
 
-class TestM2AgentManifests:
+class TestExtendedSpecialtiesManifests:
     """Verifies that all 5 extended specialty navigators load cleanly and conform to schema."""
 
     def test_all_5_agents_exist_and_load_cleanly(self, temp_workspace: Path):
@@ -133,7 +133,7 @@ class TestM2AgentManifests:
         agents_dir = temp_workspace / "agents"
         skills_dir = temp_workspace / "skills"
 
-        for agent_id, spec in M2_EXPECTED_AGENTS.items():
+        for agent_id, spec in EXTENDED_EXPECTED_AGENTS.items():
             agent_path = agents_dir / agent_id
             assert agent_path.is_dir(), f"Agent directory missing: {agent_path}"
             assert (agent_path / "agent.yaml").is_file(), f"Missing agent.yaml in {agent_path}"
@@ -166,7 +166,7 @@ class TestM2AgentManifests:
 
         valid_care_stages = {"pre_visit", "during_visit", "post_visit", "daily_living", "follow_up"}
 
-        for agent_id, spec in M2_EXPECTED_AGENTS.items():
+        for agent_id, spec in EXTENDED_EXPECTED_AGENTS.items():
             manifest, _, _ = load_agent(agents_dir / agent_id, skills_dir)
 
             assert isinstance(manifest.care_stages, list) and len(manifest.care_stages) > 0, (
@@ -197,14 +197,14 @@ class TestM2AgentManifests:
 # Section 2: Persona Depth & Mandatory Safety Headers
 # ============================================================================
 
-class TestM2Personas:
+class TestExtendedSpecialtiesPersonas:
     """Verifies that all 5 agent personas adhere to canonical persona contracts."""
 
     def test_all_5_personas_word_count_ge_250(self, temp_workspace: Path):
         """All 5 personas must have word count within canonical budget [40, 600]."""
         agents_dir = temp_workspace / "agents"
 
-        for agent_id in M2_EXPECTED_AGENTS:
+        for agent_id in EXTENDED_EXPECTED_AGENTS:
             agent_path = agents_dir / agent_id
             manifest, _, _ = load_agent(agent_path)
             persona_text = manifest.persona if isinstance(manifest.persona, str) else str(manifest.persona)
@@ -219,7 +219,7 @@ class TestM2Personas:
         """All 5 canonical personas must contain required sections 1 & 2."""
         agents_dir = temp_workspace / "agents"
 
-        for agent_id in M2_EXPECTED_AGENTS:
+        for agent_id in EXTENDED_EXPECTED_AGENTS:
             agent_path = agents_dir / agent_id
             manifest, _, _ = load_agent(agent_path)
             persona_text = manifest.persona if isinstance(manifest.persona, str) else str(manifest.persona)
@@ -250,14 +250,14 @@ class TestM2Personas:
 # Section 3: Skill Manifests & Mandatory Intended-Use Statements
 # ============================================================================
 
-class TestM2Skills:
+class TestExtendedSpecialtiesSkills:
     """Verifies that all 5 companion skills load cleanly and contain the 3 intended-use statements."""
 
     def test_all_5_skills_exist_and_load_cleanly(self, temp_workspace: Path):
         """All 5 companion skills must load via load_skill without ManifestValidationError."""
         skills_dir = temp_workspace / "skills"
 
-        for agent_id, spec in M2_EXPECTED_AGENTS.items():
+        for agent_id, spec in EXTENDED_EXPECTED_AGENTS.items():
             skill_id = spec["companion_skill"]
             skill_path = skills_dir / skill_id
             assert skill_path.is_dir(), f"Skill directory missing: {skill_path}"
@@ -277,7 +277,7 @@ class TestM2Skills:
         """Every SKILL.md must contain all 3 mandatory intended-use statements verbatim."""
         skills_dir = temp_workspace / "skills"
 
-        for spec in M2_EXPECTED_AGENTS.values():
+        for spec in EXTENDED_EXPECTED_AGENTS.values():
             skill_id = spec["companion_skill"]
             skill_md_path = skills_dir / skill_id / "SKILL.md"
             raw_content = skill_md_path.read_text(encoding="utf-8")
@@ -296,7 +296,7 @@ class TestM2Skills:
         """Every skill must contain valid frontmatter metadata with matching ID, risk_class, and forbidden actions."""
         skills_dir = temp_workspace / "skills"
 
-        for spec in M2_EXPECTED_AGENTS.values():
+        for spec in EXTENDED_EXPECTED_AGENTS.values():
             skill_id = spec["companion_skill"]
             skill_md = skills_dir / skill_id / "SKILL.md"
             raw_text = skill_md.read_text(encoding="utf-8")
@@ -314,14 +314,14 @@ class TestM2Skills:
 # Section 4: Skill References Directory Verification
 # ============================================================================
 
-class TestM2SkillReferences:
+class TestExtendedSpecialtiesSkillReferences:
     """Verifies that every skill contains references/ with >= 2 structured .md files (each >= 200 bytes)."""
 
     def test_all_5_skills_have_ge_2_reference_documents(self, temp_workspace: Path):
         """Every skill directory must contain references/ with at least 2 structured markdown documents."""
         skills_dir = temp_workspace / "skills"
 
-        for spec in M2_EXPECTED_AGENTS.values():
+        for spec in EXTENDED_EXPECTED_AGENTS.values():
             skill_id = spec["companion_skill"]
             ref_dir = skills_dir / skill_id / REFERENCES_DIR
             assert ref_dir.is_dir(), f"references/ directory missing in skill '{skill_id}'"
@@ -345,14 +345,14 @@ class TestM2SkillReferences:
 # Section 5: Tool Restrictions & Closed Phase 0 Registry
 # ============================================================================
 
-class TestM2ToolRestrictions:
+class TestExtendedSpecialtiesToolRestrictions:
     """Verifies that all declared tools are strictly within PHASE_0_REGISTRY and no unauthorized tools exist."""
 
     def test_all_5_agents_declare_only_phase0_tools(self, temp_workspace: Path):
         """All 5 agents must only declare allowed Phase 0 tools (subset of attach-read, skill-docs, workspace-note)."""
         agents_dir = temp_workspace / "agents"
 
-        for agent_id in M2_EXPECTED_AGENTS:
+        for agent_id in EXTENDED_EXPECTED_AGENTS:
             manifest, _, _ = load_agent(agents_dir / agent_id)
 
             validate_tools_in_phase0(manifest.tools, f"agent '{agent_id}'")
@@ -368,7 +368,7 @@ class TestM2ToolRestrictions:
         """All 5 skills must only declare allowed Phase 0 tools (subset of attach-read, skill-docs)."""
         skills_dir = temp_workspace / "skills"
 
-        for spec in M2_EXPECTED_AGENTS.values():
+        for spec in EXTENDED_EXPECTED_AGENTS.values():
             skill_id = spec["companion_skill"]
             skill = load_skill(skills_dir / skill_id)
 
@@ -382,7 +382,7 @@ class TestM2ToolRestrictions:
 # Section 6: SQLite FTS5 Catalog Indexing
 # ============================================================================
 
-class TestM2CatalogIndexing:
+class TestExtendedSpecialtiesCatalogIndexing:
     """Verifies that all 5 agents and skills index cleanly into SqliteCatalogAdapter and support FTS search."""
 
     @pytest.mark.asyncio
@@ -394,7 +394,7 @@ class TestM2CatalogIndexing:
         catalog = SqliteCatalogAdapter(db_path=":memory:")
 
         # Index all 5 agents and companion skills
-        for agent_id, spec in M2_EXPECTED_AGENTS.items():
+        for agent_id, spec in EXTENDED_EXPECTED_AGENTS.items():
             agent, _, _ = load_agent(agents_dir / agent_id, skills_dir)
             await catalog.index_agent(agent)
 
@@ -404,17 +404,17 @@ class TestM2CatalogIndexing:
         # 1. Search clinical domain
         clinical_agents = await catalog.search_agents(domain="clinical", limit=20)
         found_ids = {a.id for a in clinical_agents}
-        for agent_id in M2_EXPECTED_AGENTS:
+        for agent_id in EXTENDED_EXPECTED_AGENTS:
             assert agent_id in found_ids, f"Agent '{agent_id}' not found in clinical domain query"
 
         # 2. Specific category queries
-        for agent_id, spec in M2_EXPECTED_AGENTS.items():
+        for agent_id, spec in EXTENDED_EXPECTED_AGENTS.items():
             cat_results = await catalog.search_agents(category=spec["category"])
             assert len(cat_results) == 1, f"Expected 1 agent for category '{spec['category']}', got {len(cat_results)}"
             assert cat_results[0].id == agent_id
 
         # 3. FTS queries on keywords
-        for agent_id, spec in M2_EXPECTED_AGENTS.items():
+        for agent_id, spec in EXTENDED_EXPECTED_AGENTS.items():
             fts_results = await catalog.search_agents(query=spec["fts_query"])
             assert len(fts_results) >= 1, f"FTS query '{spec['fts_query']}' returned no results"
             assert any(a.id == agent_id for a in fts_results), (
@@ -426,7 +426,7 @@ class TestM2CatalogIndexing:
         assert "clinical" in tree["domains"]
         clinical_cats = tree["domains"]["clinical"]["categories"]
 
-        for spec in M2_EXPECTED_AGENTS.values():
+        for spec in EXTENDED_EXPECTED_AGENTS.values():
             cat_leaf = spec["category"].split(".", 1)[1]  # e.g. "oncology"
             assert cat_leaf in clinical_cats, f"Category '{cat_leaf}' missing from clinical category tree"
             assert clinical_cats[cat_leaf]["count"] >= 1
@@ -438,7 +438,7 @@ class TestM2CatalogIndexing:
 # Section 7: Offline Golden Evaluations (30 Cases Total)
 # ============================================================================
 
-class TestM2GoldenEvals:
+class TestExtendedSpecialtiesGoldenEvals:
     """Verifies that all 5 agents have golden.jsonl files (6 cases each) and pass offline evaluations."""
 
     def test_all_5_golden_eval_files_schema(self, temp_workspace: Path):
@@ -446,7 +446,7 @@ class TestM2GoldenEvals:
         agents_dir = temp_workspace / "agents"
         total_eval_cases = 0
 
-        for agent_id in M2_EXPECTED_AGENTS:
+        for agent_id in EXTENDED_EXPECTED_AGENTS:
             golden_path = agents_dir / agent_id / "evals" / "golden.jsonl"
             assert golden_path.is_file(), f"Missing evals/golden.jsonl for agent '{agent_id}'"
 
@@ -476,7 +476,7 @@ class TestM2GoldenEvals:
         """Executes all 30 golden offline evaluation cases across all 5 agents using deterministic test engine."""
         agents_dir = temp_workspace / "agents"
 
-        for agent_id in M2_EXPECTED_AGENTS:
+        for agent_id in EXTENDED_EXPECTED_AGENTS:
             golden_path = agents_dir / agent_id / "evals" / "golden.jsonl"
             cases: List[EvalCase] = []
 

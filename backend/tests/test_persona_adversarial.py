@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Challenger Test Suite for Milestone M1 (Persona Purity & Separation of Concerns).
+"""Empirical Adversarial Test Suite for Persona Purity & Separation of Concerns.
 
 Targeting:
 1. Obfuscated Tool Syntax & Hidden Directives:
@@ -106,8 +106,8 @@ def get_all_reference_filenames() -> Set[str]:
     return filenames
 
 
-class TestM1PersonaAdversarialChallenger:
-    """Adversarial challenge test suite for Milestone M1 persona purity."""
+class TestPersonaAdversarialHardening:
+    """Adversarial test suite for persona purity."""
 
     def test_persona_file_inventory_completeness(self):
         """Verify exactly 21 persona files exist (20 specialist agents + _template)."""

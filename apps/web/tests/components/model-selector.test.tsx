@@ -21,7 +21,7 @@ import React from 'react';
 import { ModelSelector } from '@/components/ModelSelector';
 import { DEFAULT_USER_SETTINGS, type CarefoldUserSettings } from '@/lib/settings';
 
-describe('ModelSelector Component (M8 / R3 / Feature 44)', () => {
+describe('ModelSelector Component', () => {
   it('renders provider and model dropdowns with default options', () => {
     render(
       <ModelSelector

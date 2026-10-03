@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Adversarial engine and registry stress-fuzzing suite for Milestone 3 Iteration 2.
+"""Adversarial engine and registry stress-fuzzing suite.
 
-Authored by M3 Challenger 2:
+Verifies:
 1. Stress-tests create_carefold_agent() with various subagent combinations and Ollama configurations.
 2. Verifies langchain-ollama initializes ollama:llama3.2 without ImportError.
 3. Verifies AgentRegistry.list_subagents() returns exactly 20 specialist subagents with valid tools.

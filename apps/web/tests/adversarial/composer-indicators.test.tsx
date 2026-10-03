@@ -55,7 +55,7 @@ function createMockSSEResponse(events: Array<{ event?: string; data: Record<stri
   });
 }
 
-describe('Adversarial Stress Suite: Composer & Textarea Edge Cases (M10 / R5 & R4)', () => {
+describe('Adversarial Stress Suite: Composer & Textarea Edge Cases', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.stubGlobal('fetch', vi.fn());
@@ -399,7 +399,7 @@ describe('Adversarial Stress Suite: Composer & Textarea Edge Cases (M10 / R5 & R
   });
 });
 
-describe('Adversarial Stress Suite: ThinkingIndicator & Streaming State Transitions (M10 / R3)', () => {
+describe('Adversarial Stress Suite: ThinkingIndicator & Streaming State Transitions', () => {
   // ---------------------------------------------------------------------------
   // 1. STATE TRANSITIONS: LATENCY -> STREAMING -> FINISHED
   // ---------------------------------------------------------------------------
@@ -574,7 +574,7 @@ describe('Adversarial Stress Suite: ThinkingIndicator & Streaming State Transiti
   });
 });
 
-describe('Adversarial Stress Suite: ToolTraceCard Accordion & Layout Shift Bounds (M10 / R3)', () => {
+describe('Adversarial Stress Suite: ToolTraceCard Accordion & Layout Shift Bounds', () => {
   it('bounds parameters and output pre tags to max-h-40 (160px) with overflow-auto preventing layout shifts', () => {
     const hugeTrace: ToolTraceItem = {
       id: 'trace-huge',
@@ -654,7 +654,7 @@ describe('Adversarial Stress Suite: ToolTraceCard Accordion & Layout Shift Bound
   });
 });
 
-describe('Adversarial Stress Suite: ScrollToBottomButton Edge Cases & Accessibility (M10 / R4 & R5)', () => {
+describe('Adversarial Stress Suite: ScrollToBottomButton Edge Cases & Accessibility', () => {
   it('correctly manages aria-label, tabIndex, and entrance/exit classes across visible toggle', () => {
     const { rerender } = render(<ScrollToBottomButton visible={false} onClick={vi.fn()} unreadCount={0} />);
 
@@ -691,7 +691,7 @@ describe('Adversarial Stress Suite: ScrollToBottomButton Edge Cases & Accessibil
   });
 });
 
-describe('Adversarial Stress Suite: Full Chat Flow, Abort, Regenerate & Rerun (M10 / R2, R3, R5)', () => {
+describe('Adversarial Stress Suite: Full Chat Flow, Abort, Regenerate & Rerun', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.stubGlobal('fetch', vi.fn());

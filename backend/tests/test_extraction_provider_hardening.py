@@ -128,7 +128,7 @@ from carefold.workflows.subgraphs.extraction.tool import (
 # 1. PII Sanitizer & Adversarial Evasion Hardening
 # ============================================================================
 
-class TestTier5PIIEvasionHardening:
+class TestPIIEvasionHardening:
     """Stress tests for PII sanitization regexes, edge cases, and evasion vectors."""
 
     def test_pii_sanitization_standard_identifiers(self) -> None:
@@ -315,7 +315,7 @@ class TestTier5PIIEvasionHardening:
 # 2. Adversarial Numerical Grounding Attacks
 # ============================================================================
 
-class TestTier5NumericalGroundingHardening:
+class TestNumericalGroundingHardening:
     """Stress tests for GroundingValidator against subtle numerical manipulation attacks."""
 
     def test_grounding_percentage_vs_currency_disguise(self) -> None:
@@ -481,7 +481,7 @@ class TestTier5NumericalGroundingHardening:
 # 3. Model Provider Factory Edge Cases
 # ============================================================================
 
-class TestTier5ProviderFactoryHardening:
+class TestProviderFactoryHardening:
     """Stress tests for provider resolution, authentication gating, and configuration boundaries."""
 
     def test_provider_resolution_boundaries(self) -> None:
@@ -649,7 +649,7 @@ class TestTier5ProviderFactoryHardening:
 # 4. Tool Execution Security & Extraction Subgraph Hardening
 # ============================================================================
 
-class TestTier5ToolExecutionHardening:
+class TestToolExecutionHardening:
     """Stress tests for sandbox boundary enforcement, traversal attacks, and corrupted attachments."""
 
     def test_sandbox_path_traversal_payloads(self, tmp_path: Path) -> None:

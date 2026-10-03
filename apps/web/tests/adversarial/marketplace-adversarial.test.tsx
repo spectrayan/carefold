@@ -21,7 +21,7 @@ import React from 'react';
 import { MarketplaceClient } from '@/app/MarketplaceClient';
 import type { AgentSummary } from '@/lib/types';
 
-describe('M16 Adversarial Challenger: Marketplace UI & Icon Resolution', () => {
+describe('Adversarial Stress Suite: Marketplace UI & Icon Resolution', () => {
   const baseAgent: AgentSummary = {
     id: 'test-agent',
     title: 'Test Agent',

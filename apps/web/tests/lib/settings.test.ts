@@ -28,7 +28,7 @@ import {
   type CarefoldUserSettings
 } from '@/lib/settings';
 
-describe('User Settings & Local Storage Persistence (M8 / R3)', () => {
+describe('User Settings & Local Storage Persistence', () => {
   beforeEach(() => {
     localStorage.clear();
   });

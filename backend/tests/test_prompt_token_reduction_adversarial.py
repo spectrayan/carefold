@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Adversarial stress-testing suite for Milestone 3 (Prompt Token Reduction & Engine Runner Fuzzing).
+"""Adversarial stress-testing suite for Prompt Token Reduction & Engine Runner Fuzzing.
 
-Authored by M3 Challenger 2:
+Verifies:
 1. Empirically verifies >=60% system prompt token reduction across all 20 specialist agents + _template.
 2. Empirically verifies complete absence of legacy Section 3 interaction protocols and full skill bodies from Turn-1 prompts.
 3. Stress-tests and fuzzes agent_factory.py, load_subagent_from_yaml(), load_all_subagents(), and AgentRegistry.

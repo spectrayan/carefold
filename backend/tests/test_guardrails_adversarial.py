@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Challenger Test Suite for Milestone M2.
+"""Empirical Adversarial Test Suite for Emergency Guardrails & Red Flags.
 
 Stress-tests:
 1. `check_emergency_red_flags`:

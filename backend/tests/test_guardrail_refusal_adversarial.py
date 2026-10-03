@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Challenger 1 stress harness for Milestone M5 Iteration 2 (Audit Remediation Verification).
+"""Empirical adversarial stress harness for Emergency Refusal & Explicit Routing.
 
 Tasks:
 1. Adversarially stress test the remediated emergency refusal logic in `InputGuardrailNode`:

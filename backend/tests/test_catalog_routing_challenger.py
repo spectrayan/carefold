@@ -964,7 +964,7 @@ class TestAdversarialFTSInjectionAndSanitization:
 # Test Suite 10: Tier-1 Classifier Prompt Invariants & Token Measurements
 # ============================================================================
 
-class TestTier1PromptInvariantsAndTokens:
+class TestDomainClassifierPromptInvariantsAndTokens:
     """Verifies TIER1_DOMAIN_CLASSIFIER_PROMPT invariants and strict token ceiling (< 500 tokens)."""
 
     def test_prompt_token_counts_strictly_under_500(self):

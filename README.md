@@ -42,6 +42,14 @@
 
 It pairs a **5-phase LangGraph orchestration engine** with **22 specialist clinical and administrative navigators**, modular skill packs, hexagonal memory architecture (ready for Spector cognitive memory), zero-trust sandboxed tools, and a two-tier clinical safety guardrail system.
 
+<details>
+  <summary>📸 <strong>Preview Carefold Web Marketplace UI</strong> (Click to expand)</summary>
+  <br />
+  <p align="center">
+    <img src="assets/carefold-marketplace-preview.png" alt="Carefold Web Marketplace UI" width="100%" />
+  </p>
+</details>
+
 ---
 
 ## ⚡ 30-Second Quickstart

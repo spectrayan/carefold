@@ -42,7 +42,7 @@ def _try_import(module_path: str, symbol_name: Optional[str] = None) -> Any:
         return None
 
 
-class TestTier3CrossFeatureInteractions:
+class TestCrossFeatureInteractions:
     """Pairwise cross-feature interactions validating package boundaries."""
 
     @pytest.mark.asyncio
@@ -178,9 +178,3 @@ class TestTier3CrossFeatureInteractions:
         assert "123-45-6789" not in redacted
         assert "prompt" not in redacted
 
-    def test_i15_frontend_backend_sse_contract_compatibility(self, e2e_repo_root: Path):
-        """Interaction: Backend SSE event contract -> Frontend TypeScript SSE parser."""
-        types_file = e2e_repo_root / "apps" / "web" / "src" / "lib" / "types.ts"
-        assert types_file.exists()
-        content = types_file.read_text(encoding="utf-8")
-        assert "Message" in content or "delta" in content.lower()

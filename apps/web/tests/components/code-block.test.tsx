@@ -21,7 +21,7 @@ import React from 'react';
 import { CodeBlock, normalizeLanguage, tokenizeCode, getTokenClassName } from '@/components/chat/CodeBlock';
 import { ChatMessageItem, type ChatMessage } from '@/components/ChatMessageItem';
 
-describe('CodeBlock Component & Markdown Code Rendering (M9 / Requirement R5)', () => {
+describe('CodeBlock Component & Markdown Code Rendering', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });

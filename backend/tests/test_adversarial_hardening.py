@@ -167,7 +167,7 @@ class PersistentRefusalChatModel(BaseChatModel):
 # Domain 1: Rapid Concurrent Requests & Turn Interruptions
 # ============================================================================
 
-class TestTier5ConcurrentRequestsAndTurnInterruptions:
+class TestConcurrentRequestsAndTurnInterruptions:
     """Stress-tests concurrency boundaries, task cancellations, and client disconnects in AgentExecutionService."""
 
     @pytest.mark.asyncio
@@ -348,7 +348,7 @@ class TestTier5ConcurrentRequestsAndTurnInterruptions:
 # Domain 2: Cyclic Delegation Detection & Circuit-Breaking
 # ============================================================================
 
-class TestTier5CyclicDelegationAndCircuitBreaking:
+class TestCyclicDelegationAndCircuitBreaking:
     """Stress-tests cyclic multi-agent delegation, self-routing loops, and tool iteration bounds."""
 
     @pytest.mark.asyncio
@@ -492,7 +492,7 @@ class TestTier5CyclicDelegationAndCircuitBreaking:
 # Domain 3: Re-Entrancy, Malformed Checkpointer States, & Reflection Counter Overflows
 # ============================================================================
 
-class TestTier5ReentrancyAndCheckpointerHardening:
+class TestReentrancyAndCheckpointerHardening:
     """Stress-tests reflection counter ceilings, SQLite corruptions, and multi-turn re-entrancy."""
 
     @pytest.mark.asyncio
@@ -690,7 +690,7 @@ class TestTier5ReentrancyAndCheckpointerHardening:
 # Domain 4: Complex Graph Branch Decisions Under Missing or Partial State
 # ============================================================================
 
-class TestTier5GraphBranchDecisionsUnderPartialState:
+class TestGraphBranchDecisionsUnderPartialState:
     """Stress-tests conditional routers, missing state fields, and node fallbacks."""
 
     def test_graph_routers_with_empty_state(self):
