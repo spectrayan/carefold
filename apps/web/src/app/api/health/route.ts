@@ -20,6 +20,7 @@ import fs from 'node:fs/promises';
 import { findWorkspaceRoot, getWorkspacePaths, loadWorkspaceConfig } from '@/lib/workspace';
 import { checkOllamaHealth } from '@/lib/ollama';
 import type { HealthResponse } from '@/types/api';
+import pkg from '../../../../package.json';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,14 +35,18 @@ export async function GET(_req: Request | NextRequest): Promise<NextResponse<Hea
     let agentsCount = 0;
     try {
       const agentEntries = await fs.readdir(paths.agents, { withFileTypes: true });
-      agentsCount = agentEntries.filter((e) => e.isDirectory() && !e.name.startsWith('.')).length;
+      agentsCount = agentEntries.filter(
+        (e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_')
+      ).length;
     } catch {}
 
     // Count workspace skills
     let skillsCount = 0;
     try {
       const skillEntries = await fs.readdir(paths.skills, { withFileTypes: true });
-      skillsCount = skillEntries.filter((e) => e.isDirectory() && !e.name.startsWith('.')).length;
+      skillsCount = skillEntries.filter(
+        (e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_')
+      ).length;
     } catch {}
 
     // Check Ollama status
@@ -49,11 +54,11 @@ export async function GET(_req: Request | NextRequest): Promise<NextResponse<Hea
     const ollamaEndpoint = typeof rawEndpoint === 'string' && rawEndpoint ? rawEndpoint : 'http://127.0.0.1:11434';
     const ollamaStatus = await checkOllamaHealth(ollamaEndpoint);
 
-    const overallStatus: 'ok' | 'degraded' = ollamaStatus.reachable ? 'ok' : 'ok'; // Report ok for healthy app, or degraded if unreachable
+    const overallStatus: 'ok' | 'degraded' = ollamaStatus.reachable ? 'ok' : 'degraded';
 
     const healthData: HealthResponse = {
       status: overallStatus,
-      version: '0.1.0',
+      version: pkg.version,
       uptime: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
       modelReachable: ollamaStatus.reachable,
