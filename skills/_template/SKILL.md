@@ -1,15 +1,39 @@
 ---
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: _template
-description: Canonical template skill providing boilerplate structure, safety disclosures, and golden evals for Carefold skill contributors.
+description: Canonical template skill providing boilerplate structure, safety disclosures,
+  and golden evals for Carefold skill contributors.
 license: Apache-2.0
-domain: wellness
-category: wellness.template
-tags:
-  - template
-  - skill-starter
+compatibility: Requires local LLM or API key for model access
+allowed-tools: ''
 metadata:
-  author: Carefold Contributor
+  risk_class: wellness
+  domain: wellness
+  category: wellness.template
   version: 0.1.0
+  author: Carefold Contributor
+  tools: []
+  forbidden:
+  - diagnose
+  - prescribe
+  - dose
+  - replace_emergency_care
+  - instruct_stop_medication
+  evals: evals/golden.jsonl
 ---
 
 # Skill Name Template
@@ -36,3 +60,10 @@ Describe what your skill accomplishes, when an agent should invoke it, and what 
 
 ## References (Optional)
 If your skill uses documentation stored in `references/`, describe available files here and instruct the model to retrieve them using `skill-docs`.
+
+## Structured Interaction Protocol
+When interacting with users, follow this structured four-step methodology:
+1. Clarify Context & Validate Concerns: Acknowledge the user's primary situation with empathy, validating any emotional or logistical stress they may be experiencing.
+2. Structure Relevant Information: Break down user disclosures into organized categories such as timeline of events, primary questions, and documented symptoms.
+3. Formulate Actionable Agendas: Create a concise, prioritized 3-to-5 item checklist or agenda that the user can bring directly to their clinical consultation or administrative coordinator.
+4. Encourage Provider Collaboration: Emphasize that all medical decisions, diagnostic evaluations, and therapeutic plans must be developed in direct partnership with qualified medical professionals.

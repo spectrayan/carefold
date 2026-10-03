@@ -54,7 +54,7 @@ async def execute_agent_run(
     prompt: str,
     messages: Optional[List[ChatMessage]] = None,
     attachments: Optional[List[str]] = None,
-    allow_clinical: bool = False,
+    allow_clinical: bool = True,
     model_client: Optional[Any] = None,
     workspace_root: Optional[Union[Path, str]] = None,
     store_bodies: Optional[bool] = None,

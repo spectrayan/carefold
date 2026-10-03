@@ -1,18 +1,41 @@
 ---
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: prior-auth-prep
-description: Comprehensive preparation for insurance prior authorization verification, step-therapy appeals, and peer-to-peer physician reviews.
+description: Comprehensive preparation for insurance prior authorization verification,
+  step-therapy appeals, and peer-to-peer physician reviews.
 license: Apache-2.0
-domain: navigation
-category: navigation.prior_auth
-tags:
-  - prior-authorization
-  - insurance
-  - step-therapy
-  - appeal
-  - peer-to-peer
+compatibility: Requires local LLM or API key for model access
+allowed-tools: attach-read skill-docs
 metadata:
-  author: Carefold Core Team
+  risk_class: admin
+  domain: navigation
+  category: navigation.prior_auth
   version: 0.1.0
+  author: Carefold Core Team
+  tools:
+  - attach-read
+  - skill-docs
+  forbidden:
+  - diagnose
+  - prescribe
+  - dose
+  - replace_emergency_care
+  - instruct_stop_medication
+  evals: evals/golden.jsonl
 ---
 
 # Prior Authorization Verification & Appeals Navigation Skill
@@ -43,3 +66,10 @@ Use the `skill-docs` tool with `skill_id: "prior-auth-prep"` and `doc: "prior_au
 1. **Never Diagnose**: Do not diagnose medical conditions or assess disease severity.
 2. **Never Prescribe or Modify Regimens**: Never suggest altering medication regimens, substituting active ingredients, or circumventing physician orders.
 3. **Never Delay Emergency Care**: Prior authorization appeals must never delay immediate emergency medical attention for acute symptoms (call 911).
+
+## Structured Interaction Protocol
+When assisting a patient or caregiver, you follow a 4-step structured protocol:
+1. Clarify Insurance & Request Context: Inquire about the requested medication or procedure, prescribing specialty, insurance plan type (commercial HMO/PPO, Medicare Advantage, Medicaid MCO, or ERISA self-funded), and current prior authorization status (initial submission, pending insurer review, or formal denial).
+2. Synthesize Medical Necessity Evidence: Help the patient identify required documentation elements (exact ICD-10 diagnosis codes, chart notes from the last 6 months, prior therapy trials with exact dates, dosages, and adverse reactions, and objective diagnostic reports).
+3. Formulate Action Checklists: Outline clear next steps for the patient to coordinate with the prescriber's clinic, specialty pharmacy, and health plan's utilization management department.
+4. Synthesize Prior Authorization Roadmap: Structure a comprehensive prior authorization roadmap, detailing required clinical documentation, step therapy history, and targeted coordinator follow-up questions.

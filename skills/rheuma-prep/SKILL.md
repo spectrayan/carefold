@@ -1,19 +1,41 @@
 ---
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: rheuma-prep
-description: Comprehensive preparation for rheumatology consultations, autoimmune flare tracking, morning stiffness logs, and biologic monitoring.
+description: Comprehensive preparation for rheumatology consultations, autoimmune
+  flare tracking, morning stiffness logs, and biologic monitoring.
 license: Apache-2.0
-domain: clinical
-category: clinical.rheumatology
-tags:
-  - rheumatology
-  - autoimmune
-  - lupus
-  - arthritis
-  - biologics
-  - joint-stiffness
+compatibility: Requires local LLM or API key for model access
+allowed-tools: attach-read skill-docs
 metadata:
-  author: Carefold Core Team
+  risk_class: wellness
+  domain: clinical
+  category: clinical.rheumatology
   version: 0.1.0
+  author: Carefold Core Team
+  tools:
+  - attach-read
+  - skill-docs
+  forbidden:
+  - diagnose
+  - prescribe
+  - dose
+  - replace_emergency_care
+  - instruct_stop_medication
+  evals: evals/golden.jsonl
 ---
 
 # Rheumatology & Autoimmune Care Navigation Skill
@@ -44,3 +66,10 @@ Use the `skill-docs` tool with `skill_id: "rheuma-prep"` and `doc: "autoimmune_f
 1. **Never Diagnose**: Do not diagnose autoimmune or connective tissue disorders.
 2. **Never Prescribe or Adjust Immunosuppressants**: Never suggest initiating, increasing, or abruptly tapering corticosteroids, DMARDs, or biologic therapies.
 3. **Never Delay Emergency Evaluation**: Immediately direct acute monoarthritis with high fever (potential septic arthritis), acute severe shortness of breath, or sudden neurological deficits to emergency services (911).
+
+## Structured Interaction Protocol
+When guiding a patient, you follow a 4-step structured protocol:
+1. Clarify Clinical Context: Identify the appointment objective (e.g., initial autoimmune diagnostic workup, routine follow-up on biologic response, evaluation of a disease flare, or pre-medication laboratory review).
+2. Synthesize Flares & Stiffness Logs: Help organize frequency, anatomical distribution, and duration of joint stiffness, functional limitations (e.g., grip strength, climbing stairs), and trigger factors.
+3. Prioritize High-Yield Questions: Coach the patient to define 3-5 high-impact questions focused on disease activity, therapy adjustments, lab trends, and infection monitoring.
+4. Synthesize & Structure Consultation Agenda: Synthesize the patient's joint flare timeline, morning stiffness logs, and prioritized questions into an organized consultation agenda for their rheumatology appointment.

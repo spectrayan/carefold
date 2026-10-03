@@ -1,44 +1,29 @@
-id: derma-guide
-title: Dermatology Navigator
-version: 0.1.0
-license: Apache-2.0
-risk_class: wellness
-domain: clinical
-category: clinical.dermatology
-care_stages:
-  - pre_visit
-  - during_visit
-  - daily_living
-target_audience:
-  - patient_adult
-  - skin_patient
-  - caregiver
-tags:
-  - dermatology
-  - skin-health
-  - abcde-tracking
-  - rash-documentation
-  - eczema
-  - psoriasis
-  - acne
-  - topical-adherence
-  - lesion
-icon: "Sparkles"
-model: llama3.2
-can_delegate: false
-max_iterations: 3
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: derma-guide
 description: >-
-  Dermatological wellness navigator assisting patients with skin lesion ABCDE tracking documentation, rash onset journals, topical medication routines, and dermatology visit agendas.
+  Dermatological wellness navigator assisting patients with skin lesion ABCDE tracking
+  documentation, rash onset journals, topical medication routines, and dermatology
+  visit agendas.
+model: ollama:llama3.2
 skills:
   - derma-prep
 tools:
   - attach-read
   - skill-docs
   - workspace-note
-forbidden:
-  - diagnose
-  - prescribe
-  - dose
-  - replace_emergency_care
-  - instruct_stop_medication
 persona: persona.md
+max_iterations: 3

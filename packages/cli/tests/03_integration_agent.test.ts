@@ -79,7 +79,7 @@ describe('03: CLI Integration: carefold agent commands', () => {
     expect(res.stdout).toContain('visit-steward');
     expect(res.stdout).toContain('Visit Steward');
     expect(res.stdout).toContain('0.1.0');
-    expect(res.stdout).toContain('wellness');
+    expect(res.stdout).toContain('clinical_assist');
   });
 
   it('agent list --json outputs valid JSON array', async () => {
@@ -92,7 +92,7 @@ describe('03: CLI Integration: carefold agent commands', () => {
     expect(Array.isArray(parsed)).toBe(true);
     expect(parsed.length).toBe(1);
     expect(parsed[0].id).toBe('visit-steward');
-    expect(parsed[0].risk_class).toBe('wellness');
+    expect(parsed[0].risk_class).toBe('clinical_assist');
   });
 
   it('agent inspect displays detailed manifest metadata and starters', async () => {
@@ -102,7 +102,7 @@ describe('03: CLI Integration: carefold agent commands', () => {
     const res = await runCli(['agent', 'inspect', 'visit-steward'], { cwd: ws.workspaceDir });
     expect(res.exitCode).toBe(0);
     expect(res.stdout).toContain('Agent: Visit Steward (visit-steward)');
-    expect(res.stdout).toContain('Risk Class:      wellness');
+    expect(res.stdout).toContain('Risk Class:      clinical_assist');
     expect(res.stdout).toContain('Declared Skills');
     expect(res.stdout).toContain('visit-prep');
     expect(res.stdout).toContain('Effective Tools Allowlist');

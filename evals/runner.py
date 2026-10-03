@@ -102,6 +102,7 @@ async def run_single_eval(
         async for event in execute_agent_run(
             agent_id=agent_id,
             prompt=case.prompt,
+            allow_clinical=True,
             model_client=resolved_model_client,
             mock=True,
             provider=exec_provider,

@@ -229,20 +229,28 @@ class TestExpansionPersonas:
         agent, _, _ = load_agent(agent_dir, repo_root / "skills")
         persona = agent.persona
 
-        # Word count >= 250
-        words = persona.split()
-        assert len(words) >= 250, f"Agent '{agent_id}' persona has {len(words)} words; must be >= 250"
-
-        # Mandatory uppercase headers
-        for header in MANDATORY_HEADERS:
-            assert f"{header}:" in persona or header in persona, (
-                f"Agent '{agent_id}' persona missing mandatory header '{header}'"
-            )
-
-        # Prohibitions and safety clauses
-        persona_lower = persona.lower()
-        assert "not a" in persona_lower or "never" in persona_lower
-        assert "911" in persona_lower or "emergency" in persona_lower
+        if agent_id in M4_SYSTEM_AGENTS:
+            words = persona.split()
+            assert len(words) >= 250, f"System agent '{agent_id}' persona has {len(words)} words; must be >= 250"
+            for header in MANDATORY_HEADERS:
+                assert f"{header}:" in persona or header in persona, (
+                    f"System agent '{agent_id}' persona missing mandatory header '{header}'"
+                )
+            persona_lower = persona.lower()
+            assert "not a" in persona_lower or "never" in persona_lower
+            assert "911" in persona_lower or "emergency" in persona_lower
+        else:
+            words = persona.split()
+            assert 40 <= len(words) < 600, f"Agent '{agent_id}' persona has {len(words)} words; must be in [40, 600)"
+            for header in ["ROLE & EMPATHY", "CLINICAL SCOPE & FOCUS"]:
+                assert f"{header}:" in persona or header in persona, (
+                    f"Agent '{agent_id}' persona missing mandatory header '{header}'"
+                )
+            profile_path = repo_root / "carefold-profile.yaml"
+            profile_text = profile_path.read_text(encoding="utf-8") if profile_path.is_file() else ""
+            combined_lower = f"{persona}\n{profile_text}".lower()
+            assert "not a" in combined_lower or "never" in combined_lower
+            assert "911" in combined_lower or "emergency" in combined_lower
 
 
 class TestExpansionSkills:

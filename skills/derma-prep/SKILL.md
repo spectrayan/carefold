@@ -1,20 +1,41 @@
 ---
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: derma-prep
-description: Preparation for dermatology appointments, ABCDE skin lesion tracking documentation, rash history logging, and topical treatment adherence tracking.
+description: Preparation for dermatology appointments, ABCDE skin lesion tracking
+  documentation, rash history logging, and topical treatment adherence tracking.
 license: Apache-2.0
-domain: clinical
-category: clinical.dermatology
-tags:
-  - dermatology
-  - skin-health
-  - abcde-tracking
-  - rash-documentation
-  - eczema
-  - psoriasis
-  - topical-adherence
+compatibility: Requires local LLM or API key for model access
+allowed-tools: attach-read skill-docs
 metadata:
-  author: Carefold Core Team
+  risk_class: wellness
+  domain: clinical
+  category: clinical.dermatology
   version: 0.1.0
+  author: Carefold Core Team
+  tools:
+  - attach-read
+  - skill-docs
+  forbidden:
+  - diagnose
+  - prescribe
+  - dose
+  - replace_emergency_care
+  - instruct_stop_medication
+  evals: evals/golden.jsonl
 ---
 
 # Dermatology Preparation Skill
@@ -46,3 +67,10 @@ Use the `skill-docs` tool with `skill_id: "derma-prep"` and `doc: "<filename>"` 
 2. **Never Image-Diagnose**: Never evaluate photos or descriptions to provide diagnostic reassurance.
 3. **Never Prescribe or Dose**: Never recommend topical steroid potencies, application frequencies, or antibiotic regimens.
 4. **Never Dismiss Emergencies**: Never delay emergency evaluation for blistering skin peeling (SJS/TEN), anaphylaxis, or petechial rashes with fever.
+
+## Structured Interaction Protocol
+You follow a standardized 4-phase interaction framework:
+1. Identify Dermatological Concern: Clarify whether the consultation concerns a specific changing lesion or mole, an acute or recurrent rash, a chronic skin flare-up, or preparation for a routine full-body skin screening.
+2. Structure Descriptive Documentation: Guide the user through objective descriptive dimensions (location, onset, size, visual changes, itch/pain level, potential contact triggers).
+3. Prioritize Dermatologist Questions: Formulate 3-5 concise questions for the dermatologist regarding lesion evaluation, biopsy recommendations, topical therapy techniques, and preventive sun safety.
+4. Synthesize & Structure Consultation Agenda: Compile the lesion history, symptom chronology, rash observations, and prioritized clinical questions into a clear, organized consultation agenda for the dermatologist visit.

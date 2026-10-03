@@ -60,15 +60,26 @@ export const CarefoldYamlSchema = z.object({
   evals: z.string().optional()
 });
 
+export const SkillMetadataSchema = z.object({
+  author: z.string().optional(),
+  version: z.string().optional(),
+  risk_class: RiskClassSchema.optional(),
+  domain: z.string().optional(),
+  category: z.string().optional(),
+  tools: z.array(z.string()).optional(),
+  forbidden: z.array(z.string()).optional(),
+  evals: z.string().nullable().optional(),
+  tags: z.array(z.string()).optional()
+}).passthrough();
+
 export const SkillFrontmatterSchema = z.object({
   name: z.string().min(1, 'Skill name is required in SKILL.md frontmatter'),
   description: z.string().min(1, 'Skill description is required in SKILL.md frontmatter'),
   license: z.string().optional(),
-  metadata: z.object({
-    author: z.string().optional(),
-    version: z.string().optional()
-  }).optional()
-});
+  'allowed-tools': z.string().optional(),
+  compatibility: z.string().optional(),
+  metadata: SkillMetadataSchema.optional()
+}).passthrough();
 
 export const CarefoldConfigSchema = z.object({
   version: z.string().default('0.1.0'),

@@ -1,19 +1,41 @@
 ---
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: ortho-prep
-description: Musculoskeletal appointment preparation, joint pain and functional mobility scoring, physical therapy tracking, and orthopedic surgery consultation agendas.
+description: Musculoskeletal appointment preparation, joint pain and functional mobility
+  scoring, physical therapy tracking, and orthopedic surgery consultation agendas.
 license: Apache-2.0
-domain: clinical
-category: clinical.orthopedics
-tags:
-  - orthopedics
-  - joints
-  - mobility-scale
-  - physical-therapy
-  - surgery-prep
-  - arthritis
+compatibility: Requires local LLM or API key for model access
+allowed-tools: attach-read skill-docs
 metadata:
-  author: Carefold Core Team
+  risk_class: wellness
+  domain: clinical
+  category: clinical.orthopedics
   version: 0.1.0
+  author: Carefold Core Team
+  tools:
+  - attach-read
+  - skill-docs
+  forbidden:
+  - diagnose
+  - prescribe
+  - dose
+  - replace_emergency_care
+  - instruct_stop_medication
+  evals: evals/golden.jsonl
 ---
 
 # Orthopedic Preparation Skill
@@ -45,3 +67,10 @@ Use the `skill-docs` tool with `skill_id: "ortho-prep"` and `doc: "<filename>"` 
 2. **Never Recommend Surgery**: Never state that surgery is necessary or advise skipping surgery.
 3. **Never Prescribe or Dose**: Never recommend pain medication dosages.
 4. **Never Dismiss Emergencies**: Never delay emergency evaluation for Cauda Equina Syndrome, compartment syndrome, or open fractures.
+
+## Structured Interaction Protocol
+You follow a standardized 4-phase interaction framework:
+1. Clarify Anatomical Focus & Joint Symptoms: Inquire which joint or anatomical region is affected (e.g., knee, hip, shoulder, lumbar spine), symptom onset and duration, and the type of upcoming visit (initial surgical consult, second opinion, or post-operative check).
+2. Quantify Functional Deficits: Guide the user in scoring pain scales (0-10 numeric rating) and recording concrete functional limitations in daily activities.
+3. Formulate Surgeon & Specialist Questions: Develop 3-5 prioritized questions focusing on conservative options, surgical indications, recovery timelines, and realistic functional expectations.
+4. Synthesize & Structure Consultation Agenda: Compile the pain chronology, functional impact log, rehabilitation milestones, and prioritized clinical questions into an organized consultation agenda for the orthopedic appointment.

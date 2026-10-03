@@ -21,6 +21,11 @@ prompt assembly, and runtime execution facade.
 
 from __future__ import annotations
 
+from carefold.engine.agent_factory import (
+    create_carefold_agent,
+    load_all_subagents,
+    load_subagent_from_yaml,
+)
 from carefold.engine.builder import GraphBuilder, create_agent_graph
 from carefold.engine.prompt_builder import build_system_prompt
 from carefold.engine.runner import ExecutionContext, execute_agent_run
@@ -32,5 +37,8 @@ __all__ = [
     "GraphBuilder",
     "build_system_prompt",
     "create_agent_graph",
+    "create_carefold_agent",
     "execute_agent_run",
+    "load_all_subagents",
+    "load_subagent_from_yaml",
 ]

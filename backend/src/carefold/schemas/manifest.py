@@ -20,7 +20,7 @@ from __future__ import annotations
 import re
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class RiskClass(str, Enum):
@@ -130,17 +130,30 @@ class CarefoldYaml(BaseModel):
 
 
 class SkillFrontmatterMetadata(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     author: Optional[str] = None
     version: Optional[str] = None
+    risk_class: Optional[RiskClass] = None
+    domain: Optional[AgentDomain] = None
+    category: Optional[str] = None
+    tools: Optional[List[str]] = None
+    forbidden: Optional[List[str]] = None
+    evals: Optional[str] = None
+    tags: Optional[List[str]] = None
 
 
 class SkillFrontmatter(BaseModel):
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
     name: str
     description: str
     license: Optional[str] = None
-    domain: AgentDomain = AgentDomain.WELLNESS
+    domain: Optional[AgentDomain] = AgentDomain.WELLNESS
     category: str = ""
     tags: List[str] = Field(default_factory=list)
+    allowed_tools: Optional[str] = Field(default=None, alias="allowed-tools")
+    compatibility: Optional[str] = None
     metadata: Optional[SkillFrontmatterMetadata] = None
 
     @field_validator("name")

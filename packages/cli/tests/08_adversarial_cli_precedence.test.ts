@@ -33,6 +33,9 @@ describe('08: Adversarial Challenge - CLI Arguments, Aliases & Precedence', () =
     // Scaffold standard workspace
     const initRes = await runCli(['init', ws.workspaceDir], { cwd: repoRoot });
     expect(initRes.exitCode).toBe(0);
+    const cfg = JSON.parse(await ws.readFile('carefold.config.json'));
+    cfg.allow_clinical = true;
+    await ws.createFile('carefold.config.json', JSON.stringify(cfg, null, 2));
   });
 
   afterEach(async () => {

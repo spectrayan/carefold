@@ -205,7 +205,7 @@ def test_api_skills_filter_domain_and_pagination(client: TestClient):
 
 
 def test_api_agents_detail(client: TestClient):
-    res = client.get("/api/agents/visit-steward")
+    res = client.get("/api/agents/visit-steward?allow_clinical=true")
     assert res.status_code == 200
     data = res.json()
     assert data["id"] == "visit-steward"
@@ -281,6 +281,7 @@ def test_api_chat_stream_mock_success(client: TestClient):
         "agentId": "visit-steward",
         "prompt": "Hello! Can you help me prepare for a doctor visit?",
         "mock": True,
+        "allow_clinical": True,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
         assert response.status_code == 200
@@ -307,6 +308,7 @@ def test_api_chat_stream_safety_refusal(client: TestClient):
         "agentId": "visit-steward",
         "prompt": "Please diagnose if my rash is shingles.",
         "mock": True,
+        "allow_clinical": True,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
         assert response.status_code == 200
@@ -335,6 +337,7 @@ def test_api_chat_stream_multi_turn_with_thread_id(client: TestClient):
         "prompt": "I am scheduling an eye exam for next Friday.",
         "threadId": thread_id,
         "mock": True,
+        "allow_clinical": True,
     }
     with client.stream("POST", "/api/chat", json=t1_payload) as r1:
         assert r1.status_code == 200
@@ -349,6 +352,7 @@ def test_api_chat_stream_multi_turn_with_thread_id(client: TestClient):
         "prompt": "Can you draft questions for that exam?",
         "threadId": thread_id,
         "mock": True,
+        "allow_clinical": True,
     }
     with client.stream("POST", "/api/chat", json=t2_payload) as r2:
         assert r2.status_code == 200
@@ -367,6 +371,7 @@ def test_api_chat_stream_with_model_provider_selection(client: TestClient):
         "provider": "mock",
         "model": "carefold-mock",
         "mock": True,
+        "allow_clinical": True,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
         assert response.status_code == 200
@@ -388,6 +393,7 @@ def test_api_chat_stream_server_restart_simulation(temp_workspace: Path):
         "prompt": "My preferred pharmacy is Walgreens on 5th Ave.",
         "threadId": thread_id,
         "mock": True,
+        "allow_clinical": True,
     }
     with client1.stream("POST", "/api/chat", json=t1_payload) as r1:
         assert r1.status_code == 200
@@ -403,6 +409,7 @@ def test_api_chat_stream_server_restart_simulation(temp_workspace: Path):
         "prompt": "What pharmacy did I choose?",
         "threadId": thread_id,
         "mock": True,
+        "allow_clinical": True,
     }
     with client2.stream("POST", "/api/chat", json=t2_payload) as r2:
         assert r2.status_code == 200
@@ -421,6 +428,7 @@ def test_api_chat_stream_tool_execution_events(client: TestClient, temp_workspac
         "agentId": "visit-steward",
         "prompt": "Review my attached blood_work.txt report please.",
         "mock": True,
+        "allow_clinical": True,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
         assert response.status_code == 200
@@ -446,6 +454,7 @@ def test_api_chat_get_thread_history(client: TestClient, temp_workspace: Path):
         "prompt": "Hello from session thread test.",
         "threadId": thread_id,
         "mock": True,
+        "allow_clinical": True,
     }
     with client.stream("POST", "/api/chat", json=payload) as r:
         assert r.status_code == 200
@@ -505,7 +514,7 @@ def test_api_agents_list_taxonomy_fields(client: TestClient):
 def test_api_agents_detail_taxonomy_fields(client: TestClient):
     """Verify that GET /api/agents/{agent_id} returns all 7 taxonomy fields on AgentDetailResponse."""
     # 1. visit-steward
-    res_vs = client.get("/api/agents/visit-steward")
+    res_vs = client.get("/api/agents/visit-steward?allow_clinical=true")
     assert res_vs.status_code == 200
     data_vs = res_vs.json()
     assert data_vs["domain"] == "navigation"

@@ -69,6 +69,8 @@ SKILL_MANIFEST_FILE: str = "SKILL.md"
 
 CAREFOLD_YAML_FILENAME: str = "carefold.yaml"
 CAREFOLD_YAML_FILE: str = "carefold.yaml"
+CAREFOLD_YAML_MIGRATED_FILENAME: str = "carefold.yaml.migrated"
+CAREFOLD_YAML_MIGRATED_FILE: str = "carefold.yaml.migrated"
 
 STARTERS_FILENAME: str = "starters.json"
 STARTERS_FILE: str = "starters.json"

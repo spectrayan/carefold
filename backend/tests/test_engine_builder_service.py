@@ -271,7 +271,7 @@ class TestAgentExecutionService:
         # Wire format test
         wire_chunks: List[str] = []
         async for chunk in service.execute_chat(
-            ChatRequestBody(agentId="visit-steward", prompt="Hello", threadId="th-wire-1"),
+            ChatRequestBody(agentId="visit-steward", prompt="Hello", threadId="th-wire-1", allow_clinical=True),
             raw_events=False,
         ):
             wire_chunks.append(chunk)
@@ -283,7 +283,7 @@ class TestAgentExecutionService:
         mock.queue_response("Second response.")
         raw_events: List[Dict[str, Any]] = []
         async for ev in service.execute_chat(
-            {"agent_id": "visit-steward", "prompt": "Hi again", "thread_id": "th-raw-1"},
+            {"agent_id": "visit-steward", "prompt": "Hi again", "thread_id": "th-raw-1", "allow_clinical": True},
             raw_events=True,
         ):
             raw_events.append(ev)

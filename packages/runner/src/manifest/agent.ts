@@ -45,7 +45,38 @@ export async function loadAgent(agentDir: string, skillsDir?: string): Promise<L
     throw new ManifestValidationError(`Malformed YAML in "${agentYamlPath}": ${parseErr.message}`);
   }
 
-  const parseResult = AgentManifestSchema.safeParse(parsedYaml);
+  const metadataYamlPath = path.join(agentDir, 'metadata.yaml');
+  let metaDict: any = {};
+  try {
+    const rawMeta = await fs.readFile(metadataYamlPath, 'utf8');
+    metaDict = yaml.parse(rawMeta) || {};
+  } catch {
+    // metadata.yaml is optional
+  }
+
+  const agentId = parsedYaml.id || metaDict.id || parsedYaml.name || path.basename(agentDir);
+  const agentTitle = parsedYaml.title || metaDict.title || agentId.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+  const declaredRiskClass = parsedYaml.risk_class || metaDict.risk_class || 'wellness';
+
+  const mergedData: any = {
+    ...metaDict,
+    ...parsedYaml,
+    id: agentId,
+    title: agentTitle,
+    risk_class: declaredRiskClass,
+  };
+
+  if (typeof mergedData.persona === 'string') {
+    const personaPath = path.join(agentDir, mergedData.persona);
+    try {
+      const personaContent = await fs.readFile(personaPath, 'utf8');
+      mergedData.persona = personaContent;
+    } catch {
+      // Keep original persona string if not a file path
+    }
+  }
+
+  const parseResult = AgentManifestSchema.safeParse(mergedData);
   if (!parseResult.success) {
     const issues = parseResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ');
     throw new ManifestValidationError(`Invalid agent.yaml in "${agentDir}": ${issues}`);

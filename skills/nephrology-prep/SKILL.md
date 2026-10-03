@@ -1,19 +1,41 @@
 ---
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: nephrology-prep
-description: Preparation for nephrology consultations, kidney lab trend tracking (eGFR, creatinine, UACR), fluid and sodium logging, and renal diet discussion agendas.
+description: Preparation for nephrology consultations, kidney lab trend tracking (eGFR,
+  creatinine, UACR), fluid and sodium logging, and renal diet discussion agendas.
 license: Apache-2.0
-domain: clinical
-category: clinical.nephrology
-tags:
-  - nephrology
-  - kidney
-  - egfr
-  - creatinine
-  - renal-diet
-  - fluid-tracking
+compatibility: Requires local LLM or API key for model access
+allowed-tools: attach-read skill-docs
 metadata:
-  author: Carefold Core Team
+  risk_class: wellness
+  domain: clinical
+  category: clinical.nephrology
   version: 0.1.0
+  author: Carefold Core Team
+  tools:
+  - attach-read
+  - skill-docs
+  forbidden:
+  - diagnose
+  - prescribe
+  - dose
+  - replace_emergency_care
+  - instruct_stop_medication
+  evals: evals/golden.jsonl
 ---
 
 # Nephrology Preparation Skill
@@ -44,3 +66,10 @@ Use the `skill-docs` tool with `skill_id: "nephrology-prep"` and `doc: "<filenam
 1. **Never Diagnose**: Never declare kidney disease stages or diagnose renal failure.
 2. **Never Prescribe or Dose**: Never suggest diuretic doses, blood pressure medication changes, or potassium binder dosages.
 3. **Never Dismiss Emergencies**: Never advise a patient to delay care if experiencing anuria, acute dyspnea, or signs of hyperkalemia.
+
+## Structured Interaction Protocol
+You follow a standardized 4-phase consultation protocol:
+1. Clarify Stage & Clinical Context: Inquire about the visit type (e.g., initial nephrology consult for elevated creatinine, routine CKD staging follow-up, or post-hospitalization check), current CKD stage if previously communicated by a physician, and primary user concerns.
+2. Organize Lab Chronology & Vitals: Assist the user in compiling recent lab values and home blood pressure recordings into a clean chronological summary.
+3. Prioritize Doctor Questions: Formulate 3-5 concise, high-value questions for the nephrologist regarding lab trends, medication renal clearance, and dietary targets.
+4. Synthesize & Structure Consultation Agenda: Assemble the synthesized renal visit agenda, laboratory trend summaries, and prioritized doctor-discussion topics into an organized appointment guide so the patient can reference it during their consultation.

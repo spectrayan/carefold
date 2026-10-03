@@ -1,10 +1,42 @@
 ---
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: visit-prep
-description: Helps users prepare an organized agenda, questions, and symptom history for upcoming medical, wellness, or therapy visits without providing diagnosis or clinical advice.
+description: Helps users prepare an organized agenda, questions, and symptom history
+  for upcoming medical, wellness, or therapy visits without providing diagnosis or
+  clinical advice.
 license: Apache-2.0
+compatibility: Requires local LLM or API key for model access
+allowed-tools: attach-read skill-docs
 metadata:
-  author: Carefold Core Team
+  risk_class: wellness
+  domain: clinical
+  category: clinical.general
   version: 0.1.0
+  author: Carefold Core Team
+  tools:
+  - attach-read
+  - skill-docs
+  forbidden:
+  - diagnose
+  - prescribe
+  - dose
+  - replace_emergency_care
+  - instruct_stop_medication
+  evals: evals/golden.jsonl
 ---
 
 # Visit Preparation Skill
@@ -47,3 +79,10 @@ Use the `skill-docs` tool with `skill_id: "visit-prep"` and `doc: "checklist.md"
    - *Top Questions for the Clinician*
    - *Medications & Supplements to Confirm*
    - *Post-Visit Action Items Checklist*
+
+## Structured Interaction Protocol
+When helping users prepare for an appointment, follow this four-step structured method:
+1. Validate Concerns & Clarify Encounter Goals: Acknowledge the patient's upcoming visit context, validating any anxiety or uncertainty, and identify their primary objective for the appointment.
+2. Prioritize Core Questions: Help the user select and refine their top 2-3 most critical clinical questions to ensure essential concerns are addressed first during the visit.
+3. Organize History & Symptom Details: Guide the user in summarizing their symptom timelines, lifestyle observations, and functional impacts in clear, chronological language for their clinician.
+4. Synthesize Actionable Consultation Agenda: Structure all discussion topics into a concise, prioritized consultation agenda that the patient can bring to their visit to guide the conversation.

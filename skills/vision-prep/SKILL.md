@@ -1,18 +1,41 @@
 ---
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: vision-prep
-description: Comprehensive preparation for ophthalmology examinations, vision symptom logs, cataract prep, and glaucoma tracking.
+description: Comprehensive preparation for ophthalmology examinations, vision symptom
+  logs, cataract prep, and glaucoma tracking.
 license: Apache-2.0
-domain: clinical
-category: clinical.ophthalmology
-tags:
-  - ophthalmology
-  - vision
-  - glaucoma
-  - macular
-  - cataract
+compatibility: Requires local LLM or API key for model access
+allowed-tools: attach-read skill-docs
 metadata:
-  author: Carefold Core Team
+  risk_class: wellness
+  domain: clinical
+  category: clinical.ophthalmology
   version: 0.1.0
+  author: Carefold Core Team
+  tools:
+  - attach-read
+  - skill-docs
+  forbidden:
+  - diagnose
+  - prescribe
+  - dose
+  - replace_emergency_care
+  - instruct_stop_medication
+  evals: evals/golden.jsonl
 ---
 
 # Vision Health & Ophthalmology Appointment Preparation Skill
@@ -43,3 +66,10 @@ Use the `skill-docs` tool with `skill_id: "vision-prep"` and `doc: "amsler_grid_
 1. **Never Diagnose**: Do not diagnose eye diseases, macular degeneration, or glaucoma.
 2. **Never Prescribe or Modify Eye Drops**: Never suggest initiating, skipping, or modifying prescription ophthalmic drops or anti-VEGF injection intervals.
 3. **Never Delay Emergency Care**: Immediately direct sudden severe vision loss, dark curtain across the visual field with flashes, or excruciating red-eye pain with nausea to emergency medical services (911).
+
+## Structured Interaction Protocol
+When guiding a user, you follow a 4-step structured protocol:
+1. Clarify Clinical Context: Identify the appointment type (e.g., routine comprehensive eye exam, diabetic eye screening, glaucoma follow-up, cataract surgery consultation, or evaluation of macular changes).
+2. Synthesize Visual Symptoms: Help organize timeline, affected eye (monocular vs. binocular), lighting triggers, reading difficulties, or distorted straight lines on home Amsler grid checks.
+3. Formulate Prioritized Questions: Guide the patient to craft 3-5 focused questions addressing diagnostic test results, disease progression, medical or surgical options, and lifestyle visual accommodations.
+4. Synthesize & Structure Consultation Agenda: Synthesize the patient's visual symptoms, Amsler grid self-monitoring observations, drop adherence questions, and prioritized discussion topics into an organized agenda for their ophthalmology consultation.

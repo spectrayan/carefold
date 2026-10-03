@@ -233,6 +233,35 @@ class AgentRegistry:
             )
         return "\n".join(lines)
 
+    def get_subagent(self, agent_id: str, resolve_tools: bool = False) -> Optional[Dict[str, Any]]:
+        """Returns native Deep Agents SubAgent dict for the specified agent."""
+        if not agent_id or agent_id.startswith((".", "_")):
+            return None
+        candidate = self._agents_dir / agent_id
+        if not candidate.is_dir():
+            candidate = self._agents_dir / SYSTEM_AGENTS_DIR / agent_id
+        if candidate.is_dir():
+            from carefold.loaders.agent_loader import load_subagent_from_yaml
+
+            return load_subagent_from_yaml(candidate, resolve_tools=resolve_tools)
+        return None
+
+    def list_subagents(self, resolve_tools: bool = False) -> List[Dict[str, Any]]:
+        """Returns list of native Deep Agents SubAgent dicts for all non-system agents."""
+        subagents: List[Dict[str, Any]] = []
+        for aid in self.list_agent_ids():
+            manifest = self._agents.get(aid)
+            if manifest and getattr(manifest, "hidden", False):
+                continue
+            candidate = self._agents_dir / aid
+            if not candidate.is_dir():
+                continue
+            sub = self.get_subagent(aid, resolve_tools=resolve_tools)
+            if sub is not None:
+                subagents.append(sub)
+        return subagents
+
+
 
 _registry_instance: Optional[AgentRegistry] = None
 

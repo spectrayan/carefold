@@ -73,8 +73,9 @@ export async function loadSkill(skillDir: string): Promise<SkillManifest> {
   const folderId = path.basename(skillDir);
   const skillId = folderId || fm.name;
 
-  // Check for carefold.yaml
+  // Check for carefold.yaml or carefold.yaml.migrated
   const carefoldYamlPath = path.join(skillDir, 'carefold.yaml');
+  const migratedYamlPath = path.join(skillDir, 'carefold.yaml.migrated');
   let hasCarefoldYaml = false;
   let carefoldConfig: any = null;
 
@@ -90,18 +91,56 @@ export async function loadSkill(skillDir: string): Promise<SkillManifest> {
     if (err.code !== 'ENOENT') {
       throw err;
     }
+    // Fall back to carefold.yaml.migrated
+    try {
+      const rawMigrated = await fs.readFile(migratedYamlPath, 'utf8');
+      hasCarefoldYaml = true;
+      try {
+        carefoldConfig = yaml.parse(rawMigrated) || {};
+      } catch (parseErr: any) {
+        throw new ManifestValidationError(`Malformed carefold.yaml.migrated in "${skillDir}": ${parseErr.message}`);
+      }
+    } catch (migratedErr: any) {
+      if (migratedErr.code !== 'ENOENT') {
+        throw migratedErr;
+      }
+    }
   }
 
-  if (hasCarefoldYaml) {
-    const cfResult = CarefoldYamlSchema.safeParse(carefoldConfig);
-    if (!cfResult.success) {
-      const issues = cfResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ');
-      throw new ManifestValidationError(`Invalid carefold.yaml in "${skillDir}": ${issues}`);
+  // Determine whether manifest is verified
+  const meta: any = fm.metadata || {};
+  const allowedToolsRaw = (fm as any)['allowed-tools'];
+  const hasMetadataSpec = Boolean(
+    meta.risk_class !== undefined ||
+    meta.tools !== undefined ||
+    meta.domain !== undefined ||
+    meta.category !== undefined ||
+    allowedToolsRaw !== undefined
+  );
+  const isVerified = hasCarefoldYaml || hasMetadataSpec;
+
+  if (isVerified) {
+    let cf: any = {};
+    if (carefoldConfig) {
+      const cfResult = CarefoldYamlSchema.safeParse(carefoldConfig);
+      if (!cfResult.success) {
+        const issues = cfResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ');
+        throw new ManifestValidationError(`Invalid carefold.yaml in "${skillDir}": ${issues}`);
+      }
+      cf = cfResult.data;
     }
-    const cf = cfResult.data;
+
+    // Resolve tools: meta.tools > cf.tools > allowed-tools
+    let tools: string[] = [];
+    if (Array.isArray(meta.tools)) {
+      tools = meta.tools;
+    } else if (Array.isArray(cf.tools)) {
+      tools = cf.tools;
+    } else if (typeof allowedToolsRaw === 'string') {
+      tools = allowedToolsRaw.split(/\s+/).filter(Boolean);
+    }
 
     // Validate tools
-    const tools = cf.tools || [];
     const allowedToolsSet = new Set<string>(PHASE_0_REGISTRY);
     for (const tool of tools) {
       if (!allowedToolsSet.has(tool)) {
@@ -111,17 +150,22 @@ export async function loadSkill(skillDir: string): Promise<SkillManifest> {
       }
     }
 
+    const riskClass = meta.risk_class || cf.risk_class || 'wellness';
+    const forbidden = meta.forbidden || cf.forbidden || [];
+    const evals = meta.evals !== undefined ? meta.evals : cf.evals;
+    const version = meta.version || cf.version || '0.1.0';
+
     return {
       id: cf.id || skillId,
       name: fm.name,
       description: fm.description,
-      version: cf.version || fm.metadata?.version || '0.1.0',
+      version,
       license: cf.license || fm.license,
-      risk_class: cf.risk_class || 'wellness',
+      risk_class: riskClass,
       tools,
-      forbidden: cf.forbidden || [],
+      forbidden,
       instructions: body,
-      evals: cf.evals,
+      evals,
       is_verified: true,
       unverified: false
     };
@@ -133,7 +177,7 @@ export async function loadSkill(skillDir: string): Promise<SkillManifest> {
     id: skillId,
     name: fm.name,
     description: fm.description,
-    version: fm.metadata?.version || '0.1.0',
+    version: meta.version || '0.1.0',
     license: fm.license,
     risk_class: 'wellness',
     tools: [],

@@ -110,46 +110,70 @@ class AgentExecutionNode(BaseNode):
                 sk_id = s_item
                 sk_obj = loaded_map.get(sk_id) or self.registry.get_skill(sk_id)
                 if sk_obj is not None:
+                    desc = sk_obj.description or ""
+                    tier1_summary = (
+                        f"Summary: {desc}\n(Instructions available on-demand via skill-docs)"
+                        if desc
+                        else "(Instructions available on-demand via skill-docs)"
+                    )
                     declared_skills.append({
                         "name": sk_obj.name,
                         "id": sk_obj.id,
-                        "instructions": sk_obj.instructions,
-                        "description": sk_obj.description,
+                        "instructions": tier1_summary,
+                        "description": desc,
                     })
                 else:
                     declared_skills.append({
                         "name": sk_id.replace("-", " ").title(),
                         "id": sk_id,
-                        "instructions": "",
+                        "instructions": "(Instructions available on-demand via skill-docs)",
                         "description": "",
                     })
                 seen_skill_ids.add(sk_id)
             elif hasattr(s_item, "id"):
                 sk_id = getattr(s_item, "id")
+                desc = getattr(s_item, "description", "") or ""
+                tier1_summary = (
+                    f"Summary: {desc}\n(Instructions available on-demand via skill-docs)"
+                    if desc
+                    else "(Instructions available on-demand via skill-docs)"
+                )
                 declared_skills.append({
                     "name": getattr(s_item, "name", sk_id),
                     "id": sk_id,
-                    "instructions": getattr(s_item, "instructions", ""),
-                    "description": getattr(s_item, "description", ""),
+                    "instructions": tier1_summary,
+                    "description": desc,
                 })
                 seen_skill_ids.add(sk_id)
             elif isinstance(s_item, dict):
                 sk_id = s_item.get("id", "skill")
+                desc = s_item.get("description", "") or ""
+                tier1_summary = (
+                    f"Summary: {desc}\n(Instructions available on-demand via skill-docs)"
+                    if desc
+                    else "(Instructions available on-demand via skill-docs)"
+                )
                 declared_skills.append({
                     "name": s_item.get("name") or sk_id,
                     "id": sk_id,
-                    "instructions": s_item.get("instructions", ""),
-                    "description": s_item.get("description", ""),
+                    "instructions": tier1_summary,
+                    "description": desc,
                 })
                 seen_skill_ids.add(sk_id)
 
         for sk in loaded_skills:
             if sk.id not in seen_skill_ids:
+                desc = sk.description or ""
+                tier1_summary = (
+                    f"Summary: {desc}\n(Instructions available on-demand via skill-docs)"
+                    if desc
+                    else "(Instructions available on-demand via skill-docs)"
+                )
                 declared_skills.append({
                     "name": sk.name,
                     "id": sk.id,
-                    "instructions": sk.instructions,
-                    "description": sk.description,
+                    "instructions": tier1_summary,
+                    "description": desc,
                 })
                 seen_skill_ids.add(sk.id)
 

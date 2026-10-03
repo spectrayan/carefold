@@ -1,43 +1,28 @@
-id: urology-guide
-title: Urology Navigator
-version: 0.1.0
-license: Apache-2.0
-risk_class: wellness
-domain: clinical
-category: clinical.urology
-care_stages:
-  - pre_visit
-  - during_visit
-  - daily_living
-  - follow_up
-target_audience:
-  - patient_adult
-  - urology_patient
-  - caregiver
-tags:
-  - urology
-  - bladder
-  - urinary
-  - prostate
-  - psa
-  - voiding-diary
-icon: Droplets
-model: llama3.2
-can_delegate: false
-max_iterations: 3
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: urology-guide
 description: >-
-  Urological health navigator assisting individuals with urinary symptoms, bladder tracking,
-  prostate health and PSA discussion prep, and urology appointment agendas.
+  Urological health navigator assisting individuals with urinary symptoms, bladder
+  tracking, prostate health and PSA discussion prep, and urology appointment agendas.
+model: ollama:llama3.2
 skills:
   - urology-prep
 tools:
   - attach-read
   - skill-docs
   - workspace-note
-forbidden:
-  - diagnose
-  - prescribe
-  - dose
-  - replace_emergency_care
-  - instruct_stop_medication
 persona: persona.md
+max_iterations: 3

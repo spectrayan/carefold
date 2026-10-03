@@ -34,6 +34,7 @@ const SKILLS_DIR = path.join(ROOT_DIR, 'skills');
 const AGENTS_DIR = path.join(ROOT_DIR, 'agents');
 
 const PHASE0_CLOSED_TOOLS = ['attach-read', 'workspace-note', 'skill-docs'];
+const VALID_RISK_CLASSES = ['wellness', 'admin', 'clinical_assist', 'education'];
 const MANDATORY_INTENDED_USE = [
   'Not a clinician and not emergency care',
   'If this is an emergency, contact local emergency services',
@@ -76,10 +77,33 @@ for (const skillId of skillDirs) {
   const sDir = path.join(SKILLS_DIR, skillId);
   const skillMdPath = path.join(sDir, 'SKILL.md');
   const cfYamlPath = path.join(sDir, 'carefold.yaml');
+  const cfMigratedPath = path.join(sDir, 'carefold.yaml.migrated');
   const goldenPath = path.join(sDir, 'evals', 'golden.jsonl');
 
   check(fs.existsSync(skillMdPath), `${skillId}/SKILL.md exists`);
-  check(fs.existsSync(cfYamlPath), `${skillId}/carefold.yaml exists`);
+
+  let hasValidMetadata = false;
+  let validRiskClass = false;
+  let detectedRiskClass = null;
+
+  if (fs.existsSync(skillMdPath)) {
+    const rawMd = fs.readFileSync(skillMdPath, 'utf8');
+    const fmMatch = rawMd.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (fmMatch) {
+      const fmLines = fmMatch[1];
+      if (/^\s*metadata:\s*$/m.test(fmLines)) {
+        hasValidMetadata = true;
+        const rcMatch = fmLines.match(/^\s*risk_class:\s*['"]?([a-zA-Z0-9_\-]+)['"]?/m);
+        if (rcMatch && VALID_RISK_CLASSES.includes(rcMatch[1])) {
+          validRiskClass = true;
+          detectedRiskClass = rcMatch[1];
+        }
+      }
+    }
+  }
+
+  check(hasValidMetadata, `${skillId} manifest valid: contains native SKILL.md metadata block`);
+  check(validRiskClass, `${skillId} declares valid risk_class (${detectedRiskClass || 'missing'})`);
   check(fs.existsSync(goldenPath), `${skillId}/evals/golden.jsonl exists`);
 
   if (fs.existsSync(skillMdPath)) {
@@ -121,7 +145,7 @@ if (!fs.existsSync(AGENTS_DIR)) {
 }
 
 const agentDirs = fs.readdirSync(AGENTS_DIR).filter(d => {
-  return fs.statSync(path.join(AGENTS_DIR, d)).isDirectory() && !d.startsWith('.');
+  return fs.statSync(path.join(AGENTS_DIR, d)).isDirectory() && !d.startsWith('.') && d !== '_system';
 });
 
 console.log(`Found ${agentDirs.length} agent packs: ${agentDirs.join(', ')}`);
@@ -130,14 +154,30 @@ for (const agentId of agentDirs) {
   console.log(`\nChecking agent [${agentId}]...`);
   const aDir = path.join(AGENTS_DIR, agentId);
   const agentYamlPath = path.join(aDir, 'agent.yaml');
-  const readmePath = path.join(aDir, 'README.md');
+  const metadataYamlPath = path.join(aDir, 'metadata.yaml');
+  const personaPath = path.join(aDir, 'persona.md');
   const startersPath = path.join(aDir, 'starters.json');
   const goldenPath = path.join(aDir, 'evals', 'golden.jsonl');
 
   check(fs.existsSync(agentYamlPath), `${agentId}/agent.yaml exists`);
-  check(fs.existsSync(readmePath), `${agentId}/README.md exists`);
+  check(fs.existsSync(metadataYamlPath), `${agentId}/metadata.yaml exists`);
+  check(fs.existsSync(personaPath), `${agentId}/persona.md exists`);
   check(fs.existsSync(startersPath), `${agentId}/starters.json exists`);
   check(fs.existsSync(goldenPath), `${agentId}/evals/golden.jsonl exists`);
+
+  if (fs.existsSync(metadataYamlPath)) {
+    const metaRaw = fs.readFileSync(metadataYamlPath, 'utf8');
+    const idMatch = metaRaw.match(/^\s*id:\s*['"]?([a-zA-Z0-9_\-]+)['"]?/m);
+    const declaredId = idMatch ? idMatch[1] : null;
+    check(declaredId === agentId, `${agentId}/metadata.yaml id matches pack slug ("${declaredId || 'missing'}")`);
+
+    const riskMatch = metaRaw.match(/^\s*risk_class:\s*['"]?([a-zA-Z0-9_\-]+)['"]?/m);
+    const declaredRisk = riskMatch ? riskMatch[1] : null;
+    check(
+      declaredRisk !== null && VALID_RISK_CLASSES.includes(declaredRisk),
+      `${agentId}/metadata.yaml declares valid risk_class ("${declaredRisk || 'missing'}")`
+    );
+  }
 
   if (fs.existsSync(startersPath)) {
     try {

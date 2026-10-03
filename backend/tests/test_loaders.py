@@ -170,7 +170,7 @@ def test_agent_load_bundled_agents(temp_workspace: Path):
 
     agent, effective_tools, loaded_skills = load_agent(agents_dir / "visit-steward", skills_dir)
     assert agent.id == "visit-steward"
-    assert agent.risk_class == RiskClass.WELLNESS
+    assert agent.risk_class == RiskClass.CLINICAL_ASSIST
     assert "visit-prep" in agent.skills
 
     # Effective tools union: agent tools [attach-read, workspace-note] ∪ skill tools [attach-read, skill-docs]

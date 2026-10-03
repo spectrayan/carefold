@@ -114,7 +114,7 @@ class TestRouteShadowing:
 
     def test_agent_detail_visit_steward_returns_200(self, client: TestClient):
         """GET /api/agents/visit-steward must resolve to detail endpoint with 200 OK."""
-        res = client.get("/api/agents/visit-steward")
+        res = client.get("/api/agents/visit-steward?allow_clinical=true")
         assert res.status_code == 200
         detail = res.json()
         assert detail["id"] == "visit-steward"
@@ -406,9 +406,9 @@ class TestCombinedFilters:
         agent_ids = {a["id"] for a in agents}
         assert "benefits-guide" in agent_ids
 
-    def test_combined_domain_navigation_risk_class_wellness(self, client: TestClient):
-        """When risk_class='wellness' is used with domain='navigation', exactly visit-steward matches."""
-        res = client.get("/api/agents?domain=navigation&risk_class=wellness&page=1&per_page=10")
+    def test_combined_domain_navigation_risk_class_clinical_assist(self, client: TestClient):
+        """When risk_class='clinical_assist' is used with domain='navigation', exactly visit-steward matches."""
+        res = client.get("/api/agents?domain=navigation&risk_class=clinical_assist&page=1&per_page=10")
         assert res.status_code == 200
         agents = res.json()
         assert len(agents) == 1

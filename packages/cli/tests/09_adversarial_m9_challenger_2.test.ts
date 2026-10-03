@@ -207,7 +207,8 @@ describe('08: Adversarial Challenger Test Suite (Milestone M9 / Requirement R4)'
         audit: {
           store_bodies: false,
           log_path: 'logs/audit.jsonl'
-        }
+        },
+        allow_clinical: true
       };
       await ws.createFile('carefold.config.json', JSON.stringify(phase0Config, null, 2));
 
@@ -231,6 +232,9 @@ describe('08: Adversarial Challenger Test Suite (Milestone M9 / Requirement R4)'
   describe('Battery 3: Clinical Safety Refusal Gate across providers', () => {
     beforeEach(async () => {
       await runCli(['init'], { cwd: ws.workspaceDir });
+      const cfg = JSON.parse(await ws.readFile('carefold.config.json'));
+      cfg.allow_clinical = true;
+      await ws.createFile('carefold.config.json', JSON.stringify(cfg, null, 2));
     });
 
     const providers = ['ollama', 'google', 'anthropic', 'openai', 'custom'];
@@ -367,6 +371,9 @@ describe('08: Adversarial Challenger Test Suite (Milestone M9 / Requirement R4)'
   describe('Battery 4: Privacy audit redaction', () => {
     beforeEach(async () => {
       await runCli(['init'], { cwd: ws.workspaceDir });
+      const cfg = JSON.parse(await ws.readFile('carefold.config.json'));
+      cfg.allow_clinical = true;
+      await ws.createFile('carefold.config.json', JSON.stringify(cfg, null, 2));
     });
 
     it('BAT4-01: default store_bodies: false strictly redacts prompt and completion from audit.jsonl', async () => {
@@ -471,6 +478,9 @@ describe('08: Adversarial Challenger Test Suite (Milestone M9 / Requirement R4)'
   describe('Battery 5: Advanced Adversarial Penetration', () => {
     beforeEach(async () => {
       await runCli(['init'], { cwd: ws.workspaceDir });
+      const cfg = JSON.parse(await ws.readFile('carefold.config.json'));
+      cfg.allow_clinical = true;
+      await ws.createFile('carefold.config.json', JSON.stringify(cfg, null, 2));
     });
 
     it('BAT5-01: markdown-obfuscated diagnostic prompt triggers refusal gate across provider flags', async () => {

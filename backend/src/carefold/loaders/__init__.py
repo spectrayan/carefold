@@ -36,6 +36,7 @@ from carefold.loaders.agent_loader import (
     load_agent_readme,
     load_agent_starters,
     load_all_agents,
+    load_subagent_from_yaml,
 )
 from carefold.loaders.context_loader import ContextLoader
 
@@ -54,5 +55,6 @@ __all__ = [
     "load_agent_readme",
     "load_agent_starters",
     "load_all_agents",
+    "load_subagent_from_yaml",
     "ContextLoader",
 ]

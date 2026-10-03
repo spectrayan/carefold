@@ -44,7 +44,6 @@ describe('04: CLI Integration: carefold skill commands', () => {
     expect(res.stdout).toContain('Added reference skill "visit-prep"');
 
     expect(await ws.exists('skills/visit-prep/SKILL.md')).toBe(true);
-    expect(await ws.exists('skills/visit-prep/carefold.yaml')).toBe(true);
     expect(await ws.exists('skills/visit-prep/references')).toBe(true);
   });
 

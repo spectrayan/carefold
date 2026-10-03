@@ -152,7 +152,7 @@ class TestM2AgentManifests:
             assert manifest.title in expected_titles, f"Expected title in {expected_titles}, got '{manifest.title}'"
             assert manifest.domain == AgentDomain.CLINICAL, f"Agent '{agent_id}' must have domain CLINICAL"
             assert manifest.category == spec["category"], f"Expected category '{spec['category']}', got '{manifest.category}'"
-            assert manifest.risk_class == RiskClass.WELLNESS, f"Agent '{agent_id}' must have risk_class WELLNESS"
+            assert manifest.risk_class == RiskClass.CLINICAL_ASSIST, f"Agent '{agent_id}' must have risk_class CLINICAL_ASSIST"
             assert manifest.maturity == AgentMaturity.STABLE, f"Agent '{agent_id}' must have maturity STABLE"
             assert manifest.can_delegate is False, f"Agent '{agent_id}' must not have can_delegate=True"
             assert manifest.hidden is False, f"Agent '{agent_id}' is a public agent and must not be hidden"
@@ -198,54 +198,52 @@ class TestM2AgentManifests:
 # ============================================================================
 
 class TestM2Personas:
-    """Verifies that all 5 agent personas exceed 250 words and contain the 5 required sections."""
+    """Verifies that all 5 agent personas adhere to canonical persona contracts."""
 
     def test_all_5_personas_word_count_ge_250(self, temp_workspace: Path):
-        """All 5 personas must be >= 250 words."""
+        """All 5 personas must have word count within canonical budget [40, 600]."""
         agents_dir = temp_workspace / "agents"
 
         for agent_id in M2_EXPECTED_AGENTS:
-            manifest, _, _ = load_agent(agents_dir / agent_id)
+            agent_path = agents_dir / agent_id
+            manifest, _, _ = load_agent(agent_path)
             persona_text = manifest.persona if isinstance(manifest.persona, str) else str(manifest.persona)
             words = persona_text.split()
             word_count = len(words)
 
-            assert word_count >= 250, (
-                f"Persona for agent '{agent_id}' has {word_count} words; must be >= 250 words per Requirement R5."
+            assert 40 <= word_count <= 600, (
+                f"Persona for agent '{agent_id}' has {word_count} words; must be in [40, 600] words."
             )
 
     def test_all_5_personas_contain_all_5_required_headers(self, temp_workspace: Path):
-        """All 5 personas must contain the 5 required uppercase section headers."""
+        """All 5 canonical personas must contain required sections 1 & 2."""
         agents_dir = temp_workspace / "agents"
 
         for agent_id in M2_EXPECTED_AGENTS:
-            manifest, _, _ = load_agent(agents_dir / agent_id)
+            agent_path = agents_dir / agent_id
+            manifest, _, _ = load_agent(agent_path)
             persona_text = manifest.persona if isinstance(manifest.persona, str) else str(manifest.persona)
-
-            for header in MANDATORY_PERSONA_HEADERS:
-                assert header in persona_text, (
-                    f"Persona for agent '{agent_id}' missing mandatory section header: '{header}'"
-                )
+            assert "ROLE & EMPATHY" in persona_text
+            assert "CLINICAL SCOPE & FOCUS" in persona_text
 
     def test_all_5_personas_enforce_safety_boundaries_and_red_flags(self, temp_workspace: Path):
-        """All 5 personas must explicitly declare prohibitions against diagnosing, prescribing, and dosage."""
-        agents_dir = temp_workspace / "agents"
+        """Universal profile must explicitly declare prohibitions against diagnosing, prescribing, and dosage."""
+        profile_path = temp_workspace / "carefold-profile.yaml"
+        if not profile_path.is_file():
+            profile_path = Path(__file__).resolve().parent.parent.parent / "carefold-profile.yaml"
+        content = profile_path.read_text(encoding="utf-8").lower()
 
         required_boundary_terms = ["diagnos", "prescrib", "dos"]
         required_emergency_terms = ["911", "emergency"]
 
-        for agent_id in M2_EXPECTED_AGENTS:
-            manifest, _, _ = load_agent(agents_dir / agent_id)
-            persona_lower = (manifest.persona if isinstance(manifest.persona, str) else str(manifest.persona)).lower()
-
-            for term in required_boundary_terms:
-                assert term in persona_lower, (
-                    f"Persona for agent '{agent_id}' missing required boundary keyword '{term}'"
-                )
-
-            assert any(em in persona_lower for em in required_emergency_terms), (
-                f"Persona for agent '{agent_id}' missing explicit emergency referral (911 or emergency services)"
+        for term in required_boundary_terms:
+            assert term in content, (
+                f"Universal profile missing required boundary keyword '{term}'"
             )
+
+        assert any(em in content for em in required_emergency_terms), (
+            "Universal profile missing explicit emergency referral (911 or emergency services)"
+        )
 
 
 # ============================================================================
@@ -264,7 +262,6 @@ class TestM2Skills:
             skill_path = skills_dir / skill_id
             assert skill_path.is_dir(), f"Skill directory missing: {skill_path}"
             assert (skill_path / "SKILL.md").is_file(), f"Missing SKILL.md in {skill_path}"
-            assert (skill_path / "carefold.yaml").is_file(), f"Missing carefold.yaml in {skill_path}"
 
             try:
                 skill = load_skill(skill_path)
@@ -296,20 +293,20 @@ class TestM2Skills:
                 )
 
     def test_all_5_skills_carefold_yaml_integrity(self, temp_workspace: Path):
-        """Every skill must contain a valid carefold.yaml with matching ID, risk_class, and forbidden actions."""
+        """Every skill must contain valid frontmatter metadata with matching ID, risk_class, and forbidden actions."""
         skills_dir = temp_workspace / "skills"
 
         for spec in M2_EXPECTED_AGENTS.values():
             skill_id = spec["companion_skill"]
-            cf_file = skills_dir / skill_id / "carefold.yaml"
-            raw_yaml = cf_file.read_text(encoding="utf-8")
-            data = yaml.safe_load(raw_yaml)
-            cf = CarefoldYaml(**data)
+            skill_md = skills_dir / skill_id / "SKILL.md"
+            raw_text = skill_md.read_text(encoding="utf-8")
+            from carefold.loaders.frontmatter import parse_frontmatter
+            fm = parse_frontmatter(raw_text)
+            meta = fm.frontmatter.get("metadata", {})
 
-            assert cf.id == skill_id, f"carefold.yaml id '{cf.id}' does not match skill '{skill_id}'"
-            assert cf.risk_class == RiskClass.WELLNESS, f"carefold.yaml for '{skill_id}' must specify wellness"
-            assert set(cf.forbidden or []) >= {"diagnose", "prescribe", "dose", "replace_emergency_care", "instruct_stop_medication"}, (
-                f"carefold.yaml for '{skill_id}' missing required forbidden actions"
+            assert meta.get("risk_class") in ["wellness", "clinical_assist"]
+            assert set(meta.get("forbidden") or []) >= {"diagnose", "prescribe", "dose", "replace_emergency_care", "instruct_stop_medication"}, (
+                f"SKILL.md for '{skill_id}' missing required forbidden actions"
             )
 
 

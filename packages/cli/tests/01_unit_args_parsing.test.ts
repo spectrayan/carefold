@@ -134,6 +134,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
       'Hello',
       '--provider',
       'google',
+      '--allow-clinical',
       '--mock'
     ], { cwd: repoRoot });
     expect(resLong.exitCode).toBe(0);
@@ -145,6 +146,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
       'Hello',
       '-p',
       'ollama',
+      '--allow-clinical',
       '--mock'
     ], { cwd: repoRoot });
     expect(resShort.exitCode).toBe(0);
@@ -156,6 +158,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
       'Hello',
       '--provider',
       'custom',
+      '--allow-clinical',
       '--mock'
     ], { cwd: repoRoot });
     expect(resCustom.exitCode).toBe(0);
@@ -170,6 +173,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
       'google',
       '--model',
       'gemini-2.0-flash',
+      '--allow-clinical',
       '--mock'
     ], { cwd: repoRoot });
     expect(resLong.exitCode).toBe(0);
@@ -182,6 +186,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
       'ollama',
       '-m',
       'llama3.2:latest',
+      '--allow-clinical',
       '--mock'
     ], { cwd: repoRoot });
     expect(resShort.exitCode).toBe(0);
@@ -196,6 +201,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
       'google',
       '--key',
       'test-api-key-12345',
+      '--allow-clinical',
       '--mock'
     ], { cwd: repoRoot });
     expect(resKey.exitCode).toBe(0);
@@ -208,6 +214,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
       'anthropic',
       '-k',
       'sk-ant-test-key-67890',
+      '--allow-clinical',
       '--mock'
     ], { cwd: repoRoot });
     expect(resShortKey.exitCode).toBe(0);

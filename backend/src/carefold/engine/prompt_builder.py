@@ -28,8 +28,13 @@ def build_system_prompt(
     skills: Sequence[SkillManifest] = (),
     effective_tools: Sequence[str] = (),
     template_name: Optional[str] = None,
+    progressive: bool = False,
 ) -> str:
-    """Builds the comprehensive system prompt using dynamic Handlebars templates."""
+    """Builds the comprehensive system prompt using dynamic Handlebars templates.
+
+    When progressive=True, skills are formatted as Tier 1 catalog summaries rather
+    than inlining full instruction bodies, reducing baseline system prompt tokens.
+    """
     safety_preamble = build_safety_preamble(agent, skills)
 
     # Persona text resolution
@@ -67,15 +72,30 @@ def build_system_prompt(
         tools_summary = "Available Tools: None (Conversational Only)"
 
     # Skills data
-    skill_items = [
-        {
-            "id": s.id,
-            "name": s.name,
-            "instructions": s.instructions.strip() if s.instructions else "",
-        }
-        for s in skills
-        if s.instructions and s.instructions.strip()
-    ]
+    if progressive:
+        skill_items = [
+            {
+                "id": s.id,
+                "name": s.name,
+                "instructions": (
+                    f"Summary: {s.description.strip()}"
+                    if s.description
+                    else "(Instructions available on-demand via skill-docs)"
+                ),
+            }
+            for s in skills
+            if s.name
+        ]
+    else:
+        skill_items = [
+            {
+                "id": s.id,
+                "name": s.name,
+                "instructions": s.instructions.strip() if s.instructions else "",
+            }
+            for s in skills
+            if s.instructions and s.instructions.strip()
+        ]
 
     context: Dict[str, Any] = {
         "agent": {

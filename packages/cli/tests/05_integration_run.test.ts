@@ -27,6 +27,9 @@ describe('05: CLI Integration: carefold run', () => {
     ws = await createCliTestWorkspace();
     // Initialize workspace with bundled packs
     await runCli(['init'], { cwd: ws.workspaceDir });
+    const cfg = JSON.parse(await ws.readFile('carefold.config.json'));
+    cfg.allow_clinical = true;
+    await ws.createFile('carefold.config.json', JSON.stringify(cfg, null, 2));
   });
 
   afterEach(async () => {
@@ -133,6 +136,10 @@ describe('05: CLI Integration: carefold run', () => {
   });
 
   it('RUN-08: blocks clinical assist agent unless --allow-clinical is specified', async () => {
+    const cfg = JSON.parse(await ws.readFile('carefold.config.json'));
+    cfg.allow_clinical = false;
+    await ws.createFile('carefold.config.json', JSON.stringify(cfg, null, 2));
+
     // Create synthetic clinical assist agent
     const clinicalAgentYaml = `
 id: clinical-doc

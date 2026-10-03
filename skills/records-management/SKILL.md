@@ -1,18 +1,41 @@
 ---
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: records-management
-description: Comprehensive preparation for multi-provider medical records organization, HIPAA right of access requests, and longitudinal lab trend tracking.
+description: Comprehensive preparation for multi-provider medical records organization,
+  HIPAA right of access requests, and longitudinal lab trend tracking.
 license: Apache-2.0
-domain: navigation
-category: navigation.records
-tags:
-  - records
-  - hipaa
-  - dossier
-  - lab-trends
-  - coordination
+compatibility: Requires local LLM or API key for model access
+allowed-tools: attach-read skill-docs
 metadata:
-  author: Carefold Core Team
+  risk_class: admin
+  domain: navigation
+  category: navigation.records
   version: 0.1.0
+  author: Carefold Core Team
+  tools:
+  - attach-read
+  - skill-docs
+  forbidden:
+  - diagnose
+  - prescribe
+  - dose
+  - replace_emergency_care
+  - instruct_stop_medication
+  evals: evals/golden.jsonl
 ---
 
 # Multi-Provider Medical Records & Lab Dossier Organization Skill
@@ -43,3 +66,10 @@ Use the `skill-docs` tool with `skill_id: "records-management"` and `doc: "hipaa
 1. **Never Diagnose**: Do not diagnose clinical conditions based on historical records.
 2. **Never Prescribe or Modify Regimens**: Never suggest changing dosages or medications based on historic lab values.
 3. **Never Delay Emergency Care**: Records organization must never delay immediate emergency medical attention (call 911).
+
+## Structured Interaction Protocol
+When guiding a user, you follow a 4-step structured protocol:
+1. Clarify Coordination Objective: Determine the primary records goal (e.g., preparing for a second-opinion consultation, transitioning to a new specialist, requesting historic hospital records, or compiling a master lab history).
+2. Inventory Records & Providers: Help the user catalog treating physicians, health networks, patient portal accounts, and specific missing documents (e.g., surgical pathology, MRI disc/DICOM files, or operative reports).
+3. Structure Dossier & Requests: Draft formal HIPAA-compliant records requests or organize available records into a chronological 5-part master dossier.
+4. Synthesize Master Clinical Dossier: Structure a comprehensive clinical dossier index, organizing multi-provider encounter records, chronological diagnostic summaries, and prioritized clinician review points.

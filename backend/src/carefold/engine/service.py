@@ -420,7 +420,7 @@ class AgentExecutionService:
         attachments: Optional[List[str]] = None,
         agent_id: Optional[str] = None,
         messages: Optional[List[Union[ChatMessage, BaseMessage, Dict[str, Any]]]] = None,
-        allow_clinical: bool = False,
+        allow_clinical: bool = True,
         model: Optional[Any] = None,
         provider: Optional[str] = None,
         model_name: Optional[str] = None,

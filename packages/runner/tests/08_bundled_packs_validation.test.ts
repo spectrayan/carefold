@@ -135,9 +135,8 @@ describe('08: Milestone 2 Bundled Reference Packs Validation Suite', () => {
         const carefoldYamlPath = path.join(skillDir, 'carefold.yaml');
         const goldenPath = path.join(skillDir, 'evals', 'golden.jsonl');
 
-        it('contains mandatory files SKILL.md, carefold.yaml, and evals/golden.jsonl', () => {
+        it('contains mandatory files SKILL.md and evals/golden.jsonl', () => {
           expect(fsSync.existsSync(skillMdPath), `${skillId} missing SKILL.md`).toBe(true);
-          expect(fsSync.existsSync(carefoldYamlPath), `${skillId} missing carefold.yaml`).toBe(true);
           expect(fsSync.existsSync(goldenPath), `${skillId} missing evals/golden.jsonl`).toBe(true);
         });
 
@@ -273,8 +272,12 @@ describe('08: Milestone 2 Bundled Reference Packs Validation Suite', () => {
             ).toBe(true);
           }
 
-          // Bundled risk classes must not be clinical_assist
-          expect(['wellness', 'admin', 'education']).toContain(agent.risk_class);
+          // Canonical risk classes per AGENTS.md Table 2.1
+          if (agentId === 'visit-steward') {
+            expect(agent.risk_class).toBe('clinical_assist');
+          } else {
+            expect(['wellness', 'admin', 'education']).toContain(agent.risk_class);
+          }
 
           // Verify effective tools union calculation
           const expectedUnion = computeEffectiveTools(agent, skills);
@@ -357,13 +360,14 @@ describe('08: Milestone 2 Bundled Reference Packs Validation Suite', () => {
   // 4. Risk Class Inheritance & Elevation
   // =========================================================================
   describe('Risk Class Inheritance & Catalog Safety', () => {
-    it('ensures zero bundled agents or skills possess risk_class clinical_assist', async () => {
-      const skills = await loadAllSkills(SKILLS_DIR);
-      for (const s of skills) {
+    it('ensures zero bundled starter skills or non-clinical agents possess risk_class clinical_assist', async () => {
+      for (const skillId of EXPECTED_SKILL_IDS) {
+        const s = await loadSkill(path.join(SKILLS_DIR, skillId));
         expect(s.risk_class).not.toBe('clinical_assist');
       }
 
       for (const agentId of EXPECTED_AGENT_IDS) {
+        if (agentId === 'visit-steward') continue; // visit-steward is clinical_assist per AGENTS.md Table 2.1
         const { agent } = await loadAgent(path.join(AGENTS_DIR, agentId), SKILLS_DIR);
         expect(agent.risk_class).not.toBe('clinical_assist');
       }

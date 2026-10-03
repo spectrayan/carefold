@@ -170,14 +170,29 @@ class OllamaProvider(BaseModelProvider):
         # 1. Attempt langchain_ollama.ChatOllama
         try:
             from langchain_ollama import ChatOllama
+            from pydantic import SecretStr
+
+            if not hasattr(ChatOllama, "model_name"):
+                ChatOllama.model_name = property(lambda self: self.model)
+            if not hasattr(ChatOllama, "openai_api_base"):
+                ChatOllama.openai_api_base = property(
+                    lambda self: f"{self.base_url}/v1" if not str(self.base_url).endswith("/v1") else str(self.base_url)
+                )
+            if not hasattr(ChatOllama, "openai_api_key"):
+                ChatOllama.openai_api_key = property(
+                    lambda self: getattr(self, "_custom_api_key", SecretStr("ollama"))
+                )
+
             native_url = effective_base_url.removesuffix("/v1").removesuffix("/")
-            return ChatOllama(
+            model_inst = ChatOllama(
                 model=model_name,
                 base_url=native_url,
                 temperature=effective_temp,
                 timeout=effective_timeout,
                 **merged_kwargs,
             )
+            model_inst.__dict__["_custom_api_key"] = SecretStr(effective_api_key)
+            return model_inst
         except ImportError:
             pass
 

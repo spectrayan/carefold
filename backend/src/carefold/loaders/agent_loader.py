@@ -41,6 +41,7 @@ from carefold.loaders.union import (
     validate_tools_in_phase0,
 )
 from carefold.schemas.manifest import (
+    PHASE_0_REGISTRY,
     SLUG_REGEX,
     AgentDetailResponse,
     AgentDomain,
@@ -183,6 +184,78 @@ def load_agent(
     if not isinstance(parsed_yaml, dict):
         raise ManifestValidationError(f'Expected YAML dictionary in "{agent_yaml_path}"')
 
+    # Load companion metadata.yaml if present
+    metadata_yaml_path = (agent_path / "metadata.yaml").resolve()
+    meta_dict: Dict[str, Any] = {}
+    if metadata_yaml_path.is_relative_to(agent_path) and metadata_yaml_path.is_file():
+        try:
+            loaded_meta = yaml.safe_load(metadata_yaml_path.read_text(encoding="utf-8"))
+            if isinstance(loaded_meta, dict):
+                meta_dict = loaded_meta
+        except Exception as err:
+            raise ManifestValidationError(f'Malformed YAML in "{metadata_yaml_path}": {err}') from err
+
+    # Merge companion metadata fields into parsed_yaml with priority: metadata.yaml > agent.yaml > defaults
+    is_system = agent_path.parent.name == SYSTEM_AGENTS_DIR or agent_path.name.startswith("_")
+    agent_id = parsed_yaml.get("id") or meta_dict.get("id") or parsed_yaml.get("name") or agent_path.name
+    parsed_yaml["id"] = agent_id
+
+    if "title" not in parsed_yaml:
+        parsed_yaml["title"] = meta_dict.get("title") or agent_id.replace("-", " ").title()
+
+    if "version" not in parsed_yaml and "version" in meta_dict:
+        parsed_yaml["version"] = meta_dict["version"]
+
+    if "license" not in parsed_yaml and "license" in meta_dict:
+        parsed_yaml["license"] = meta_dict["license"]
+
+    if "care_stages" not in parsed_yaml and "care_stages" in meta_dict:
+        parsed_yaml["care_stages"] = meta_dict["care_stages"]
+
+    if "target_audience" not in parsed_yaml and "target_audience" in meta_dict:
+        parsed_yaml["target_audience"] = meta_dict["target_audience"]
+
+    if "tags" not in parsed_yaml and "tags" in meta_dict:
+        parsed_yaml["tags"] = meta_dict["tags"]
+
+    if "icon" not in parsed_yaml and "icon" in meta_dict:
+        parsed_yaml["icon"] = meta_dict["icon"]
+
+    if "maturity" not in parsed_yaml and "maturity" in meta_dict:
+        parsed_yaml["maturity"] = meta_dict["maturity"]
+
+    if "hidden" not in parsed_yaml and "hidden" in meta_dict:
+        parsed_yaml["hidden"] = meta_dict["hidden"]
+
+    if "domain" not in parsed_yaml and "domain" in meta_dict:
+        parsed_yaml["domain"] = meta_dict["domain"]
+
+    if "category" not in parsed_yaml and "category" in meta_dict:
+        parsed_yaml["category"] = meta_dict["category"]
+
+    if "risk_class" not in parsed_yaml and "risk_class" in meta_dict:
+        parsed_yaml["risk_class"] = meta_dict["risk_class"]
+
+    if "description" not in parsed_yaml and "description" in meta_dict:
+        parsed_yaml["description"] = meta_dict["description"]
+
+    if "forbidden" not in parsed_yaml:
+        parsed_yaml["forbidden"] = meta_dict.get(
+            "forbidden",
+            ["diagnose", "prescribe", "dose", "replace_emergency_care", "instruct_stop_medication"],
+        )
+
+    raw_skills = parsed_yaml.get("skills", [])
+    if isinstance(raw_skills, list):
+        parsed_yaml["skills"] = [
+            s.strip("/").split("/")[-1] if isinstance(s, str) and s.startswith("/") else s
+            for s in raw_skills
+        ]
+
+    raw_model = parsed_yaml.get("model")
+    if isinstance(raw_model, str) and raw_model and ":" not in raw_model:
+        parsed_yaml["model"] = f"ollama:{raw_model}"
+
     # Resolve persona file reference if present
     persona_val = parsed_yaml.get("persona")
     persona_file = parsed_yaml.get("persona_file")
@@ -211,10 +284,12 @@ def load_agent(
         elif cleaned_val.endswith(".md"):
             raise ManifestValidationError(f'Persona file not found: "{persona_val}" in "{agent_path}"')
     elif (persona_val is None or persona_val == ""):
-        default_persona = (agent_path / "persona.md").resolve()
-        if default_persona.is_relative_to(agent_path) and default_persona.is_file():
-            parsed_yaml["persona"] = default_persona.read_text(encoding="utf-8")
-            parsed_yaml["persona_file"] = "persona.md"
+        for default_name in ("persona.md", "persona_slim.md"):
+            default_persona = (agent_path / default_name).resolve()
+            if default_persona.is_relative_to(agent_path) and default_persona.is_file():
+                parsed_yaml["persona"] = default_persona.read_text(encoding="utf-8")
+                parsed_yaml["persona_file"] = default_name
+                break
 
     try:
         agent = AgentManifest(**parsed_yaml)
@@ -264,6 +339,16 @@ def load_agent(
 
     # Compute effective tools union: unique(agent.tools ∪ skill.tools) ∩ Phase0Registry
     effective_tools = compute_effective_tools(agent.tools, loaded_skills)
+
+    # Populate domain, category, risk_class from primary skill if not explicit
+    primary_skill = loaded_skills[0] if loaded_skills else None
+    if primary_skill:
+        if "domain" not in parsed_yaml and "domain" not in meta_dict:
+            agent.domain = primary_skill.domain
+        if "category" not in parsed_yaml and "category" not in meta_dict:
+            agent.category = primary_skill.category
+        if "risk_class" not in parsed_yaml and "risk_class" not in meta_dict:
+            agent.risk_class = primary_skill.risk_class
 
     # Risk class elevation: if any declared skill is clinical_assist, agent is clinical_assist
     if any(s.risk_class == RiskClass.CLINICAL_ASSIST for s in loaded_skills):
@@ -364,3 +449,54 @@ def load_all_agents(
             )
 
     return summaries
+
+
+def load_subagent_from_yaml(
+    agent_dir: Union[Path, str],
+    resolve_tools: bool = False,
+) -> Dict[str, Any]:
+    """Builds a native Deep Agents SubAgent dict from slim agent.yaml."""
+    agent_path = Path(agent_dir).resolve()
+    yaml_file = agent_path / AGENT_MANIFEST_FILENAME
+    if not yaml_file.is_file():
+        raise FileNotFoundError(f'Missing required agent.yaml in "{agent_path}"')
+
+    raw = yaml.safe_load(yaml_file.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict):
+        raw = {}
+
+    persona_ref = raw.get("persona") or "persona.md"
+    persona_path = agent_path / persona_ref
+    if not persona_path.is_file():
+        for fallback in ("persona.md", "persona_slim.md"):
+            fb_path = agent_path / fallback
+            if fb_path.is_file():
+                persona_path = fb_path
+                break
+
+    system_prompt = persona_path.read_text(encoding="utf-8") if persona_path.is_file() else ""
+
+    declared_tools = raw.get("tools", [])
+    if not isinstance(declared_tools, list):
+        declared_tools = []
+    valid_tools = [t for t in declared_tools if t in PHASE_0_REGISTRY]
+
+    if resolve_tools:
+        from carefold.tools.registry import CLOSED_TOOL_DEFINITIONS
+
+        tools_payload = [CLOSED_TOOL_DEFINITIONS[t] for t in valid_tools if t in CLOSED_TOOL_DEFINITIONS]
+    else:
+        tools_payload = valid_tools
+
+    skills = raw.get("skills", [])
+    if not isinstance(skills, list):
+        skills = []
+
+    return {
+        "name": raw.get("name") or raw.get("id", agent_path.name),
+        "description": raw.get("description", ""),
+        "system_prompt": system_prompt,
+        "model": raw.get("model", "ollama:llama3.2"),
+        "skills": skills,
+        "tools": tools_payload,
+    }

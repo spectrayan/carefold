@@ -27,6 +27,7 @@ from pydantic import ValidationError
 from carefold.constants.defaults import DEFAULT_VERSION
 from carefold.constants.paths import (
     CAREFOLD_YAML_FILENAME,
+    CAREFOLD_YAML_MIGRATED_FILENAME,
     REFERENCES_DIR,
     SKILL_MANIFEST_FILENAME,
 )
@@ -98,11 +99,19 @@ def load_skill(skill_dir: Union[Path, str]) -> SkillManifest:
     except Exception as err:
         raise ManifestValidationError(f'Invalid frontmatter in "{skill_md_path}": {err}') from err
 
+    target_yaml_path = None
     carefold_yaml_path = (skill_path / CAREFOLD_YAML_FILENAME).resolve()
-    cf_data = {}
+    migrated_yaml_path = (skill_path / CAREFOLD_YAML_MIGRATED_FILENAME).resolve()
+
     if carefold_yaml_path.is_relative_to(skill_path) and carefold_yaml_path.is_file():
+        target_yaml_path = carefold_yaml_path
+    elif migrated_yaml_path.is_relative_to(skill_path) and migrated_yaml_path.is_file():
+        target_yaml_path = migrated_yaml_path
+
+    cf_data = {}
+    if target_yaml_path is not None:
         try:
-            raw_yaml = carefold_yaml_path.read_text(encoding="utf-8")
+            raw_yaml = target_yaml_path.read_text(encoding="utf-8")
             cf_data = yaml.safe_load(raw_yaml) or {}
         except Exception:
             pass
@@ -131,7 +140,7 @@ def load_skill(skill_dir: Union[Path, str]) -> SkillManifest:
 
     # 2. Check 3 mandatory intended-use statements
     valid_use, missing_line = check_mandatory_intended_use(raw_markdown)
-    if not valid_use and not (carefold_yaml_path.is_relative_to(skill_path) and carefold_yaml_path.is_file() and not parsed.frontmatter):
+    if not valid_use and not (target_yaml_path is not None and not parsed.frontmatter):
         raise ManifestValidationError(
             f'Mandatory intended-use line missing in "{skill_path}/SKILL.md": "{missing_line}"'
         )
@@ -148,26 +157,37 @@ def load_skill(skill_dir: Union[Path, str]) -> SkillManifest:
             if f.is_file() and not f.name.startswith(".") and (ref_dir / f.name).resolve().is_relative_to(ref_dir)
         ])
 
-    # 4. Check for carefold.yaml
+    # 4. Check for carefold.yaml / carefold.yaml.migrated
     cf: Optional[CarefoldYaml] = None
-    tools: List[str] = []
-    if carefold_yaml_path.is_relative_to(skill_path) and carefold_yaml_path.is_file():
+    if target_yaml_path is not None:
         try:
-            raw_yaml = carefold_yaml_path.read_text(encoding="utf-8")
+            raw_yaml = target_yaml_path.read_text(encoding="utf-8")
             cf_dict = yaml.safe_load(raw_yaml) or {}
             cf = CarefoldYaml(**cf_dict)
         except ValidationError as err:
             issues = ", ".join(f"{e['loc']}: {e['msg']}" for e in err.errors())
-            raise ManifestValidationError(f'Invalid carefold.yaml in "{skill_path}": {issues}') from err
+            raise ManifestValidationError(f'Invalid {target_yaml_path.name} in "{skill_path}": {issues}') from err
         except Exception as err:
-            raise ManifestValidationError(f'Malformed carefold.yaml in "{skill_path}": {err}') from err
+            raise ManifestValidationError(f'Malformed {target_yaml_path.name} in "{skill_path}": {err}') from err
 
-        tools = cf.tools or []
+    # 5. Resolve tools
+    meta = fm.metadata
+    tools: List[str] = []
+    if meta and meta.tools is not None:
+        tools = list(meta.tools)
+    elif cf and cf.tools is not None:
+        tools = list(cf.tools)
+    elif fm.allowed_tools:
+        tools = [t.strip() for t in fm.allowed_tools.split() if t.strip()]
+
+    if tools:
         validate_tools_in_phase0(tools, f'skill "{skill_id}"')
 
-    # 5. Resolve taxonomy fields across carefold.yaml and SKILL.md frontmatter
+    # 6. Resolve taxonomy fields across carefold.yaml and SKILL.md frontmatter
     domain_val = None
-    if cf and getattr(cf, "domain", None):
+    if meta and meta.domain is not None:
+        domain_val = meta.domain
+    elif cf and getattr(cf, "domain", None):
         domain_val = cf.domain
     elif getattr(fm, "domain", None):
         domain_val = fm.domain
@@ -184,31 +204,75 @@ def load_skill(skill_dir: Union[Path, str]) -> SkillManifest:
         skill_domain = AgentDomain.WELLNESS
 
     skill_category = ""
-    if cf and getattr(cf, "category", None):
+    if meta and meta.category:
+        skill_category = str(meta.category).strip()
+    elif cf and getattr(cf, "category", None):
         skill_category = str(cf.category).strip()
     elif getattr(fm, "category", None):
         skill_category = str(fm.category).strip()
 
     cf_tags = _normalize_tags(getattr(cf, "tags", None)) if cf else []
+    meta_tags = _normalize_tags(getattr(meta, "tags", None)) if meta else []
     fm_tags = _normalize_tags(getattr(fm, "tags", None))
-    combined_tags = list(dict.fromkeys(cf_tags + fm_tags))
+    combined_tags = list(dict.fromkeys(cf_tags + meta_tags + fm_tags))
 
-    if cf is not None:
+    # Risk class
+    risk_class = RiskClass.WELLNESS
+    if meta and meta.risk_class is not None:
+        risk_class = meta.risk_class
+    elif cf and cf.risk_class is not None:
+        risk_class = cf.risk_class
+
+    # Forbidden actions
+    forbidden = []
+    if meta and meta.forbidden is not None:
+        forbidden = meta.forbidden
+    elif cf and cf.forbidden is not None:
+        forbidden = cf.forbidden
+
+    # Evals path
+    evals_path = None
+    if meta and meta.evals is not None:
+        evals_path = meta.evals
+    elif cf and cf.evals is not None:
+        evals_path = cf.evals
+
+    # Version
+    version = DEFAULT_VERSION
+    if meta and meta.version:
+        version = meta.version
+    elif cf and cf.version:
+        version = cf.version
+
+    license_val = (cf.license if cf else None) or fm.license
+
+    # Verification status
+    has_spec = (
+        cf is not None or
+        (meta is not None and (
+            meta.risk_class is not None or
+            meta.tools is not None or
+            meta.category is not None
+        )) or
+        fm.allowed_tools is not None
+    )
+
+    if has_spec:
         return SkillManifest(
-            id=cf.id or skill_id,
+            id=(cf.id if cf else None) or skill_id,
             name=fm.name,
             description=fm.description,
-            version=cf.version or (fm.metadata.version if fm.metadata else DEFAULT_VERSION) or DEFAULT_VERSION,
-            license=cf.license or fm.license,
-            risk_class=cf.risk_class or RiskClass.WELLNESS,
+            version=version,
+            license=license_val,
+            risk_class=risk_class,
             domain=skill_domain,
             category=skill_category,
             tags=combined_tags,
             tools=tools,
-            forbidden=cf.forbidden or [],
+            forbidden=forbidden,
             instructions=parsed.body,
             references=references,
-            evals=cf.evals,
+            evals=evals_path,
             is_verified=True,
             unverified=False,
         )
@@ -218,7 +282,7 @@ def load_skill(skill_dir: Union[Path, str]) -> SkillManifest:
         id=skill_id,
         name=fm.name,
         description=fm.description,
-        version=(fm.metadata.version if fm.metadata else DEFAULT_VERSION) or DEFAULT_VERSION,
+        version=version,
         license=fm.license,
         risk_class=RiskClass.WELLNESS,
         domain=skill_domain,

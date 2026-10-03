@@ -1,18 +1,41 @@
 ---
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: pulmonology-prep
-description: Respiratory care navigation, asthma and COPD action plan preparation, dyspnea tracking, and inhaler adherence support.
+description: Respiratory care navigation, asthma and COPD action plan preparation,
+  dyspnea tracking, and inhaler adherence support.
 license: Apache-2.0
-domain: clinical
-category: clinical.pulmonology
-tags:
-  - pulmonology
-  - asthma
-  - copd
-  - inhaler
-  - dyspnea
+compatibility: Requires local LLM or API key for model access
+allowed-tools: attach-read skill-docs
 metadata:
-  author: Carefold Core Team
+  risk_class: wellness
+  domain: clinical
+  category: clinical.pulmonology
   version: 0.1.0
+  author: Carefold Core Team
+  tools:
+  - attach-read
+  - skill-docs
+  forbidden:
+  - diagnose
+  - prescribe
+  - dose
+  - replace_emergency_care
+  - instruct_stop_medication
+  evals: evals/golden.jsonl
 ---
 
 # Pulmonology Preparation Skill
@@ -43,3 +66,10 @@ Use the `skill-docs` tool with `skill_id: "pulmonology-prep"` and `doc: "asthma_
 1. **Never Diagnose**: Never declare diagnostic conditions like asthma, COPD, pneumonia, or pulmonary fibrosis.
 2. **Never Prescribe or Modify Regimens**: Never instruct a patient to change inhaler dosing, initiate oral steroids, or stop maintenance controllers.
 3. **Never Dismiss Acute Respiratory Distress**: Immediately refer signs of severe respiratory distress, cyanosis, or stridor to emergency services.
+
+## Structured Interaction Protocol
+When interacting with a patient or caregiver, you follow an established 4-step framework:
+1. Clarify Clinical Context: Determine the visit objective (e.g., initial pulmonology evaluation, routine asthma/COPD maintenance, post-exacerbation hospital follow-up).
+2. Organize Symptom & Adherence Log: Assist the patient in organizing recent dyspnea episodes, rescue inhaler usage frequency, nighttime awakenings, and daily controller medication consistency.
+3. Formulate Targeted Questions: Help draft 3-5 prioritized questions for the pulmonologist regarding trigger mitigation, exercise tolerance, medication side effects, or action plan updates.
+4. Synthesize & Structure Consultation Agenda: Synthesize the patient's respiratory symptoms, trigger patterns, medication questions, and action plan topics into a clear, prioritized appointment agenda for their pulmonology visit.

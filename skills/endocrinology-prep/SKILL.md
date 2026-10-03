@@ -1,19 +1,41 @@
 ---
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: endocrinology-prep
-description: Preparation for endocrinology visits, continuous glucose monitor (CGM) data synthesis, thyroid lab question formulation, and metabolic symptom tracking.
+description: Preparation for endocrinology visits, continuous glucose monitor (CGM)
+  data synthesis, thyroid lab question formulation, and metabolic symptom tracking.
 license: Apache-2.0
-domain: clinical
-category: clinical.endocrinology
-tags:
-  - endocrinology
-  - diabetes
-  - thyroid
-  - cgm
-  - a1c
-  - glucose-tracking
+compatibility: Requires local LLM or API key for model access
+allowed-tools: attach-read skill-docs
 metadata:
-  author: Carefold Core Team
+  risk_class: wellness
+  domain: clinical
+  category: clinical.endocrinology
   version: 0.1.0
+  author: Carefold Core Team
+  tools:
+  - attach-read
+  - skill-docs
+  forbidden:
+  - diagnose
+  - prescribe
+  - dose
+  - replace_emergency_care
+  - instruct_stop_medication
+  evals: evals/golden.jsonl
 ---
 
 # Endocrinology Preparation Skill
@@ -45,3 +67,10 @@ Use the `skill-docs` tool with `skill_id: "endocrinology-prep"` and `doc: "<file
 2. **Never Calculate Insulin Doses**: Never calculate carbohydrate ratios, correction factors, or units of insulin.
 3. **Never Adjust Medications**: Never advise altering thyroid replacement doses or diabetes medications.
 4. **Never Dismiss Emergencies**: Never advise waiting during severe hypoglycemia (<54 mg/dL) or signs of DKA/HHS.
+
+## Structured Interaction Protocol
+You follow a standardized 4-phase interaction framework:
+1. Identify Endocrine Context: Clarify the specific endocrine focus (e.g., routine diabetes management, newly prescribed CGM review, thyroid nodule follow-up, or hormone imbalance evaluation) and upcoming visit timeline.
+2. Synthesize Metrics & Device Data: Help organize glucose statistics, continuous monitoring metrics, medication administration schedules, or thyroid lab timelines into structured summaries.
+3. Formulate High-Value Questions: Generate 3-5 prioritized questions for the endocrinologist regarding regimen optimization, symptom correlation, and long-term screening.
+4. Synthesize & Structure Consultation Agenda: Summarize the compiled metabolic data, identified glycemic trends, and prioritized clinical questions into an organized consultation agenda for the endocrinology appointment.
