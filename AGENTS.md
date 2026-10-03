@@ -18,7 +18,7 @@
 -->
 
 Specification compliance: [AGENTS.md v1.0.0](https://github.com/agent-infra/agents.md)  
-Runtime version: Carefold 0.3.0  
+Runtime version: Carefold 0.3.0-beta.1  
 Last updated: 2026-10-02  
 
 ---

@@ -1,0 +1,236 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.3.0-beta.1)'
+        required: true
+        default: 'v0.3.0-beta.1'
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify Quality Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Spectrayan license headers
+        run: pnpm run check:licenses
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e backend
+          pip install -r backend/requirements-dev.txt
+
+      - name: Run Backend Pytest Suite
+        run: pytest backend/tests/
+
+      - name: Run 47-Attack Penetration Security Suite
+        run: PYTHONPATH=backend/src python backend/tests/penetration_suite.py
+
+      - name: Frontend Typecheck
+        run: pnpm --filter web typecheck
+
+      - name: Frontend Component & Unit Tests
+        run: pnpm --filter web test --exclude "**/api/**"
+
+      - name: Frontend Production Build
+        run: pnpm --filter web build
+
+      - name: Build Packages
+        run: |
+          pnpm --filter @carefold/runner build
+          pnpm --filter @carefold/cli build
+
+      - name: CLI Package Tests
+        run: pnpm --filter @carefold/cli test
+
+      - name: Runner Package Tests
+        run: pnpm --filter @carefold/runner test
+
+  publish-docker:
+    name: Build & Publish Container Images
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve Release Tag & Metadata
+        id: meta
+        run: |
+          RAW_TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          CLEAN_VERSION="${RAW_TAG#v}"
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          
+          if [[ "${{ github.event.inputs.prerelease }}" == "false" ]] || [[ "$RAW_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            IS_PRERELEASE="false"
+            CHANNEL_TAG="latest"
+          else
+            IS_PRERELEASE="true"
+            CHANNEL_TAG="beta"
+          fi
+
+          echo "raw_tag=${RAW_TAG}" >> "$GITHUB_OUTPUT"
+          echo "clean_version=${CLEAN_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "repo_lower=${REPO_LOWER}" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=${IS_PRERELEASE}" >> "$GITHUB_OUTPUT"
+          echo "channel_tag=${CHANNEL_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Build & Push All-In-One Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: all-in-one
+          push: true
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.repo_lower }}:${{ steps.meta.outputs.clean_version }}
+            ghcr.io/${{ steps.meta.outputs.repo_lower }}:${{ steps.meta.outputs.channel_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & Push Backend Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: backend
+          push: true
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.repo_lower }}/backend:${{ steps.meta.outputs.clean_version }}
+            ghcr.io/${{ steps.meta.outputs.repo_lower }}/backend:${{ steps.meta.outputs.channel_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & Push Web Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: web
+          push: true
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.repo_lower }}/web:${{ steps.meta.outputs.clean_version }}
+            ghcr.io/${{ steps.meta.outputs.repo_lower }}/web:${{ steps.meta.outputs.channel_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  create-release:
+    name: Create GitHub Release
+    needs: [verify, publish-docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract Release Notes & Metadata
+        id: release_info
+        run: |
+          RAW_TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          CLEAN_VERSION="${RAW_TAG#v}"
+          
+          if [[ "${{ github.event.inputs.prerelease }}" == "false" ]] || [[ "$RAW_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            PRERELEASE_FLAG=""
+          else
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          # Extract section from CHANGELOG.md if available
+          python3 -c "
+          import re
+          version = '${CLEAN_VERSION}'
+          with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
+              content = f.read()
+          pattern = rf'## \[{re.escape(version)}\][^\n]*\n(.*?)(?=\n## \[|\Z)'
+          match = re.search(pattern, content, re.DOTALL)
+          if match:
+              notes = match.group(1).strip()
+          else:
+              notes = f'Release {version} of Carefold.'
+          with open('RELEASE_BODY.md', 'w', encoding='utf-8') as f:
+              f.write(notes + '\n')
+          "
+
+          echo "raw_tag=${RAW_TAG}" >> "$GITHUB_OUTPUT"
+          echo "clean_version=${CLEAN_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "prerelease_flag=${PRERELEASE_FLAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.release_info.outputs.raw_tag }}" \
+            --title "Carefold ${{ steps.release_info.outputs.raw_tag }}" \
+            --notes-file RELEASE_BODY.md \
+            ${{ steps.release_info.outputs.prerelease_flag }} \
+            --verify-tag || echo "Release created or updated."

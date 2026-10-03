@@ -39,7 +39,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
   it('reports the correct version number with --version', async () => {
     const res = await runCli(['--version']);
     expect(res.exitCode).toBe(0);
-    expect(res.stdout.trim()).toBe('0.1.0');
+    expect(res.stdout.trim()).toBe('0.3.0-beta.1');
   });
 
   it('fails with non-zero exit code on unknown command', async () => {

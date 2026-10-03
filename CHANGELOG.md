@@ -16,9 +16,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.3.0] - 2026-10-02
+## [0.3.0-beta.1] - 2026-10-02
 
 ### Added
+- **Automated Release Pipeline (`.github/workflows/release.yml`)**:
+  - Full end-to-end release automation supporting git tag triggers (`v*`) and manual `workflow_dispatch`.
+  - Quality verification gates: Apache-2.0 license check, pytest suite, 47-attack security penetration tests, web typecheck, vitest component tests, Next.js production build, CLI and runner tests.
+  - Multi-target Docker container publishing to GitHub Container Registry (`ghcr.io/spectrayan/carefold`): `all-in-one`, `backend`, and `web` images with GHA caching.
+  - Automated GitHub Release generation with changelog notes extraction and pre-release flagging.
+- **LangGraph Deep Agents Architecture & 3-Tier Progressive Disclosure (ADR-0003)**:
+  - Decomposed 22 specialist agent manifests into runtime contracts (`agent.yaml`), slim persona definitions (`persona_slim.md`), and catalog descriptors (`metadata.yaml`).
+  - Standardized all 23 skill packs under Agent Skills specification `SKILL.md` YAML frontmatter with strict risk classification and tool declaration.
+  - Reduced baseline agent system prompt token overhead by >60% via on-demand skill reading and native YAML loading.
+- **Clinical Safety Middleware & Consent Gate**:
+  - `ClinicalSafetyMiddleware` enforcing closed tool sandbox (`PHASE_0_REGISTRY`) and automatic thread elevation to `clinical_assist`.
+  - Explicit clinical consent protocol (`allow_clinical=True`) across backend API and frontend consultation client (`ChatClient.tsx`).
 - **Autonomous Agent Manifest (`AGENTS.md`)**: Full specification adherence defining operational boundaries, tool privileges, and AI coding agent guidelines.
 - **Living Project Context (`PROJECT_CONTEXT.md`)**: Spector-grade architectural specification capturing hexagonal ports, 4 cognitive memory tiers, and execution pipelines.
 - **Open-Source Governance & Community Suite**:

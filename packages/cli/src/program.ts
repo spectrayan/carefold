@@ -29,7 +29,7 @@ export function createProgram(): Command {
   program
     .name('carefold')
     .description('Carefold CLI: Local-first runtime for specialist health agents')
-    .version('0.1.0');
+    .version('0.3.0-beta.1');
 
   // init [dir]
   program
