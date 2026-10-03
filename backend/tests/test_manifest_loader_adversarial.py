@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Test Suite for Manifest & SubAgent Loader Robustness.
+"""Adversarial Test Suite for Manifest & SubAgent Loader Robustness.
 
 Focus Areas:
 1. Manifest & SubAgent Loader Robustness:

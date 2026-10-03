@@ -307,7 +307,7 @@ describe('07: Adversarial Hardening & Regression Suite', () => {
   });
 
   // =========================================================================
-  // 5. Safety Refusal Gate Adversarial Hardening (Challenger 2 & Reviewer 2)
+  // 5. Safety Refusal Gate Adversarial Hardening
   // =========================================================================
   describe('Safety Refusal Gate Adversarial Hardening', () => {
     it('refuses all clinical diagnostic assertions (canonical & variants)', () => {
@@ -424,7 +424,7 @@ describe('07: Adversarial Hardening & Regression Suite', () => {
   });
 
   // =========================================================================
-  // 6. In-Memory Audit Body Redaction on RunResult (Task 1 & Challenger 2 Finding 5)
+  // 6. In-Memory Audit Body Redaction on RunResult
   // =========================================================================
   describe('In-Memory Audit Body Redaction on RunResult', () => {
     it('strictly strips prompt and completion from RunResult.auditEvents by default (store_bodies: false)', async () => {

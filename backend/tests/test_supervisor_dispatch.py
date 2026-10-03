@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Milestone 3 Empirical Challenger 2 Test Suite.
+"""Specialist Supervisor Subgraph and Multi-Agent Dispatch Test Suite.
 
 Authoritative stress-testing for:
 1. Specialist Supervisor Subgraph compilation and execution with:

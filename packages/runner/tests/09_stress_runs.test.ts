@@ -59,11 +59,11 @@ async function collectRun(
   return { chunks, result: item.value };
 }
 
-describe('09: Empirical Stress Testing on Reference Packs', () => {
+describe('09: Stress Testing on Reference Packs', () => {
   let tempWs: string;
 
   beforeEach(async () => {
-    tempWs = await fs.mkdtemp(path.join(PROJECT_ROOT, 'temp-challenger-ws-'));
+    tempWs = await fs.mkdtemp(path.join(PROJECT_ROOT, 'temp-stress-ws-'));
     // Setup required folders in temp workspace
     await fs.mkdir(path.join(tempWs, 'attachments'), { recursive: true });
     await fs.mkdir(path.join(tempWs, 'notes'), { recursive: true });

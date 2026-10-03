@@ -13,10 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Challenger 1 Test Suite for Milestone 4 (Adversarial PII & Dossier Verification).
+"""Adversarial PII Sanitization & Dossier Verification Test Suite.
 
-Author: Challenger 1 (teamwork_preview_challenger_m4_1)
-Mission: Empirically stress-test boundary conditions, adversarial inputs, regex precision,
+Stress-tests boundary conditions, adversarial inputs, regex precision,
 clinical vitals preservation, ReDoS resistance, and Pydantic validation on dossiers and sanitizers.
 """
 

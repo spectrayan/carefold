@@ -13,10 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Adversarial Empirical Stress Test Suite for Milestone M1 (Core Organ Navigators 1–8).
+"""Stress Test Suite for Core Organ Clinical Navigators.
 
-Authored by M1 Challenger 1.
-Empirically stress-tests the 8 core organ clinical navigators and companion skills:
+Stress-tests the 8 core organ clinical navigators and companion skills:
 1. Word count strictness: exact word counts of all 8 personas (> 250 words) under multiple tokenizers.
 2. Mandatory headings: presence, ordering, and content non-emptiness of all 5 uppercase headers.
 3. Closed tool registry: strict containment within PHASE_0_REGISTRY, zero delegation or unauthorized tools.

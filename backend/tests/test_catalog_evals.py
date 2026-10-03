@@ -13,10 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Automated Empirical Verification & Stress Suite for Milestone M1 Iteration 2.
+"""Automated Search Evaluation and Verification Suite.
 
-Authored by M1 Iteration 2 Challenger 2.
-Empirically tests:
+Tests:
 1. SQLite FTS5 catalog indexing of the 8 new core organ agents & skills without errors.
 2. Search query routing: 'hypertension', 'asthma', 'migraine', 'colonoscopy', 'eGFR',
    'diabetes CGM', 'joint pain', 'rash lesion' returning respective organ navigators as top candidates.

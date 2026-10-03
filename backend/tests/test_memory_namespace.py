@@ -13,9 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical challenger test suite 3 for Milestone M14.
-
-Agent: m14_challenger_3
+"""Memory Namespace Isolation and Catalog Tag Filtering Test Suite.
 Scope:
 1. Delimiter collisions with extreme namespace values ('a:b:c', ':::', empty '', unicode colons).
 2. Tag filtering in catalog with multi-tag combinations (AND vs OR semantics), case variations,

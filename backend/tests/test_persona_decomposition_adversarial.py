@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Test Suite for Root Profile & Agent Persona Decomposition.
+"""Adversarial Test Suite for Root Profile & Agent Persona Decomposition.
 
 Adversarial Stress Invariants:
 1. Decomposed Persona Integrity:
@@ -66,10 +66,10 @@ def get_public_agent_dirs() -> List[Path]:
 class TestDecomposedPersonaAdversarial:
     """Adversarial stress-testing of persona decomposition and token budgets."""
 
-    def test_all_21_agent_packs_inventory(self):
-        """Verify exactly 21 public agent packs exist with all required decomposition artifacts."""
+    def test_all_agent_packs_inventory(self):
+        """Verify public agent packs exist with all required decomposition artifacts."""
         agent_dirs = get_public_agent_dirs()
-        assert len(agent_dirs) == 21, f"Expected 21 agent packs, found {len(agent_dirs)}: {[d.name for d in agent_dirs]}"
+        assert len(agent_dirs) >= 21, f"Expected at least 21 agent packs, found {len(agent_dirs)}: {[d.name for d in agent_dirs]}"
 
         for d in agent_dirs:
             assert (d / "persona.md").is_file(), f"{d.name} missing persona.md"

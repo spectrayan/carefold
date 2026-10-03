@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Adversarial stress-test suite for Two-Hop Orchestrator Fallback Chain (Milestone M15).
+"""Adversarial stress-test suite for Two-Hop Orchestrator Fallback Chain.
 
 Target:
 - carefold.workflows.nodes.orchestrator_node.OrchestratorNode

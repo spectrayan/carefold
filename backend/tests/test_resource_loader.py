@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Challenger 2 Stress Test Suite for Milestone 1 (R6).
+"""Resource Loader and Constants Concurrency & Stress Test Suite.
 
 Adversarially stress-tests:
 1. Concurrency: race conditions in get_resource_loader() cold-start, multi-threaded

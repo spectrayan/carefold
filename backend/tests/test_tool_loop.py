@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Milestone 5 Empirical Challenger Test Suite (Adversarial Tool Loop & Runner Facade).
+"""Tool Loop Execution, Deduplication, and Runner Facade Test Suite.
 
-Empirically verifies:
+Verifies:
 1. Tool trace deduplication across multi-iteration tool runs:
    - Zero duplicate `tool_start` or `tool_end` events across multiple tool iterations.
    - Zero duplicate `event: "tool"` entries in the persistent audit log (audit.jsonl).

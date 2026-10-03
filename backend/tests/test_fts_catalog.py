@@ -13,9 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical challenger test suite for Milestone M14: SQLite FTS5 Adapters.
-
-Challenger: Challenger 1 (teamwork_preview_challenger)
+"""SQLite FTS5 Catalog Adapter Test Suite.
 Scope:
 1. FTS5 Porter stemming:
    - Singular documents ("copay", "benefit", "prescription") queried by plurals ("copays", "benefits", "prescriptions")

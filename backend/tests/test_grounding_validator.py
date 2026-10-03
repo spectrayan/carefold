@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Milestone 4 Empirical Challenger 2 Test Suite.
+"""Grounding Validator and Numerical Extraction Test Suite.
 
-Authoritative stress-testing and empirical verification for:
+Authoritative stress-testing and verification for:
 1. GroundingValidator:
    - Extreme numerical formats: $0, $1,000,000 vs 1000000, 20.5% vs 20.5 percent, unformatted 3500 vs $3,500.
    - Rejection of transposed digits: 1050 vs $1,500, 250 vs 520, 1234 vs 1243.
@@ -529,25 +529,22 @@ class TestExtractionConcurrencyAndStress:
 
 
 # ============================================================================
-# 7. Empirical Defect Verification (Remediated Bug Verification)
+# 7. Grounding Defects Remediation Tests
 # ============================================================================
 
-class TestEmpiricalDefectsFound:
-    """Verifies that defects discovered during empirical review have been cleanly remediated."""
+class TestGroundingDefectsRemediation:
+    """Verifies that defects in grounding validation have been cleanly remediated."""
 
-    def test_defect_1_attachments_dir_str_typeerror_in_fallback(self):
-        """DEFECT 1 REMEDIATION:
-        Non-existent files cleanly raise FileNotFoundError (not TypeError).
-        """
+    def test_attachments_dir_type_in_fallback(self):
+        """Non-existent files cleanly raise FileNotFoundError (not TypeError)."""
         assert isinstance(ATTACHMENTS_DIR, str), "ATTACHMENTS_DIR is a string constant"
 
         # Calling extract_document_dossier with a non-existent file raises FileNotFoundError
         with pytest.raises(FileNotFoundError):
             extract_document_dossier(file_path="non_existent_file.txt")
 
-    def test_defect_2_insecure_fallback_paths_in_tool(self):
-        """DEFECT 2 REMEDIATION:
-        Path traversal attempts like /etc/hosts or escaping paths raise PermissionError / SandboxSecurityError,
+    def test_path_traversal_blocked_in_tool(self):
+        """Path traversal attempts like /etc/hosts or escaping paths raise PermissionError / SandboxSecurityError,
         strictly preventing arbitrary file reads outside the sandbox.
         """
         ctx = type("MockCtx", (), {"workspace_root": Path("/tmp")})()
@@ -561,9 +558,8 @@ class TestEmpiricalDefectsFound:
         with pytest.raises((PermissionError, ValueError)):
             extract_document_dossier(file_path="/etc/hosts")
 
-    def test_defect_3_args_schema_omits_workspace_root(self):
-        """DEFECT 3 REMEDIATION:
-        ExtractDocumentDossierInput args_schema includes workspace_root so callers
+    def test_args_schema_includes_workspace_root(self):
+        """ExtractDocumentDossierInput args_schema includes workspace_root so callers
         can specify custom workspace root paths.
         """
         from carefold.workflows.subgraphs.extraction.tool import ExtractDocumentDossierInput

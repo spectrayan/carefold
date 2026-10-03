@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical test suite for contextual AI follow-up suggestions and agent specialization.
+"""Test suite for contextual AI follow-up suggestions and agent specialization.
 
 Verifies:
 1. Agent-specific suggestion chip precedence (persona keywords > tools > persona defaults > global defaults).

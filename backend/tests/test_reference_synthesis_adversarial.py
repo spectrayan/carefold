@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical adversarial tests for in-memory reference doc synthesis.
+"""Adversarial tests for in-memory reference doc synthesis.
 
 Verifies:
 1. In-memory reference doc synthesis under read-only disk and missing file conditions.

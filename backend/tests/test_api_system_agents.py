@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Challenger 2 Test Suite for Milestone M13 API Endpoints.
+"""System Agents API Endpoints Test Suite.
 
 Validates:
 1. GET /api/agents behavior:

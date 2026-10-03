@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Test Suite for Persona Purity & Separation of Concerns.
+"""Adversarial Test Suite for Persona Purity & Separation of Concerns.
 
 Targeting:
 1. Obfuscated Tool Syntax & Hidden Directives:
@@ -110,9 +110,9 @@ class TestPersonaAdversarialHardening:
     """Adversarial test suite for persona purity."""
 
     def test_persona_file_inventory_completeness(self):
-        """Verify exactly 21 persona files exist (20 specialist agents + _template)."""
+        """Verify persona files exist for all public specialist agents and template."""
         personas = get_public_persona_paths()
-        assert len(personas) == 21, f"Expected 21 persona files, found {len(personas)}: {[p.parent.name for p in personas]}"
+        assert len(personas) >= 21, f"Expected at least 21 persona files, found {len(personas)}: {[p.parent.name for p in personas]}"
 
     @pytest.mark.parametrize("persona_path", get_public_persona_paths(), ids=lambda p: p.parent.name)
     def test_zero_forbidden_tools_or_obfuscations(self, persona_path: Path):

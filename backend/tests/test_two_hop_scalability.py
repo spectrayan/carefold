@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Challenger Test Suite for Milestone M15 (Requirement R3).
+"""Two-Hop Routing Scalability and Token Bounds Test Suite.
 
-Adversarially challenges:
+Challenges:
 1. Token Bounds Verification:
    - Measure token length of TIER1_DOMAIN_CLASSIFIER_PROMPT across tokenizers (cl100k_base, o200k_base, p50k_base).
    - Verify prompt is strictly under 500 tokens, contains all 5 domains, and has 0 agent catalog descriptions.

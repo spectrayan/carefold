@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Milestone 6 Iteration 2 Challenger Stress Test Suite.
+"""Agent Registry and Tool Permission Boundaries Stress Test Suite.
 
 Adversarially verifies:
 1. ToolNode permission boundaries:

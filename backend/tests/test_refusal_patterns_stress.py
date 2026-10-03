@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Challenger Stress Harness for Milestone 1.
+"""Adversarial Stress Harness for Refusal Patterns & Disclaimer Clauses.
 
 Testing:
 1. ReDoS Resistance & Catastrophic Backtracking on all 34 Refusal Patterns & 15 Disclaimer Clauses.
@@ -209,7 +209,7 @@ def test_extreme_whitespace_and_newline_mutations():
 # =========================================================================
 
 def test_smart_quote_contraction_resilience():
-    """CHALLENGER VULNERABILITY TEST:
+    """Unicode quote evasion vulnerability test:
     Smart quotes / curly apostrophes (U+2019 '’') are automatically produced by
     macOS, iOS, Word, and mobile keyboards. The classifier must refuse forbidden
     intent statements regardless of whether ASCII "'" or Unicode "’" is used.

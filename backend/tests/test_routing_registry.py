@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Challenger Test Suite for Milestone 6: Multi-Agent Routing & Registry.
+"""Multi-Agent Routing & Registry Robustness Test Suite.
 
 Exhaustively verifies:
 1. OrchestratorNode routing across ambiguous, multi-domain, and adversarial prompts.

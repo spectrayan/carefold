@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Challenger Test Suite for Milestone 13 (M13 / Requirement R5).
+"""System Agents Discovery and Registry Isolation Test Suite.
 
-Empirically tests and documents:
+Tests and documents:
 1. Directory Traversal & System Agent Discovery:
    - load_all_agents() discovers internal agents in _system/ and marks them hidden=True.
    - load_all_agents() discovers user-facing agents in root agents/ and marks them hidden=False.

@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Deep Adversarial Challenger Test Suite for Phase 0 Tool Sandbox and Runtime Security.
+"""Deep Adversarial Test Suite for Tool Sandbox and Runtime Security.
 
-Milestone 1 Iteration 11 Empirical Challenger Suite verifying:
+Verifies:
 1. attach-read: Path traversal permutations, encoding attacks, scheme injections,
    extension controls, size bounds, corrupt PDF robustness, and multi-hop symlink escapes.
 2. workspace-note: Malicious title fuzzing, directory traversal sanitization, external/internal
@@ -189,20 +189,20 @@ async def test_attach_read_extension_and_size_bounds(sandbox_env):
 
     # 2. Allowed extensions & case variations
     allowed_cases = [
-        ("report.TXT", "Text report"),
-        ("notes.MD", "# Markdown notes"),
-        ("data.JSON", '{"key": "value"}'),
-        ("table.CSV", "a,b,c\n1,2,3"),
-        ("table.TSV", "a\tb\tc\n1\t2\t3"),
-        ("config.YAML", "key: value"),
-        ("config.YML", "key: value"),
+        ("report.TXT", "Text report", "text"),
+        ("notes.MD", "# Markdown notes", "text"),
+        ("data.JSON", '{"key": "value"}', "text"),
+        ("table.CSV", "a,b,c\n1,2,3", "csv"),
+        ("table.TSV", "a\tb\tc\n1\t2\t3", "tsv"),
+        ("config.YAML", "key: value", "text"),
+        ("config.YML", "key: value", "text"),
     ]
-    for filename, content in allowed_cases:
+    for filename, content, expected_format in allowed_cases:
         f = att_dir / filename
         f.write_text(content, encoding="utf-8")
         res = await execute_attach_read({"path": filename}, ctx)
         assert res.success is True, f"Legitimate file failed: {filename}, error: {res.error}"
-        assert res.output["format"] == "text"
+        assert res.output["format"] == expected_format, f"Unexpected format for {filename}"
 
     # 3. Size boundary: 10MB + 1 byte
     oversized = att_dir / "oversized.txt"

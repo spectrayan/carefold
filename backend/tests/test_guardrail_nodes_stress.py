@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical challenger stress-test suite for Milestone 3 discrete nodes.
+"""Stress test suite for discrete guardrail workflow nodes.
 
 Adversarially tests boundary conditions, stress inputs, ReDoS, path disclosure,
 refusal enforcement, chip capping, and state invariants across:

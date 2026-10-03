@@ -16,6 +16,7 @@
 """Unit and adversarial tests for Phase 0 closed tools sandbox."""
 
 import os
+import re
 from pathlib import Path
 import pytest
 
@@ -112,6 +113,203 @@ async def test_attach_read_adversarial_symlink_escape(temp_workspace: Path, tmp_
     # Symlink escaping sandbox must be rejected
     assert result.success is False
     assert "escapes" in result.error.lower()
+
+
+# --- CSV / TSV Markdown table formatting (issue #39) ---
+
+_UNESCAPED_PIPE = re.compile(r"(?<!\\)\|")
+
+
+async def _attach_read_bytes(workspace: Path, filename: str, data: bytes):
+    (workspace / "attachments" / filename).write_bytes(data)
+    ctx = MockContext(workspace, AgentManifest(id="test-agent", title="Test", persona="Role"))
+    return await execute_attach_read({"path": filename}, ctx)
+
+
+def _unescape_cell(cell: str) -> str:
+    return cell.replace("\\|", "|").replace("&#124;", "|")
+
+
+def _parse_markdown_table(content: str):
+    """Parses a GFM table into (header, body), asserting one physical line per record."""
+    lines = content.strip().splitlines()
+    assert len(lines) >= 2, f"Not a Markdown table:\n{content}"
+    rows = []
+    for line in lines:
+        line = line.strip()
+        assert line.startswith("|") and line.endswith("|") and not line.endswith("\\|"), (
+            f"Malformed Markdown table row: {line!r}"
+        )
+        rows.append([cell.strip() for cell in _UNESCAPED_PIPE.split(line)[1:-1]])
+    header, separator, *body = rows
+    assert all(re.fullmatch(r":?-{3,}:?", cell) for cell in separator), f"Bad separator: {separator}"
+    for row in [separator, *body]:
+        assert len(row) == len(header), f"Row width {len(row)} != header width {len(header)}: {row}"
+    return [_unescape_cell(c) for c in header], [[_unescape_cell(c) for c in row] for row in body]
+
+
+@pytest.mark.asyncio
+async def test_attach_read_csv_with_header_renders_markdown_table(temp_workspace: Path):
+    data = b"Test,Value,Range Low,Range High\nWBC,6.5,4.0,11.0\nHemoglobin,14.2,12.0,17.5\n"
+    result = await _attach_read_bytes(temp_workspace, "labs.csv", data)
+
+    assert result.success is True
+    assert result.output["path"] == "labs.csv"
+    assert result.output["format"] == "csv"
+    assert result.output["size_bytes"] == len(data)
+    header, body = _parse_markdown_table(result.output["content"])
+    assert header == ["Test", "Value", "Range Low", "Range High"]
+    assert body == [["WBC", "6.5", "4.0", "11.0"], ["Hemoglobin", "14.2", "12.0", "17.5"]]
+
+
+@pytest.mark.asyncio
+async def test_attach_read_tsv_with_header_renders_markdown_table(temp_workspace: Path):
+    data = b"Test\tValue\tRange Low\tRange High\nWBC\t6.5\t4.0\t11.0\nHemoglobin\t14.2\t12.0\t17.5\n"
+    result = await _attach_read_bytes(temp_workspace, "labs.tsv", data)
+
+    assert result.success is True
+    assert result.output["path"] == "labs.tsv"
+    assert result.output["format"] == "tsv"
+    assert result.output["size_bytes"] == len(data)
+    header, body = _parse_markdown_table(result.output["content"])
+    assert header == ["Test", "Value", "Range Low", "Range High"]
+    assert body == [["WBC", "6.5", "4.0", "11.0"], ["Hemoglobin", "14.2", "12.0", "17.5"]]
+
+
+@pytest.mark.asyncio
+async def test_attach_read_csv_quoted_delimiter_stays_in_one_cell(temp_workspace: Path):
+    data = b'Item,Amount\n"Lab, CBC",45.00\nOffice Visit,120.00\n'
+    result = await _attach_read_bytes(temp_workspace, "bill.csv", data)
+
+    assert result.success is True
+    assert result.output["format"] == "csv"
+    header, body = _parse_markdown_table(result.output["content"])
+    assert header == ["Item", "Amount"]
+    assert body == [["Lab, CBC", "45.00"], ["Office Visit", "120.00"]]
+
+
+@pytest.mark.asyncio
+async def test_attach_read_csv_ragged_rows_are_padded_not_truncated(temp_workspace: Path):
+    # Row 2 is missing a cell, row 3 has an extra cell; width comes from the widest row.
+    data = b"6.5,14.2,200\n7.1,13.9\n8.0,12.5,190,5\n"
+    result = await _attach_read_bytes(temp_workspace, "ragged.csv", data)
+
+    assert result.success is True
+    assert result.output["format"] == "csv"
+    header, body = _parse_markdown_table(result.output["content"])
+    assert header == ["Column 1", "Column 2", "Column 3", "Column 4"]
+    assert body == [
+        ["6.5", "14.2", "200", ""],
+        ["7.1", "13.9", "", ""],
+        ["8.0", "12.5", "190", "5"],
+    ]
+
+
+@pytest.mark.asyncio
+async def test_attach_read_csv_trailing_delimiter_preserves_empty_column(temp_workspace: Path):
+    data = b"A,B,C,\n1,2,3,\n4,5,6,\n"
+    result = await _attach_read_bytes(temp_workspace, "trailing.csv", data)
+
+    assert result.success is True
+    assert result.output["format"] == "csv"
+    header, body = _parse_markdown_table(result.output["content"])
+    # The trailing delimiter yields a fourth (empty) column that must not be dropped.
+    assert len(header) == 4
+    assert header[:3] == ["A", "B", "C"]
+    assert body == [["1", "2", "3", ""], ["4", "5", "6", ""]]
+
+
+@pytest.mark.asyncio
+async def test_attach_read_csv_without_header_uses_synthetic_columns(temp_workspace: Path):
+    data = b"6.5,14.2,200\n7.1,13.9,210\n"
+    result = await _attach_read_bytes(temp_workspace, "values.csv", data)
+
+    assert result.success is True
+    assert result.output["format"] == "csv"
+    header, body = _parse_markdown_table(result.output["content"])
+    assert header == ["Column 1", "Column 2", "Column 3"]
+    # The first row must not be silently dropped or promoted to a header.
+    assert body == [["6.5", "14.2", "200"], ["7.1", "13.9", "210"]]
+
+
+@pytest.mark.asyncio
+async def test_attach_read_csv_semicolon_delimiter_is_sniffed(temp_workspace: Path):
+    data = (
+        b"Sample;Analyte;Result;Count\n"
+        b'1001;WBC;"6,5";3\n'
+        b'1002;Hemoglobin;"14,2";4\n'
+        b'1003;Platelets;"250,0";5\n'
+    )
+    result = await _attach_read_bytes(temp_workspace, "eu_labs.csv", data)
+
+    assert result.success is True
+    assert result.output["format"] == "csv"
+    header, body = _parse_markdown_table(result.output["content"])
+    assert header == ["Sample", "Analyte", "Result", "Count"]
+    assert body == [
+        ["1001", "WBC", "6,5", "3"],
+        ["1002", "Hemoglobin", "14,2", "4"],
+        ["1003", "Platelets", "250,0", "5"],
+    ]
+
+
+@pytest.mark.asyncio
+async def test_attach_read_csv_pipe_in_cell_does_not_break_table(temp_workspace: Path):
+    data = b"Item,Note,Amount\nCBC,A|B result,45.00\nPanel,normal,120.00\n"
+    result = await _attach_read_bytes(temp_workspace, "pipes.csv", data)
+
+    assert result.success is True
+    assert result.output["format"] == "csv"
+    header, body = _parse_markdown_table(result.output["content"])
+    assert header == ["Item", "Note", "Amount"]
+    assert body == [["CBC", "A|B result", "45.00"], ["Panel", "normal", "120.00"]]
+
+
+@pytest.mark.asyncio
+async def test_attach_read_csv_embedded_newline_stays_on_one_row(temp_workspace: Path):
+    data = b'Item,Note,Amount\nCBC,"line one\nline two",45.00\nPanel,normal,120.00\n'
+    result = await _attach_read_bytes(temp_workspace, "multiline.csv", data)
+
+    assert result.success is True
+    assert result.output["format"] == "csv"
+    header, body = _parse_markdown_table(result.output["content"])
+    assert header == ["Item", "Note", "Amount"]
+    assert len(body) == 2
+    assert body[0][0] == "CBC"
+    assert "line one" in body[0][1] and "line two" in body[0][1]
+    assert body[0][2] == "45.00"
+    assert body[1] == ["Panel", "normal", "120.00"]
+
+
+@pytest.mark.asyncio
+async def test_attach_read_csv_unterminated_quote_falls_back_to_raw_text(temp_workspace: Path):
+    raw = 'Item,Amount\nCBC,"45.00\nPanel,120.00\n'
+    result = await _attach_read_bytes(temp_workspace, "broken.csv", raw.encode("utf-8"))
+
+    assert result.success is True
+    assert result.output["format"] == "text"
+    assert result.output["content"] == raw
+
+
+@pytest.mark.asyncio
+async def test_attach_read_csv_empty_file_falls_back_to_raw_text(temp_workspace: Path):
+    result = await _attach_read_bytes(temp_workspace, "empty.csv", b"")
+
+    assert result.success is True
+    assert result.output["format"] == "text"
+    assert result.output["content"] == ""
+    assert result.output["size_bytes"] == 0
+
+
+@pytest.mark.asyncio
+async def test_attach_read_csv_corrupt_utf8_falls_back_to_raw_text(temp_workspace: Path):
+    data = b"Test,Value\nWBC,6.5\n\xff\xfe\x80bad,7.0\n"
+    result = await _attach_read_bytes(temp_workspace, "corrupt.csv", data)
+
+    assert result.success is True
+    assert result.output["format"] == "text"
+    assert "WBC,6.5" in result.output["content"]
+    assert "�" in result.output["content"]
 
 
 @pytest.mark.asyncio

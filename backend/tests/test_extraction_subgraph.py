@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit and integration test suite for Milestone 4 Document Extraction Subgraph (Requirement R2).
+"""Document Extraction Subgraph Unit and Integration Test Suite.
 
 Tests:
 1. Dossier models (InsuranceBenefitsDossier, ClinicalVisitDossier, GenericDocumentDossier, BaseDossier)

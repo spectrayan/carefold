@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Verification Suite for Milestone 2 Iteration 2 (Challenger 1).
+"""Adversarial Verification Suite for Model Provider Strategies.
 
 Thoroughly stress-tests ModelFactory and provider strategies under adversarial conditions:
 1. Rejection of provider="mock" and all case/whitespace variations (must raise UnsupportedProviderError / ValueError).
