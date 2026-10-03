@@ -82,6 +82,12 @@ async def chat_stream(request: ChatRequestBody) -> StreamingResponse:
     model = request.model
     api_key = request.get_api_key()
     custom_endpoint = request.get_custom_endpoint()
+    if (provider or "ollama") == "ollama" and custom_endpoint:
+        cleaned_ep = str(custom_endpoint).strip().rstrip("/")
+        if cleaned_ep in ("http://127.0.0.1:11434", "http://localhost:11434", "http://127.0.0.1:11434/v1", "http://localhost:11434/v1"):
+            from carefold.constants.models import DEFAULT_OLLAMA_URL
+            if settings.ollama_url.rstrip("/") != DEFAULT_OLLAMA_URL.rstrip("/"):
+                custom_endpoint = settings.ollama_url
 
     logger.info(
         "chat_stream_initiated",

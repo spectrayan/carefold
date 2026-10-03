@@ -289,7 +289,13 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
 
     const effectiveModel = getEffectiveModel(settings);
     const apiKey = getApiKeyForProvider(settings, settings.provider);
-    const customEndpoint = getEndpointForProvider(settings, settings.provider);
+    const customEndpoint =
+      settings.provider === 'ollama' &&
+      (!settings.endpoints?.ollamaUrl ||
+        settings.endpoints.ollamaUrl.trim() === 'http://127.0.0.1:11434' ||
+        settings.endpoints.ollamaUrl.trim() === 'http://localhost:11434')
+        ? undefined
+        : getEndpointForProvider(settings, settings.provider);
 
     try {
       const res = await fetch('/api/chat', {
