@@ -195,6 +195,7 @@ export interface ChatRequestBody {
   messages?: ChatMessageInput[];
   attachments?: string[];
   allow_clinical?: boolean;
+  allowClinical?: boolean;
   provider?: string;
   model?: string;
   apiKey?: string;

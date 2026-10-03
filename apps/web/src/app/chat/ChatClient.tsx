@@ -151,7 +151,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     } else {
       async function loadAgentStarters() {
         try {
-          const res = await fetch(`/api/agents?id=${encodeURIComponent(selectedAgentId)}`);
+          const res = await fetch(`/api/agents?id=${encodeURIComponent(selectedAgentId)}&allow_clinical=true`);
           if (res.ok) {
             const data = await res.json();
             setStarters(data.starters || []);
@@ -305,6 +305,8 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           agent_id: selectedAgentId,
           prompt: promptText,
           attachments,
+          allow_clinical: true,
+          allowClinical: true,
           messages: historyMessages.map((m) => ({ role: m.role, content: m.content })),
           provider: settings.provider,
           model: effectiveModel,

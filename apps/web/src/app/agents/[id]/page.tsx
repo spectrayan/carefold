@@ -31,7 +31,7 @@ export default async function AgentDetailPage({ params }: PageProps) {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
 
   try {
-    const res = await fetch(`${backendUrl}/api/agents/${id}`, {
+    const res = await fetch(`${backendUrl}/api/agents/${id}?allow_clinical=true`, {
       headers: { Accept: 'application/json' },
       cache: 'no-store'
     });

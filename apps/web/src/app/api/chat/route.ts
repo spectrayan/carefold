@@ -46,10 +46,19 @@ export async function POST(req: Request | NextRequest): Promise<Response> {
     messages
   } = body;
 
+  const rawAllowClinical =
+    allow_clinical !== undefined
+      ? allow_clinical
+      : body.allowClinical;
+
   const url = new URL(req.url);
-  const allowClinical = Boolean(
-    allow_clinical || url.searchParams.get('allow_clinical') === 'true'
-  );
+  const allowClinicalQuery = url.searchParams.get('allow_clinical') ?? url.searchParams.get('allowClinical');
+  const allowClinical =
+    rawAllowClinical !== undefined
+      ? Boolean(rawAllowClinical)
+      : allowClinicalQuery !== null
+      ? (allowClinicalQuery === 'true' || allowClinicalQuery === '1')
+      : true;
 
   // 2. Validate required arguments
   if (!agentId || typeof agentId !== 'string') {

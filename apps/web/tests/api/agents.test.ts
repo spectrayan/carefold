@@ -30,7 +30,7 @@ describe('GET /api/agents', () => {
     const visitSteward = agents.find((a: any) => a.id === 'visit-steward');
     expect(visitSteward).toBeDefined();
     expect(visitSteward.title).toBe('Visit Steward');
-    expect(visitSteward.risk_class).toBe('wellness');
+    expect(visitSteward.risk_class).toBe('clinical_assist');
     expect(visitSteward.skills).toContain('visit-prep');
     expect(visitSteward.tools).toContain('attach-read');
     expect(Array.isArray(visitSteward.starters)).toBe(true);

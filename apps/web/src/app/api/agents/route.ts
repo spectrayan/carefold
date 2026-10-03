@@ -39,11 +39,20 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: 'Invalid agent ID format' }, { status: 400 });
       }
       targetUrl = new URL(`/api/agents/${singleId}`, parsedBackend);
+      url.searchParams.forEach((val, key) => {
+        if (key !== 'id') targetUrl.searchParams.set(key, val);
+      });
+      if (!targetUrl.searchParams.has('allow_clinical')) {
+        targetUrl.searchParams.set('allow_clinical', 'true');
+      }
     } else {
       targetUrl = new URL('/api/agents', parsedBackend);
       url.searchParams.forEach((val, key) => {
         targetUrl.searchParams.set(key, val);
       });
+      if (!targetUrl.searchParams.has('allow_clinical')) {
+        targetUrl.searchParams.set('allow_clinical', 'true');
+      }
     }
 
     const res = await fetch(targetUrl.toString(), {

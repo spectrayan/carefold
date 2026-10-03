@@ -38,7 +38,9 @@ export async function GET(
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
 
   try {
-    const res = await fetch(`${backendUrl}/api/agents/${agentId}`, {
+    const url = new URL(_req.url);
+    const allowClinical = url.searchParams.get('allow_clinical') ?? 'true';
+    const res = await fetch(`${backendUrl}/api/agents/${agentId}?allow_clinical=${allowClinical}`, {
       method: 'GET',
       headers: { Accept: 'application/json' },
       cache: 'no-store'
