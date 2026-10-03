@@ -56,8 +56,27 @@ It pairs a **5-phase LangGraph orchestration engine** with **20 specialist clini
 
 Get a local Carefold runtime and agent marketplace running in seconds:
 
-### 1. Instant Launch via Docker Compose
-Images are built locally from [`docker/Dockerfile`](docker/Dockerfile); no prebuilt image is required.
+### 1. Instant Launch via Prebuilt Docker Container
+Run Carefold with a single command using the published multi-architecture image (supports Apple Silicon `arm64` and Intel/AMD `amd64` automatically):
+
+```bash
+# Pull and start the all-in-one container (Next.js UI on :3000, FastAPI backend on :8000)
+docker pull ghcr.io/spectrayan/carefold:latest
+
+docker run -d \
+  --name carefold \
+  -p 3000:3000 \
+  -p 8000:8000 \
+  -v carefold-data:/data \
+  ghcr.io/spectrayan/carefold:latest
+```
+Visit `http://localhost:3000` to browse specialist agents and launch private consultations.
+
+> [!TIP]
+> If running a legacy x86_64-only container image tag on Apple Silicon macOS, append `--platform linux/amd64` to `docker pull` and `docker run` to enable Rosetta 2 emulation.
+
+### 2. Launch via Docker Compose (Build from Source)
+Images can also be built locally from [`docker/Dockerfile`](docker/Dockerfile):
 
 ```bash
 # From the repository root: build and start the FastAPI backend (:8000) and Next.js marketplace UI (:3000)
@@ -71,7 +90,7 @@ docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.2
 ```
 Visit `http://localhost:3000` to browse specialist agents and launch private consultations.
 
-### 2. Local Monorepo Development
+### 3. Local Monorepo Development
 
 **Prerequisites**: Python 3.12+, Node.js 22 LTS, and `pnpm` (>=9.0.0).
 

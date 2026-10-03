@@ -16,6 +16,7 @@ services:
     environment:
       - CAREFOLD_WORKSPACE=/app
       - CAREFOLD_DATA=/data
+      - PYTHONPATH=/app/backend/src
       - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434/v1}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}

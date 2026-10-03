@@ -14,7 +14,31 @@ Before installing Carefold, ensure your system meets the following requirements:
 | **Node.js** | 22.0.0+ | 22.x LTS | Required for Next.js 16 and web dependencies (`engines.node >=22.0.0`). |
 | **pnpm** | 9.0.0+ | 10.x or 12.x | Fast, disk-space efficient package manager. |
 | **Ollama** | Latest | 0.3.0+ | Recommended for local-first zero-telemetry LLM inference. |
-| **Git** | 2.30+ | Latest | For repository cloning and version control. |
+| **Docker** | 24.0+ | Latest | Optional; required if running container images or docker compose. |
+
+---
+
+## Fast Path: Run via Prebuilt Docker Container
+
+If you want to run Carefold without configuring local Python and Node.js environments, launch the official multi-architecture container:
+
+```bash
+# Pull multi-arch image (Apple Silicon arm64 & Intel/AMD amd64)
+docker pull ghcr.io/spectrayan/carefold:latest
+
+# Start all-in-one container (:3000 web UI, :8000 backend API)
+docker run -d \
+  --name carefold \
+  -p 3000:3000 \
+  -p 8000:8000 \
+  -v carefold-data:/data \
+  ghcr.io/spectrayan/carefold:latest
+```
+
+Access the UI at `http://localhost:3000`.
+
+> [!NOTE]
+> Carefold publishes multi-architecture manifests supporting both `linux/amd64` and `linux/arm64`. Docker automatically selects your native architecture. When running older single-architecture tags (e.g. `0.3.0-beta.1`) on Apple Silicon macOS, append `--platform linux/amd64`.
 
 ---
 

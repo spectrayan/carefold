@@ -152,6 +152,7 @@ jobs:
           context: .
           file: docker/Dockerfile
           target: all-in-one
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ steps.meta.outputs.repo_lower }}:${{ steps.meta.outputs.clean_version }}
@@ -165,6 +166,7 @@ jobs:
           context: .
           file: docker/Dockerfile
           target: backend
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ steps.meta.outputs.repo_lower }}/backend:${{ steps.meta.outputs.clean_version }}
@@ -178,6 +180,7 @@ jobs:
           context: .
           file: docker/Dockerfile
           target: web
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ steps.meta.outputs.repo_lower }}/web:${{ steps.meta.outputs.clean_version }}

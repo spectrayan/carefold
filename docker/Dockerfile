@@ -23,6 +23,7 @@ COPY skills/ ./skills/
 ENV CAREFOLD_WORKSPACE=/app \
     CAREFOLD_DATA=/data \
     PORT=8000 \
+    PYTHONPATH=/app/backend/src \
     PYTHONUNBUFFERED=1
 
 RUN mkdir -p /data
@@ -75,7 +76,7 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
 
-CMD ["node", "node_modules/.bin/next", "start", "apps/web", "-p", "3000"]
+CMD ["/app/apps/web/node_modules/.bin/next", "start", "apps/web", "-p", "3000"]
 
 # ==========================================
 # Stage 3: Combined All-In-One Default Target
@@ -117,6 +118,8 @@ ENV CAREFOLD_WORKSPACE=/app \
     NODE_ENV=production \
     PORT=3000 \
     BACKEND_PORT=8000 \
+    BACKEND_URL=http://127.0.0.1:8000 \
+    PYTHONPATH=/app/backend/src \
     PYTHONUNBUFFERED=1
 
 RUN mkdir -p /data
@@ -127,9 +130,9 @@ EXPOSE 8000 3000
 RUN printf '#!/bin/sh\n\
 uvicorn carefold.main:app --host 0.0.0.0 --port 8000 &\n\
 BACKEND_PID=$!\n\
-node node_modules/.bin/next start apps/web -p 3000 &\n\
+/app/apps/web/node_modules/.bin/next start apps/web -p 3000 &\n\
 WEB_PID=$!\n\
-trap "kill -TERM $BACKEND_PID $WEB_PID" SIGINT SIGTERM\n\
+trap "kill -TERM $BACKEND_PID $WEB_PID" INT TERM\n\
 wait $BACKEND_PID $WEB_PID\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \

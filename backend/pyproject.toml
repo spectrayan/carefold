@@ -44,6 +44,9 @@ carefold-server = "carefold.main:run"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml", "*.json", "*.hbs", "*.md"]
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = "-ra -q --asyncio-mode=auto"
