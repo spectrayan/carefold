@@ -31,6 +31,7 @@ docker run -d \
   --name carefold \
   -p 3000:3000 \
   -p 8000:8000 \
+  -e OLLAMA_URL=http://host.docker.internal:11434/v1 \
   -v carefold-data:/data \
   ghcr.io/spectrayan/carefold:latest
 ```
@@ -38,7 +39,8 @@ docker run -d \
 Access the UI at `http://localhost:3000`.
 
 > [!NOTE]
-> Carefold publishes multi-architecture manifests supporting both `linux/amd64` and `linux/arm64`. Docker automatically selects your native architecture. When running older single-architecture tags (e.g. `0.3.0-beta.1`) on Apple Silicon macOS, append `--platform linux/amd64`.
+> - **Connecting to Ollama on host**: On Docker Desktop (macOS / Windows), pass `-e OLLAMA_URL=http://host.docker.internal:11434/v1` so the container routes to Ollama running on your workstation.
+> - **Multi-Architecture**: Carefold publishes multi-architecture manifests supporting both `linux/amd64` and `linux/arm64`. Docker automatically selects your native architecture. When running older single-architecture tags (e.g. `0.3.0-beta.1`) on Apple Silicon macOS, append `--platform linux/amd64`.
 
 ---
 

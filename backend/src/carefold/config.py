@@ -20,6 +20,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import List, Optional
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from carefold.constants.defaults import DEFAULT_CORS_ORIGINS
@@ -27,6 +28,7 @@ from carefold.constants.models import (
     DEFAULT_MODEL,
     DEFAULT_MODEL_TIMEOUT_SECONDS,
     DEFAULT_OLLAMA_URL,
+    ENV_OLLAMA_URLS,
 )
 from carefold.constants.paths import (
     AGENTS_DIR,
@@ -59,6 +61,15 @@ def get_default_workspace_root() -> Path:
     return current
 
 
+def get_default_ollama_url() -> str:
+    """Resolves default Ollama URL from environment variables or constant."""
+    for var in ENV_OLLAMA_URLS:
+        val = os.getenv(var)
+        if val and val.strip():
+            return val.strip()
+    return DEFAULT_OLLAMA_URL
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="CAREFOLD_",
@@ -67,7 +78,7 @@ class Settings(BaseSettings):
     )
 
     workspace_root: Path = get_default_workspace_root()
-    ollama_url: str = DEFAULT_OLLAMA_URL
+    ollama_url: str = Field(default_factory=get_default_ollama_url)
     default_model: str = DEFAULT_MODEL
     model_timeout_seconds: float = DEFAULT_MODEL_TIMEOUT_SECONDS
 

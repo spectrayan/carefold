@@ -63,17 +63,20 @@ Run Carefold with a single command using the published multi-architecture image 
 # Pull and start the all-in-one container (Next.js UI on :3000, FastAPI backend on :8000)
 docker pull ghcr.io/spectrayan/carefold:latest
 
+# Run container (connecting to local Ollama on your host machine)
 docker run -d \
   --name carefold \
   -p 3000:3000 \
   -p 8000:8000 \
+  -e OLLAMA_URL=http://host.docker.internal:11434/v1 \
   -v carefold-data:/data \
   ghcr.io/spectrayan/carefold:latest
 ```
 Visit `http://localhost:3000` to browse specialist agents and launch private consultations.
 
 > [!TIP]
-> If running a legacy x86_64-only container image tag on Apple Silicon macOS, append `--platform linux/amd64` to `docker pull` and `docker run` to enable Rosetta 2 emulation.
+> - **Connecting to Ollama on host**: On Docker Desktop (macOS / Windows), use `-e OLLAMA_URL=http://host.docker.internal:11434/v1` so the container can reach your host machine's Ollama instance.
+> - **Legacy tags on Apple Silicon**: If pulling older single-architecture tags (e.g. `0.3.0-beta.1`), append `--platform linux/amd64` to `docker pull` and `docker run`.
 
 ### 2. Launch via Docker Compose (Build from Source)
 Images can also be built locally from [`docker/Dockerfile`](docker/Dockerfile):
