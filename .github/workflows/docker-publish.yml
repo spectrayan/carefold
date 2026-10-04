@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build all-in-one target
         run: docker build --target all-in-one -f docker/Dockerfile -t carefold/all-in-one:latest .
@@ -54,7 +54,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build backend target
         run: docker build --target backend -f docker/Dockerfile -t carefold/backend:latest .
@@ -67,7 +67,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build web target
         run: docker build --target web -f docker/Dockerfile -t carefold/web:latest .
