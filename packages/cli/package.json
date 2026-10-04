@@ -1,6 +1,6 @@
 {
   "name": "@carefold/cli",
-  "version": "0.3.0-beta.1",
+  "version": "0.4.0-beta.1",
   "description": "Carefold command line interface for managing specialist health agents, skills, and workspaces",
   "license": "Apache-2.0",
   "type": "module",

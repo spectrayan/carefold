@@ -16,6 +16,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.0-beta.1] - 2026-10-04
+
+### Added
+- **Multi-Architecture Container Support (`linux/amd64`, `linux/arm64`)**:
+  - Configured QEMU and Docker Buildx across `.github/workflows/release.yml` and `.github/workflows/docker-publish.yml` to produce dual-architecture container images.
+  - Native image execution on Apple Silicon (ARM64) and Linux x86_64 without platform emulation flags (`#108`).
+- **Carefold Governance Teams & CODEOWNERS Alignment**:
+  - Provisioned 10 official Carefold governance teams in the `@spectrayan` GitHub organization (`carefold`, `carefold-maintainers`, `carefold-maintainers-backend`, `carefold-maintainers-frontend`, `carefold-maintainers-packages`, `carefold-clinical-ai`, `carefold-infra`, `carefold-docs`, `carefold-committers`, `carefold-security`) per `GOVERNANCE.md` (`#109`).
+  - Added automated idempotent team provisioning script (`scripts/provision-carefold-teams.sh`).
+  - Bound all repository paths in `.github/CODEOWNERS` directly to `@spectrayan/ai-engineering`, `@sbharatjoshi`, and specialized subsystem maintainer teams.
+- **Vascular Specialist Agent (`vascular-guide`) & Skill Pack (`vascular-prep`)**:
+  - Added specialist clinical agent for vascular health visit preparation, arterial/venous screening checklists, and peripheral artery disease context (`#105`).
+- **CSV & TSV Structured Attachment Ingestion**:
+  - Added formatted table representations and numerical column extraction for tabular lab and billing attachments (`#104`).
+
+### Fixed
+- **Container Entrypoint & Packaging Resources**:
+  - Corrected Next.js binary path (`/app/apps/web/node_modules/.bin/next start`) and POSIX signal trap handling (`INT TERM`) in `docker/Dockerfile`.
+  - Added package data declaration in `backend/pyproject.toml` so runtime safety assets (`red_flags.json`) are bundled inside container builds.
+- **Host Networking & Ollama URL Auto-Detection**:
+  - Added standard `OLLAMA_URL` environment variable support across backend runtime settings and model resolvers.
+  - Documented Docker Desktop host networking (`http://host.docker.internal:11434/v1`).
+- **Web Health Check & Navigation Status Badge**:
+  - Proxied `/api/health` from Next.js web application to FastAPI backend health status and environment variables, resolving the false "Ollama: Offline" status indicator in the top navbar.
+- **Soft Boundary Audit Event Schema & Stream Error Guarding**:
+  - Added `"boundary_warning"` to `AuditEventType` literal in `backend/src/carefold/schemas/audit.py`, eliminating Pydantic `ValidationError` upon stream turn completion.
+  - Guarded audit log writes in `AgentExecutionService` with defensive `try...except` exception logging to prevent audit logging failures from interrupting active SSE streams.
+
+---
+
 ## [0.3.0-beta.1] - 2026-10-02
 
 ### Added
