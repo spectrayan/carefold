@@ -46,16 +46,14 @@ get_or_create_team() {
   local description="$2"
   local parent_team_id="${3:-}"
 
-  local existing_id
-  existing_id=$(gh api "orgs/$ORG/teams/$name" --jq '.id' 2>/dev/null || true)
-
-  if [ -n "$existing_id" ]; then
-    echo "  ✓ Team '$name' already exists (ID: $existing_id)"
+  local existing_id=""
+  if existing_id=$(gh api "orgs/$ORG/teams/$name" --jq '.id' 2>/dev/null) && [ -n "$existing_id" ] && [ "$existing_id" != "null" ]; then
+    echo "  ✓ Team '$name' already exists (ID: $existing_id)" >&2
     echo "$existing_id"
     return 0
   fi
 
-  echo "  Creating team '$name'..."
+  echo "  Creating team '$name'..." >&2
   local parent_arg=""
   if [ -n "$parent_team_id" ]; then
     parent_arg="\"parent_team_id\": $parent_team_id,"
@@ -74,7 +72,7 @@ EOF
 )
   local new_id
   new_id=$(echo "$team_json" | jq -r '.id')
-  echo "  ✓ Team '$name' created successfully (ID: $new_id)"
+  echo "  ✓ Team '$name' created successfully (ID: $new_id)" >&2
   echo "$new_id"
 }
 
