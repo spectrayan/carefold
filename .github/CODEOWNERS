@@ -1,29 +1,33 @@
 # Carefold Code Ownership Mapping
-# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# Automatically assigns reviewers when PRs touch specific modules.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Default global owners for the repository
-* @spectrayan/core-maintainers
+# Default catch-all: Project Lead, Core Maintainers, and AI Engineering Team
+* @spectrayan/carefold-maintainers @spectrayan/ai-engineering @sbharatjoshi
 
 # Backend FastAPI runtime, LangGraph nodes, memory ports & adapters
-/backend/ @spectrayan/backend-team
+/backend/ @spectrayan/carefold-maintainers-backend @spectrayan/ai-engineering @sbharatjoshi
 
 # Frontend Next.js web application and consultation UI
-/apps/web/ @spectrayan/frontend-team
+/apps/web/ @spectrayan/carefold-maintainers-frontend @spectrayan/ai-engineering @sbharatjoshi
 
 # Core packages & CLI tooling
-/packages/ @spectrayan/core-maintainers
+/packages/ @spectrayan/carefold-maintainers-packages @spectrayan/ai-engineering @sbharatjoshi
 
 # Specialist agents and manifest definitions
-/agents/ @spectrayan/clinical-ai-team
+/agents/ @spectrayan/carefold-clinical-ai @spectrayan/ai-engineering @sbharatjoshi
 
 # Clinical skill packs and reference guidelines
-/skills/ @spectrayan/clinical-ai-team
+/skills/ @spectrayan/carefold-clinical-ai @spectrayan/ai-engineering @sbharatjoshi
 
 # Documentation and Living Architecture Decision Records (ADRs)
-/docs/ @spectrayan/docs-team
+/docs/ @spectrayan/carefold-docs @spectrayan/ai-engineering @sbharatjoshi
 
-# CI/CD Workflows, GitHub actions, and repository configuration
-/.github/ @spectrayan/infra-team
+# Governance & Security
+/GOVERNANCE.md @spectrayan/carefold-maintainers @sbharatjoshi
+/SECURITY.md @spectrayan/carefold-security @spectrayan/carefold-maintainers @sbharatjoshi
 
-# Build, license, and repository automation scripts
-/scripts/ @spectrayan/infra-team
+# CI/CD Workflows, GitHub actions, Docker, and automation scripts
+/.github/ @spectrayan/carefold-infra @spectrayan/ai-engineering @sbharatjoshi
+/docker/ @spectrayan/carefold-infra @spectrayan/ai-engineering @sbharatjoshi
+/scripts/ @spectrayan/carefold-infra @spectrayan/ai-engineering @sbharatjoshi
