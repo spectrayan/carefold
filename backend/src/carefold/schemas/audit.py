@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from typing import List, Literal, Optional
 from pydantic import BaseModel, Field
 
-AuditEventType = Literal["run", "tool", "refuse", "error"]
+AuditEventType = Literal["run", "tool", "refuse", "error", "boundary_warning"]
 
 
 class AuditEvent(BaseModel):

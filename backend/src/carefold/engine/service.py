@@ -759,17 +759,21 @@ class AgentExecutionService:
                 reason=reason,
                 duration_ms=round(total_dur_ms, 2),
             )
-            refuse_event = await record_audit(
-                AuditEvent(
-                    agent_id=agent.id,
-                    event="refuse",
-                    allowed=False,
-                    reason=reason,
-                    duration_ms=total_dur_ms,
-                ),
-                log_path=resolved_log_path,
-                store_bodies=effective_store_bodies,
-            )
+            refuse_event = None
+            try:
+                refuse_event = await record_audit(
+                    AuditEvent(
+                        agent_id=agent.id,
+                        event="refuse",
+                        allowed=False,
+                        reason=reason,
+                        duration_ms=total_dur_ms,
+                    ),
+                    log_path=resolved_log_path,
+                    store_bodies=effective_store_bodies,
+                )
+            except Exception as audit_err:
+                logger.warning("Failed to record refuse audit event: %s", audit_err)
 
             if not refusal_triggered:
                 yield self.format_refusal_event(reason=reason, message=SAFE_REFUSAL_TEMPLATE)
@@ -796,17 +800,20 @@ class AgentExecutionService:
                     reason=reason,
                     duration_ms=round(total_dur_ms, 2),
                 )
-                await record_audit(
-                    AuditEvent(
-                        agent_id=agent.id,
-                        event="boundary_warning",
-                        allowed=True,
-                        reason=reason,
-                        duration_ms=total_dur_ms,
-                    ),
-                    log_path=resolved_log_path,
-                    store_bodies=effective_store_bodies,
-                )
+                try:
+                    await record_audit(
+                        AuditEvent(
+                            agent_id=agent.id,
+                            event="boundary_warning",
+                            allowed=True,
+                            reason=reason,
+                            duration_ms=total_dur_ms,
+                        ),
+                        log_path=resolved_log_path,
+                        store_bodies=effective_store_bodies,
+                    )
+                except Exception as audit_err:
+                    logger.warning("Failed to record boundary_warning audit event: %s", audit_err)
 
             if not suggestions:
                 suggestions = generate_follow_up_suggestions(
@@ -826,18 +833,22 @@ class AgentExecutionService:
                 suggestions=suggestions,
             )
 
-            run_event = await record_audit(
-                AuditEvent(
-                    agent_id=agent.id,
-                    event="run",
-                    allowed=True,
-                    duration_ms=total_dur_ms,
-                    prompt=prompt,
-                    completion=accumulated_text,
-                ),
-                log_path=resolved_log_path,
-                store_bodies=effective_store_bodies,
-            )
+            run_event = None
+            try:
+                run_event = await record_audit(
+                    AuditEvent(
+                        agent_id=agent.id,
+                        event="run",
+                        allowed=True,
+                        duration_ms=total_dur_ms,
+                        prompt=prompt,
+                        completion=accumulated_text,
+                    ),
+                    log_path=resolved_log_path,
+                    store_bodies=effective_store_bodies,
+                )
+            except Exception as audit_err:
+                logger.warning("Failed to record run audit event: %s", audit_err)
 
 
             yield self.format_done_event(

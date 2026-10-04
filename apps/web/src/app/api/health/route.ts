@@ -19,7 +19,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'node:fs/promises';
 import { findWorkspaceRoot, getWorkspacePaths, loadWorkspaceConfig } from '@/lib/workspace';
 import { checkOllamaHealth } from '@/lib/ollama';
-import type { HealthResponse } from '@/types/api';
+import type { HealthResponse, OllamaHealthStatus } from '@/types/api';
 import pkg from '../../../../package.json';
 
 export const runtime = 'nodejs';
@@ -49,19 +49,37 @@ export async function GET(_req: Request | NextRequest): Promise<NextResponse<Hea
       ).length;
     } catch {}
 
-    // Check Ollama status
-    const rawEndpoint = config.model?.baseUrl;
-    const ollamaEndpoint = typeof rawEndpoint === 'string' && rawEndpoint ? rawEndpoint : 'http://127.0.0.1:11434';
-    const ollamaStatus = await checkOllamaHealth(ollamaEndpoint);
+    // Try checking backend health if running
+    let backendData: any = null;
+    try {
+      const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
+      const backendRes = await fetch(`${backendUrl}/api/health`, {
+        signal: AbortSignal.timeout(1500)
+      });
+      if (backendRes.ok) {
+        backendData = await backendRes.json();
+      }
+    } catch {}
 
-    const overallStatus: 'ok' | 'degraded' = ollamaStatus.reachable ? 'ok' : 'degraded';
+    // Check Ollama status
+    const envEndpoint =
+      process.env.OLLAMA_URL ||
+      process.env.OLLAMA_BASE_URL ||
+      process.env.CAREFOLD_OLLAMA_URL ||
+      config.model?.baseUrl;
+    const ollamaEndpoint = typeof envEndpoint === 'string' && envEndpoint ? envEndpoint : 'http://127.0.0.1:11434';
+    const ollamaStatus: OllamaHealthStatus =
+      backendData?.ollama || (await checkOllamaHealth(ollamaEndpoint));
+
+    const isReachable = Boolean(backendData?.modelReachable ?? ollamaStatus.reachable);
+    const overallStatus: 'ok' | 'degraded' = isReachable ? 'ok' : 'degraded';
 
     const healthData: HealthResponse = {
       status: overallStatus,
       version: pkg.version,
       uptime: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
-      modelReachable: ollamaStatus.reachable,
+      modelReachable: isReachable,
       workspace: {
         root: wsRoot,
         agentsCount,
