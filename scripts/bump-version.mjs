@@ -47,6 +47,35 @@ const today = new Date().toISOString().split('T')[0];
 
 console.log(`Bumping Carefold monorepo to version: ${semverVersion} (Python PEP 440: ${pep440Version})`);
 
+// Helper to update JSON files safely without TOCTOU race conditions
+function updateJsonFile(filePath, updater) {
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const data = JSON.parse(raw);
+    updater(data);
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n', 'utf8');
+    console.log(`  ✓ Updated ${path.relative(ROOT_DIR, filePath)} -> ${data.version}`);
+  } catch (err) {
+    if (err && err.code !== 'ENOENT') {
+      throw err;
+    }
+  }
+}
+
+// Helper to update text files safely without TOCTOU race conditions
+function updateTextFile(filePath, updater, label) {
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const updated = updater(raw);
+    fs.writeFileSync(filePath, updated, 'utf8');
+    console.log(`  ✓ Updated ${label}`);
+  } catch (err) {
+    if (err && err.code !== 'ENOENT') {
+      throw err;
+    }
+  }
+}
+
 // 1. Update Node package.json files
 const packageFiles = [
   path.join(ROOT_DIR, 'package.json'),
@@ -56,49 +85,40 @@ const packageFiles = [
 ];
 
 for (const pkgPath of packageFiles) {
-  if (fs.existsSync(pkgPath)) {
-    const content = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-    content.version = semverVersion;
-    fs.writeFileSync(pkgPath, JSON.stringify(content, null, 2) + '\n', 'utf8');
-    console.log(`  ✓ Updated ${path.relative(ROOT_DIR, pkgPath)} -> ${semverVersion}`);
-  }
+  updateJsonFile(pkgPath, (pkg) => {
+    pkg.version = semverVersion;
+  });
 }
 
 // 2. Update backend/pyproject.toml
-const pyprojectPath = path.join(ROOT_DIR, 'backend/pyproject.toml');
-if (fs.existsSync(pyprojectPath)) {
-  let content = fs.readFileSync(pyprojectPath, 'utf8');
-  content = content.replace(/^version\s*=\s*["'][^"']+["']/m, `version = "${pep440Version}"`);
-  fs.writeFileSync(pyprojectPath, content, 'utf8');
-  console.log(`  ✓ Updated backend/pyproject.toml -> ${pep440Version}`);
-}
+updateTextFile(
+  path.join(ROOT_DIR, 'backend/pyproject.toml'),
+  (content) => content.replace(/^version\s*=\s*["'][^"']+["']/m, `version = "${pep440Version}"`),
+  `backend/pyproject.toml -> ${pep440Version}`
+);
 
 // 3. Update backend/src/carefold/__init__.py
-const initPyPath = path.join(ROOT_DIR, 'backend/src/carefold/__init__.py');
-if (fs.existsSync(initPyPath)) {
-  let content = fs.readFileSync(initPyPath, 'utf8');
-  content = content.replace(/^__version__\s*=\s*["'][^"']+["']/m, `__version__ = "${pep440Version}"`);
-  fs.writeFileSync(initPyPath, content, 'utf8');
-  console.log(`  ✓ Updated backend/src/carefold/__init__.py -> ${pep440Version}`);
-}
+updateTextFile(
+  path.join(ROOT_DIR, 'backend/src/carefold/__init__.py'),
+  (content) => content.replace(/^__version__\s*=\s*["'][^"']+["']/m, `__version__ = "${pep440Version}"`),
+  `backend/src/carefold/__init__.py -> ${pep440Version}`
+);
 
 // 4. Update AGENTS.md
-const agentsMdPath = path.join(ROOT_DIR, 'AGENTS.md');
-if (fs.existsSync(agentsMdPath)) {
-  let content = fs.readFileSync(agentsMdPath, 'utf8');
-  content = content.replace(/Runtime version: Carefold [^\n]+/g, `Runtime version: Carefold ${semverVersion}`);
-  content = content.replace(/Last updated: \d{4}-\d{2}-\d{2}/g, `Last updated: ${today}`);
-  fs.writeFileSync(agentsMdPath, content, 'utf8');
-  console.log(`  ✓ Updated AGENTS.md -> ${semverVersion} (${today})`);
-}
+updateTextFile(
+  path.join(ROOT_DIR, 'AGENTS.md'),
+  (content) =>
+    content
+      .replace(/Runtime version: Carefold [^\n]+/g, `Runtime version: Carefold ${semverVersion}`)
+      .replace(/Last updated: \d{4}-\d{2}-\d{2}/g, `Last updated: ${today}`),
+  `AGENTS.md -> ${semverVersion} (${today})`
+);
 
 // 5. Update .github/workflows/release.yml default tag
-const releaseYmlPath = path.join(ROOT_DIR, '.github/workflows/release.yml');
-if (fs.existsSync(releaseYmlPath)) {
-  let content = fs.readFileSync(releaseYmlPath, 'utf8');
-  content = content.replace(/default:\s*['"]v[0-9a-zA-Z.-]+['"]/g, `default: 'v${semverVersion}'`);
-  fs.writeFileSync(releaseYmlPath, content, 'utf8');
-  console.log(`  ✓ Updated .github/workflows/release.yml default tag -> v${semverVersion}`);
-}
+updateTextFile(
+  path.join(ROOT_DIR, '.github/workflows/release.yml'),
+  (content) => content.replace(/default:\s*['"]v[0-9a-zA-Z.-]+['"]/g, `default: 'v${semverVersion}'`),
+  `.github/workflows/release.yml default tag -> v${semverVersion}`
+);
 
 console.log('\nAll version references successfully synchronized!');
