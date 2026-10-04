@@ -1,3 +1,18 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Carefold Multi-Stage Dockerfile
 # Supports target 'backend', target 'web', and default 'all-in-one'
 # Build: docker build -f docker/Dockerfile .
@@ -7,6 +22,14 @@
 # ==========================================
 FROM python:3.12-slim AS backend
 WORKDIR /app
+
+LABEL org.opencontainers.image.title="Carefold Backend" \
+      org.opencontainers.image.description="FastAPI & LangGraph multi-agent execution runtime for Carefold" \
+      org.opencontainers.image.url="https://github.com/spectrayan/carefold" \
+      org.opencontainers.image.source="https://github.com/spectrayan/carefold" \
+      org.opencontainers.image.documentation="https://github.com/spectrayan/carefold" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.vendor="Spectrayan"
 
 RUN apt-get update && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends curl \
@@ -56,6 +79,14 @@ RUN pnpm prune --prod
 FROM node:22-alpine AS web
 WORKDIR /app
 
+LABEL org.opencontainers.image.title="Carefold Web" \
+      org.opencontainers.image.description="Next.js consultation UI & healthcare agent marketplace for Carefold" \
+      org.opencontainers.image.url="https://github.com/spectrayan/carefold" \
+      org.opencontainers.image.source="https://github.com/spectrayan/carefold" \
+      org.opencontainers.image.documentation="https://github.com/spectrayan/carefold" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.vendor="Spectrayan"
+
 ENV NODE_ENV=production \
     PORT=3000
 
@@ -83,6 +114,14 @@ CMD ["/app/apps/web/node_modules/.bin/next", "start", "apps/web", "-p", "3000"]
 # ==========================================
 FROM python:3.12-slim AS all-in-one
 WORKDIR /app
+
+LABEL org.opencontainers.image.title="Carefold" \
+      org.opencontainers.image.description="Local-first healthcare AI agent marketplace and execution runtime" \
+      org.opencontainers.image.url="https://github.com/spectrayan/carefold" \
+      org.opencontainers.image.source="https://github.com/spectrayan/carefold" \
+      org.opencontainers.image.documentation="https://github.com/spectrayan/carefold" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.vendor="Spectrayan"
 
 RUN apt-get update && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \

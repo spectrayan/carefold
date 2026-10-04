@@ -105,9 +105,25 @@ jobs:
         run: pnpm --filter @carefold/runner test
 
   publish-docker:
-    name: Build & Publish Container Images
+    name: Build & Publish Image (${{ matrix.target }})
     needs: verify
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: all-in-one
+            image_suffix: ""
+            title: Carefold
+            description: Local-first healthcare AI agent marketplace and execution runtime
+          - target: backend
+            image_suffix: /backend
+            title: Carefold Backend
+            description: FastAPI & LangGraph multi-agent execution runtime for Carefold
+          - target: web
+            image_suffix: /web
+            title: Carefold Web
+            description: Next.js consultation UI & healthcare agent marketplace for Carefold
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -146,51 +162,31 @@ jobs:
           echo "is_prerelease=${IS_PRERELEASE}" >> "$GITHUB_OUTPUT"
           echo "channel_tag=${CHANNEL_TAG}" >> "$GITHUB_OUTPUT"
 
-      - name: Build & Push All-In-One Image
+      - name: Build & Push Image (${{ matrix.target }})
         uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/Dockerfile
-          target: all-in-one
+          target: ${{ matrix.target }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ steps.meta.outputs.repo_lower }}:${{ steps.meta.outputs.clean_version }}
-            ghcr.io/${{ steps.meta.outputs.repo_lower }}:${{ steps.meta.outputs.channel_tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build & Push Backend Image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/Dockerfile
-          target: backend
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ghcr.io/${{ steps.meta.outputs.repo_lower }}/backend:${{ steps.meta.outputs.clean_version }}
-            ghcr.io/${{ steps.meta.outputs.repo_lower }}/backend:${{ steps.meta.outputs.channel_tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build & Push Web Image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/Dockerfile
-          target: web
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ghcr.io/${{ steps.meta.outputs.repo_lower }}/web:${{ steps.meta.outputs.clean_version }}
-            ghcr.io/${{ steps.meta.outputs.repo_lower }}/web:${{ steps.meta.outputs.channel_tag }}
+            ghcr.io/${{ steps.meta.outputs.repo_lower }}${{ matrix.image_suffix }}:${{ steps.meta.outputs.clean_version }}
+            ghcr.io/${{ steps.meta.outputs.repo_lower }}${{ matrix.image_suffix }}:${{ steps.meta.outputs.channel_tag }}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.title }}
+            org.opencontainers.image.description=${{ matrix.description }}
+            org.opencontainers.image.url=https://github.com/spectrayan/carefold
+            org.opencontainers.image.source=https://github.com/spectrayan/carefold
+            org.opencontainers.image.documentation=https://github.com/spectrayan/carefold
+            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.vendor=Spectrayan
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   create-release:
     name: Create GitHub Release
-    needs: [verify, publish-docker]
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -236,4 +232,7 @@ jobs:
             --title "Carefold ${{ steps.release_info.outputs.raw_tag }}" \
             --notes-file RELEASE_BODY.md \
             ${{ steps.release_info.outputs.prerelease_flag }} \
-            --verify-tag || echo "Release created or updated."
+            --verify-tag || gh release edit "${{ steps.release_info.outputs.raw_tag }}" \
+            --title "Carefold ${{ steps.release_info.outputs.raw_tag }}" \
+            --notes-file RELEASE_BODY.md \
+            ${{ steps.release_info.outputs.prerelease_flag }}
