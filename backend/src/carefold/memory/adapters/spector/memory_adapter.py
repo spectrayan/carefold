@@ -307,6 +307,16 @@ class SpectorMemoryAdapter(MemoryPort):
             if asyncio.iscoroutine(res):
                 await res
 
+    def close_sync(self) -> None:
+        """Synchronously closes underlying store and client resources."""
+        if hasattr(self._store, "close"):
+            res = self._store.close()
+            if asyncio.iscoroutine(res):
+                try:
+                    asyncio.run(res)
+                except Exception:
+                    pass
+
     async def __aenter__(self) -> SpectorMemoryAdapter:
         return self
 

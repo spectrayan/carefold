@@ -14,6 +14,7 @@ jobs:
   license-check:
     name: License Header Verification
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,6 +39,7 @@ jobs:
   backend:
     name: Backend Pytest Suite
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -60,6 +62,7 @@ jobs:
   frontend:
     name: Frontend Verification
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -90,6 +93,7 @@ jobs:
   security:
     name: Penetration Security Suite
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

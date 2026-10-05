@@ -359,3 +359,11 @@ class SqliteMemoryAdapter(MemoryPort):
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         await self.close()
+
+    def __del__(self) -> None:
+        if hasattr(self, "_conn") and self._conn is not None:
+            try:
+                self._conn.stop()
+            except Exception:
+                pass
+

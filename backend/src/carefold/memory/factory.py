@@ -218,6 +218,23 @@ def get_catalog_port(settings: Optional[Settings] = None) -> CatalogPort:
 def reset_memory_ports() -> None:
     """Resets cached adapter singletons for test cleanup."""
     global _CACHED_MEMORY_PORT, _CACHED_CATALOG_PORT, _memory_ports
+    ports_to_close = list(_memory_ports.values())
+    if _CACHED_MEMORY_PORT and _CACHED_MEMORY_PORT not in ports_to_close:
+        ports_to_close.append(_CACHED_MEMORY_PORT)
+    for p in ports_to_close:
+        try:
+            if hasattr(p, "_conn") and getattr(p, "_conn") is not None:
+                p._conn.stop()
+            elif hasattr(p, "close"):
+                res = p.close()
+                if hasattr(res, "__await__"):
+                    import asyncio
+                    try:
+                        asyncio.run(res)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
     _CACHED_MEMORY_PORT = None
     _CACHED_CATALOG_PORT = None
     _memory_ports.clear()

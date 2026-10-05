@@ -79,21 +79,39 @@ def clean_memory_env() -> None:
 
 
 @pytest.fixture
-def sqlite_port(tmp_path: Path) -> SqliteMemoryAdapter:
+def sqlite_port(tmp_path: Path):
     """Provides an isolated SQLite memory adapter using a temporary database."""
     db_file = tmp_path / "test_memory.db"
     port = SqliteMemoryAdapter(db_path=db_file)
     set_memory_port(port)
-    return port
+    try:
+        yield port
+    finally:
+        try:
+            if hasattr(port, "_conn") and port._conn is not None:
+                port._conn.stop()
+        except Exception:
+            pass
 
 
 @pytest.fixture
-def spector_port() -> SpectorMemoryAdapter:
+def spector_port():
     """Provides an isolated Spector memory adapter wired to an in-memory simulated client."""
     sim_client = SimulatedAsyncMemoryClient()
     port = SpectorMemoryAdapter(client=sim_client, fallback_to_sqlite=True)
     set_memory_port(port)
-    return port
+    try:
+        yield port
+    finally:
+        try:
+            if hasattr(port, "close_sync"):
+                port.close_sync()
+            elif hasattr(port, "close"):
+                res = port.close()
+                if hasattr(res, "__await__"):
+                    asyncio.run(res)
+        except Exception:
+            pass
 
 
 @pytest.fixture
@@ -456,22 +474,26 @@ class TestMemoryStatusApi:
         adapter = SpectorMemoryAdapter(client=unhealthy_client, fallback_to_sqlite=True)
         set_memory_port(adapter)
 
-        # Trigger a memory write to cause circuit breaker trip to fallback
-        asyncio.run(adapter.remember(
-            key="fallback_trigger",
-            value="Triggering fallback",
-            tier=MemoryTier.WORKING,
-            namespace="default",
-        ))
-        assert adapter.fallback_active is True
+        try:
+            # Trigger a memory write to cause circuit breaker trip to fallback
+            asyncio.run(adapter.remember(
+                key="fallback_trigger",
+                value="Triggering fallback",
+                tier=MemoryTier.WORKING,
+                namespace="default",
+            ))
+            assert adapter.fallback_active is True
 
-        res = client.get("/api/memory/status")
-        assert res.status_code == 200
-        data = res.json()
-        assert data["backend"] == "spector"
-        assert data["fallback_active"] is True
-        assert data["healthy"] is False
-        assert "spector_url" in data
+            res = client.get("/api/memory/status")
+            assert res.status_code == 200
+            data = res.json()
+            assert data["backend"] == "spector"
+            assert data["fallback_active"] is True
+            assert data["healthy"] is False
+            assert "spector_url" in data
+        finally:
+            if hasattr(adapter, "close_sync"):
+                adapter.close_sync()
 
 
 # =============================================================================
@@ -495,37 +517,50 @@ class TestMemoryApiBackendParity:
             adapter = SpectorMemoryAdapter(client=SimulatedAsyncMemoryClient())
         set_memory_port(adapter)
 
-        # 1. Initially empty
-        res_empty = client.get("/api/memory")
-        assert res_empty.status_code == 200
-        assert res_empty.json() == []
+        try:
+            # 1. Initially empty
+            res_empty = client.get("/api/memory")
+            assert res_empty.status_code == 200
+            assert res_empty.json() == []
 
-        # 2. Add item via adapter
-        asyncio.run(adapter.remember(
-            key="parity_item",
-            value={"diagnosis": "Hypertension"},
-            tier=MemoryTier.SEMANTIC,
-            namespace="clinical",
-        ))
+            # 2. Add item via adapter
+            asyncio.run(adapter.remember(
+                key="parity_item",
+                value={"diagnosis": "Hypertension"},
+                tier=MemoryTier.SEMANTIC,
+                namespace="clinical",
+            ))
 
-        # 3. Recall item
-        res_recall = client.get("/api/memory?query=Hypertension&namespace=clinical")
-        assert res_recall.status_code == 200
-        items = res_recall.json()
-        assert len(items) == 1
-        assert items[0]["key"] == "parity_item"
-        assert items[0]["value"]["diagnosis"] == "Hypertension"
-        assert items[0]["namespace"] == "clinical"
+            # 3. Recall item
+            res_recall = client.get("/api/memory?query=Hypertension&namespace=clinical")
+            assert res_recall.status_code == 200
+            items = res_recall.json()
+            assert len(items) == 1
+            assert items[0]["key"] == "parity_item"
+            assert items[0]["value"]["diagnosis"] == "Hypertension"
+            assert items[0]["namespace"] == "clinical"
 
-        # 4. Delete item
-        res_del = client.delete("/api/memory/parity_item?namespace=clinical")
-        assert res_del.status_code == 200
-        assert res_del.json()["deleted"] is True
+            # 4. Delete item
+            res_del = client.delete("/api/memory/parity_item?namespace=clinical")
+            assert res_del.status_code == 200
+            assert res_del.json()["deleted"] is True
 
-        # 5. Verify deleted
-        res_after = client.get("/api/memory?namespace=clinical")
-        assert res_after.status_code == 200
-        assert res_after.json() == []
+            # 5. Verify deleted
+            res_after = client.get("/api/memory?namespace=clinical")
+            assert res_after.status_code == 200
+            assert res_after.json() == []
+        finally:
+            try:
+                if hasattr(adapter, "_conn") and adapter._conn is not None:
+                    adapter._conn.stop()
+                elif hasattr(adapter, "close_sync"):
+                    adapter.close_sync()
+                elif hasattr(adapter, "close"):
+                    res = adapter.close()
+                    if hasattr(res, "__await__"):
+                        asyncio.run(res)
+            except Exception:
+                pass
 
 
 # =============================================================================
@@ -538,22 +573,29 @@ class TestMemoryApiAdvancedTransports:
     def test_dependency_override_custom_memory_port(self, client: TestClient, tmp_path: Path):
         """Verifies that app.dependency_overrides[get_current_memory_port] properly overrides resolution."""
         custom_port = SqliteMemoryAdapter(db_path=tmp_path / "custom_override.db")
-        asyncio.run(custom_port.remember(
-            key="override_key",
-            value="Overridden memory value",
-            tier=MemoryTier.WORKING,
-            namespace="override_ns",
-        ))
+        try:
+            asyncio.run(custom_port.remember(
+                key="override_key",
+                value="Overridden memory value",
+                tier=MemoryTier.WORKING,
+                namespace="override_ns",
+            ))
 
-        # Override dependency explicitly
-        app.dependency_overrides[get_current_memory_port] = lambda: custom_port
+            # Override dependency explicitly
+            app.dependency_overrides[get_current_memory_port] = lambda: custom_port
 
-        res = client.get("/api/memory?namespace=override_ns")
-        assert res.status_code == 200
-        items = res.json()
-        assert len(items) == 1
-        assert items[0]["key"] == "override_key"
-        assert items[0]["value"] == "Overridden memory value"
+            res = client.get("/api/memory?namespace=override_ns")
+            assert res.status_code == 200
+            items = res.json()
+            assert len(items) == 1
+            assert items[0]["key"] == "override_key"
+            assert items[0]["value"] == "Overridden memory value"
+        finally:
+            try:
+                if hasattr(custom_port, "_conn") and custom_port._conn is not None:
+                    custom_port._conn.stop()
+            except Exception:
+                pass
 
     @pytest.mark.asyncio
     async def test_async_client_memory_api_roundtrip(
@@ -565,26 +607,29 @@ class TestMemoryApiAdvancedTransports:
         port = SqliteMemoryAdapter(db_path=tmp_path / "async_test.db")
         set_memory_port(port)
 
-        await port.remember(
-            key="async_key",
-            value="Async test payload",
-            tier=MemoryTier.EPISODIC,
-            namespace="default",
-        )
+        try:
+            await port.remember(
+                key="async_key",
+                value="Async test payload",
+                tier=MemoryTier.EPISODIC,
+                namespace="default",
+            )
 
-        # Async GET recall
-        res_get = await async_client.get("/api/memory?query=Async")
-        assert res_get.status_code == 200
-        data = res_get.json()
-        assert len(data) == 1
-        assert data[0]["key"] == "async_key"
+            # Async GET recall
+            res_get = await async_client.get("/api/memory?query=Async")
+            assert res_get.status_code == 200
+            data = res_get.json()
+            assert len(data) == 1
+            assert data[0]["key"] == "async_key"
 
-        # Async GET status
-        res_status = await async_client.get("/api/memory/status")
-        assert res_status.status_code == 200
-        assert res_status.json()["backend"] == "sqlite"
+            # Async GET status
+            res_status = await async_client.get("/api/memory/status")
+            assert res_status.status_code == 200
+            assert res_status.json()["backend"] == "sqlite"
 
-        # Async DELETE
-        res_del = await async_client.delete("/api/memory/async_key")
-        assert res_del.status_code == 200
-        assert res_del.json()["deleted"] is True
+            # Async DELETE
+            res_del = await async_client.delete("/api/memory/async_key")
+            assert res_del.status_code == 200
+            assert res_del.json()["deleted"] is True
+        finally:
+            await port.close()

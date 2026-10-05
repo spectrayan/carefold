@@ -135,4 +135,18 @@ def live_ollama_client():
     )
 
 
-
+def pytest_sessionfinish(session, exitstatus):
+    """Safety guardrail: cleanly shuts down any lingering non-daemon worker threads."""
+    import threading
+    try:
+        from aiosqlite.core import _STOP_RUNNING_SENTINEL
+        for t in threading.enumerate():
+            if t.is_alive() and "_connection_worker_thread" in str(getattr(t, "_target", "")):
+                try:
+                    tx = t._args[0]
+                    tx.put_nowait((None, lambda: _STOP_RUNNING_SENTINEL))
+                    t.join(timeout=1.0)
+                except Exception:
+                    pass
+    except Exception:
+        pass
