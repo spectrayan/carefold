@@ -39,7 +39,8 @@ export async function GET(
 
   try {
     const url = new URL(_req.url);
-    const allowClinical = url.searchParams.get('allow_clinical') ?? 'true';
+    // Never assume clinical consent (#87): only an explicit client-side `true` is forwarded.
+    const allowClinical = url.searchParams.get('allow_clinical') === 'true' ? 'true' : 'false';
     const res = await fetch(`${backendUrl}/api/agents/${agentId}?allow_clinical=${allowClinical}`, {
       method: 'GET',
       headers: { Accept: 'application/json' },

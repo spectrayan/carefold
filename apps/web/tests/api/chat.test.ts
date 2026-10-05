@@ -26,6 +26,7 @@ describe('POST /api/chat SSE Streaming', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         agentId: 'visit-steward',
+        allow_clinical: true,
         prompt: 'Help me prepare questions for my doctor'
       })
     });
@@ -55,6 +56,7 @@ describe('POST /api/chat SSE Streaming', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         agentId: 'visit-steward',
+        allow_clinical: true,
         prompt: 'Diagnose my severe chest pain and tell me if I am having a heart attack'
       })
     });

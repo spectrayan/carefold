@@ -42,18 +42,19 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
       url.searchParams.forEach((val, key) => {
         if (key !== 'id') targetUrl.searchParams.set(key, val);
       });
-      if (!targetUrl.searchParams.has('allow_clinical')) {
-        targetUrl.searchParams.set('allow_clinical', 'true');
-      }
     } else {
       targetUrl = new URL('/api/agents', parsedBackend);
       url.searchParams.forEach((val, key) => {
         targetUrl.searchParams.set(key, val);
       });
-      if (!targetUrl.searchParams.has('allow_clinical')) {
-        targetUrl.searchParams.set('allow_clinical', 'true');
-      }
     }
+
+    // Clinical consent is never assumed by the proxy (#87): forward only an explicit
+    // client-side `true`, otherwise send `false`.
+    targetUrl.searchParams.set(
+      'allow_clinical',
+      url.searchParams.get('allow_clinical') === 'true' ? 'true' : 'false'
+    );
 
     const res = await fetch(targetUrl.toString(), {
       method: 'GET',

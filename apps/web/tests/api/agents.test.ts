@@ -37,13 +37,18 @@ describe('GET /api/agents', () => {
     expect(visitSteward.starters.length).toBeGreaterThan(0);
   });
 
-  it('returns single agent details when query param id is provided', async () => {
-    const res = await GET(new Request('http://localhost:3000/api/agents?id=visit-steward'));
+  it('returns single agent details when query param id is provided with explicit consent', async () => {
+    const res = await GET(new Request('http://localhost:3000/api/agents?id=visit-steward&allow_clinical=true'));
     expect(res.status).toBe(200);
 
     const agent = await res.json();
     expect(agent.id).toBe('visit-steward');
     expect(agent.effectiveTools).toEqual(expect.arrayContaining(['attach-read', 'workspace-note', 'skill-docs']));
+  });
+
+  it('returns 403 for a clinical_assist agent when consent is not given', async () => {
+    const res = await GET(new Request('http://localhost:3000/api/agents?id=visit-steward'));
+    expect(res.status).toBe(403);
   });
 
   it('returns 404 for unknown agent id', async () => {

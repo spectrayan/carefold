@@ -46,19 +46,18 @@ export async function POST(req: Request | NextRequest): Promise<Response> {
     messages
   } = body;
 
-  const rawAllowClinical =
+  const rawAllowClinical: unknown =
     allow_clinical !== undefined
       ? allow_clinical
       : body.allowClinical;
 
+  // Clinical consent is never assumed (#87): absent or non-true values mean no consent.
   const url = new URL(req.url);
   const allowClinicalQuery = url.searchParams.get('allow_clinical') ?? url.searchParams.get('allowClinical');
   const allowClinical =
     rawAllowClinical !== undefined
-      ? Boolean(rawAllowClinical)
-      : allowClinicalQuery !== null
-      ? (allowClinicalQuery === 'true' || allowClinicalQuery === '1')
-      : true;
+      ? rawAllowClinical === true || rawAllowClinical === 'true'
+      : allowClinicalQuery === 'true' || allowClinicalQuery === '1';
 
   // 2. Validate required arguments
   if (!agentId || typeof agentId !== 'string') {
