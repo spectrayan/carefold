@@ -415,6 +415,7 @@ def load_all_agents(
                     starters=starters,
                     startersCount=len(starters),
                     description=desc,
+                    forbidden=list(agent.forbidden or []),
                     can_delegate=agent.can_delegate,
                     max_iterations=agent.max_iterations,
                     is_bundled=is_bundled,

@@ -96,6 +96,26 @@ def test_api_agents_list(client: TestClient):
     assert "_template" not in agent_ids
 
 
+def test_api_agents_list_exposes_forbidden_and_consent_flag(client: TestClient):
+    """Summaries expose the forbidden-intent list (rendered by the web consent dialog
+    before consent is given) and only report clinical_enabled when consent is passed."""
+    res = client.get("/api/agents")
+    assert res.status_code == 200
+    by_id = {a["id"]: a for a in res.json()}
+
+    steward = by_id["visit-steward"]
+    assert steward["risk_class"] == "clinical_assist"
+    assert "diagnose" in steward["forbidden"]
+    assert "replace_emergency_care" in steward["forbidden"]
+    assert steward["clinical_enabled"] is False
+
+    consented = {a["id"]: a for a in client.get("/api/agents?allow_clinical=true").json()}
+    assert consented["visit-steward"]["clinical_enabled"] is True
+
+    # Non-clinical agents are never gated
+    assert by_id["habit-companion"]["clinical_enabled"] is True
+
+
 def test_api_agents_list_include_hidden(client: TestClient):
     """Verify include_hidden=true returns system agents from _system/ but excludes _template."""
     res = client.get("/api/agents?include_hidden=true")

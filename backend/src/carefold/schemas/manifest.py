@@ -201,6 +201,7 @@ class AgentSummary(BaseModel):
     starters: List[str] = Field(default_factory=list)
     startersCount: int = 0
     description: str = ""
+    forbidden: List[str] = Field(default_factory=list)
     can_delegate: bool = False
     max_iterations: int = 3
     is_bundled: bool = False
