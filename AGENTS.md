@@ -210,3 +210,7 @@ All AI coding assistants (e.g., Cursor, Claude Code, GitHub Copilot, Gemini CLI)
      ```
 5. **Documentation Integrity**:
    - Any modification to agent contracts, memory ports, or workflow state must be reflected in `PROJECT_CONTEXT.md` and `docs/adr/`.
+6. **Repository Content Policy (Product & Test Code Only)**:
+   - Commit only production code, tests and test fixtures, agent/skill packs, user and contributor documentation, and the build, CI, and release tooling those require (for example `scripts/licenses.mjs`, `scripts/bump-version.mjs`, `scripts/validate-packs.mjs`).
+   - Never commit one-off operational or administrative scripts (GitHub organization or team provisioning, account setup, migrations run once by hand), AI-agent planning or session artifacts (implementation plans, task lists, walkthroughs, scratch notes, audit reports), local runtime data (`chats/`, `logs/`, `workspace/`, `attachments/`, `catalog.db`), or personal configuration.
+   - Organization governance automation belongs in the internal tooling repository, not in this product repository.
