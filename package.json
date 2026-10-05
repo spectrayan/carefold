@@ -20,7 +20,7 @@
     "clean": "pnpm -r --if-present run clean"
   },
   "devDependencies": {
-    "@types/node": "^22.20.4",
+    "@types/node": "^26.6.4",
     "typescript": "^5.9.3"
   },
   "engines": {
