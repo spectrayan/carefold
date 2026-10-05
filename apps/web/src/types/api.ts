@@ -82,6 +82,7 @@ export interface AgentSummary {
   isBundled?: boolean;
   verified?: boolean;
   clinical_enabled?: boolean;
+  forbidden?: string[];
   hidden?: boolean;
   error?: string;
   domain?: 'clinical' | 'therapy' | 'wellness' | 'navigation' | 'education' | string;
