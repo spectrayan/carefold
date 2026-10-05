@@ -17,7 +17,7 @@
 
 Covers all 19 agents (8 core organ navigators, 5 extended specialty navigators,
 4 healthcare administration stewards, 2 system infrastructure agents) and 17 companion
-skills per PROJECT.md, TEST_INFRA.md, and ORIGINAL_REQUEST.md (## 2026-10-01T13:24:33Z).
+skills. See docs/testing/index.md for the test tier model.
 
 Test Tiers:
 - Tier 1: Feature Coverage (Manifest & schema conformance, frontmatter, 3 intended-use statements,
@@ -75,7 +75,7 @@ from tests.e2e.conftest import read_attachment_sync, record_audit_sync
 
 
 # ============================================================================
-# Authoritative Constants & Specifications (PROJECT.md / TEST_INFRA.md)
+# Authoritative Constants & Specifications
 # ============================================================================
 
 MANDATORY_INTENDED_USE_STATEMENTS = [

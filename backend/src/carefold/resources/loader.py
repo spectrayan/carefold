@@ -87,7 +87,7 @@ class ResourceLoader:
             self._compiled_disclaimer_clauses = None
 
     # =========================================================================
-    # 1. Primary Contract Methods (PROJECT.md lines 160-163)
+    # 1. Primary Contract Methods
     # =========================================================================
 
     def get_disclaimers(self) -> Dict[str, Any]:
@@ -548,7 +548,7 @@ _LOADER_INSTANCE: Optional[ResourceLoader] = None
 
 
 def get_resource_loader() -> ResourceLoader:
-    """Returns the cached singleton ResourceLoader instance (PROJECT.md line 164).
+    """Returns the cached singleton ResourceLoader instance.
 
     Thread-safe implementation using double-checked locking with a
     threading.Lock to guarantee singleton identity under concurrent cold-start.

@@ -15,7 +15,7 @@
 
 """Alias module for carefold.workflows.subgraphs.extraction.subgraph.
 
-Conforms to PROJECT.md § Code Layout.
+Kept so the extraction subgraph is importable from either module path.
 """
 
 from carefold.workflows.subgraphs.extraction.subgraph import (

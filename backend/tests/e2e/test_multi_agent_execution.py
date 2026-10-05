@@ -73,7 +73,7 @@ except ImportError:
 
 
 class ReferenceExecutionDispatcher:
-    """Authoritative reference test double for ExecutionDispatcher (PROJECT.md § Interface Contracts 4)."""
+    """Authoritative reference test double for ExecutionDispatcher."""
 
     def __init__(self, agent_runner: Optional[Callable[[str, Dict[str, Any]], str]] = None):
         self._runner = agent_runner or self._default_mock_runner

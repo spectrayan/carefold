@@ -16,7 +16,7 @@
  */
 
 /**
- * Safe Refusal Template as defined in PROJECT.md (lines 174-176) and CF-S13.
+ * Safe Refusal Template (CF-S13), mirroring backend/src/carefold/resources/disclaimers.yaml.
  * Immutable copy substituted whenever clinical diagnosis, dosing, emergency triage,
  * or medication alteration is triggered.
  */

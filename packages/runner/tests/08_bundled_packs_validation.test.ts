@@ -37,12 +37,12 @@ import {
 // Resolve project root dynamically regardless of execution context
 function resolveWorkspaceRoot(): string {
   const cwd = process.cwd();
-  if (fsSync.existsSync(path.join(cwd, 'PROJECT.md')) && fsSync.existsSync(path.join(cwd, 'packages', 'runner'))) {
+  if (fsSync.existsSync(path.join(cwd, 'pnpm-workspace.yaml')) && fsSync.existsSync(path.join(cwd, 'packages', 'runner'))) {
     return cwd;
   }
   // If running from packages/runner
   const runnerParent = path.resolve(__dirname, '../../..');
-  if (fsSync.existsSync(path.join(runnerParent, 'PROJECT.md'))) {
+  if (fsSync.existsSync(path.join(runnerParent, 'pnpm-workspace.yaml'))) {
     return runnerParent;
   }
   return cwd;

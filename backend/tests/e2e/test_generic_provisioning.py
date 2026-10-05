@@ -142,7 +142,7 @@ def scan_ast_for_hardcoded_specialties(file_path: Path) -> List[Dict[str, Any]]:
 
 
 class ReferenceGenericProvisioner:
-    """Authoritative reference test double for generic reference provisioning (PROJECT.md § Interface Contracts 3)."""
+    """Authoritative reference test double for generic reference provisioning."""
 
     @classmethod
     def provision_references(

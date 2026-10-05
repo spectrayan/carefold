@@ -64,7 +64,7 @@ except ImportError:
 
 
 class ReferenceResponseSynthesizerNode:
-    """Authoritative reference test double for ResponseSynthesizerNode (PROJECT.md § Interface Contracts 5)."""
+    """Authoritative reference test double for ResponseSynthesizerNode."""
 
     @classmethod
     def strip_disclaimers(cls, text: str) -> str:

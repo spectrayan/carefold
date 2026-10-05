@@ -12,7 +12,7 @@ intended_use:
     - "If this is an emergency, contact local emergency services"
     - "Do not change medication without the prescribing clinician"
 
-# Canonical Safe Refusal Response (CF-S13, lines 174-176 in PROJECT.md)
+# Canonical Safe Refusal Response (CF-S13). Mirrored in packages/runner/src/safety/template.ts.
 safe_refusal_template: >-
   I am a wellness and care navigation assistant, not a licensed medical professional or emergency service. I cannot diagnose conditions, prescribe medications, or alter medical treatments. Please consult a qualified healthcare provider or contact emergency services immediately if you are experiencing a medical emergency.
 

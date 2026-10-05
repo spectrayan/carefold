@@ -58,7 +58,7 @@ except ImportError:
 
 
 class ReferenceContextLoader:
-    """Authoritative reference test double for ContextLoader specification (PROJECT.md § Interface Contracts 1)."""
+    """Authoritative reference test double for ContextLoader specification."""
 
     @classmethod
     def load_context(cls, state: Dict[str, Any], workspace_root: Path) -> Dict[str, Any]:
@@ -106,7 +106,7 @@ class ReferenceContextLoader:
 
 
 def reference_check_emergency_red_flags(prompt: str) -> Optional[EmergencyFlag]:
-    """Authoritative reference test double for emergency red-flag gating (PROJECT.md § Interface Contracts 2)."""
+    """Authoritative reference test double for emergency red-flag gating."""
     p_lower = prompt.lower()
 
     # Negation guard: "no chest pain", "do not have chest pain", "without shortness of breath"

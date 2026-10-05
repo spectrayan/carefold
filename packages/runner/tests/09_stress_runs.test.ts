@@ -33,11 +33,11 @@ import {
 // Resolve project root
 function getProjectRoot(): string {
   const cwd = process.cwd();
-  if (fsSync.existsSync(path.join(cwd, 'PROJECT.md')) && fsSync.existsSync(path.join(cwd, 'agents'))) {
+  if (fsSync.existsSync(path.join(cwd, 'pnpm-workspace.yaml')) && fsSync.existsSync(path.join(cwd, 'agents'))) {
     return cwd;
   }
   const parent = path.resolve(__dirname, '../../..');
-  if (fsSync.existsSync(path.join(parent, 'PROJECT.md'))) {
+  if (fsSync.existsSync(path.join(parent, 'pnpm-workspace.yaml'))) {
     return parent;
   }
   return cwd;
