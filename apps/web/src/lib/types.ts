@@ -86,4 +86,5 @@ export interface AgentDetail {
   persona: string;
   starters: string[];
   readmeText?: string;
+  description?: string;
 }

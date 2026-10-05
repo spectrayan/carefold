@@ -27,7 +27,9 @@ import {
   ArrowLeft,
   Bot,
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  ShieldCheck,
+  ShieldAlert
 } from 'lucide-react';
 import type { AgentSummary } from '@/lib/types';
 import { sanitizeAgentDescription } from '@/lib/utils';
@@ -39,6 +41,13 @@ import { AttachmentUploader, type AttachedFile } from '@/components/AttachmentUp
 import { ModelSelector } from '@/components/ModelSelector';
 import { SettingsModal } from '@/components/SettingsModal';
 import { ScrollToBottomButton } from '@/components/chat/ScrollToBottomButton';
+import { ClinicalConsentDialog } from '@/components/ClinicalConsentDialog';
+import {
+  grantClinicalConsent,
+  hasClinicalConsent,
+  requiresClinicalConsent
+} from '@/lib/clinicalConsent';
+import { useClinicalConsents } from '@/lib/useClinicalConsents';
 import {
   type CarefoldUserSettings,
   DEFAULT_USER_SETTINGS,
@@ -90,6 +99,24 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
   const [unreadCount, setUnreadCount] = useState(0);
 
   const selectedAgent = initialAgents.find((a) => a.id === selectedAgentId);
+
+  // Clinical-assist consent gate (#87). Fail-closed: clinical agents stay gated
+  // until stored consent has been loaded and found for this specific agent.
+  const { consents: clinicalConsents, loaded: consentLoaded } = useClinicalConsents();
+  const [declinedConsentAgentId, setDeclinedConsentAgentId] = useState<string | null>(null);
+  const needsClinicalConsent = requiresClinicalConsent(selectedAgent?.risk_class);
+  const consentRecord = clinicalConsents[selectedAgentId];
+  const isConsentGated = needsClinicalConsent && !consentRecord;
+  const showConsentDialog = consentLoaded && isConsentGated && declinedConsentAgentId !== selectedAgentId;
+
+  const handleGrantConsent = () => {
+    grantClinicalConsent(selectedAgentId);
+    setDeclinedConsentAgentId(null);
+  };
+
+  const handleDeclineConsent = () => {
+    setDeclinedConsentAgentId(selectedAgentId);
+  };
 
   // Sync url param
   useEffect(() => {
@@ -148,10 +175,16 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
   useEffect(() => {
     if (selectedAgent && selectedAgent.starters && selectedAgent.starters.length > 0) {
       setStarters(selectedAgent.starters);
+    } else if (isConsentGated) {
+      // Detail endpoint is consent-gated for clinical_assist agents; do not probe it.
+      setStarters([]);
     } else {
       async function loadAgentStarters() {
         try {
-          const res = await fetch(`/api/agents?id=${encodeURIComponent(selectedAgentId)}&allow_clinical=true`);
+          const allowClinical = hasClinicalConsent(selectedAgentId);
+          const res = await fetch(
+            `/api/agents?id=${encodeURIComponent(selectedAgentId)}&allow_clinical=${allowClinical}`
+          );
           if (res.ok) {
             const data = await res.json();
             setStarters(data.starters || []);
@@ -164,17 +197,17 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
       }
       loadAgentStarters();
     }
-  }, [selectedAgentId, selectedAgent]);
+  }, [selectedAgentId, selectedAgent, isConsentGated]);
 
-  // Handle incoming ?prompt= param
+  // Handle incoming ?prompt= param (deferred until clinical consent is resolved)
   const promptHandledRef = useRef(false);
   useEffect(() => {
     const promptParam = searchParams.get('prompt');
-    if (promptParam && !promptHandledRef.current && messages.length === 0) {
-      promptHandledRef.current = true;
-      sendMessage(promptParam);
-    }
-  }, [searchParams, messages.length]);
+    if (!promptParam || promptHandledRef.current || messages.length !== 0) return;
+    if (!consentLoaded || isConsentGated) return;
+    promptHandledRef.current = true;
+    sendMessage(promptParam);
+  }, [searchParams, messages.length, consentLoaded, isConsentGated]);
 
   // Dynamic textarea height calculation helper (min 42px, max 160px)
   const adjustTextareaHeight = (el: HTMLTextAreaElement | null) => {
@@ -297,6 +330,9 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
         ? undefined
         : getEndpointForProvider(settings, settings.provider);
 
+    // Read consent from storage at send time (never hard-coded; see #87)
+    const allowClinical = hasClinicalConsent(selectedAgentId);
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -311,8 +347,8 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           agent_id: selectedAgentId,
           prompt: promptText,
           attachments,
-          allow_clinical: true,
-          allowClinical: true,
+          allow_clinical: allowClinical,
+          allowClinical,
           messages: historyMessages.map((m) => ({ role: m.role, content: m.content })),
           provider: settings.provider,
           model: effectiveModel,
@@ -492,6 +528,11 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     const text = (promptToSend !== undefined ? promptToSend : inputText).trim();
     if (!text && attachedFiles.length === 0) return;
     if (isStreaming) return;
+    if (isConsentGated) {
+      // Re-open the consent dialog rather than sending without consent
+      setDeclinedConsentAgentId(null);
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -560,6 +601,10 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
 
   const handleRegenerate = async (assistantMessageId: string) => {
     if (isStreaming) return;
+    if (isConsentGated) {
+      setDeclinedConsentAgentId(null);
+      return;
+    }
 
     const idx = messages.findIndex((m) => m.id === assistantMessageId);
     if (idx === -1) return;
@@ -638,6 +683,17 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
             </select>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
+
+          {needsClinicalConsent && consentRecord && (
+            <span
+              data-testid="clinical-consent-chip"
+              title={`Clinical assist consent given ${new Date(consentRecord.grantedAt).toLocaleString()}. Withdraw it in Settings.`}
+              className="inline-flex items-center gap-1 shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+            >
+              <ShieldCheck className="w-3 h-3" aria-hidden="true" />
+              <span className="sr-only sm:not-sr-only">Clinical assist: consent given</span>
+            </span>
+          )}
 
           <span className="hidden sm:inline text-xs text-slate-400 dark:text-zinc-500">•</span>
           <span className="hidden sm:inline text-xs font-medium text-slate-600 dark:text-zinc-400 truncate max-w-sm">
@@ -744,6 +800,32 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
 
       {/* Composer Input Area */}
       <div className="p-4 border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3 transition-colors">
+        {/* Clinical consent gate notice (shown after the dialog is declined or closed) */}
+        {consentLoaded && isConsentGated && !showConsentDialog && (
+          <div
+            role="status"
+            data-testid="clinical-consent-gate"
+            className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center gap-3"
+          >
+            <div className="flex items-start gap-2 flex-1">
+              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+              <span>
+                Chat with {selectedAgent?.title || 'this agent'} is turned off until you give consent. It is a clinical
+                assist agent, so Carefold first asks you to confirm what it can and cannot do. You can still choose a
+                wellness or insurance agent from the menu above.
+              </span>
+            </div>
+            <button
+              type="button"
+              data-testid="clinical-consent-review"
+              onClick={() => setDeclinedConsentAgentId(null)}
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold transition cursor-pointer"
+            >
+              Review and give consent
+            </button>
+          </div>
+        )}
+
         {/* Attachment uploader component */}
         <AttachmentUploader
           attachedFiles={attachedFiles}
@@ -751,7 +833,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           onRemove={(filename) =>
             setAttachedFiles((prev) => prev.filter((f) => f.filename !== filename))
           }
-          disabled={isStreaming}
+          disabled={isStreaming || isConsentGated}
         />
 
         {/* Message input form */}
@@ -771,8 +853,12 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
               adjustTextareaHeight(e.target);
             }}
             onKeyDown={handleKeyDown}
-            placeholder={`Message ${selectedAgent?.title || 'agent'}...`}
-            disabled={isStreaming}
+            placeholder={
+              isConsentGated
+                ? `Give consent to chat with ${selectedAgent?.title || 'this agent'}`
+                : `Message ${selectedAgent?.title || 'agent'}...`
+            }
+            disabled={isStreaming || isConsentGated}
             data-testid="chat-composer-textarea"
             className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 focus:bg-white dark:focus:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-base sm:text-sm text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 transition-colors disabled:opacity-50 resize-none min-h-[42px] max-h-[160px] leading-normal"
           />
@@ -791,7 +877,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
             <button
               type="submit"
               data-testid="chat-submit-btn"
-              disabled={(!inputText.trim() && attachedFiles.length === 0) || isStreaming}
+              disabled={(!inputText.trim() && attachedFiles.length === 0) || isStreaming || isConsentGated}
               className="min-w-[42px] min-h-[42px] p-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-sm cursor-pointer flex items-center justify-center shrink-0"
               title="Send Prompt"
             >
@@ -807,7 +893,18 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
         onClose={() => setIsSettingsOpen(false)}
         initialSettings={settings}
         onSave={handleSettingsChange}
+        agents={visibleAgents}
       />
+
+      {/* Clinical-assist consent dialog (#87) */}
+      {selectedAgent && (
+        <ClinicalConsentDialog
+          isOpen={showConsentDialog}
+          agent={selectedAgent}
+          onAccept={handleGrantConsent}
+          onDecline={handleDeclineConsent}
+        />
+      )}
     </div>
   );
 }

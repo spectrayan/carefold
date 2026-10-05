@@ -31,7 +31,8 @@ import {
   Key,
   Sun,
   Moon,
-  Laptop
+  Laptop,
+  ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -39,6 +40,9 @@ import {
   loadSettings,
   saveSettings
 } from '@/lib/settings';
+import type { AgentSummary } from '@/lib/types';
+import { withdrawAllClinicalConsents, withdrawClinicalConsent } from '@/lib/clinicalConsent';
+import { useClinicalConsents } from '@/lib/useClinicalConsents';
 import { useOptionalTheme } from '@/components/ThemeProvider';
 import {
   type Theme,
@@ -54,6 +58,8 @@ export interface SettingsModalProps {
   initialSettings?: CarefoldUserSettings;
   settings?: CarefoldUserSettings;
   onSave?: (savedSettings: CarefoldUserSettings) => void;
+  /** Optional agent catalog used to show friendly titles for clinical consents. */
+  agents?: Pick<AgentSummary, 'id' | 'title'>[];
 }
 
 export function SettingsModal({
@@ -61,10 +67,14 @@ export function SettingsModal({
   onClose,
   initialSettings,
   settings,
-  onSave
+  onSave,
+  agents
 }: SettingsModalProps) {
   const activeInitial = initialSettings || settings;
   const [formData, setFormData] = useState<CarefoldUserSettings>(() => activeInitial || loadSettings());
+  const { consents: clinicalConsents } = useClinicalConsents();
+  const consentEntries = Object.entries(clinicalConsents).sort(([a], [b]) => a.localeCompare(b));
+  const agentTitle = (id: string) => agents?.find((a) => a.id === id)?.title || id;
 
   // Theme support: consume ThemeContext safely with fallback for isolated test environments
   const themeContext = useOptionalTheme();
@@ -406,7 +416,61 @@ export function SettingsModal({
             </div>
           </div>
 
-          {/* Section 4: Appearance & Theme */}
+          {/* Section 4: Clinical Assist Consent (#87) */}
+          <div data-testid="clinical-consent-settings" className="space-y-2 pt-2 border-t border-slate-200 dark:border-zinc-800">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
+                <ShieldAlert className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
+                <span>Clinical Assist Consent</span>
+              </h3>
+              {consentEntries.length > 1 && (
+                <button
+                  type="button"
+                  data-testid="withdraw-all-clinical-consent"
+                  onClick={() => withdrawAllClinicalConsents()}
+                  className="text-[11px] font-semibold text-rose-700 dark:text-rose-400 hover:underline cursor-pointer"
+                >
+                  Withdraw all
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+              Clinical assist agents only run after you give consent. Withdrawing takes effect on your next message.
+            </p>
+            {consentEntries.length === 0 ? (
+              <p data-testid="clinical-consent-empty" className="text-xs text-slate-600 dark:text-zinc-400">
+                You have not given consent to any clinical assist agents.
+              </p>
+            ) : (
+              <ul className="space-y-1.5">
+                {consentEntries.map(([agentId, record]) => (
+                  <li
+                    key={agentId}
+                    data-testid={`clinical-consent-entry-${agentId}`}
+                    className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/60 text-xs"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-semibold text-slate-800 dark:text-zinc-200 truncate">{agentTitle(agentId)}</div>
+                      <div className="text-[11px] text-slate-500 dark:text-zinc-400">
+                        Consent given {new Date(record.grantedAt).toLocaleString()}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      data-testid={`withdraw-clinical-consent-${agentId}`}
+                      aria-label={`Withdraw consent for ${agentTitle(agentId)}`}
+                      onClick={() => withdrawClinicalConsent(agentId)}
+                      className="shrink-0 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold transition cursor-pointer"
+                    >
+                      Withdraw
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Section 5: Appearance & Theme */}
           <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-zinc-800">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
