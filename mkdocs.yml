@@ -74,6 +74,7 @@ nav:
   - Safety & Guardrails:
       - Safety Boundaries: safety/boundaries.md
       - Emergency Red Flags: safety/emergency-triage.md
+  - Testing & Quality Gates: testing/index.md
   - API Reference: api/reference.md
   - Architecture Decision Records:
       - ADR Overview: adr/README.md
