@@ -20,6 +20,10 @@ Exports port interfaces (MemoryPort, CatalogPort, MemoryTier), concrete SQLite a
 agent memory and catalog indexing.
 """
 
+from carefold.memory.adapters.spector import (
+    SpectorMemoryAdapter,
+    SpectorStore,
+)
 from carefold.memory.adapters.sqlite import (
     SqliteCatalogAdapter,
     SqliteMemoryAdapter,
@@ -45,6 +49,8 @@ __all__ = [
     "MemoryTier",
     "SqliteCatalogAdapter",
     "SqliteMemoryAdapter",
+    "SpectorMemoryAdapter",
+    "SpectorStore",
     "create_catalog_port",
     "create_memory_port",
     "get_catalog_port",

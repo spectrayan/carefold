@@ -97,6 +97,10 @@ class Settings(BaseSettings):
     memory_backend: str = "sqlite"
     spector_url: str = "http://localhost:7070"
     catalog_db_path: Optional[Path] = None
+    memory_fallback_to_sqlite: bool = Field(
+        default=True,
+        description="Fallback to local SQLite/InMemory store if Spector is unreachable",
+    )
 
     # CORS configuration
     cors_origins: List[str] = list(DEFAULT_CORS_ORIGINS)

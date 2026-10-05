@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 
 from carefold.config import Settings, settings as global_settings
 from carefold.memory.ports.catalog_port import CatalogPort
@@ -39,6 +39,7 @@ SUPPORTED_MEMORY_BACKENDS = frozenset({
 
 _CACHED_MEMORY_PORT: Optional[MemoryPort] = None
 _CACHED_CATALOG_PORT: Optional[CatalogPort] = None
+_memory_ports: Dict[str, MemoryPort] = {}
 
 
 def create_memory_port(
@@ -46,6 +47,7 @@ def create_memory_port(
     backend: Optional[str] = None,
     db_path: Optional[Union[str, Path]] = None,
     spector_url: Optional[str] = None,
+    fallback_to_sqlite: Optional[bool] = None,
 ) -> MemoryPort:
     """Instantiates a new MemoryPort adapter based on configured backend.
     
@@ -54,12 +56,13 @@ def create_memory_port(
         backend: Optional backend override ('sqlite', 'spector', 'postgres').
         db_path: Optional database path override for SQLite adapter.
         spector_url: Optional Spector service URL override.
+        fallback_to_sqlite: Optional fallback toggle override for Spector adapter.
         
     Returns:
         Instance implementing MemoryPort.
         
     Raises:
-        NotImplementedError: If requested backend is 'spector' or 'postgres'.
+        NotImplementedError: If requested backend is 'postgres'.
         ValueError: If requested backend is unrecognized.
     """
     cfg = settings or global_settings
@@ -77,10 +80,18 @@ def create_memory_port(
         return SqliteMemoryAdapter(db_path=resolved_db_path)
 
     elif selected_backend == MEMORY_BACKEND_SPECTOR:
+        from carefold.memory.adapters.spector.memory_adapter import SpectorMemoryAdapter
         url = spector_url or cfg.spector_url
-        raise NotImplementedError(
-            f"Backend 'spector' is not yet implemented (configured URL: '{url}'). "
-            "Spector memory adapter is not yet implemented. Set CAREFOLD_MEMORY_BACKEND='sqlite'."
+        fallback_enabled = (
+            fallback_to_sqlite
+            if fallback_to_sqlite is not None
+            else getattr(cfg, "memory_fallback_to_sqlite", True)
+        )
+        fallback_db = db_path or cfg.get_catalog_db_path()
+        return SpectorMemoryAdapter(
+            base_url=url,
+            fallback_to_sqlite=fallback_enabled,
+            fallback_db_path=fallback_db,
         )
 
     elif selected_backend == MEMORY_BACKEND_POSTGRES:
@@ -155,19 +166,34 @@ def get_memory_port(settings: Optional[Settings] = None) -> MemoryPort:
     """Provides a singleton/shared MemoryPort instance for the runtime.
     
     If settings is provided and cached singleton is None, configures the singleton.
-    If cached singleton already exists and settings specifies a different backend,
-    creates and returns an adapter for those settings.
+    Preserves singleton caching for both SQLite and Spector backends.
     """
-    global _CACHED_MEMORY_PORT
-    if settings is not None:
+    global _CACHED_MEMORY_PORT, _memory_ports
+    if settings is None:
         if _CACHED_MEMORY_PORT is None:
-            _CACHED_MEMORY_PORT = create_memory_port(settings=settings)
+            _CACHED_MEMORY_PORT = create_memory_port()
+            backend = (global_settings.memory_backend or MEMORY_BACKEND_SQLITE).lower().strip()
+            _memory_ports[backend] = _CACHED_MEMORY_PORT
+        return _CACHED_MEMORY_PORT
+
+    target_backend = (settings.memory_backend or MEMORY_BACKEND_SQLITE).lower().strip()
+    if target_backend in _memory_ports:
+        _CACHED_MEMORY_PORT = _memory_ports[target_backend]
+        return _CACHED_MEMORY_PORT
+
+    if _CACHED_MEMORY_PORT is not None:
+        is_spector = _CACHED_MEMORY_PORT.__class__.__name__ == "SpectorMemoryAdapter"
+        if target_backend == MEMORY_BACKEND_SPECTOR and is_spector:
+            _memory_ports[MEMORY_BACKEND_SPECTOR] = _CACHED_MEMORY_PORT
             return _CACHED_MEMORY_PORT
-        if settings.memory_backend != MEMORY_BACKEND_SQLITE:
-            return create_memory_port(settings=settings)
-    if _CACHED_MEMORY_PORT is None:
-        _CACHED_MEMORY_PORT = create_memory_port()
-    return _CACHED_MEMORY_PORT
+        if target_backend == MEMORY_BACKEND_SQLITE and not is_spector:
+            _memory_ports[MEMORY_BACKEND_SQLITE] = _CACHED_MEMORY_PORT
+            return _CACHED_MEMORY_PORT
+
+    port = create_memory_port(settings=settings)
+    _CACHED_MEMORY_PORT = port
+    _memory_ports[target_backend] = port
+    return port
 
 
 def get_catalog_port(settings: Optional[Settings] = None) -> CatalogPort:
@@ -191,15 +217,20 @@ def get_catalog_port(settings: Optional[Settings] = None) -> CatalogPort:
 
 def reset_memory_ports() -> None:
     """Resets cached adapter singletons for test cleanup."""
-    global _CACHED_MEMORY_PORT, _CACHED_CATALOG_PORT
+    global _CACHED_MEMORY_PORT, _CACHED_CATALOG_PORT, _memory_ports
     _CACHED_MEMORY_PORT = None
     _CACHED_CATALOG_PORT = None
+    _memory_ports.clear()
 
 
 def set_memory_port(port: Optional[MemoryPort]) -> None:
     """Explicitly sets or overrides the cached MemoryPort singleton."""
-    global _CACHED_MEMORY_PORT
+    global _CACHED_MEMORY_PORT, _memory_ports
     _CACHED_MEMORY_PORT = port
+    _memory_ports.clear()
+    if port is not None:
+        backend_key = "spector" if port.__class__.__name__ == "SpectorMemoryAdapter" else "sqlite"
+        _memory_ports[backend_key] = port
 
 
 def set_catalog_port(port: Optional[CatalogPort]) -> None:

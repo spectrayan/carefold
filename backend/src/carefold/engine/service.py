@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
+import inspect
 import json
 import logging
 from pathlib import Path
@@ -54,6 +55,7 @@ from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, ChatResu
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph.state import CompiledStateGraph
+from langgraph.store.base import BaseStore
 
 from carefold.audit.logger import record_audit
 from carefold.config import settings
@@ -309,16 +311,28 @@ class AgentExecutionService:
         graph: Optional[CompiledStateGraph] = None,
         graph_builder: Optional[Any] = None,
         checkpointer: Optional[BaseCheckpointSaver] = None,
+        store: Optional[BaseStore] = None,
+        memory_adapter: Optional[Any] = None,
         db_path: Optional[Union[str, Path]] = None,
         workspace_root: Optional[Union[str, Path]] = None,
         store_bodies: Optional[bool] = None,
         **kwargs: Any,
     ) -> None:
-        """Initialize the execution service with model, graph, and checkpointer settings."""
+        """Initialize the execution service with model, graph, checkpointer, and memory settings."""
         self.model = model
         self.graph = graph
         self.graph_builder = graph_builder
         self.checkpointer = checkpointer
+        self.store = store if store is not None else kwargs.get("store")
+        self.memory_adapter = memory_adapter if memory_adapter is not None else kwargs.get("memory_adapter")
+        if self.memory_adapter is None and self.store is None:
+            try:
+                from carefold.memory.factory import get_memory_port
+                self.memory_adapter = get_memory_port()
+            except Exception as exc:
+                logger.debug("Default MemoryPort could not be initialized: %s", exc)
+                self.memory_adapter = None
+
         self.workspace_root = Path(workspace_root) if workspace_root else settings.workspace_root
         self.db_path = Path(db_path) if db_path else None
         self.store_bodies = store_bodies if store_bodies is not None else settings.audit_store_bodies
@@ -427,6 +441,7 @@ class AgentExecutionService:
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         store_bodies: Optional[bool] = None,
+        store: Optional[BaseStore] = None,
         **kwargs: Any,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Executes a single conversation turn through the LangGraph agent graph.
@@ -623,32 +638,49 @@ class AgentExecutionService:
         # 6. Stream Execution Events
         try:
             async with _resolve_checkpointer() as checkpointer:
+                # Retrieve BaseStore from explicit parameter, self.memory_adapter, self.store, or kwargs
+                effective_store = (
+                    store
+                    if store is not None
+                    else (
+                        getattr(self.memory_adapter, "store", None)
+                        or getattr(self, "store", None)
+                        or kwargs.get("store")
+                    )
+                )
+
                 # Resolve compiled graph
                 if self.graph is not None:
                     compiled_graph = self.graph
                 elif self.graph_builder is not None:
                     if hasattr(self.graph_builder, "build"):
-                        compiled_graph = self.graph_builder.build(checkpointer=checkpointer)
+                        compiled_graph = self.graph_builder.build(checkpointer=checkpointer, store=effective_store)
                     elif hasattr(self.graph_builder, "build_graph"):
-                        compiled_graph = self.graph_builder.build_graph(active_model, checkpointer=checkpointer)
+                        compiled_graph = self.graph_builder.build_graph(active_model, checkpointer=checkpointer, store=effective_store)
                     elif callable(self.graph_builder):
-                        compiled_graph = self.graph_builder(active_model, execution_context=execution_context, checkpointer=checkpointer)
+                        sig = inspect.signature(self.graph_builder)
+                        b_kwargs = {"execution_context": execution_context, "checkpointer": checkpointer}
+                        if "store" in sig.parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+                            b_kwargs["store"] = effective_store
+                        compiled_graph = self.graph_builder(active_model, **b_kwargs)
                     else:
-                        compiled_graph = create_agent_graph(active_model, execution_context=execution_context, checkpointer=checkpointer)
+                        compiled_graph = create_agent_graph(active_model, execution_context=execution_context, checkpointer=checkpointer, store=effective_store)
                 else:
                     # Attempt import from builder.py, fallback to graph.py
                     try:
                         from carefold.engine.builder import GraphBuilder
-                        compiled_graph = (
+                        builder_instance = (
                             GraphBuilder()
                             .with_model(active_model)
                             .with_checkpointer(checkpointer)
                             .with_execution_context(execution_context)
                             .with_tools(effective_tools)
-                            .build()
                         )
+                        if effective_store is not None:
+                            builder_instance = builder_instance.with_store(effective_store)
+                        compiled_graph = builder_instance.build(checkpointer=checkpointer, store=effective_store)
                     except (ImportError, AttributeError):
-                        compiled_graph = create_agent_graph(active_model, execution_context=execution_context, checkpointer=checkpointer)
+                        compiled_graph = create_agent_graph(active_model, execution_context=execution_context, checkpointer=checkpointer, store=effective_store)
 
                 async for event in compiled_graph.astream_events(initial_input, config=graph_config, version="v2"):
                     ev_kind = event.get("event")

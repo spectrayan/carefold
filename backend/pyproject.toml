@@ -29,6 +29,7 @@ dependencies = [
     "pydantic-handlebars>=0.2.1",
     "jinja2>=3.1.0",
     "deepagents>=0.7",
+    "spector-client>=0.1.0a4",
 ]
 
 [project.optional-dependencies]
@@ -52,6 +53,9 @@ minversion = "8.0"
 addopts = "-ra -q --asyncio-mode=auto"
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "ollama: marks tests as requiring local Ollama daemon",
+]
 filterwarnings = [
     "ignore::DeprecationWarning:fastapi.testclient",
     "ignore::DeprecationWarning:starlette.testclient",

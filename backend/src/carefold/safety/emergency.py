@@ -19,8 +19,9 @@ Provides pre-execution detection of acute life-threatening medical emergencies:
 1. Cardiovascular emergencies (crushing chest pain, radiation to jaw/arm, cold sweat).
 2. Neurological emergencies (stroke FAST: facial droop, slurred speech, arm weakness).
 3. Airway and allergic emergencies (anaphylaxis, airway closing, tongue/lip swelling).
+4. Suicidal crisis and acute self-harm emergencies (active suicidal ideation, intent to end life).
 
-Enforces immediate diversion to 911 and emergency room services before any downstream
+Enforces immediate diversion to 911 / 988 and emergency room services before any downstream
 orchestration, planning, or model generation occurs.
 """
 
@@ -101,12 +102,25 @@ ANAPHYLAXIS_PATTERNS: List[str] = [
     r"\b(?:respiratory\s+stridor|upper\s+airway\s+obstruction|wheezing\s+with\s+cyanosis)\b",
 ]
 
+# 4. Suicidal crisis and acute self-harm patterns
+SUICIDE_PATTERNS: List[str] = [
+    r"\b(?:want\s+to|going\s+to|planning\s+to)\s+(?:kill|end)\s+(?:my|one)self\b",
+    r"\b(?:want\s+to|going\s+to|planning\s+to)\s+die\b",
+    r"\b(?:end\s+my\s+life|take\s+my\s+(?:own\s+)?life)\b",
+    r"\b(?:feel|feeling|am|have)\s+suicidal\b",
+    r"\b(?:commit|committing)\s+suicide\b",
+    r"\b(?:suicidal\s+thoughts?|suicidal\s+ideation|suicide\s+plan)\b",
+    r"\b(?:hang|shoot|poison|cut|harm)\s+myself\b",
+    r"\boverdose\s+on\s+(?:pills|medications?|drugs?)\b",
+]
+
 
 def check_emergency_red_flags(prompt: str) -> Optional[EmergencyFlag]:
     """Evaluates user prompt against acute clinical emergency red-flag patterns.
 
     Detects acute crushing chest pain, stroke symptoms (FAST: facial droop, arm weakness,
-    speech impairment), and severe anaphylaxis / upper airway closure.
+    speech impairment), severe anaphylaxis / upper airway closure, and acute suicidal
+    ideation / self-harm crisis.
 
     Args:
         prompt: Raw user input text.
@@ -154,10 +168,21 @@ def check_emergency_red_flags(prompt: str) -> Optional[EmergencyFlag]:
                 referral_message="EMERGENCY WARNING: Severe allergic reaction detected. Administer epinephrine if prescribed and call 911 immediately.",
             )
 
+    # Step 5: Check acute suicidal crisis / self-harm emergency
+    for pattern in SUICIDE_PATTERNS:
+        if re.search(pattern, p_lower):
+            return EmergencyFlag(
+                detected=True,
+                category="suicide_crisis",
+                trigger_phrase=pattern,
+                referral_message="EMERGENCY WARNING: Acute crisis symptoms detected. If you are experiencing thoughts of suicide or self-harm, call or text 988 immediately to connect with the Suicide & Crisis Lifeline, or visit the nearest emergency room.",
+            )
+
     return None
 
 
 __all__ = [
     "EmergencyFlag",
     "check_emergency_red_flags",
+    "SUICIDE_PATTERNS",
 ]

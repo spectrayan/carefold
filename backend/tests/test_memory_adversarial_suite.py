@@ -501,19 +501,20 @@ class TestMemoryFactoryAdversarial:
         assert "invalid_backend" in str(exc_cat.value)
 
     def test_env_var_override_spector_backend(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Verifies CAREFOLD_MEMORY_BACKEND='spector' raises NotImplementedError."""
+        """Verifies CAREFOLD_MEMORY_BACKEND='spector' returns MemoryPort with .store, CatalogPort raises NotImplementedError."""
         monkeypatch.setenv("CAREFOLD_MEMORY_BACKEND", "spector")
         monkeypatch.setenv("CAREFOLD_SPECTOR_URL", "http://spector-service:9000")
         settings = Settings()
 
-        with pytest.raises(NotImplementedError) as exc_mem:
-            get_memory_port(settings)
-        assert "spector" in str(exc_mem.value).lower()
-        assert "http://spector-service:9000" in str(exc_mem.value)
+        mem = get_memory_port(settings)
+        assert isinstance(mem, MemoryPort)
+        assert hasattr(mem, "store")
+        assert mem.store is not None
 
         with pytest.raises(NotImplementedError) as exc_cat:
             get_catalog_port(settings)
         assert "spector" in str(exc_cat.value).lower()
+        assert "http://spector-service:9000" in str(exc_cat.value)
 
     def test_env_var_override_postgres_backend(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Verifies CAREFOLD_MEMORY_BACKEND='postgres' raises NotImplementedError."""

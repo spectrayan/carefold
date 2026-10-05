@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
+import inspect
 import json
 import logging
 import operator
@@ -61,6 +62,7 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledStateGraph
+from langgraph.store.base import BaseStore
 
 from carefold.audit.logger import record_audit
 from carefold.config import settings
@@ -125,13 +127,21 @@ def generate_follow_up_suggestions(
 # 2. Graph Nodes
 # ============================================================================
 
-async def safety_guard_node(state: AgentState) -> Dict[str, Any]:
+async def safety_guard_node(
+    state: AgentState,
+    *,
+    store: Optional[BaseStore] = None,
+) -> Dict[str, Any]:
     """Pre-generation clinical safety refusal gate.
 
     Delegates to InputGuardrailNode while maintaining SSE dispatch and legacy keys.
     """
     node = InputGuardrailNode()
-    res = await node.execute(state)  # type: ignore[arg-type]
+    sig = inspect.signature(node.execute)
+    if "store" in sig.parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+        res = await node.execute(state, store=store)  # type: ignore[arg-type]
+    else:
+        res = await node.execute(state)  # type: ignore[arg-type]
 
     if res.get("is_refusal"):
         reason = res.get("refusal_reason") or state.get("default_refusal_reason") or "forbidden_intent:policy_prohibited"
@@ -187,7 +197,11 @@ def create_agent_node(bound_model: BaseChatModel) -> Callable[[AgentState], Any]
     return agent_node
 
 
-async def post_safety_node(state: AgentState) -> Dict[str, Any]:
+async def post_safety_node(
+    state: AgentState,
+    *,
+    store: Optional[BaseStore] = None,
+) -> Dict[str, Any]:
     """Post-generation clinical safety refusal gate.
 
     Delegates to OutputGuardrailNode while maintaining SSE dispatch and legacy keys.
@@ -496,6 +510,7 @@ def create_agent_graph(
     execution_context: Optional[Any] = None,
     checkpointer: Optional[BaseCheckpointSaver] = None,
     system_prompt: Optional[str] = None,
+    store: Optional[BaseStore] = None,
     **kwargs: Any,
 ) -> CompiledStateGraph:
     """Builds and compiles the Carefold LangGraph stateful execution graph.
@@ -505,6 +520,7 @@ def create_agent_graph(
         execution_context: Optional ExecutionContext instance or checkpointer if passed positionally.
         checkpointer: Optional SQLite checkpointer (AsyncSqliteSaver or SqliteSaver).
         system_prompt: Optional default system prompt.
+        store: Optional LangGraph BaseStore instance for long-term cognitive memory persistence.
         **kwargs: Additional configuration parameters.
     """
     if execution_context is not None and isinstance(execution_context, BaseCheckpointSaver):
@@ -569,8 +585,8 @@ def create_agent_graph(
     builder.add_edge("suggestion_node", "audit_node")
     builder.add_edge("audit_node", END)
 
-    # 5. Compile with optional checkpointer
-    return builder.compile(checkpointer=checkpointer)
+    # 5. Compile with optional checkpointer and store
+    return builder.compile(checkpointer=checkpointer, store=store)
 
 
 # ============================================================================

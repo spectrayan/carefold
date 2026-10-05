@@ -28,10 +28,12 @@ import json
 import logging
 from pathlib import Path
 import re
+import time
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 from langchain_core.callbacks.manager import adispatch_custom_event
 from langchain_core.messages import AIMessage
+from langgraph.store.base import BaseStore
 
 from carefold.audit.logger import _file_lock
 from carefold.audit.redaction import redact_audit_event
@@ -59,6 +61,12 @@ class ResponseSynthesizerNode(BaseNode):
 
     def __init__(self, name: str = "response_synthesizer") -> None:
         super().__init__(name=name)
+
+    async def __call__(
+        self, state: Dict[str, Any], *, store: Optional[BaseStore] = None, **kwargs: Any
+    ) -> Dict[str, Any]:
+        """LangGraph node execution callable interface supporting store injection."""
+        return await self.execute(state, store=store, **kwargs)
 
     @classmethod
     def strip_reference_preamble(cls, text: str) -> str:
@@ -98,6 +106,14 @@ class ResponseSynthesizerNode(BaseNode):
         # If no specialist_outputs, check if single output exists in state
         if not specialist_outputs:
             single_out = state.get("output")
+            if not single_out:
+                for m in reversed(state.get("messages", [])):
+                    if isinstance(m, AIMessage) and m.content:
+                        single_out = m.content
+                        break
+                    elif isinstance(m, dict) and m.get("role") in ("assistant", "ai") and m.get("content"):
+                        single_out = m.get("content")
+                        break
             if single_out:
                 clean_text = cls.strip_disclaimers(str(single_out))
                 full_output = f"{clean_text}\n\n{CANONICAL_DISCLAIMER}"
@@ -145,14 +161,18 @@ class ResponseSynthesizerNode(BaseNode):
         state["output"] = full_output
         return full_output
 
-    async def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """LangGraph node execution interface."""
+    async def execute(
+        self, state: Dict[str, Any], *, store: Optional[BaseStore] = None, **kwargs: Any
+    ) -> Dict[str, Any]:
+        """LangGraph node execution interface with Phase 5 turn persistence."""
         full_output = self.synthesize_response(state)
 
         # Zero-body structured audit event logging (event="synthesis")
         iso_timestamp = datetime.now(timezone.utc).isoformat()
         agent_id = str(state.get("current_agent") or "response-synthesizer")
-        specialist_ids = list(state.get("specialist_outputs", {}).keys())
+        specialist_outputs = state.get("specialist_outputs") or {}
+        specialist_ids = list(specialist_outputs.keys())
+        thread_id = state.get("thread_id")
 
         audit_payload: Dict[str, Any] = {
             "timestamp": iso_timestamp,
@@ -162,8 +182,8 @@ class ResponseSynthesizerNode(BaseNode):
             "allowed": True,
             "target_agents": specialist_ids,
         }
-        if state.get("thread_id"):
-            audit_payload["thread_id"] = str(state["thread_id"])
+        if thread_id:
+            audit_payload["thread_id"] = str(thread_id)
         if state.get("prompt"):
             audit_payload["prompt"] = str(state["prompt"])
         if state.get("output"):
@@ -213,28 +233,68 @@ class ResponseSynthesizerNode(BaseNode):
                     "Verify insurance coverage for recommended assessments",
                 ]
 
-        # SSE custom event dispatching
-        try:
-            await adispatch_custom_event(
-                "synthesis",
-                {
-                    "type": "synthesis",
+        # Phase 5 Turn Persistence: Commit interaction into episodic memory
+        if store is not None and thread_id:
+            try:
+                turn_key = f"turn_{int(time.time() * 1000)}"
+                user_prompt = state.get("prompt") or self.get_prompt_text(state) or ""
+                turn_payload = {
+                    "role": "assistant",
+                    "user_query": user_prompt,
+                    "user_prompt": user_prompt,
+                    "prompt": user_prompt,
+                    "agent_response": full_output,
+                    "response": full_output,
                     "output": full_output,
-                },
-            )
-        except Exception:
-            pass
+                    "agent_id": agent_id,
+                    "tier": "EPISODIC",
+                    "timestamp": iso_timestamp,
+                    "text": f"User: {user_prompt}\nCarefold: {full_output}",
+                    "metadata": {
+                        "thread_id": str(thread_id),
+                        "agent_id": agent_id,
+                        "turn_key": turn_key,
+                        "specialist_outputs": specialist_ids,
+                    },
+                    "created_at": iso_timestamp,
+                    "updated_at": iso_timestamp,
+                }
+                await store.aput(
+                    ("memories", str(thread_id)),
+                    turn_key,
+                    turn_payload,
+                )
+            except Exception as err:
+                self.logger.warning("Phase 5 turn persistence failed gracefully: %s", err)
 
+        # SSE custom event dispatching
+        if specialist_outputs:
+            try:
+                await adispatch_custom_event(
+                    "synthesis",
+                    {
+                        "type": "synthesis",
+                        "output": full_output,
+                    },
+                )
+            except Exception:
+                pass
+
+        clean_completion = self.strip_disclaimers(full_output)
         result_payload: Dict[str, Any] = {
-            "output": full_output,
+            "output": clean_completion if not specialist_outputs else full_output,
             "next_step": "output_guardrail",
-            "messages": [AIMessage(content=full_output)],
             "audit_events": accumulated,
         }
+        if specialist_outputs or not any(isinstance(m, AIMessage) for m in state.get("messages", [])):
+            result_payload["messages"] = [AIMessage(content=full_output)]
         if follow_ups:
             result_payload["follow_up_suggestions"] = follow_ups
 
         return result_payload
+
+    # Method alias for process requirement compatibility
+    process = execute
 
 
 __all__ = ["ResponseSynthesizerNode", "CANONICAL_DISCLAIMER"]

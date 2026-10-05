@@ -61,6 +61,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
+from langgraph.store.base import BaseStore
 
 from carefold.audit.logger import record_audit
 from carefold.config import settings
@@ -138,11 +139,13 @@ class GraphBuilder:
         registry: Optional[AgentRegistry] = None,
         tool_registry: Optional[Any] = None,
         use_dynamic_orchestrator: bool = True,
+        store: Optional[BaseStore] = None,
         **kwargs: Any,
     ) -> None:
         """Initialize GraphBuilder configuration."""
         self.model = model
         self.checkpointer = checkpointer
+        self.store = store
         self.tools = list(tools) if tools is not None else None
         self.subgraphs: Dict[str, Union[StateGraph, CompiledStateGraph]] = dict(subgraphs or {})
         self.system_prompt = system_prompt
@@ -199,6 +202,11 @@ class GraphBuilder:
     def with_checkpointer(self, checkpointer: Optional[BaseCheckpointSaver]) -> GraphBuilder:
         """Attach a state persistence checkpointer (SqliteSaver, AsyncSqliteSaver, MemorySaver)."""
         self.checkpointer = checkpointer
+        return self
+
+    def with_store(self, store: Optional[BaseStore]) -> GraphBuilder:
+        """Attach a LangGraph BaseStore instance for long-term cognitive memory persistence."""
+        self.store = store
         return self
 
     def with_subgraph(
@@ -336,30 +344,49 @@ class GraphBuilder:
             or (ResponseSynthesizerNode() if self.include_synthesizer else None)
         )
 
-        # Node Wrappers with SSE dispatching
+        # Helper for defensive node invocation with optional store injection
+        async def _invoke_node_with_store(
+            node: Any,
+            state: AgentState,
+            store: Optional[BaseStore] = None,
+        ) -> Dict[str, Any]:
+            if node is None:
+                return {}
+            target_store = store if store is not None else self.store
+            target = getattr(node, "execute", None) if hasattr(node, "execute") else (node if callable(node) else None)
+            if target is None and callable(node):
+                target = node
+            if target is None:
+                return {}
+            try:
+                sig = inspect.signature(target)
+                if "store" in sig.parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+                    return await target(state, store=target_store)
+            except (ValueError, TypeError):
+                pass
+            return await target(state)
+
+        # Node Wrappers with SSE dispatching and store ingestion
         async def _dispatcher_wrapper(state: AgentState) -> Dict[str, Any]:
             if dispatcher_node is None:
                 return {}
             return await (dispatcher_node(state) if callable(dispatcher_node) else dispatcher_node.execute(state))
 
-        async def _synthesizer_wrapper(state: AgentState) -> Dict[str, Any]:
+        async def _synthesizer_wrapper(
+            state: AgentState,
+            *,
+            store: Optional[BaseStore] = None,
+        ) -> Dict[str, Any]:
             if synthesizer_node is None:
                 return {}
-            res = await (synthesizer_node(state) if callable(synthesizer_node) else synthesizer_node.execute(state))
-            out = res.get("output", "")
-            try:
-                await adispatch_custom_event(
-                    "synthesis",
-                    {
-                        "type": "synthesis",
-                        "output": out,
-                    },
-                )
-            except Exception:
-                pass
-            return res
-        async def _input_guardrail_wrapper(state: AgentState) -> Dict[str, Any]:
-            res = await (input_guard_node(state) if callable(input_guard_node) else input_guard_node.execute(state))
+            return await _invoke_node_with_store(synthesizer_node, state, store=store)
+
+        async def _input_guardrail_wrapper(
+            state: AgentState,
+            *,
+            store: Optional[BaseStore] = None,
+        ) -> Dict[str, Any]:
+            res = await _invoke_node_with_store(input_guard_node, state, store=store)
             if res.get("is_refusal") or res.get("refused"):
                 reason = res.get("refusal_reason") or state.get("default_refusal_reason") or "forbidden_intent:policy_prohibited"
                 try:
@@ -658,9 +685,13 @@ class GraphBuilder:
                 tool_calls = state.get("tool_calls")
             if tool_calls and state.get("iteration_count", 0) < self.max_tool_iterations:
                 return "tools"
+            if self.include_synthesizer and synthesizer_node is not None:
+                return "response_synthesizer"
             return "output_guardrail"
 
         agent_destinations = {"tools": "tools", "output_guardrail": "output_guardrail"}
+        if self.include_synthesizer and synthesizer_node is not None:
+            agent_destinations["response_synthesizer"] = "response_synthesizer"
         if self.include_error_node:
             agent_destinations["error"] = "error"
         builder.add_conditional_edges("agent", route_agent, agent_destinations)
@@ -705,12 +736,18 @@ class GraphBuilder:
     def build(
         self,
         checkpointer: Optional[BaseCheckpointSaver] = None,
+        store: Optional[BaseStore] = None,
         **compile_kwargs: Any,
     ) -> CompiledStateGraph:
-        """Constructs and compiles the StateGraph, attaching checkpointer."""
+        """Constructs and compiles the StateGraph, attaching checkpointer and store."""
         effective_checkpointer = checkpointer if checkpointer is not None else self.checkpointer
+        effective_store = store if store is not None else self.store
         g = self.create_graph()
-        return g.compile(checkpointer=effective_checkpointer, **compile_kwargs)
+        return g.compile(
+            checkpointer=effective_checkpointer,
+            store=effective_store,
+            **compile_kwargs,
+        )
 
     # Fluent alias for compilation
     compile = build
@@ -723,6 +760,7 @@ class GraphBuilder:
         tools: Optional[Sequence[Any]] = None,
         subgraphs: Optional[Dict[str, Union[StateGraph, CompiledStateGraph]]] = None,
         system_prompt: Optional[str] = None,
+        store: Optional[BaseStore] = None,
         **kwargs: Any,
     ) -> CompiledStateGraph:
         """Classmethod convenience constructor compiling the complete graph."""
@@ -732,9 +770,10 @@ class GraphBuilder:
             tools=tools,
             subgraphs=subgraphs,
             system_prompt=system_prompt,
+            store=store,
             **kwargs,
         )
-        return builder.build(checkpointer=checkpointer)
+        return builder.build(checkpointer=checkpointer, store=store)
 
     def inspect_graph(self) -> Dict[str, Any]:
         """Provides introspective metadata regarding nodes, subgraphs, limits, and checkpointer."""
@@ -758,6 +797,7 @@ class GraphBuilder:
             "subgraphs": list(self.subgraphs.keys()),
             "model": type(self.model).__name__ if self.model else None,
             "checkpointer": type(self.checkpointer).__name__ if self.checkpointer else None,
+            "store": type(self.store).__name__ if getattr(self, "store", None) else None,
             "tools_count": len(self.tools) if self.tools is not None else 0,
             "max_reflections": self.max_reflections,
             "max_tool_iterations": self.max_tool_iterations,
@@ -776,6 +816,7 @@ def create_agent_graph(
     tools: Optional[Sequence[Any]] = None,
     subgraphs: Optional[Dict[str, Union[StateGraph, CompiledStateGraph]]] = None,
     use_dynamic_orchestrator: bool = True,
+    store: Optional[BaseStore] = None,
     **kwargs: Any,
 ) -> CompiledStateGraph:
     """Builds and compiles the Carefold stateful execution graph delegating to GraphBuilder.
@@ -794,9 +835,10 @@ def create_agent_graph(
         system_prompt=system_prompt,
         execution_context=execution_context,
         use_dynamic_orchestrator=use_dynamic_orchestrator,
+        store=store,
         **kwargs,
     )
-    return builder.build(checkpointer=checkpointer)
+    return builder.build(checkpointer=checkpointer, store=store)
 
 
 __all__ = [

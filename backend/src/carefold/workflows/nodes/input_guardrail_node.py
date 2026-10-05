@@ -22,8 +22,10 @@ and medication discontinuation before model or tool invocation.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+import json
+from typing import Any, Dict, List, Optional
 from langchain_core.messages import BaseMessage, HumanMessage
+from langgraph.store.base import BaseStore
 
 from carefold.safety.classifier import check_safety_refusal
 from carefold.safety.emergency import check_emergency_red_flags
@@ -31,13 +33,21 @@ from carefold.workflows.nodes.base import BaseNode
 
 
 class InputGuardrailNode(BaseNode):
-    """Pre-execution guardrail evaluating clinical safety."""
+    """Pre-execution guardrail evaluating clinical safety and recalling memory context."""
 
     def __init__(self, name: str = "input_guardrail") -> None:
         super().__init__(name=name)
 
-    async def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """Evaluates clinical safety on the most recent user prompt."""
+    async def __call__(
+        self, state: Dict[str, Any], *, store: Optional[BaseStore] = None, **kwargs: Any
+    ) -> Dict[str, Any]:
+        """LangGraph node execution callable interface supporting store injection."""
+        return await self.execute(state, store=store, **kwargs)
+
+    async def execute(
+        self, state: Dict[str, Any], *, store: Optional[BaseStore] = None, **kwargs: Any
+    ) -> Dict[str, Any]:
+        """Evaluates clinical safety and executes Phase 1 context recall on the user prompt."""
         messages: List[Any] = state.get("messages", [])
         prompt_text = ""
 
@@ -80,6 +90,7 @@ class InputGuardrailNode(BaseNode):
                 "emergency_red_flags": flag_dict,
                 "next_step": "refusal",
                 "tool_calls": [],  # Suppress pending tool calls on emergency
+                "recalled_memories": [],
                 "safety_metadata": {
                     "checked": True,
                     "refused": True,
@@ -102,6 +113,7 @@ class InputGuardrailNode(BaseNode):
                 ),
                 "next_step": "refusal",
                 "tool_calls": [],  # Suppress pending tool calls on lack of consent
+                "recalled_memories": [],
                 "safety_metadata": {
                     "checked": True,
                     "refused": True,
@@ -121,6 +133,7 @@ class InputGuardrailNode(BaseNode):
                 "refusal_reason": reason,
                 "next_step": "refusal",
                 "tool_calls": [],  # Suppress pending tool calls on safety refusal
+                "recalled_memories": [],
                 "safety_metadata": {
                     "checked": True,
                     "refused": True,
@@ -129,17 +142,85 @@ class InputGuardrailNode(BaseNode):
                 },
             }
 
-        return {
+        # 4. Phase 1 Context Recall: Query BaseStore for previous episodic/semantic memories
+        recalled_memories: List[Dict[str, Any]] = []
+        memory_context: Optional[str] = None
+        thread_id = state.get("thread_id")
+
+        if store is not None and thread_id and prompt_text:
+            try:
+                # Query namespace ("memories", str(thread_id)) up to limit 5
+                search_items = await store.asearch(
+                    ("memories", str(thread_id)),
+                    query=prompt_text,
+                    limit=5,
+                )
+                for item in search_items:
+                    item_created = (
+                        item.created_at.isoformat()
+                        if hasattr(getattr(item, "created_at", None), "isoformat")
+                        else str(getattr(item, "created_at", "") or "")
+                    )
+                    recalled_memories.append({
+                        "key": item.key,
+                        "namespace": item.namespace,
+                        "value": item.value,
+                        "created_at": item_created,
+                        "score": getattr(item, "score", None),
+                    })
+
+                if recalled_memories:
+                    lines = ["### Relevant Patient Context & Previous Conversations:"]
+                    for mem in recalled_memories:
+                        val = mem.get("value")
+                        if isinstance(val, dict):
+                            uq = val.get("user_query") or val.get("query")
+                            ar = val.get("agent_response") or val.get("response") or val.get("output")
+                            if uq and ar:
+                                lines.append(f"- Previous Query: {uq}\n  Previous Response: {ar}")
+                            elif "text" in val and val["text"]:
+                                lines.append(f"- {val['text']}")
+                            else:
+                                lines.append(f"- {json.dumps(val, ensure_ascii=False)}")
+                        elif isinstance(val, str):
+                            lines.append(f"- {val}")
+                        else:
+                            lines.append(f"- {val}")
+                    memory_context = "\n".join(lines)
+            except Exception as err:
+                self.logger.warning("Phase 1 context recall failed gracefully: %s", err)
+
+        # 5. Enrich state system_prompt with recalled memory context
+        system_prompt = state.get("system_prompt")
+        updated_system_prompt = system_prompt
+        if memory_context:
+            if system_prompt:
+                if memory_context not in system_prompt:
+                    updated_system_prompt = f"{system_prompt}\n\n{memory_context}"
+            else:
+                updated_system_prompt = memory_context
+
+        output_state: Dict[str, Any] = {
             "is_refusal": False,
             "refused": False,
             "refusal_reason": None,
             "next_step": "supervisor",
+            "recalled_memories": recalled_memories,
             "safety_metadata": {
                 "checked": True,
                 "refused": False,
                 "reason": None,
             },
         }
+        if memory_context:
+            output_state["memory_context"] = memory_context
+        if updated_system_prompt is not None:
+            output_state["system_prompt"] = updated_system_prompt
+
+        return output_state
+
+    # Method alias for process requirement compatibility
+    process = execute
 
 
 __all__ = ["InputGuardrailNode"]

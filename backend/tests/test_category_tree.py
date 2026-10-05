@@ -321,28 +321,31 @@ class TestFactoryAndSettingsEmpirical:
         assert isinstance(cat, SqliteCatalogAdapter)
 
     def test_factory_not_implemented_error_spector(self) -> None:
-        """Challenge 2.2: NotImplementedError raised for 'spector'."""
+        """Challenge 2.2: MemoryPort succeeds for 'spector', CatalogPort raises NotImplementedError."""
         spector_settings = Settings(
             memory_backend="spector",
             spector_url="http://custom-spector:8080",
         )
 
-        # get_memory_port
-        with pytest.raises(NotImplementedError) as exc_mem:
-            get_memory_port(spector_settings)
-        assert "spector" in str(exc_mem.value).lower()
-        assert "http://custom-spector:8080" in str(exc_mem.value)
+        # get_memory_port succeeds and returns a MemoryPort with .store
+        mem = get_memory_port(spector_settings)
+        assert isinstance(mem, MemoryPort)
+        assert hasattr(mem, "store")
+        assert mem.store is not None
 
-        # get_catalog_port
+        # get_catalog_port continues to raise NotImplementedError
         with pytest.raises(NotImplementedError) as exc_cat:
             get_catalog_port(spector_settings)
         assert "spector" in str(exc_cat.value).lower()
+        assert "http://custom-spector:8080" in str(exc_cat.value)
 
-        # create_memory_port direct call
-        with pytest.raises(NotImplementedError):
-            create_memory_port(backend="spector")
+        # create_memory_port direct call succeeds and returns a MemoryPort with .store
+        created_mem = create_memory_port(backend="spector")
+        assert isinstance(created_mem, MemoryPort)
+        assert hasattr(created_mem, "store")
+        assert created_mem.store is not None
 
-        # create_catalog_port direct call
+        # create_catalog_port direct call raises NotImplementedError
         with pytest.raises(NotImplementedError):
             create_catalog_port(backend="spector")
 

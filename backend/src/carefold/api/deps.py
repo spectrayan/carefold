@@ -13,24 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Memory and Catalog storage adapters."""
+"""FastAPI dependency providers for Carefold runtime."""
 
 from __future__ import annotations
 
-from carefold.memory.adapters.spector import (
-    SpectorMemoryAdapter,
-    SpectorStore,
-)
-from carefold.memory.adapters.sqlite import (
-    SqliteCatalogAdapter,
-    SqliteMemoryAdapter,
-    sanitize_fts_query,
-)
+from carefold.memory.factory import get_memory_port
+from carefold.memory.ports.memory_port import MemoryPort
 
-__all__ = [
-    "SqliteMemoryAdapter",
-    "SqliteCatalogAdapter",
-    "sanitize_fts_query",
-    "SpectorMemoryAdapter",
-    "SpectorStore",
-]
+
+def get_current_memory_port() -> MemoryPort:
+    """Dependency provider resolving the active MemoryPort adapter singleton.
+
+    Can be overridden in tests via app.dependency_overrides[get_current_memory_port].
+    """
+    return get_memory_port()
+
+
+__all__ = ["get_current_memory_port"]

@@ -102,11 +102,37 @@ def fake_chat_model() -> FakeChatModel:
     return FakeChatModel()
 
 
+def pytest_runtest_setup(item):
+    """Enforce that tests marked with 'ollama' are strictly skipped unless CAREFOLD_RUN_OLLAMA_TESTS is set."""
+    if item.get_closest_marker("ollama"):
+        if not os.getenv("CAREFOLD_RUN_OLLAMA_TESTS"):
+            pytest.skip("Live Ollama tests run on-demand only (set CAREFOLD_RUN_OLLAMA_TESTS=1)")
+
+
 @pytest.fixture(autouse=True)
-def default_test_model_client(monkeypatch):
+def default_test_model_client(request: pytest.FixtureRequest, monkeypatch):
     """Provides a deterministic MockChatModel default when tests execute agent runs without a live LLM."""
+    if request.node.get_closest_marker("ollama") and os.getenv("CAREFOLD_RUN_OLLAMA_TESTS"):
+        return
+
     import carefold.engine.runner as runner_mod
     monkeypatch.setattr(runner_mod, "create_chat_model", lambda *args, **kwargs: MockChatModel())
+
+
+@pytest.fixture
+def live_ollama_client():
+    """Provides an authenticated live ChatOllama client when CAREFOLD_RUN_OLLAMA_TESTS=1."""
+    if not os.getenv("CAREFOLD_RUN_OLLAMA_TESTS"):
+        pytest.skip("Live Ollama tests run on-demand only (set CAREFOLD_RUN_OLLAMA_TESTS=1)")
+    from carefold.model.factory import create_chat_model
+    ollama_url = os.getenv("CAREFOLD_OLLAMA_URL", "http://localhost:11434")
+    ollama_model = os.getenv("CAREFOLD_OLLAMA_MODEL", "llama3.2:3b")
+    return create_chat_model(
+        provider="ollama",
+        model=ollama_model,
+        base_url=ollama_url,
+        temperature=0.0,
+    )
 
 
 

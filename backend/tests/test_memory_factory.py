@@ -105,16 +105,15 @@ class TestMemoryFactoryResolution:
         assert get_memory_port() is custom_mem
         assert get_catalog_port() is custom_cat
 
-    def test_factory_spector_backend_raises_not_implemented_error(self) -> None:
+    def test_factory_spector_backend_creates_memory_port(self) -> None:
         spector_settings = Settings(
             memory_backend="spector",
             spector_url="http://localhost:7070",
         )
 
-        with pytest.raises(NotImplementedError) as exc_mem:
-            get_memory_port(spector_settings)
-        assert "Spector" in str(exc_mem.value) or "spector" in str(exc_mem.value)
-        assert "http://localhost:7070" in str(exc_mem.value)
+        mem = get_memory_port(spector_settings)
+        assert isinstance(mem, MemoryPort)
+        assert hasattr(mem, "store")
 
         with pytest.raises(NotImplementedError) as exc_cat:
             get_catalog_port(spector_settings)

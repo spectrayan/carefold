@@ -55,6 +55,8 @@ class AgentState(TypedDict, total=False):
         safety_metadata: Structured safety classification and policy check details.
         follow_up_suggestions: AI-generated follow-up next question chips.
         error: Standardized error message or code for user-facing graceful response.
+        recalled_memories: Episodic and semantic memories recalled from BaseStore in Phase 1.
+        memory_context: Formatted memory context injected into system prompt.
 
         tool_calls: Active or pending tool calls to be processed by ToolNode.
         tool_output: Raw or latest output produced by tool execution.
@@ -160,6 +162,10 @@ class AgentState(TypedDict, total=False):
     execution_plan: Optional[Dict[str, Any]]
     provisioned_references: Dict[str, Any]
     specialist_outputs: Dict[str, Any]
+
+    # Phase 1 Cognitive Memory Recall fields (M3, R3)
+    recalled_memories: List[Dict[str, Any]]
+    memory_context: Optional[str]
 
 
 def extract_text_content(item: Any) -> str:
@@ -330,6 +336,8 @@ def create_initial_state(
         "execution_plan": kwargs.get("execution_plan", None),
         "provisioned_references": kwargs.get("provisioned_references", {}),
         "specialist_outputs": kwargs.get("specialist_outputs", {}),
+        "recalled_memories": kwargs.get("recalled_memories", []),
+        "memory_context": kwargs.get("memory_context", None),
     }
     for k, v in kwargs.items():
         if k not in state:

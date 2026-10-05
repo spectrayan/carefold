@@ -13,24 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Memory and Catalog storage adapters."""
+"""Spector Cognitive Memory adapters for LangGraph BaseStore and Carefold MemoryPort."""
 
 from __future__ import annotations
 
-from carefold.memory.adapters.spector import (
-    SpectorMemoryAdapter,
-    SpectorStore,
-)
-from carefold.memory.adapters.sqlite import (
-    SqliteCatalogAdapter,
-    SqliteMemoryAdapter,
-    sanitize_fts_query,
-)
+from carefold.memory.adapters.spector.memory_adapter import SpectorMemoryAdapter
+from carefold.memory.adapters.spector.store import SpectorStore
 
 __all__ = [
-    "SqliteMemoryAdapter",
-    "SqliteCatalogAdapter",
-    "sanitize_fts_query",
-    "SpectorMemoryAdapter",
     "SpectorStore",
+    "SpectorMemoryAdapter",
 ]

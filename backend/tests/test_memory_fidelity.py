@@ -38,7 +38,7 @@ from carefold.memory.factory import (
     get_memory_port,
     reset_memory_ports,
 )
-from carefold.memory.ports.memory_port import MemoryTier
+from carefold.memory.ports.memory_port import MemoryPort, MemoryTier
 
 
 # ==============================================================================
@@ -380,9 +380,11 @@ class TestFactoryValidationAdversarial:
                 create_catalog_port(backend=backend_name)
 
     def test_create_memory_port_spector_and_postgres_not_implemented(self):
-        """Challenge spector and postgres backends: must raise NotImplementedError."""
-        with pytest.raises(NotImplementedError, match="Backend 'spector' is not yet implemented"):
-            create_memory_port(backend="spector")
+        """Challenge spector and postgres backends: spector succeeds, postgres raises NotImplementedError."""
+        port = create_memory_port(backend="spector")
+        assert isinstance(port, MemoryPort)
+        assert hasattr(port, "store")
+        assert port.store is not None
 
         with pytest.raises(NotImplementedError, match="Backend 'postgres' is not yet implemented"):
             create_memory_port(backend="postgres")
