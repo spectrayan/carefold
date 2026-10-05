@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Clinical-Consent Gate for `clinical_assist` Agents (Web)** (`#87`):
+  - Per-agent consent dialog covering what the agent can help with, its `forbidden` list in plain language, and emergency guidance (911 / 988), with an explicit acknowledgement step.
+  - Consent persisted only in browser storage (`carefold_clinical_consent_v1`, with grant timestamp); "Clinical assist: consent given" chip in the chat header; withdraw per agent or all agents in Settings.
+  - Agent detail pages show a read-only summary until consent is given.
+  - `GET /api/agents` summaries now include each agent's `forbidden` list.
+
+### Fixed
+- **Web client no longer sends `allow_clinical=true` without user consent** (`#87`): `ChatClient.tsx`, the agent detail page, and the `/api/agents`, `/api/agents/[id]`, and `/api/chat` proxy routes previously hard-coded or defaulted consent to `true`. They now send the stored user decision and default to `false`; `/api/chat` no longer treats truthy non-boolean values (e.g. `"false"`) as consent.
+
 ### Planned
 - Native Spector MCP server memory adapter.
 - HL7 FHIR bundle generation from visit preparation dossiers.

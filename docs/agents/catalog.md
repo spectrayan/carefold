@@ -4,8 +4,8 @@ Carefold includes a living catalog of **20 specialized healthcare agents** organ
 
 Each agent operates within strict non-clinical boundaries, empowering patients with appointment preparation agendas, communication checklists, symptom tracking templates, and insurance navigation guides.
 
-!!! info "Local Sandbox Risk Classification & Clinical Consent Gating"
-    In the local runtime sandbox, bundled specialist agents are configured with `risk_class: wellness` for local patient sovereignty and non-blocking exploration, with `clinical_assist` gating available for clinical consultation mode (`allow_clinical: true`). When clinical consultation gating is active, any agent operating in clinical assist mode requires explicit user consent before specialist reasoning executes.
+!!! info "Risk Classification & Clinical Consent Gating"
+    Specialist navigators (including `visit-steward`) are classified `clinical_assist`. Before chatting with one, the web client asks for explicit, per-agent consent and only then sends `allow_clinical: true`; consent is stored in the browser and can be withdrawn in Settings. `wellness`, `admin`, and `education` agents are never gated. See [Safety Boundaries](../safety/boundaries.md#clinical-consent-gate).
 
 ---
 

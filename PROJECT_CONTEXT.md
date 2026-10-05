@@ -204,3 +204,7 @@ Carefold enforces security through defense-in-depth:
    - Monorepo tooling (`scripts/licenses.mjs`, `pnpm run check:licenses`) ensures 100% adherence to the Spectrayan Apache-2.0 copyright header across Python, TypeScript, and CSS files.
 3. **Clinical Quality Gates**:
    - Golden evaluation datasets in `evals/` benchmark prompt alignment, refusal correctness, and factual grounding before any agent manifest is approved.
+4. **Clinical-Assist Consent Gate (`#87`)**:
+   - The backend returns `403` for `GET /api/agents/{id}` and refuses `POST /api/chat` for `clinical_assist` agents unless `allow_clinical=true`.
+   - The web client never assumes consent: per-agent consent is granted through `ClinicalConsentDialog`, stored only in browser storage (`carefold_clinical_consent_v1`, managed by `apps/web/src/lib/clinicalConsent.ts`), and read at request time. The Next.js proxy routes default `allow_clinical` to `false`.
+   - `AgentSummary` (from `GET /api/agents`) includes the agent's `forbidden` list so the dialog can render it before consent.

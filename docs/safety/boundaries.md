@@ -10,13 +10,22 @@ Every agent manifest declares a `risk_class` (`RiskClass` enum in `backend/src/c
 
 | Risk Class | Permitted Activities | Consent Required? | Example Agents |
 |---|---|---|---|
-| **`wellness`** | Habit tracking, lifestyle support, hydration, appointment preparation. | No | `habit-companion`, `visit-steward` |
+| **`wellness`** | Habit tracking, lifestyle support, hydration. | No | `habit-companion` |
 | **`admin`** | Prior auth checklists, insurance appeals, formulary navigation, record indexing. | No | `benefits-guide`, `claims-appeals-guide`, `formulary-guide`, `prior-auth-navigator`, `records-coordinator` |
 | **`education`** | Explaining medical terms, anatomical concepts, procedure overviews. | No | `_template` (community educational agents) |
-| **`clinical_assist`** | Organ-specific symptom tracking, specialist appointment agendas, question formulation. | **Yes** (`allow_clinical=True`) | Specialist navigators when gated |
+| **`clinical_assist`** | Organ-specific symptom tracking, specialist appointment agendas, question formulation. | **Yes** (`allow_clinical=True`) | `visit-steward`, `cardiology-guide`, `neurology-guide`, and the other specialist navigators |
 
 ### Clinical Consent Gate
-When an agent is configured with `risk_class: clinical_assist`, the runtime verifies that `state["allow_clinical"]` is explicitly `True`. If consent is absent, the orchestrator routes to an authorization prompt before allowing specialist execution. In the local runtime sandbox, bundled specialist agents are configured with `risk_class: wellness` for local patient sovereignty and non-blocking exploration, with `clinical_assist` gating available for clinical consultation mode (`allow_clinical: true`).
+When an agent is configured with `risk_class: clinical_assist`, the backend refuses to return its detail (`GET /api/agents/{id}` → `403`) or execute it (`POST /api/chat`) unless the request carries `allow_clinical=true`. Neither the backend nor the Next.js proxy routes ever assume consent: an absent or non-`true` value is treated as `false`.
+
+In the web client, consent is an explicit, per-agent user decision:
+
+- The first time a user opens chat with a `clinical_assist` agent, a consent dialog explains what the agent can help with, what it will not do (the agent's `forbidden` list in plain language), and emergency guidance (911 / 988). The user must tick an acknowledgement before continuing; closing the dialog or pressing Escape declines.
+- Consent is stored only in the browser under `localStorage["carefold_clinical_consent_v1"]` as `{ "<agent-id>": { "grantedAt": "<ISO 8601>" } }`. It is read at request time, so `allow_clinical` reflects the stored decision on every call.
+- Without consent, chat is disabled with an explanation, and the agent detail page shows a read-only summary (the persona is withheld).
+- A "Clinical assist: consent given" chip appears in the chat header. Consent can be withdrawn per agent, or for all agents, under **Settings → Clinical Assist Consent**; withdrawal applies to the next request.
+
+`wellness`, `admin`, and `education` agents are never gated.
 
 ---
 
