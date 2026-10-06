@@ -104,6 +104,8 @@ def test_skill_load_bundled_skills(temp_workspace: Path):
     assert "visit-prep" in skill_ids
     assert "benefits-explainer" in skill_ids
     assert "habit-checkin" in skill_ids
+    assert "_template" not in skill_ids
+    assert len(skills) == 24
 
     visit_prep = load_skill(skills_dir / "visit-prep")
     assert visit_prep.id == "visit-prep"
@@ -112,6 +114,70 @@ def test_skill_load_bundled_skills(temp_workspace: Path):
     assert "skill-docs" in visit_prep.tools
     assert "checklist.md" in visit_prep.references
     assert visit_prep.is_verified is True
+
+
+def test_load_all_skills_skips_template_and_hidden_dirs(tmp_path: Path):
+    """Verify load_all_skills ignores _template, dotfiles, and other underscore dirs."""
+    skills_dir = tmp_path / "skills"
+    skills_dir.mkdir()
+
+    # 1. Valid user-facing skill
+    valid_skill = skills_dir / "valid-skill"
+    valid_skill.mkdir()
+    (valid_skill / "SKILL.md").write_text(
+        """---
+name: valid-skill
+description: Valid test skill
+---
+- Not a clinician and not emergency care
+- If this is an emergency, contact local emergency services
+- Do not change medication without the prescribing clinician
+""",
+        encoding="utf-8",
+    )
+
+    # 2. Template directory with valid SKILL.md
+    template_dir = skills_dir / "_template"
+    template_dir.mkdir()
+    (template_dir / "SKILL.md").write_text(
+        """---
+name: _template
+description: Template starter
+---
+- Not a clinician and not emergency care
+- If this is an emergency, contact local emergency services
+- Do not change medication without the prescribing clinician
+""",
+        encoding="utf-8",
+    )
+
+    # 3. Other underscore directory
+    other_dir = skills_dir / "_internal"
+    other_dir.mkdir()
+    (other_dir / "SKILL.md").write_text(
+        """---
+name: _internal
+description: Internal helper skill
+---
+- Not a clinician and not emergency care
+- If this is an emergency, contact local emergency services
+- Do not change medication without the prescribing clinician
+""",
+        encoding="utf-8",
+    )
+
+    # 4. Hidden dot directory
+    dot_dir = skills_dir / ".git"
+    dot_dir.mkdir()
+
+    skills = load_all_skills(skills_dir)
+    ids = [s.id for s in skills]
+
+    assert "valid-skill" in ids
+    assert "_template" not in ids
+    assert "_internal" not in ids
+    assert ".git" not in ids
+    assert len(skills) == 1
 
 
 def test_skill_load_missing_carefold_yaml(tmp_path: Path):

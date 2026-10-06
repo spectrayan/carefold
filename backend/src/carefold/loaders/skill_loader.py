@@ -305,10 +305,10 @@ def load_all_skills(skills_dir: Union[Path, str]) -> List[SkillManifest]:
 
     skills: List[SkillManifest] = []
     for entry in sorted(skills_path.iterdir()):
-        if entry.is_dir() and not entry.name.startswith("."):
+        if entry.is_dir() and not entry.name.startswith((".", "_")):
             try:
                 skill = load_skill(entry)
-                skills.push(skill) if hasattr(skills, "push") else skills.append(skill)
+                skills.append(skill)
             except ManifestValidationError:
                 # Skip non-skill folders or report
                 continue

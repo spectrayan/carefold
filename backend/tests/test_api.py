@@ -250,6 +250,8 @@ def test_api_skills_list(client: TestClient):
     assert "visit-prep" in skill_ids
     assert "benefits-explainer" in skill_ids
     assert "habit-checkin" in skill_ids
+    assert "_template" not in skill_ids
+    assert not any(sid.startswith("_") for sid in skill_ids)
 
 
 def test_api_skills_detail(client: TestClient):
@@ -260,6 +262,14 @@ def test_api_skills_detail(client: TestClient):
     assert "checklist.md" in data["references"]
     assert "questions_guide.md" in data["references"]
     assert data["is_verified"] is True
+
+
+def test_api_skills_detail_template_direct_lookup(client: TestClient):
+    """Verify _template can still be fetched by exact ID for scaffolding."""
+    res = client.get("/api/skills/_template")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["id"] == "_template"
 
 
 def test_api_skills_detail_not_found(client: TestClient):
