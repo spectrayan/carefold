@@ -388,7 +388,10 @@ class MockChatModel(BaseChatModel):
             "fiery red", "hot to touch", "cannot bear any weight", "septic joint",
             "excruciating lower abdominal", "haven't urinated at all for the past",
             "dark curtain", "flashes of light", "sudden flashes",
-            "stridor", "can't swallow saliva", "drooling", "throat is swelling rapidly"
+            "stridor", "can't swallow saliva", "drooling", "throat is swelling rapidly",
+            # Podiatry & Vascular Red Flags:
+            "foot is now black", "spreading redness", "black, with spreading redness",
+            "cold, pale, and very painful", "cold, pale", "became cold, pale"
         ]):
             disclaimer = (
                 "I cannot advise you to wait. This sounds like a medical emergency. "
@@ -476,7 +479,7 @@ class MockChatModel(BaseChatModel):
                 "arthritis", "lupus", "autoimmune", "stiffness", "flare", "biologic",
                 "urinary", "bladder", "prostate", "psa", "kidney stone", "hematuria", "voiding",
                 "eye", "vision", "cataract", "glaucoma", "retina", "drops", "optometrist", "ophthalm",
-                "ear", "nose", "throat", "sinusitis", "hearing", "vertigo", "tonsil", "tinnitus", "audiolog", "ent",
+                "ear", "nose", "throat", "sinusitis", "hearing", "vertigo", "tonsil", "tinnitus", "audiolog", " ent ",
                 # M3 Administrative Specialties Keywords:
                 "prior-auth", "pa requirement", "step therapy", "peer-to-peer", "approval criteria",
                 "claims", "denial", "appeal", "erisa", "eob", "explanation of benefits", "billing dispute",
@@ -558,7 +561,7 @@ class MockChatModel(BaseChatModel):
             elif any(k in user_text for k in ["eye", "vision", "cataract", "glaucoma", "retina", "drops", "optometrist", "ophthalm"]):
                 skill_id = "vision-prep"
                 doc_name = "cataract_and_eye_surgery_prep_guide.md" if ("cataract" in user_text or "surgery" in user_text or "checklist" in user_text) else "amsler_grid_and_vision_change_log.md"
-            elif any(k in user_text for k in ["ear", "nose", "throat", "sinusitis", "hearing", "vertigo", "tonsil", "tinnitus", "audiolog", "ent"]):
+            elif any(k in user_text for k in ["ear", "nose", "throat", "sinusitis", "hearing", "vertigo", "tonsil", "tinnitus", "audiolog", " ent "]):
                 skill_id = "ent-prep"
                 doc_name = "sinusitis_and_nasal_symptom_tracker.md" if ("sinus" in user_text or "sinusitis" in user_text) else "tinnitus_and_hearing_test_prep_guide.md"
             # M3 Administrative Specialties (Must take precedence over benefits-explainer):
@@ -845,7 +848,10 @@ class MockModelClient:
             "fiery red", "hot to touch", "cannot bear any weight", "septic joint",
             "excruciating lower abdominal", "haven't urinated at all for the past",
             "dark curtain", "flashes of light", "sudden flashes",
-            "stridor", "can't swallow saliva", "drooling", "throat is swelling rapidly"
+            "stridor", "can't swallow saliva", "drooling", "throat is swelling rapidly",
+            # Podiatry & Vascular Red Flags:
+            "foot is now black", "spreading redness", "black, with spreading redness",
+            "cold, pale, and very painful", "cold, pale", "became cold, pale"
         ]):
             disclaimer = (
                 "I cannot advise you to wait. This sounds like a medical emergency. "
@@ -935,7 +941,7 @@ class MockModelClient:
                 "arthritis", "lupus", "autoimmune", "stiffness", "flare", "biologic",
                 "urinary", "bladder", "prostate", "psa", "kidney stone", "hematuria", "voiding",
                 "eye", "vision", "cataract", "glaucoma", "retina", "drops", "optometrist", "ophthalm",
-                "ear", "nose", "throat", "sinusitis", "hearing", "vertigo", "tonsil", "tinnitus", "audiolog", "ent",
+                "ear", "nose", "throat", "sinusitis", "hearing", "vertigo", "tonsil", "tinnitus", "audiolog", " ent ",
                 # M3 Administrative Specialties Keywords:
                 "prior-auth", "pa requirement", "step therapy", "peer-to-peer", "approval criteria",
                 "claims", "denial", "appeal", "erisa", "eob", "explanation of benefits", "billing dispute",
@@ -1011,7 +1017,7 @@ class MockModelClient:
             elif any(k in user_text for k in ["eye", "vision", "cataract", "glaucoma", "retina", "drops", "optometrist", "ophthalm"]):
                 skill_id = "vision-prep"
                 doc_name = "cataract_and_eye_surgery_prep_guide.md" if ("cataract" in user_text or "surgery" in user_text or "checklist" in user_text) else "amsler_grid_and_vision_change_log.md"
-            elif any(k in user_text for k in ["ear", "nose", "throat", "sinusitis", "hearing", "vertigo", "tonsil", "tinnitus", "audiolog", "ent"]):
+            elif any(k in user_text for k in ["ear", "nose", "throat", "sinusitis", "hearing", "vertigo", "tonsil", "tinnitus", "audiolog", " ent "]):
                 skill_id = "ent-prep"
                 doc_name = "sinusitis_and_nasal_symptom_tracker.md" if ("sinus" in user_text or "sinusitis" in user_text) else "tinnitus_and_hearing_test_prep_guide.md"
             # M3 Administrative Specialties (Must take precedence over benefits-explainer):

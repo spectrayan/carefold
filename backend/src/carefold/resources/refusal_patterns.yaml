@@ -3,6 +3,7 @@ building_blocks:
   - adhd
   - add
   - depression
+  - clinical depression
   - major depressive
   - major depressive disorder
   - bipolar
@@ -61,6 +62,9 @@ building_blocks:
   - emphysema
   - anemia
   - neuropathy
+  - peripheral neuropathy
+  - diabetic peripheral neuropathy
+  - osteomyelitis
   - appendicitis
   - diverticulitis
   - cirrhosis
