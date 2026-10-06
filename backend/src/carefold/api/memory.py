@@ -28,6 +28,7 @@ from carefold.constants.api import (
     HTTP_400_BAD_REQUEST,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
+from carefold.logging import sanitize_log_value
 from carefold.memory.ports.memory_port import MemoryPort, MemoryTier
 from carefold.schemas.memory import (
     MemoryDeleteResponse,
@@ -140,10 +141,12 @@ async def delete_memory(
         else:
             deleted = res
     except Exception as exc:
+        clean_key = sanitize_log_value(key)
+        clean_namespace = sanitize_log_value(namespace)
         logger.error(
             "Failed to delete memory '%s' in namespace '%s': %s",
-            key,
-            namespace,
+            clean_key,
+            clean_namespace,
             exc,
             exc_info=True,
         )

@@ -111,7 +111,21 @@ def get_logger(name: Optional[str] = None) -> structlog.stdlib.BoundLogger:
     return structlog.get_logger(name or "carefold")
 
 
+def sanitize_log_value(value: Any) -> str:
+    """Sanitizes user input for safe logging by removing CRLF characters.
+
+    Neutralizes log injection vulnerabilities (CWE-117 / py/log-injection)
+    by stripping carriage return and newline characters that could allow
+    attackers to forge log entries or corrupt log parsing.
+    """
+    if value is None:
+        return ""
+    return str(value).replace("\r", "").replace("\n", "")
+
+
 __all__ = [
     "configure_logging",
     "get_logger",
+    "sanitize_log_value",
 ]
+

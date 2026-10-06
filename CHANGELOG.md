@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `GET /api/agents` summaries now include each agent's `forbidden` list.
 
 ### Fixed
+- **Sanitize memory deletion logging against CRLF log injection** (`#125`): Neutralized CodeQL `py/log-injection` (CWE-117) alerts by stripping carriage return (`\r`) and newline (`\n`) characters from user-controlled `key` and `namespace` parameters prior to interpolation in `carefold/api/memory.py` error logs via new `sanitize_log_value` utility in `carefold.logging`.
 - **Web client no longer sends `allow_clinical=true` without user consent** (`#87`): `ChatClient.tsx`, the agent detail page, and the `/api/agents`, `/api/agents/[id]`, and `/api/chat` proxy routes previously hard-coded or defaulted consent to `true`. They now send the stored user decision and default to `false`; `/api/chat` no longer treats truthy non-boolean values (e.g. `"false"`) as consent.
 
 ### Planned

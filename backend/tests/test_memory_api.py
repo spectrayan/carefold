@@ -437,6 +437,52 @@ class TestMemoryDeleteApi:
         assert res.json()["deleted"] is True
         assert res.json()["key"] == special_key
 
+    def test_delete_memory_error_log_injection_sanitization(
+        self,
+        client: TestClient,
+        sqlite_port: MemoryPort,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Guards against CRLF log injection (CWE-117 / py/log-injection) during delete errors.
+
+        Fails on pre-fix code where raw key and namespace parameters containing CRLF
+        sequences are logged directly, and passes when values are sanitized before logging.
+        """
+        import logging
+        from unittest.mock import patch
+        from urllib.parse import quote
+
+        injected_key = "record123\r\n[CRITICAL] Forged log entry from attacker"
+        injected_namespace = "patient_scope\r\n[CRITICAL] Second forged log line"
+        encoded_key = quote(injected_key, safe="")
+        encoded_ns = quote(injected_namespace, safe="")
+
+        with patch.object(
+            sqlite_port,
+            "forget",
+            side_effect=RuntimeError("Simulated backend store failure during delete"),
+        ):
+            with caplog.at_level(logging.ERROR, logger="carefold.api.memory"):
+                res = client.delete(f"/api/memory/{encoded_key}?namespace={encoded_ns}")
+
+            assert res.status_code == 500
+            assert "Simulated backend store failure" in res.json()["detail"]
+
+            # Filter records emitted by carefold.api.memory
+            matching_records = [
+                r for r in caplog.records if r.name == "carefold.api.memory" and r.levelno == logging.ERROR
+            ]
+            assert len(matching_records) >= 1
+            record = matching_records[0]
+
+            # In pre-fix code, record.message contains raw '\r' and '\n', causing log injection.
+            # In post-fix code, carriage return and newline characters are neutralized.
+            assert "\r" not in record.message, "Log message contains raw carriage return (\\r)"
+            assert "\n" not in record.message, "Log message contains raw newline (\\n)"
+            assert "\r\n" not in record.message, "Log message contains raw CRLF sequence (\\r\\n)"
+            assert len(record.message.splitlines()) == 1, "Log message must not split into multiple lines"
+
+
 
 # =============================================================================
 # 3. GET /api/memory/status: Backend Identification & Resilient Fallback
@@ -633,3 +679,40 @@ class TestMemoryApiAdvancedTransports:
             assert res_del.json()["deleted"] is True
         finally:
             await port.close()
+
+
+# =============================================================================
+# 6. Log Injection Sanitization Unit Tests
+# =============================================================================
+
+class TestLogSanitization:
+    """Unit tests for sanitize_log_value helper function."""
+
+    def test_sanitize_log_value_strips_crlf(self) -> None:
+        """Strips carriage return and newline characters to prevent log forging."""
+        from carefold.logging import sanitize_log_value
+
+        assert sanitize_log_value("safe_string") == "safe_string"
+        assert sanitize_log_value("line1\r\nline2") == "line1line2"
+        assert sanitize_log_value("line1\nline2") == "line1line2"
+        assert sanitize_log_value("line1\rline2") == "line1line2"
+        assert sanitize_log_value(None) == ""
+        assert sanitize_log_value(12345) == "12345"
+        assert sanitize_log_value("") == ""
+
+    def test_sanitize_log_value_complex_payloads(self) -> None:
+        """Neutralizes complex multiline forgery attack vectors."""
+        from carefold.logging import sanitize_log_value
+
+        attack_payload = (
+            "valid_key\r\n"
+            "2026-10-06 12:00:00 [ERROR] Forged Admin Event\r\n"
+            "data: {\"compromised\": true}\n"
+        )
+        sanitized = sanitize_log_value(attack_payload)
+        assert "\r" not in sanitized
+        assert "\n" not in sanitized
+        assert "\r\n" not in sanitized
+        assert len(sanitized.splitlines()) == 1
+        assert "valid_key2026-10-06" in sanitized
+
