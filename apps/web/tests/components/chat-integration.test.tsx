@@ -20,6 +20,11 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { ChatClient } from '@/app/chat/ChatClient';
 import type { AgentSummary } from '@/lib/types';
+import {
+  DEFAULT_USER_SETTINGS,
+  saveSettings,
+  CAREFOLD_SETTINGS_STORAGE_KEY
+} from '@/lib/settings';
 
 // Helper to construct synthetic SSE Response ReadableStreams
 function createMockSSEResponse(events: Array<{ event?: string; data: Record<string, any> }>) {
@@ -284,5 +289,77 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
     fireEvent.change(input, { target: { value: 'Follow up question' } });
     expect(screen.getByTitle('Send Prompt')).not.toBeDisabled();
   });
+
+  it('renders on-device privacy claim in empty state when local provider is active', () => {
+    render(<ChatClient initialAgents={mockAgents} />);
+
+    const emptyPrivacyText = screen.getByTestId('chat-empty-state-privacy');
+    expect(emptyPrivacyText).toBeInTheDocument();
+    expect(emptyPrivacyText).toHaveTextContent(
+      'Ask questions or drop relevant documents into the chat. All data remains exclusively on your device.'
+    );
+  });
+
+  it('suppresses on-device privacy claim when cloud provider is selected', () => {
+    localStorage.setItem(
+      CAREFOLD_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        ...DEFAULT_USER_SETTINGS,
+        provider: 'openai',
+        model: 'gpt-4o'
+      })
+    );
+
+    render(<ChatClient initialAgents={mockAgents} />);
+
+    const emptyPrivacyText = screen.getByTestId('chat-empty-state-privacy');
+    expect(emptyPrivacyText).toHaveTextContent(
+      'Ask questions or drop relevant documents into the chat. Your messages are sent to OpenAI to generate replies.'
+    );
+    expect(emptyPrivacyText).not.toHaveTextContent('All data remains exclusively on your device');
+  });
+
+  it('suppresses on-device privacy claim when remote LAN Ollama is configured', () => {
+    localStorage.setItem(
+      CAREFOLD_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        ...DEFAULT_USER_SETTINGS,
+        provider: 'ollama',
+        endpoints: {
+          ...DEFAULT_USER_SETTINGS.endpoints,
+          ollamaUrl: 'http://192.168.1.100:11434'
+        }
+      })
+    );
+
+    render(<ChatClient initialAgents={mockAgents} />);
+
+    const emptyPrivacyText = screen.getByTestId('chat-empty-state-privacy');
+    expect(emptyPrivacyText).toHaveTextContent(
+      'Ask questions or drop relevant documents into the chat. Your messages are sent to Ollama to generate replies.'
+    );
+    expect(emptyPrivacyText).not.toHaveTextContent('All data remains exclusively on your device');
+  });
+
+  it('reactively updates empty state privacy copy when provider changes', async () => {
+    render(<ChatClient initialAgents={mockAgents} />);
+
+    const emptyPrivacyText = screen.getByTestId('chat-empty-state-privacy');
+    expect(emptyPrivacyText).toHaveTextContent('All data remains exclusively on your device.');
+
+    // Switch to Claude
+    saveSettings({
+      provider: 'anthropic',
+      model: 'claude-3-5-sonnet-latest'
+    });
+
+    await waitFor(() => {
+      expect(emptyPrivacyText).toHaveTextContent(
+        'Ask questions or drop relevant documents into the chat. Your messages are sent to Claude to generate replies.'
+      );
+    });
+    expect(emptyPrivacyText).not.toHaveTextContent('All data remains exclusively on your device');
+  });
 });
+
 

@@ -19,6 +19,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { SafetyDisclaimerBanner } from '@/components/SafetyDisclaimerBanner';
 import { Navbar } from '@/components/Navbar';
+import { FooterPrivacyNotice } from '@/components/FooterPrivacyNotice';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { ThemeScript } from '@/components/ThemeScript';
 
@@ -49,7 +50,7 @@ export default function RootLayout({
           <footer className="border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-6 mt-auto transition-colors">
             <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-zinc-400 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div>Carefold • Healthcare AI Agent Marketplace • Apache-2.0</div>
-              <div>Zero cloud sync • No prompt telemetry • 100% on-device</div>
+              <FooterPrivacyNotice />
             </div>
           </footer>
         </ThemeProvider>

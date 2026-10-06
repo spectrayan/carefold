@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+- **Provider-Aware Data Residency Indicator & Dynamic Privacy Copy (Web)** (`#85`):
+  - Added fail-closed loopback host resolution (`isLoopbackHost`, `isLocalProvider`, `getProviderPrivacyState`) in `apps/web/src/lib/settings.ts` validating `localhost`, `127.0.0.0/8`, and IPv6 loopback (`::1`) while classifying LAN/WAN endpoints, remote hosts, and unparseable URLs as remote/cloud.
+  - Replaced legacy Ollama pill in `Navbar.tsx` with reactive provider-aware status button (`data-testid="provider-status-badge"`), emerald on-device badge, amber cloud/remote badge, and accessible privacy explainer popover with quick-switch action to local Ollama.
+  - Replaced hardcoded empty-state text in `ChatClient.tsx` with dynamic privacy copy that respects active provider residency and suppresses on-device claims when cloud or remote providers are selected.
+  - Added client component `FooterPrivacyNotice.tsx` in `apps/web/src/app/layout.tsx` to dynamically render footer privacy copy synchronized via `carefold:settings-changed`.
 - **Dedicated Emergency Escalation Card for Red-Flag Refusals (Web & Backend)** (`#86`):
   - Added accessible, high-contrast `EmergencyEscalationCard` component rendered upon acute emergency red-flag refusals (`role="alert"`, assertive live region, auto-focus).
   - Prominent emergency header ("This may be an emergency"), direct click-to-call action (`tel:911`), emergency room directory link (Google Maps), and 988 Suicide & Crisis Lifeline link (`tel:988`) for crisis indicators.

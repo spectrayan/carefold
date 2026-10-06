@@ -255,3 +255,168 @@ export function getEndpointForProvider(settings: CarefoldUserSettings, provider:
   }
   return undefined;
 }
+
+export interface ProviderPrivacyState {
+  isLocal: boolean;
+  provider: ProviderType;
+  providerLabel: string;
+  badgeText: string;
+  badgeVariant: 'emerald' | 'amber';
+  emptyStateText: string;
+  footerText: string;
+  explainerTitle: string;
+  explainerDescription: string;
+  destinationLabel: string;
+}
+
+/**
+ * Checks whether an endpoint URL or hostname points strictly to a loopback host.
+ * Matches:
+ *  - 'localhost' and 'localhost.'
+ *  - IPv4 loopback block 127.0.0.0/8 (127.0.0.1 through 127.255.255.254)
+ *  - IPv6 loopback '::1', '[::1]', and fully expanded '0:0:0:0:0:0:0:1'
+ * Fails closed (returns false) on:
+ *  - Non-loopback LAN/WAN hosts (192.168.x.x, 10.x.x.x, 172.16-31.x.x, external hostnames/IPs)
+ *  - Null, undefined, empty, whitespace-only, or malformed/unparseable URLs.
+ */
+export function isLoopbackHost(urlStr?: string | null): boolean {
+  if (!urlStr || typeof urlStr !== 'string') {
+    return false;
+  }
+  const trimmed = urlStr.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  let host: string | null = null;
+  try {
+    const parsed = new URL(trimmed.includes('://') ? trimmed : `http://${trimmed}`);
+    host = parsed.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  } catch {
+    // Fallback for raw IPv6 without brackets or protocol
+    const noProto = trimmed.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
+    if (noProto.startsWith('[') && noProto.includes(']')) {
+      host = noProto.slice(1, noProto.indexOf(']')).toLowerCase();
+    } else if (noProto.includes(':')) {
+      try {
+        const bracketed = new URL(`http://[${noProto}]`);
+        host = bracketed.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+      } catch {
+        if (noProto === '::1' || noProto === '0:0:0:0:0:0:0:1') {
+          host = noProto.toLowerCase();
+        }
+      }
+    }
+  }
+
+  if (!host) {
+    return false;
+  }
+
+  if (host === 'localhost' || host === 'localhost.') {
+    return true;
+  }
+
+  if (host === '::1' || host === '0:0:0:0:0:0:0:1' || host === '0000:0000:0000:0000:0000:0000:0001') {
+    return true;
+  }
+
+  const parts = host.split('.');
+  if (parts.length === 4 && parts[0] === '127') {
+    const validOctets = parts.every(
+      (part) => /^(0|[1-9]\d{0,2})$/.test(part) && Number(part) >= 0 && Number(part) <= 255
+    );
+    if (validOctets) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Determines whether the currently configured provider runs on-device.
+ * Returns false for all cloud providers (google, anthropic, openai).
+ * For ollama and custom, resolves the configured endpoint and requires loopback host.
+ * Fails closed (returns false) if endpoint is unknown or unparseable.
+ */
+export function isLocalProvider(settings: CarefoldUserSettings): boolean {
+  if (!settings || !settings.provider) {
+    return false;
+  }
+  if (settings.provider === 'google' || settings.provider === 'anthropic' || settings.provider === 'openai') {
+    return false;
+  }
+  const endpoint = getEndpointForProvider(settings, settings.provider);
+  return isLoopbackHost(endpoint);
+}
+
+/**
+ * Derives comprehensive data residency descriptors and copy for UI indicators,
+ * empty-state text, explainer popover, and footer notice.
+ */
+export function getProviderPrivacyState(settings: CarefoldUserSettings): ProviderPrivacyState {
+  const safeSettings = settings || DEFAULT_USER_SETTINGS;
+  const isLocal = isLocalProvider(safeSettings);
+  const provider = safeSettings.provider || 'ollama';
+  const meta = PROVIDER_METADATA[provider];
+  const providerLabel = meta?.label || provider;
+  const endpoint = getEndpointForProvider(safeSettings, provider);
+
+  if (isLocal) {
+    return {
+      isLocal: true,
+      provider,
+      providerLabel,
+      badgeText: 'On-Device',
+      badgeVariant: 'emerald',
+      emptyStateText: 'All data remains exclusively on your device.',
+      footerText: 'Zero cloud sync • No prompt telemetry • 100% on-device',
+      explainerTitle: 'On-Device Data Residency',
+      explainerDescription:
+        'All prompt text, attachments, and model inference remain strictly on your local machine. No data is transmitted to cloud APIs or external servers.',
+      destinationLabel: `Local (${endpoint || '127.0.0.1'})`
+    };
+  }
+
+  // Non-local: cloud or remote network host
+  const isCloud = provider === 'google' || provider === 'anthropic' || provider === 'openai';
+  const badgeText = isCloud
+    ? `Cloud (${providerLabel})`
+    : provider === 'ollama'
+    ? 'Remote (Ollama)'
+    : 'Remote (Custom)';
+
+  const emptyStateText = `Your messages are sent to ${providerLabel} to generate replies.`;
+  const footerText = isCloud
+    ? `Cloud inference active (${providerLabel}) • Zero Carefold telemetry`
+    : `Remote inference active (${providerLabel}) • Zero Carefold telemetry`;
+
+  const explainerTitle = isCloud
+    ? 'Cloud Provider Data Residency'
+    : provider === 'ollama'
+    ? 'Remote Ollama Data Residency'
+    : 'Remote Endpoint Data Residency';
+
+  const explainerDescription = isCloud
+    ? `Your messages and attachments are transmitted to ${providerLabel} cloud servers to generate replies. Carefold does not collect telemetry or store prompts externally.`
+    : `Your inference endpoint is configured to an external network host (${endpoint || 'remote'}). Prompts and attachments leave this machine over the network.`;
+
+  const destinationLabel = isCloud
+    ? `${providerLabel} Cloud API`
+    : `${providerLabel} (${endpoint || 'network'})`;
+
+  return {
+    isLocal: false,
+    provider,
+    providerLabel,
+    badgeText,
+    badgeVariant: 'amber',
+    emptyStateText,
+    footerText,
+    explainerTitle,
+    explainerDescription,
+    destinationLabel
+  };
+}
+

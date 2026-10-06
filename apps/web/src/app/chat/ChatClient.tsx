@@ -55,7 +55,8 @@ import {
   saveSettings,
   getEffectiveModel,
   getApiKeyForProvider,
-  getEndpointForProvider
+  getEndpointForProvider,
+  getProviderPrivacyState
 } from '@/lib/settings';
 
 export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] }) {
@@ -85,10 +86,26 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
   // Session continuity thread ID (deterministic initial state for SSR)
   const [threadId, setThreadId] = useState<string>(`thread-${defaultAgentId}`);
 
-  // Load client-persisted user settings on mount
+  // Load client-persisted user settings on mount & subscribe to settings changes
   useEffect(() => {
     setSettings(loadSettings());
+
+    const handleSettingsChange = (e: Event) => {
+      const customEvent = e as CustomEvent<CarefoldUserSettings>;
+      if (customEvent.detail) {
+        setSettings(customEvent.detail);
+      } else {
+        setSettings(loadSettings());
+      }
+    };
+
+    window.addEventListener('carefold:settings-changed', handleSettingsChange);
+    return () => {
+      window.removeEventListener('carefold:settings-changed', handleSettingsChange);
+    };
   }, []);
+
+  const privacyState = getProviderPrivacyState(settings);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -750,8 +767,8 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                 Chat with {selectedAgent?.title || 'Carefold Assistant'}
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1 max-w-md">
-                Ask questions or drop relevant documents into the chat. All data remains exclusively on your device.
+              <p data-testid="chat-empty-state-privacy" className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1 max-w-md">
+                Ask questions or drop relevant documents into the chat. {privacyState.emptyStateText}
               </p>
 
               {/* Quick Starter Chips */}

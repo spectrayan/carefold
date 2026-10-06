@@ -25,6 +25,9 @@ import {
   getApiKeyForProvider,
   getEndpointForProvider,
   getEffectiveModel,
+  isLoopbackHost,
+  isLocalProvider,
+  getProviderPrivacyState,
   type CarefoldUserSettings
 } from '@/lib/settings';
 
@@ -166,3 +169,227 @@ describe('User Settings & Local Storage Persistence', () => {
     expect(getEffectiveModel(standardSettings)).toBe('gpt-4o');
   });
 });
+
+describe('Data Residency & Loopback Resolution', () => {
+  describe('isLoopbackHost', () => {
+    it('identifies localhost with and without port or protocol as loopback', () => {
+      expect(isLoopbackHost('localhost')).toBe(true);
+      expect(isLoopbackHost('localhost:11434')).toBe(true);
+      expect(isLoopbackHost('http://localhost:11434')).toBe(true);
+      expect(isLoopbackHost('https://localhost:8000/v1')).toBe(true);
+      expect(isLoopbackHost('localhost.')).toBe(true);
+      expect(isLoopbackHost('http://localhost.')).toBe(true);
+    });
+
+    it('identifies IPv4 127.0.0.0/8 range as loopback', () => {
+      expect(isLoopbackHost('127.0.0.1')).toBe(true);
+      expect(isLoopbackHost('127.0.0.1:11434')).toBe(true);
+      expect(isLoopbackHost('http://127.0.0.1:11434')).toBe(true);
+      expect(isLoopbackHost('http://127.0.0.2:8000')).toBe(true);
+      expect(isLoopbackHost('127.255.255.254')).toBe(true);
+      expect(isLoopbackHost('http://127.255.255.254:8080/v1')).toBe(true);
+    });
+
+    it('identifies IPv6 loopback addresses as loopback', () => {
+      expect(isLoopbackHost('::1')).toBe(true);
+      expect(isLoopbackHost('[::1]')).toBe(true);
+      expect(isLoopbackHost('[::1]:11434')).toBe(true);
+      expect(isLoopbackHost('http://[::1]:11434')).toBe(true);
+      expect(isLoopbackHost('0:0:0:0:0:0:0:1')).toBe(true);
+      expect(isLoopbackHost('0000:0000:0000:0000:0000:0000:0000:0001')).toBe(true);
+    });
+
+    it('fails closed (returns false) on LAN and WAN hosts', () => {
+      expect(isLoopbackHost('192.168.1.100')).toBe(false);
+      expect(isLoopbackHost('http://192.168.1.100:11434')).toBe(false);
+      expect(isLoopbackHost('10.0.0.1')).toBe(false);
+      expect(isLoopbackHost('http://10.0.0.5:8000')).toBe(false);
+      expect(isLoopbackHost('http://172.16.0.1:11434')).toBe(false);
+      expect(isLoopbackHost('http://172.31.255.254:11434')).toBe(false);
+      expect(isLoopbackHost('http://example.com')).toBe(false);
+      expect(isLoopbackHost('http://ollama.internal:11434')).toBe(false);
+    });
+
+    it('fails closed on wildcard bind address 0.0.0.0', () => {
+      expect(isLoopbackHost('0.0.0.0')).toBe(false);
+      expect(isLoopbackHost('http://0.0.0.0:11434')).toBe(false);
+    });
+
+    it('fails closed on null, undefined, empty, whitespace, and unparseable URLs', () => {
+      expect(isLoopbackHost(null)).toBe(false);
+      expect(isLoopbackHost(undefined)).toBe(false);
+      expect(isLoopbackHost('')).toBe(false);
+      expect(isLoopbackHost('   ')).toBe(false);
+      expect(isLoopbackHost('://invalid')).toBe(false);
+      expect(isLoopbackHost('http://')).toBe(false);
+      expect(isLoopbackHost('not a valid url with spaces')).toBe(false);
+    });
+  });
+
+  describe('isLocalProvider', () => {
+    it('returns true for Ollama pointing to loopback endpoint', () => {
+      const settings: CarefoldUserSettings = {
+        ...DEFAULT_USER_SETTINGS,
+        provider: 'ollama',
+        endpoints: {
+          ...DEFAULT_USER_SETTINGS.endpoints,
+          ollamaUrl: 'http://127.0.0.1:11434'
+        }
+      };
+      expect(isLocalProvider(settings)).toBe(true);
+    });
+
+    it('returns false for Ollama pointing to remote LAN machine', () => {
+      const settings: CarefoldUserSettings = {
+        ...DEFAULT_USER_SETTINGS,
+        provider: 'ollama',
+        endpoints: {
+          ...DEFAULT_USER_SETTINGS.endpoints,
+          ollamaUrl: 'http://192.168.1.100:11434'
+        }
+      };
+      expect(isLocalProvider(settings)).toBe(false);
+    });
+
+    it('fails closed (returns false) for Ollama with malformed or empty endpoint', () => {
+      const malformedSettings: CarefoldUserSettings = {
+        ...DEFAULT_USER_SETTINGS,
+        provider: 'ollama',
+        endpoints: {
+          ...DEFAULT_USER_SETTINGS.endpoints,
+          ollamaUrl: '://invalid-host'
+        }
+      };
+      expect(isLocalProvider(malformedSettings)).toBe(false);
+    });
+
+    it('returns true for Custom provider pointing to localhost', () => {
+      const settings: CarefoldUserSettings = {
+        ...DEFAULT_USER_SETTINGS,
+        provider: 'custom',
+        endpoints: {
+          ...DEFAULT_USER_SETTINGS.endpoints,
+          customUrl: 'http://localhost:8000/v1'
+        }
+      };
+      expect(isLocalProvider(settings)).toBe(true);
+    });
+
+    it('returns false for Custom provider pointing to remote URL', () => {
+      const settings: CarefoldUserSettings = {
+        ...DEFAULT_USER_SETTINGS,
+        provider: 'custom',
+        endpoints: {
+          ...DEFAULT_USER_SETTINGS.endpoints,
+          customUrl: 'https://api.together.xyz/v1'
+        }
+      };
+      expect(isLocalProvider(settings)).toBe(false);
+    });
+
+    it('returns false unconditionally for cloud providers (google, anthropic, openai)', () => {
+      expect(isLocalProvider({ ...DEFAULT_USER_SETTINGS, provider: 'google' })).toBe(false);
+      expect(isLocalProvider({ ...DEFAULT_USER_SETTINGS, provider: 'anthropic' })).toBe(false);
+      expect(isLocalProvider({ ...DEFAULT_USER_SETTINGS, provider: 'openai' })).toBe(false);
+    });
+  });
+
+  describe('getProviderPrivacyState', () => {
+    it('returns on-device residency descriptor for loopback Ollama', () => {
+      const state = getProviderPrivacyState(DEFAULT_USER_SETTINGS);
+      expect(state.isLocal).toBe(true);
+      expect(state.provider).toBe('ollama');
+      expect(state.providerLabel).toBe('Ollama');
+      expect(state.badgeText).toBe('On-Device');
+      expect(state.badgeVariant).toBe('emerald');
+      expect(state.emptyStateText).toBe('All data remains exclusively on your device.');
+      expect(state.footerText).toBe('Zero cloud sync • No prompt telemetry • 100% on-device');
+      expect(state.explainerTitle).toBe('On-Device Data Residency');
+      expect(state.explainerDescription).toContain('remain strictly on your local machine');
+      expect(state.destinationLabel).toContain('127.0.0.1');
+    });
+
+    it('returns remote residency descriptor for remote LAN Ollama', () => {
+      const remoteSettings: CarefoldUserSettings = {
+        ...DEFAULT_USER_SETTINGS,
+        provider: 'ollama',
+        endpoints: {
+          ...DEFAULT_USER_SETTINGS.endpoints,
+          ollamaUrl: 'http://192.168.1.50:11434'
+        }
+      };
+      const state = getProviderPrivacyState(remoteSettings);
+      expect(state.isLocal).toBe(false);
+      expect(state.badgeText).toBe('Remote (Ollama)');
+      expect(state.badgeVariant).toBe('amber');
+      expect(state.emptyStateText).toBe('Your messages are sent to Ollama to generate replies.');
+      expect(state.footerText).toBe('Remote inference active (Ollama) • Zero Carefold telemetry');
+      expect(state.explainerTitle).toBe('Remote Ollama Data Residency');
+      expect(state.destinationLabel).toContain('192.168.1.50:11434');
+    });
+
+    it('returns cloud residency descriptor for Google Gemini', () => {
+      const state = getProviderPrivacyState({ ...DEFAULT_USER_SETTINGS, provider: 'google' });
+      expect(state.isLocal).toBe(false);
+      expect(state.badgeText).toBe('Cloud (Gemini)');
+      expect(state.badgeVariant).toBe('amber');
+      expect(state.emptyStateText).toBe('Your messages are sent to Gemini to generate replies.');
+      expect(state.footerText).toBe('Cloud inference active (Gemini) • Zero Carefold telemetry');
+      expect(state.explainerTitle).toBe('Cloud Provider Data Residency');
+      expect(state.destinationLabel).toBe('Gemini Cloud API');
+    });
+
+    it('returns cloud residency descriptor for Anthropic Claude', () => {
+      const state = getProviderPrivacyState({ ...DEFAULT_USER_SETTINGS, provider: 'anthropic' });
+      expect(state.isLocal).toBe(false);
+      expect(state.badgeText).toBe('Cloud (Claude)');
+      expect(state.badgeVariant).toBe('amber');
+      expect(state.emptyStateText).toBe('Your messages are sent to Claude to generate replies.');
+      expect(state.footerText).toBe('Cloud inference active (Claude) • Zero Carefold telemetry');
+      expect(state.destinationLabel).toBe('Claude Cloud API');
+    });
+
+    it('returns cloud residency descriptor for OpenAI', () => {
+      const state = getProviderPrivacyState({ ...DEFAULT_USER_SETTINGS, provider: 'openai' });
+      expect(state.isLocal).toBe(false);
+      expect(state.badgeText).toBe('Cloud (OpenAI)');
+      expect(state.badgeVariant).toBe('amber');
+      expect(state.emptyStateText).toBe('Your messages are sent to OpenAI to generate replies.');
+      expect(state.footerText).toBe('Cloud inference active (OpenAI) • Zero Carefold telemetry');
+      expect(state.destinationLabel).toBe('OpenAI Cloud API');
+    });
+
+    it('returns remote residency descriptor for remote Custom endpoint', () => {
+      const customSettings: CarefoldUserSettings = {
+        ...DEFAULT_USER_SETTINGS,
+        provider: 'custom',
+        endpoints: {
+          ...DEFAULT_USER_SETTINGS.endpoints,
+          customUrl: 'https://vllm.internal.corp/v1'
+        }
+      };
+      const state = getProviderPrivacyState(customSettings);
+      expect(state.isLocal).toBe(false);
+      expect(state.badgeText).toBe('Remote (Custom)');
+      expect(state.badgeVariant).toBe('amber');
+      expect(state.emptyStateText).toBe('Your messages are sent to Custom to generate replies.');
+      expect(state.footerText).toBe('Remote inference active (Custom) • Zero Carefold telemetry');
+    });
+
+    it('fails closed to amber badge for unparseable or malformed URLs', () => {
+      const malformedSettings: CarefoldUserSettings = {
+        ...DEFAULT_USER_SETTINGS,
+        provider: 'ollama',
+        endpoints: {
+          ...DEFAULT_USER_SETTINGS.endpoints,
+          ollamaUrl: '://unparseable'
+        }
+      };
+      const state = getProviderPrivacyState(malformedSettings);
+      expect(state.isLocal).toBe(false);
+      expect(state.badgeVariant).toBe('amber');
+      expect(state.emptyStateText).not.toContain('exclusively on your device');
+    });
+  });
+});
+
