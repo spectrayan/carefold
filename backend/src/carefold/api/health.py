@@ -43,8 +43,8 @@ async def get_health() -> HealthResponse:
     agents_dir = settings.get_agents_dir()
     skills_dir = settings.get_skills_dir()
 
-    agents_count = len([d for d in agents_dir.iterdir() if d.is_dir() and not d.name.startswith(".")]) if agents_dir.is_dir() else 0
-    skills_count = len([d for d in skills_dir.iterdir() if d.is_dir() and not d.name.startswith(".")]) if skills_dir.is_dir() else 0
+    agents_count = len([d for d in agents_dir.iterdir() if d.is_dir() and not d.name.startswith((".", "_"))]) if agents_dir.is_dir() else 0
+    skills_count = len([d for d in skills_dir.iterdir() if d.is_dir() and not d.name.startswith((".", "_"))]) if skills_dir.is_dir() else 0
 
     workspace_info = WorkspaceInfo(
         root=str(ws_root),

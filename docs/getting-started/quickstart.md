@@ -39,12 +39,12 @@ Expected JSON response (abbreviated; see the [API Reference](../api/reference.md
   "workspace": {
     "root": "/path/to/carefold",
     "agentsCount": 22,
-    "skillsCount": 23
+    "skillsCount": 24
   }
 }
 ```
 
-`status` reports `degraded` until a model provider (for example a local Ollama server) is reachable. `agentsCount` and `skillsCount` count workspace directories, so they include the `agents/_system` folder and the `_template` starters alongside the 20 specialist agents and 22 skill packs.
+`status` reports `degraded` until a model provider (for example a local Ollama server) is reachable. `agentsCount` and `skillsCount` report active specialist agents (22) and modular skill packs (24) in the workspace, excluding internal system helpers and starter templates.
 
 ---
 

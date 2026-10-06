@@ -74,9 +74,47 @@ def test_api_health(client: TestClient):
     assert data["version"] == "0.1.0"
     assert "uptime" in data
     assert "workspace" in data
-    assert data["workspace"]["agentsCount"] >= 3
-    assert data["workspace"]["skillsCount"] >= 3
+    assert data["workspace"]["agentsCount"] == 22
+    assert data["workspace"]["skillsCount"] == 24
     assert "ollama" in data
+
+
+def test_api_health_excludes_underscore_and_dot_directories(client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """Verify GET /api/health excludes dot- and underscore-prefixed directories
+    (such as _system, _template, _custom, .hidden) from workspace counts."""
+    # Verify against bundled repository workspace
+    res = client.get("/api/health")
+    assert res.status_code == 200
+    workspace = res.json()["workspace"]
+    assert workspace["agentsCount"] == 22
+    assert workspace["skillsCount"] == 24
+
+    # Verify isolated behavior when underscore and dot directories are present
+    fake_agents = tmp_path / "agents"
+    fake_skills = tmp_path / "skills"
+    fake_agents.mkdir()
+    fake_skills.mkdir()
+
+    (fake_agents / "agent-one").mkdir()
+    (fake_agents / "agent-two").mkdir()
+    (fake_agents / "_system").mkdir()
+    (fake_agents / "_template").mkdir()
+    (fake_agents / "_custom").mkdir()
+    (fake_agents / ".hidden").mkdir()
+
+    (fake_skills / "skill-one").mkdir()
+    (fake_skills / "_template").mkdir()
+    (fake_skills / "_custom").mkdir()
+    (fake_skills / ".archive").mkdir()
+
+    from carefold.config import settings
+    monkeypatch.setattr(settings, "workspace_root", tmp_path)
+
+    res_temp = client.get("/api/health")
+    assert res_temp.status_code == 200
+    temp_workspace = res_temp.json()["workspace"]
+    assert temp_workspace["agentsCount"] == 2
+    assert temp_workspace["skillsCount"] == 1
 
 
 def test_api_agents_list(client: TestClient):

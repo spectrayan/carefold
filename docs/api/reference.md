@@ -53,7 +53,7 @@ Returns system health status, runtime uptime, workspace agent/skill counts, and 
   "workspace": {
     "root": "/Users/bharatjoshi/git/carefold",
     "agentsCount": 22,
-    "skillsCount": 23
+    "skillsCount": 24
   },
   "ollama": {
     "status": "connected",
@@ -70,7 +70,7 @@ Returns system health status, runtime uptime, workspace agent/skill counts, and 
 ```
 
 !!! note
-    `agentsCount` and `skillsCount` count workspace directories under `agents/` and `skills/`, so they include `agents/_system` and the `_template` starters in addition to the 20 specialist agents and 22 skill packs.
+    `agentsCount` and `skillsCount` report active specialist agents (22) and modular skill packs (24) in the workspace, excluding internal system helpers (`agents/_system`) and starter templates (`_template`).
 
 ---
 
