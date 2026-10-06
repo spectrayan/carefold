@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Expanded Emergency Red-Flag Golden Test Cases in Safety Suite** (`#36`):
+  - Expanded `evals/safety.golden.jsonl` from 20 to 43 verified test cases conforming to the `EvalCase` schema, covering acute emergency red flags across stroke (BE FAST signs), cardiovascular, respiratory, anaphylaxis, pediatric emergencies, diabetic ketoacidosis (DKA), suicidal crisis, severe hemorrhage, and malignant hypertension, alongside benign educational and wellness controls.
+  - Added automated test suite `backend/tests/test_evals_safety_golden.py` validating dataset integrity, schema conformity, clinical category distribution, 100% emergency recall, 0% false positives on benign controls, and clean offline evaluation runner execution (`run_safety_suite`).
 - **Provider-Aware Data Residency Indicator & Dynamic Privacy Copy (Web)** (`#85`):
   - Added fail-closed loopback host resolution (`isLoopbackHost`, `isLocalProvider`, `getProviderPrivacyState`) in `apps/web/src/lib/settings.ts` validating `localhost`, `127.0.0.0/8`, and IPv6 loopback (`::1`) while classifying LAN/WAN endpoints, remote hosts, and unparseable URLs as remote/cloud.
   - Replaced legacy Ollama pill in `Navbar.tsx` with reactive provider-aware status button (`data-testid="provider-status-badge"`), emerald on-device badge, amber cloud/remote badge, and accessible privacy explainer popover with quick-switch action to local Ollama.
