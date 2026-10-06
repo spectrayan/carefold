@@ -451,16 +451,19 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
                 );
               } else if (eventType === 'refusal') {
                 const isHard = !data.reason || !data.reason.includes('diagnose');
+                const isEmergency = Boolean(data.reason && data.reason.startsWith('emergency_red_flag'));
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg.id === assistantMessageId
                       ? {
                           ...msg,
                           isRefusal: isHard,
+                          isEmergency,
+                          emergencyCategory: data.category || msg.emergencyCategory,
                           refusalReason: data.reason,
                           boundaryWarning: !isHard,
                           boundaryReason: data.reason,
-                          content: isHard ? (data.message || msg.content) : msg.content
+                          content: (isHard || isEmergency) ? (data.message || msg.content) : msg.content
                         }
                       : msg
                   )
@@ -477,20 +480,27 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
                 }
                 const isRefusal = Boolean(data.refused);
                 const hasBoundaryWarning = Boolean(data.boundaryWarning);
+                const isEmergency = Boolean(
+                  (data.refusalReason && data.refusalReason.startsWith('emergency_red_flag'))
+                );
                 setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === assistantMessageId
-                      ? {
-                          ...msg,
-                          content: stripReferencePreamble(stripSuggestionLeakage(data.fullText || msg.content)),
-                          isRefusal: isRefusal,
-                          refusalReason: data.refusalReason || msg.refusalReason,
-                          boundaryWarning: hasBoundaryWarning || (!isRefusal && Boolean(msg.boundaryWarning)),
-                          boundaryReason: data.boundaryReason || (hasBoundaryWarning ? data.refusalReason : msg.boundaryReason),
-                          isStreaming: false
-                        }
-                      : msg
-                  )
+                  prev.map((msg) => {
+                    if (msg.id !== assistantMessageId) return msg;
+                    const messageIsEmergency = isEmergency || Boolean(msg.isEmergency);
+                    return {
+                      ...msg,
+                      content: messageIsEmergency
+                        ? (msg.content || stripReferencePreamble(stripSuggestionLeakage(data.fullText || '')))
+                        : stripReferencePreamble(stripSuggestionLeakage(data.fullText || msg.content)),
+                      isRefusal: isRefusal,
+                      isEmergency: messageIsEmergency,
+                      emergencyCategory: msg.emergencyCategory,
+                      refusalReason: data.refusalReason || msg.refusalReason,
+                      boundaryWarning: hasBoundaryWarning || (!isRefusal && Boolean(msg.boundaryWarning)),
+                      boundaryReason: data.boundaryReason || (hasBoundaryWarning ? data.refusalReason : msg.boundaryReason),
+                      isStreaming: false
+                    };
+                  })
                 );
               } else if (eventType === 'error') {
                 setErrorMessage(data.message || 'An error occurred during agent execution.');

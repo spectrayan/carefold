@@ -199,7 +199,7 @@ data: {"type": "suggestions", "items": ["How often should I log blood pressure?"
 #### 4. `refusal` (Safety Circuit Breaker)
 ```
 event: refusal
-data: {"type": "refusal", "reason": "emergency_red_flag", "category": "EMERGENCY_TRIAGE", "message": "Emergency detected. Please dial 911 immediately."}
+data: {"type": "refusal", "reason": "emergency_red_flag", "message": "EMERGENCY WARNING: Acute symptoms detected. Please call 911 or visit the nearest emergency room immediately.", "category": "stroke_fast"}
 ```
 
 #### 5. `done` (Stream Termination)

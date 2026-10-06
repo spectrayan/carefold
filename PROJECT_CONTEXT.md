@@ -188,7 +188,7 @@ Real-time interactions stream from the FastAPI backend to the Next.js client usi
 | `tool_error` | `{"tool": "...", "error": "..."}` | Non-fatal tool execution error notification. |
 | `suggestions` | `{"suggestions": ["...", "..."]}` | Context-aware follow-up suggestion chips for the UI. |
 | `disclaimer` | `{"text": "..."}` | Mandatory non-clinical disclaimer banner. |
-| `refusal` | `{"reason": "...", "directive": "..."}` | Triggered on emergency red flags or clinical boundary refusal. |
+| `refusal` | `{"reason": "...", "message": "...", "category": "..."}` | Triggered on emergency red flags or clinical boundary refusal. Optional `category` identifies acute emergency sign. |
 | `done` | `{"thread_id": "...", "status": "ok"}` | Final completion packet closing the stream. |
 
 ---

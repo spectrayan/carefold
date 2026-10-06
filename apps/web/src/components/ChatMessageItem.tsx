@@ -23,6 +23,7 @@ import { ToolTraceCard, ToolTraceItem } from './ToolTraceCard';
 import { MessageToolbar } from './chat/MessageToolbar';
 import { ChatMarkdown } from './chat/ChatMarkdown';
 import { ThinkingIndicator } from './chat/ThinkingIndicator';
+import { EmergencyEscalationCard } from './chat/EmergencyEscalationCard';
 
 export interface ChatMessage {
   id: string;
@@ -31,6 +32,8 @@ export interface ChatMessage {
   timestamp?: string;
   isStreaming?: boolean;
   isRefusal?: boolean;
+  isEmergency?: boolean;
+  emergencyCategory?: string;
   refusalReason?: string;
   boundaryWarning?: boolean;
   boundaryReason?: string;
@@ -160,6 +163,15 @@ export function ChatMessageItem({
         </div>
       </div>
     );
+  }
+
+  const isEmergency = Boolean(
+    message.isEmergency ||
+    (message.refusalReason && message.refusalReason.startsWith('emergency_red_flag'))
+  );
+
+  if (isEmergency) {
+    return <EmergencyEscalationCard message={message} />;
   }
 
   return (

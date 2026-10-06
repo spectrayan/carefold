@@ -54,6 +54,8 @@ export interface ChatMessage {
   timestamp?: string;
   isStreaming?: boolean;
   isRefusal?: boolean;
+  isEmergency?: boolean;
+  emergencyCategory?: string;
   refusalReason?: string;
   boundaryWarning?: boolean;
   boundaryReason?: string;

@@ -357,5 +357,102 @@ describe('ChatMessageItem Component', () => {
     expect(container.textContent).not.toContain('Based on the provided reference document');
     expect(container.textContent).toContain('You should review your deductible and copay amounts.');
   });
+
+  // -------------------------------------------------------------------------
+  // Milestone 3 (Issue #86): Dedicated Emergency Escalation Card Tests
+  // -------------------------------------------------------------------------
+  describe('Emergency Escalation Card (#86)', () => {
+    it('renders dedicated EmergencyEscalationCard when message is marked isEmergency', () => {
+      const emergencyMsg: ChatMessage = {
+        id: 'msg-emerg-1',
+        role: 'assistant',
+        content: 'EMERGENCY WARNING: Acute crushing chest pain detected. Call 911 immediately.',
+        isEmergency: true,
+        refusalReason: 'emergency_red_flag:crushing_chest_pain'
+      };
+
+      render(<ChatMessageItem message={emergencyMsg} />);
+
+      const card = screen.getByTestId('emergency-escalation-card');
+      expect(card).toBeInTheDocument();
+      expect(card).toHaveAttribute('role', 'alert');
+      expect(card).toHaveAttribute('aria-live', 'assertive');
+
+      // Heading and call to actions
+      expect(screen.getByTestId('emergency-card-heading')).toHaveTextContent(/This may be an emergency/i);
+
+      const call911Btn = screen.getByTestId('emergency-call-911-btn');
+      expect(call911Btn).toHaveAttribute('href', 'tel:911');
+      expect(call911Btn).toHaveTextContent(/Call 911/i);
+
+      const findErBtn = screen.getByTestId('emergency-find-er-btn');
+      expect(findErBtn).toHaveAttribute('href', expect.stringContaining('maps'));
+      expect(findErBtn).toHaveTextContent(/Find Nearest Emergency Room/i);
+
+      // Verbatim backend message
+      const backendMsg = screen.getByTestId('emergency-backend-message');
+      expect(backendMsg).toHaveTextContent('EMERGENCY WARNING: Acute crushing chest pain detected. Call 911 immediately.');
+
+      // Non-clinical disclaimer
+      expect(screen.getByTestId('emergency-nonclinical-disclaimer')).toBeInTheDocument();
+
+      // Does NOT render standard safe-refusal-badge
+      expect(screen.queryByTestId('safe-refusal-badge')).not.toBeInTheDocument();
+    });
+
+    it('renders emergency card when refusalReason starts with emergency_red_flag even without explicit isEmergency flag', () => {
+      const emergencyMsg: ChatMessage = {
+        id: 'msg-emerg-2',
+        role: 'assistant',
+        content: 'EMERGENCY WARNING: Stroke FAST signs detected.',
+        isRefusal: true,
+        refusalReason: 'emergency_red_flag:stroke_fast'
+      };
+
+      render(<ChatMessageItem message={emergencyMsg} />);
+
+      expect(screen.getByTestId('emergency-escalation-card')).toBeInTheDocument();
+      expect(screen.getByTestId('emergency-call-911-btn')).toBeInTheDocument();
+      expect(screen.queryByTestId('safe-refusal-badge')).not.toBeInTheDocument();
+    });
+
+    it('renders 988 crisis lifeline action button when emergencyCategory is suicide_crisis', () => {
+      const crisisMsg: ChatMessage = {
+        id: 'msg-emerg-3',
+        role: 'assistant',
+        content: 'CRISIS SUPPORT: Please connect with the Suicide & Crisis Lifeline immediately.',
+        isEmergency: true,
+        emergencyCategory: 'suicide_crisis',
+        refusalReason: 'emergency_red_flag:suicide_crisis'
+      };
+
+      render(<ChatMessageItem message={crisisMsg} />);
+
+      const card = screen.getByTestId('emergency-escalation-card');
+      expect(card).toBeInTheDocument();
+
+      const call988Btn = screen.getByTestId('emergency-call-988-btn');
+      expect(call988Btn).toBeInTheDocument();
+      expect(call988Btn).toHaveAttribute('href', 'tel:988');
+      expect(call988Btn).toHaveTextContent(/Call or Text 988/i);
+    });
+
+    it('preserves generic refusal badge for non-emergency clinical boundary refusals', () => {
+      const nonEmergencyRefusal: ChatMessage = {
+        id: 'msg-non-emerg',
+        role: 'assistant',
+        content: SAFE_REFUSAL_TEMPLATE,
+        isRefusal: true,
+        refusalReason: 'forbidden_intent:diagnose'
+      };
+
+      render(<ChatMessageItem message={nonEmergencyRefusal} />);
+
+      expect(screen.queryByTestId('emergency-escalation-card')).not.toBeInTheDocument();
+      expect(screen.getByTestId('safe-refusal-badge')).toBeInTheDocument();
+      expect(screen.getByTestId('chat-message-refusal')).toBeInTheDocument();
+    });
+  });
 });
+
 

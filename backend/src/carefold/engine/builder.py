@@ -389,14 +389,21 @@ class GraphBuilder:
             res = await _invoke_node_with_store(input_guard_node, state, store=store)
             if res.get("is_refusal") or res.get("refused"):
                 reason = res.get("refusal_reason") or state.get("default_refusal_reason") or "forbidden_intent:policy_prohibited"
+                category = None
+                red_flags = res.get("emergency_red_flags")
+                if red_flags:
+                    category = red_flags.get("category") if isinstance(red_flags, dict) else getattr(red_flags, "category", None)
+                payload: Dict[str, Any] = {
+                    "type": SSE_EVENT_REFUSAL,
+                    "reason": reason,
+                    "message": SAFE_REFUSAL_TEMPLATE,
+                }
+                if category:
+                    payload["category"] = category
                 try:
                     await adispatch_custom_event(
                         SSE_EVENT_REFUSAL,
-                        {
-                            "type": SSE_EVENT_REFUSAL,
-                            "reason": reason,
-                            "message": SAFE_REFUSAL_TEMPLATE,
-                        },
+                        payload,
                     )
                 except Exception:
                     pass

@@ -212,6 +212,17 @@ class TestAgentExecutionService:
         assert ref["reason"] == "forbidden_intent:diagnose"
         assert ref["message"] == SAFE_REFUSAL_TEMPLATE
 
+        emerg_ref = AgentExecutionService.format_refusal_event(
+            "emergency_red_flag:crushing_chest_pain",
+            "Call 911 immediately",
+            category="crushing_chest_pain",
+        )
+        assert emerg_ref["type"] == "refusal"
+        assert emerg_ref["reason"] == "emergency_red_flag:crushing_chest_pain"
+        assert emerg_ref["message"] == "Call 911 immediately"
+        assert emerg_ref["category"] == "crushing_chest_pain"
+
+
         sug = AgentExecutionService.format_suggestions_event(["Q1?", "Q2?"])
         assert sug == {"type": "suggestions", "suggestions": ["Q1?", "Q2?"]}
 

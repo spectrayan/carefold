@@ -371,9 +371,16 @@ class AgentExecutionService:
         }
 
     @staticmethod
-    def format_refusal_event(reason: str, message: str = SAFE_REFUSAL_TEMPLATE) -> Dict[str, Any]:
+    def format_refusal_event(
+        reason: str,
+        message: str = SAFE_REFUSAL_TEMPLATE,
+        category: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Formats a clinical safety refusal event."""
-        return {"type": SSE_EVENT_REFUSAL, "reason": reason, "message": message}
+        payload: Dict[str, Any] = {"type": SSE_EVENT_REFUSAL, "reason": reason, "message": message}
+        if category:
+            payload["category"] = category
+        return payload
 
     @staticmethod
     def format_suggestions_event(suggestions: List[str]) -> Dict[str, Any]:

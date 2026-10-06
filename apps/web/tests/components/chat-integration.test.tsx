@@ -227,4 +227,62 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
     // Distinct thread IDs
     expect(capturedThreadIds[0]).not.toBe(capturedThreadIds[1]);
   });
+
+  it('renders EmergencyEscalationCard upon emergency refusal event and keeps composer usable', async () => {
+    const mockFetch = vi.fn().mockImplementation((url, _options) => {
+      if (url === '/api/chat') {
+        return Promise.resolve(
+          createMockSSEResponse([
+            {
+              event: 'refusal',
+              data: {
+                type: 'refusal',
+                reason: 'emergency_red_flag:crushing_chest_pain',
+                message: 'EMERGENCY WARNING: Acute crushing chest pain detected. Call 911 immediately.',
+                category: 'crushing_chest_pain'
+              }
+            },
+            {
+              event: 'done',
+              data: {
+                type: 'done',
+                fullText: 'Carefold AI agents provide educational navigation only.',
+                refused: true,
+                refusalReason: 'emergency_red_flag:crushing_chest_pain',
+                threadId: 'thread-emerg-123'
+              }
+            }
+          ])
+        );
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    });
+
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<ChatClient initialAgents={mockAgents} />);
+
+    const input = screen.getByPlaceholderText(/Message/i);
+    fireEvent.change(input, { target: { value: 'I have crushing chest pain and shortness of breath' } });
+    fireEvent.click(screen.getByTitle('Send Prompt'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('emergency-escalation-card')).toBeInTheDocument();
+    });
+
+    // Verify verbatim acute referral message is preserved (not overwritten by fullText)
+    expect(screen.getByTestId('emergency-backend-message')).toHaveTextContent(
+      'EMERGENCY WARNING: Acute crushing chest pain detected. Call 911 immediately.'
+    );
+
+    // Verify action links
+    expect(screen.getByTestId('emergency-call-911-btn')).toHaveAttribute('href', 'tel:911');
+    expect(screen.getByTestId('emergency-find-er-btn')).toHaveAttribute('href', expect.stringContaining('maps'));
+
+    // Verify composer remains enabled and usable (not locked)
+    expect(input).not.toBeDisabled();
+    fireEvent.change(input, { target: { value: 'Follow up question' } });
+    expect(screen.getByTitle('Send Prompt')).not.toBeDisabled();
+  });
 });
+

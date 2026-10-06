@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Dedicated Emergency Escalation Card for Red-Flag Refusals (Web & Backend)** (`#86`):
+  - Added accessible, high-contrast `EmergencyEscalationCard` component rendered upon acute emergency red-flag refusals (`role="alert"`, assertive live region, auto-focus).
+  - Prominent emergency header ("This may be an emergency"), direct click-to-call action (`tel:911`), emergency room directory link (Google Maps), and 988 Suicide & Crisis Lifeline link (`tel:988`) for crisis indicators.
+  - Displays verbatim acute referral message emitted by the backend safety guardrail while maintaining non-clinical boundary disclaimer and keeping composer unlocked for continuing the session.
+  - Isolated emergency contact numbers in `apps/web/src/lib/emergency.ts` (`EmergencyServicesConfig`) for multi-region localization.
+  - Enhanced backend `AgentExecutionService.format_refusal_event` and `builder.py` to forward verbatim refusal messages and emergency category metadata via SSE.
 - **Clinical-Consent Gate for `clinical_assist` Agents (Web)** (`#87`):
   - Per-agent consent dialog covering what the agent can help with, its `forbidden` list in plain language, and emergency guidance (911 / 988), with an explicit acknowledgement step.
   - Consent persisted only in browser storage (`carefold_clinical_consent_v1`, with grant timestamp); "Clinical assist: consent given" chip in the chat header; withdraw per agent or all agents in Settings.
