@@ -43,7 +43,8 @@ RUN pip install --no-cache-dir ./backend \
 COPY agents/ ./agents/
 COPY skills/ ./skills/
 
-ENV CAREFOLD_WORKSPACE=/app \
+ENV CAREFOLD_WORKSPACE_ROOT=/app \
+    CAREFOLD_WORKSPACE=/app \
     CAREFOLD_DATA=/data \
     PORT=8000 \
     PYTHONPATH=/app/backend/src \
@@ -152,7 +153,8 @@ COPY --from=web-builder /app/apps/web/node_modules ./apps/web/node_modules
 COPY --from=web-builder /app/apps/web/.next ./apps/web/.next
 COPY --from=web-builder /app/apps/web/public ./apps/web/public
 
-ENV CAREFOLD_WORKSPACE=/app \
+ENV CAREFOLD_WORKSPACE_ROOT=/app \
+    CAREFOLD_WORKSPACE=/app \
     CAREFOLD_DATA=/data \
     NODE_ENV=production \
     PORT=3000 \

@@ -14,10 +14,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - CAREFOLD_WORKSPACE=/app
-      - CAREFOLD_DATA=/data
+      - CAREFOLD_WORKSPACE_ROOT=/app
+      - CAREFOLD_AUDIT_LOG_PATH=${CAREFOLD_AUDIT_LOG_PATH:-/data/audit.jsonl}
       - PYTHONPATH=/app/backend/src
-      - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434/v1}
+      - CAREFOLD_OLLAMA_URL=${CAREFOLD_OLLAMA_URL:-http://ollama:11434/v1}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
@@ -42,6 +42,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - CAREFOLD_WORKSPACE=/app
       - BACKEND_URL=http://backend:8000
       - PORT=3000
     depends_on:

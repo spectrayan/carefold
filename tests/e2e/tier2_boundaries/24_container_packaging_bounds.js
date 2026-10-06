@@ -45,7 +45,7 @@ assert 'volumes' in data
     },
     {
       id: 'F24-B02',
-      name: 'docker-compose.yml sets offline-first environment defaults for backend',
+      name: 'docker-compose.yml sets offline-first environment defaults for backend and web',
       fn: () => {
         const script = `
 import yaml
@@ -54,8 +54,19 @@ from pathlib import Path
 compose_file = Path('docker/docker-compose.yml')
 data = yaml.safe_load(compose_file.read_text())
 backend_env = data['services']['backend']['environment']
-# Ensure offline default host is configured
-assert 'CAREFOLD_WORKSPACE' in backend_env or any('OLLAMA' in k for k in backend_env)
+web_env = data['services']['web']['environment']
+
+# Ensure correct variable names for workspace root, audit log path, and Ollama endpoint
+assert any(k.startswith('CAREFOLD_WORKSPACE_ROOT=') for k in backend_env), "Missing CAREFOLD_WORKSPACE_ROOT on backend"
+assert any(k.startswith('CAREFOLD_OLLAMA_URL=') for k in backend_env), "Missing CAREFOLD_OLLAMA_URL on backend"
+assert any(k.startswith('CAREFOLD_AUDIT_LOG_PATH=') for k in backend_env), "Missing CAREFOLD_AUDIT_LOG_PATH on backend"
+
+# Ensure obsolete/unused variable names are removed from backend
+assert not any(k.startswith('OLLAMA_URL=') for k in backend_env), "OLLAMA_URL must be replaced by CAREFOLD_OLLAMA_URL on backend"
+assert not any(k.startswith('CAREFOLD_DATA=') for k in backend_env), "CAREFOLD_DATA must be removed from backend"
+
+# Ensure web service sets CAREFOLD_WORKSPACE
+assert any(k.startswith('CAREFOLD_WORKSPACE=') for k in web_env), "Web service missing CAREFOLD_WORKSPACE"
 `;
         const res = runPython(script);
         assertEqual(res.status, 0, `Python test failed: ${res.stderr}`);
