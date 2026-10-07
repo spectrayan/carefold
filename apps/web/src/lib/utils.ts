@@ -100,4 +100,39 @@ export function formatRiskClass(riskClass?: string | null): string {
 export const formatRiskLabel = formatRiskClass;
 export const formatRiskClassLabel = formatRiskClass;
 
+/**
+ * Maps care stage identifiers to human-readable plain language labels.
+ * (e.g. "pre_visit" -> "Before visit", "during_visit" -> "During visit",
+ * "post_visit" -> "After visit", "follow_up" -> "Follow-up", "daily_living" -> "Daily living")
+ */
+export function formatCareStage(stage?: string | null): string {
+  if (!stage) return '';
+  const trimmed = stage.trim();
+  if (!trimmed) return '';
+  switch (trimmed.toLowerCase()) {
+    case 'pre_visit':
+    case 'pre-visit':
+      return 'Before visit';
+    case 'during_visit':
+    case 'during-visit':
+      return 'During visit';
+    case 'post_visit':
+    case 'post-visit':
+      return 'After visit';
+    case 'follow_up':
+    case 'follow-up':
+      return 'Follow-up';
+    case 'daily_living':
+    case 'daily-living':
+      return 'Daily living';
+    default:
+      return trimmed
+        .replace(/[_-]+/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
+  }
+}
+
 

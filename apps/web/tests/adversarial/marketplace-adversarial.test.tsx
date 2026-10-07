@@ -239,18 +239,26 @@ describe('Adversarial Stress Suite: Marketplace UI & Icon Resolution', () => {
       },
     ];
 
-    it('renders empty state cleanly when selecting a domain with 0 matching agents', () => {
+    it('verifies 0-agent domain pills are hidden and renders empty state on conflicting multi-facet filters', () => {
       render(<MarketplaceClient initialAgents={agentsList} />);
 
       const domainContainer = screen.getByTestId('domain-filters');
-      const educationTab = within(domainContainer).getByRole('button', { name: 'Education' });
 
-      // Click domain 'Education' (none in agentsList has domain education)
-      fireEvent.click(educationTab);
+      // Zero-agent domain pill 'Education' is dynamically pruned
+      expect(within(domainContainer).queryByRole('button', { name: 'Education' })).not.toBeInTheDocument();
+
+      // Conflicting filters produce empty state: Therapy domain + Admin risk
+      const therapyTab = within(domainContainer).getByRole('button', { name: 'Therapy' });
+      fireEvent.click(therapyTab);
+
+      const riskContainer = screen.getByTestId('risk-filters');
+      const adminRisk = within(riskContainer).getByRole('button', { name: 'Admin' });
+      fireEvent.click(adminRisk);
 
       expect(screen.getByText('No agents found')).toBeInTheDocument();
       expect(screen.getByText('Try adjusting your search terms or filters.')).toBeInTheDocument();
       expect(screen.getByText('carefold agent add visit-steward')).toBeInTheDocument();
+      expect(screen.getByTestId('clear-all-filters-btn')).toBeInTheDocument();
       expect(screen.queryByText('Visit Steward')).not.toBeInTheDocument();
       expect(screen.queryByText('Benefits Guide')).not.toBeInTheDocument();
       expect(screen.queryByText('Habit Companion')).not.toBeInTheDocument();

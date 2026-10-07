@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Data-Driven Marketplace Filters: Real Domains, Care Stages & Caregivers (Web)** (`#88`):
+  - Created proxy route `apps/web/src/app/api/agents/categories/route.ts` proxying `GET /api/agents/categories` to the backend with 503 fallback error handling.
+  - Updated `apps/web/src/app/page.tsx` to fetch installed agents and category taxonomy in parallel via `Promise.all` and forward `initialCategories` to `MarketplaceClient`.
+  - Implemented data-driven domain pills in `apps/web/src/app/MarketplaceClient.tsx` dynamically pruning domains with 0 matching agents (`Therapy`, `Education` hidden on bundled workspace), with seamless offline fallback deriving active domains directly from `initialAgents`.
+  - Added "When" care-stage filter pills (`data-testid="care-stage-filters"`): `All Stages`, `Before visit` (`pre_visit`), `During visit` (`during_visit`), `After visit` (`post_visit`), `Follow-up` (`follow_up`), and `Daily living` (`daily_living`).
+  - Added accessible "For caregivers" toggle switch (`data-testid="caregiver-filter"`, `role="switch"`, `aria-checked`) filtering agents by `target_audience.includes('caregiver')`.
+  - Implemented multi-facet conjunction filtering combining search keywords, domain, risk class, care stage, and caregiver criteria via boolean AND.
+  - Enhanced agent cards with caregiver badges (`data-testid="caregiver-badge"`) and formatted care stage badges (`data-testid="care-stage-badge"`).
+  - Added accessible empty-state UI with "Clear all filters" button (`data-testid="clear-all-filters-btn"`) resetting all active filters.
+  - Implemented `formatCareStage` helper in `apps/web/src/lib/utils.ts`.
+  - Added automated test coverage in `apps/web/tests/components/marketplace-filters.test.tsx` and `apps/web/tests/lib/categories-proxy-route.test.ts`, and updated `apps/web/tests/adversarial/marketplace-adversarial.test.tsx`.
 - **Markdown & JSON Dossier Export in Consultation Header (Web)** (`#34`):
   - Added `DossierExportMenu` component in `apps/web/src/components/chat/DossierExportMenu.tsx` positioned in the consultation header adjacent to the New Session button.
   - Implemented pure client-side export utilities in `apps/web/src/lib/dossierExport.ts` (`formatDossierMarkdown`, `formatDossierJson`, `generateDossierFilename`, `downloadBlob`, `exportDossier`) with 0 network roundtrips.

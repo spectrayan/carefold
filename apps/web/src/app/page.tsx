@@ -37,7 +37,26 @@ async function getInstalledAgents(): Promise<AgentSummary[]> {
   return [];
 }
 
+async function getAgentCategories(): Promise<Record<string, any> | null> {
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
+  try {
+    const res = await fetch(`${backendUrl}/api/agents/categories`, {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store'
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.error('Failed to fetch categories from backend:', err);
+  }
+  return null;
+}
+
 export default async function MarketplacePage() {
-  const agents = await getInstalledAgents();
-  return <MarketplaceClient initialAgents={agents} />;
+  const [agents, categories] = await Promise.all([
+    getInstalledAgents(),
+    getAgentCategories()
+  ]);
+  return <MarketplaceClient initialAgents={agents} initialCategories={categories} />;
 }
