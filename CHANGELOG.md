@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Render Extracted Dossiers as Readable Visit-Prep & Insurance Cards (Web)** (`#94`):
+  - Created `DossierCard` router component in `apps/web/src/components/chat/DossierCard.tsx` parsing `extract_document_dossier` tool results and dispatching to typed cards while safely falling back (returning null) on malformed or unknown payloads to preserve raw JSON traces in `ToolTraceCard` for full auditability.
+  - Implemented `VisitPrepCard` in `apps/web/src/components/chat/VisitPrepCard.tsx` rendering reason for visit, physician instructions, follow-up timeline badge, interactive questions checklist with checkbox toggle, strikethrough styling, custom question addition, and client-side Copy/Export actions.
+  - Implemented `InsuranceBenefitsCard` in `apps/web/src/components/chat/InsuranceBenefitsCard.tsx` rendering top financial metrics (annual deductible, out-of-pocket maximum, coinsurance), structured copays breakdown table, in/out-of-network rules callout, prior-authorization requirement pills, and Copy/Export actions.
+  - Implemented `GenericDossierCard` in `apps/web/src/components/chat/GenericDossierCard.tsx` rendering document executive summary, key extracted numerical metrics grid, identified document sections list, and Copy/Export actions.
+  - Displayed mandatory patient-friendly safety disclaimer banner on EVERY card: *"Extracted from your document. Check details with your care team or insurer."* with zero diagnostic language.
+  - Created `apps/web/src/lib/checklistStorage.ts` persisting checklist states and custom questions in `localStorage` under `carefold_checklist_${threadId}_${messageId}`.
+  - Integrated `DossierCard` into `apps/web/src/components/ChatMessageItem.tsx` below assistant messages while maintaining collapsible `ToolTraceCard` in `embedded-tool-traces`.
+  - Added shared TypeScript interfaces in `apps/web/src/lib/types.ts` for all extracted dossier models and checklist states.
+  - Added comprehensive automated Vitest test suite in `apps/web/tests/components/dossier-card.test.tsx` verifying all three card types, fallback on malformed payloads, checklist interactivity and persistence, copy/export triggers, and non-clinical disclaimer enforcement.
 - **Unified Start Script & Non-Conflicting Default Ports (:8010, :3010) (DX)** (`#144`):
   - Created unified coordinator script `scripts/start.sh` (with root symlink `start.sh`) coordinating FastAPI backend and Next.js web application.
   - Added support for subcommands `all` (default foreground coordinator with SIGINT/SIGTERM trap cleanup), `start` / `daemon` (detached background with PID tracking in `.carefold.pids`), `stop` (clean termination of child PIDs and port listeners), `status` (colorized table showing ports, status, URLs), `backend` (foreground backend only), `web` (foreground web only), and `help`.

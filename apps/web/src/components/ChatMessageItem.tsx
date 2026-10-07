@@ -24,6 +24,7 @@ import { MessageToolbar } from './chat/MessageToolbar';
 import { ChatMarkdown } from './chat/ChatMarkdown';
 import { ThinkingIndicator } from './chat/ThinkingIndicator';
 import { EmergencyEscalationCard } from './chat/EmergencyEscalationCard';
+import { DossierCard } from './chat/DossierCard';
 
 export interface ChatMessage {
   id: string;
@@ -48,6 +49,7 @@ export interface ChatMessageItemProps {
   onRegenerate?: (messageId: string) => void;
   disabled?: boolean;
   agentTitle?: string;
+  threadId?: string;
 }
 
 const SAFE_REFUSAL_SNIPPET = 'I am a wellness and care navigation assistant, not a licensed medical professional';
@@ -106,7 +108,8 @@ export function ChatMessageItem({
   onRerun,
   onRegenerate,
   disabled = false,
-  agentTitle
+  agentTitle,
+  threadId
 }: ChatMessageItemProps) {
   const displayContent = message.role === 'assistant'
     ? stripReferencePreamble(stripSuggestionLeakage(message.content))
@@ -116,6 +119,9 @@ export function ChatMessageItem({
     !isBoundaryNotice && (message.isRefusal || displayContent.includes(SAFE_REFUSAL_SNIPPET))
   );
   const traces = message.toolTraces || message.traces || [];
+  const extractionTraces = traces.filter(
+    (t) => t.tool === 'extract_document_dossier' && t.status === 'completed'
+  );
   const formattedTime = formatMessageTimestamp(message.timestamp);
 
   if (message.role === 'user') {
@@ -256,6 +262,21 @@ export function ChatMessageItem({
           </div>
         )}
       </div>
+
+      {/* Dossier Cards Rendered from Document Extraction Results */}
+      {extractionTraces.length > 0 && (
+        <div data-testid="chat-message-dossiers" className="mt-3 space-y-3">
+          {extractionTraces.map((trace, idx) => (
+            <DossierCard
+              key={trace.id || `dossier-${message.id}-${idx}`}
+              trace={trace}
+              threadId={threadId}
+              messageId={message.id}
+              agentTitle={agentTitle}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Assistant Message Bottom Footer Row */}
       <div

@@ -1033,6 +1033,8 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
                   onRerun={handleRerun}
                   onRegenerate={handleRegenerate}
                   disabled={isStreaming}
+                  threadId={threadId}
+                  agentTitle={selectedAgent?.title}
                 />
               ))}
 

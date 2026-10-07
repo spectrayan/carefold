@@ -90,3 +90,57 @@ export interface AgentDetail {
   readmeText?: string;
   description?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Extracted Dossier Types (Issue #94)
+// ---------------------------------------------------------------------------
+export interface ClinicalVisitDossierData {
+  reason_for_visit?: string;
+  physician_instructions?: string[];
+  follow_up_timeline?: string;
+  questions_to_ask?: string[];
+}
+
+export interface InsuranceBenefitsDossierData {
+  deductible?: string;
+  copays?: Record<string, string>;
+  coinsurance?: string;
+  out_of_pocket_maximum?: string;
+  in_out_network_rules?: string;
+  prior_authorization_flags?: string[];
+}
+
+export interface GenericDocumentDossierData {
+  summary?: string;
+  key_numerical_values?: Record<string, string>;
+  sections?: string[];
+}
+
+export type DossierType =
+  | 'clinical_visit'
+  | 'clinical'
+  | 'insurance_benefits'
+  | 'insurance'
+  | 'generic_document'
+  | 'generic'
+  | 'unknown';
+
+export interface ExtractedDossierPayload {
+  status?: string;
+  dossier_type?: string;
+  dossier?:
+    | ClinicalVisitDossierData
+    | InsuranceBenefitsDossierData
+    | GenericDocumentDossierData
+    | Record<string, any>;
+  is_grounded?: boolean;
+  unmatched_values?: string[];
+  source_file?: string;
+}
+
+export interface ChecklistItemState {
+  id: string;
+  text: string;
+  completed: boolean;
+  isCustom?: boolean;
+}
