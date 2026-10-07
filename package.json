@@ -9,9 +9,10 @@
   "scripts": {
     "check:licenses": "node scripts/licenses.mjs --check",
     "fix:licenses": "node scripts/licenses.mjs --fix",
+    "start": "bash scripts/start.sh",
     "version:bump": "node scripts/bump-version.mjs",
     "build": "pnpm -r --if-present run build",
-    "dev:backend": "backend/.venv/bin/python3 -m uvicorn carefold.main:app --host 0.0.0.0 --port 8000 --reload",
+    "dev:backend": "backend/.venv/bin/python3 -m uvicorn carefold.main:app --host 0.0.0.0 --port 8010 --reload",
     "dev:web": "pnpm --filter @carefold/web dev",
     "test": "pnpm -r --if-present run test",
     "test:e2e": "node tests/e2e/runner.js",

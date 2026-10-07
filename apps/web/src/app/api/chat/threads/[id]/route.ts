@@ -38,7 +38,7 @@ export async function GET(
     );
   }
 
-  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
 
   try {
     const res = await fetch(`${backendUrl}/api/chat/threads/${threadId}`, {

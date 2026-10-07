@@ -372,7 +372,7 @@ class TestBoundaryValuesConstants:
 
         # Network port: valid port range (1 - 65535)
         assert 1 <= def_const.DEFAULT_PORT <= 65535
-        assert def_const.DEFAULT_PORT == 8000
+        assert def_const.DEFAULT_PORT == 8010
 
     def test_defaults_immutability(self):
         """Verify that collections in defaults are immutable frozensets/tuples."""
@@ -384,6 +384,14 @@ class TestBoundaryValuesConstants:
         assert isinstance(def_const.PHASE_0_TOOLS, frozenset)
         assert isinstance(def_const.DEFAULT_FORBIDDEN_INTENTS, tuple)
         assert isinstance(def_const.DEFAULT_CORS_ORIGINS, tuple)
+        assert "http://localhost:3010" in def_const.DEFAULT_CORS_ORIGINS
+        assert "http://127.0.0.1:3010" in def_const.DEFAULT_CORS_ORIGINS
+        assert "http://localhost:8010" in def_const.DEFAULT_CORS_ORIGINS
+        assert "http://127.0.0.1:8010" in def_const.DEFAULT_CORS_ORIGINS
+        assert "http://localhost:3000" in def_const.DEFAULT_CORS_ORIGINS
+        assert "http://127.0.0.1:3000" in def_const.DEFAULT_CORS_ORIGINS
+        assert "http://localhost:8000" in def_const.DEFAULT_CORS_ORIGINS
+        assert "http://127.0.0.1:8000" in def_const.DEFAULT_CORS_ORIGINS
 
         # Confirm mutation attempts raise AttributeError
         with pytest.raises(AttributeError):

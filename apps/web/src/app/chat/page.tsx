@@ -22,7 +22,7 @@ import type { AgentSummary } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 async function getInstalledAgents(): Promise<AgentSummary[]> {
-  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
   try {
     const res = await fetch(`${backendUrl}/api/agents`, {
       headers: { Accept: 'application/json' },

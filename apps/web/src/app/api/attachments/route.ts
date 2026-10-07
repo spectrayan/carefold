@@ -24,7 +24,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(
   req: Request | NextRequest
 ): Promise<NextResponse<AttachmentUploadResponse | { error: string; code?: string }>> {
-  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
 
   try {
     const formData = await req.formData();
@@ -65,7 +65,7 @@ export async function POST(
 }
 
 export async function GET(): Promise<NextResponse> {
-  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
 
   try {
     const res = await fetch(`${backendUrl}/api/attachments`, {

@@ -91,7 +91,7 @@ SQLITE_JOURNAL_MODE: str = "WAL"
 # ============================================================================
 
 DEFAULT_HOST: str = "0.0.0.0"
-DEFAULT_PORT: int = 8000
+DEFAULT_PORT: int = 8010
 DEFAULT_VERSION: str = "0.1.0"
 APP_TITLE: str = "Carefold Local-First AI Runtime"
 APP_DESCRIPTION: str = (
@@ -101,8 +101,12 @@ APP_DESCRIPTION: str = (
 DEFAULT_CORS_ORIGINS: Tuple[str, ...] = (
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3010",
+    "http://127.0.0.1:3010",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "http://localhost:8010",
+    "http://127.0.0.1:8010",
 )
 
 

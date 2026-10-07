@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Unified Start Script & Non-Conflicting Default Ports (:8010, :3010) (DX)** (`#144`):
+  - Created unified coordinator script `scripts/start.sh` (with root symlink `start.sh`) coordinating FastAPI backend and Next.js web application.
+  - Added support for subcommands `all` (default foreground coordinator with SIGINT/SIGTERM trap cleanup), `start` / `daemon` (detached background with PID tracking in `.carefold.pids`), `stop` (clean termination of child PIDs and port listeners), `status` (colorized table showing ports, status, URLs), `backend` (foreground backend only), `web` (foreground web only), and `help`.
+  - Configured non-conflicting default ports: Backend on `:8010` (overridable via `CAREFOLD_BACKEND_PORT` / `PORT`), Web UI on `:3010` (overridable via `CAREFOLD_WEB_PORT` / `PORT`).
+  - Updated `backend/src/carefold/constants/defaults.py` to set `DEFAULT_PORT = 8010` and expanded `DEFAULT_CORS_ORIGINS` to support ports `3000`, `3010`, `8000`, and `8010` on localhost and loopback.
+  - Updated `backend/src/carefold/main.py` `run()` to honor `CAREFOLD_BACKEND_PORT` / `PORT` and `CAREFOLD_BACKEND_HOST` / `HOST` environment overrides.
+  - Added root `package.json` script `"start": "bash scripts/start.sh"` and updated `"dev:backend"` to `--port 8010`.
+  - Updated `apps/web/package.json` `"dev"` and `"start"` scripts to `--port 3010`.
+  - Updated fallback backend URL across 11 route files in `apps/web/src/app/**` (13 occurrences) from `:8000` to `:8010`.
+  - Added `.carefold.pids` to `.gitignore`.
+  - Added dedicated automated unit tests in `backend/tests/test_start_script.py` and updated `backend/tests/test_resource_loader.py`.
 - **Conversation History Sidebar: List, Resume, Rename and Delete Past Sessions (Web)** (`#93`):
   - Created storage index utility module `apps/web/src/lib/sessionHistory.ts` managing `carefold_threads_index_v1` in `localStorage` with automated migration of legacy `carefold_msgs_*` threads, LRU pruning (up to 50 sessions), and cross-tab/event synchronization.
   - Implemented Next.js route handler proxy `apps/web/src/app/api/chat/threads/[id]/route.ts` with strict alphanumeric slug validation forwarding `GET /api/chat/threads/[id]` to the LangGraph execution backend checkpoint store.

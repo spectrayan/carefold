@@ -74,8 +74,8 @@ export async function POST(req: Request | NextRequest): Promise<Response> {
     );
   }
 
-  // 3. Proxy to FastAPI Python backend (port 8000)
-  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
+  // 3. Proxy to FastAPI Python backend (port 8010)
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
   const resolvedThreadId = threadId || `thread_${agentId}_${Date.now()}`;
 
   const payload = {

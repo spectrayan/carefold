@@ -29,7 +29,7 @@ interface PageProps {
 
 export default async function AgentDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
 
   try {
     // The server never has the user's consent (it lives in browser storage), so it

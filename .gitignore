@@ -143,6 +143,7 @@ celerybeat.pid
 *.rdb
 *.aof
 *.pid
+.carefold.pids
 
 # RabbitMQ
 mnesia/

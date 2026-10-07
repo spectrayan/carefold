@@ -52,7 +52,7 @@ export async function GET(_req: Request | NextRequest): Promise<NextResponse<Hea
     // Try checking backend health if running
     let backendData: any = null;
     try {
-      const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
+      const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
       const backendRes = await fetch(`${backendUrl}/api/health`, {
         signal: AbortSignal.timeout(1500)
       });
