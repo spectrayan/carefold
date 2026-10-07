@@ -42,6 +42,7 @@ export const END_MARKER = '<!-- agents-table:end -->';
 
 /**
  * Extracts folded or single-line description from agent.yaml.
+ * Escapes backslashes first, then table pipe delimiters.
  */
 function parseDescription(agentYamlContent) {
   const descMatch = agentYamlContent.match(/^description:\s*(?:>-\s*|\|\s*|["']?)([\s\S]*?)(?=^\w[\w-]*:|\Z)/m);
@@ -56,6 +57,7 @@ function parseDescription(agentYamlContent) {
     .filter(Boolean)
     .join(' ')
     .trim()
+    .replace(/\\/g, '\\\\')
     .replace(/\|/g, '\\|');
 }
 
@@ -132,13 +134,19 @@ export function generateMarkdownTable(agents) {
 
 /**
  * Updates README.md between the marker comments.
+ * Avoids TOCTOU race conditions by reading directly inside try/catch rather than checking existence first.
  */
 export function updateReadmeTable(readmePath = DEFAULT_README_PATH, agentsDir = DEFAULT_AGENTS_DIR) {
-  if (!fs.existsSync(readmePath)) {
-    throw new Error(`README file not found: ${readmePath}`);
+  let content;
+  try {
+    content = fs.readFileSync(readmePath, 'utf8');
+  } catch (err) {
+    if (err && err.code === 'ENOENT') {
+      throw new Error(`README file not found: ${readmePath}`);
+    }
+    throw err;
   }
 
-  const content = fs.readFileSync(readmePath, 'utf8');
   const startIndex = content.indexOf(START_MARKER);
   const endIndex = content.indexOf(END_MARKER);
 
@@ -161,16 +169,22 @@ export function updateReadmeTable(readmePath = DEFAULT_README_PATH, agentsDir = 
 
 /**
  * Checks if the table in README.md is in sync with manifests.
+ * Avoids TOCTOU race conditions by reading directly inside try/catch.
  */
 export function checkReadmeTable(readmePath = DEFAULT_README_PATH, agentsDir = DEFAULT_AGENTS_DIR) {
-  if (!fs.existsSync(readmePath)) {
-    return {
-      synced: false,
-      reason: `README file not found: ${readmePath}`
-    };
+  let content;
+  try {
+    content = fs.readFileSync(readmePath, 'utf8');
+  } catch (err) {
+    if (err && err.code === 'ENOENT') {
+      return {
+        synced: false,
+        reason: `README file not found: ${readmePath}`
+      };
+    }
+    throw err;
   }
 
-  const content = fs.readFileSync(readmePath, 'utf8');
   const startIndex = content.indexOf(START_MARKER);
   const endIndex = content.indexOf(END_MARKER);
 
