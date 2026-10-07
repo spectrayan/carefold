@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Privacy & Browser Data Settings: Delete Conversations and Stored API Keys** (`#92`):
+  - Added dedicated "Privacy & Browser Data" section in `apps/web/src/components/SettingsModal.tsx` showing stored conversation count, estimated storage footprint, and saved API keys status.
+  - Implemented storage utility functions in `apps/web/src/lib/settings.ts` (`getBrowserStorageSummary`, `formatStorageSize`, `deleteCurrentConversation`, `deleteAllConversations`, and `clearStoredApiKeys`).
+  - Added accessible confirmation dialog (`role="alertdialog"`, `aria-modal="true"`, focus trap on Cancel, Escape dismissal) for destructive actions (deleting current conversation, clearing all conversations, and removing saved API keys).
+  - Ensured data isolation: deleting conversations wipes `carefold_msgs_*` and `carefold_thread_*` without affecting UI theme, clinical consents, or non-secret provider settings; clearing API keys resets credentials while preserving endpoints, provider selection, and model names.
+  - Added event-driven synchronization in `apps/web/src/app/chat/ChatClient.tsx` (`carefold:conversations-cleared`, `carefold:conversation-deleted`) to immediately reset the active conversation and abort streaming without requiring page refresh.
+  - Displayed explicit disclaimer in UI and confirmation dialogs clarifying that operations clear browser data only and Carefold stores no data on remote servers.
+  - Added comprehensive automated test suite in `apps/web/tests/components/settings-modal.test.tsx` verifying metrics display, confirmation cancellation, safe deletion, key clearing, and keyboard accessibility.
 - **Responsive Mobile Navigation Drawer in Navbar (Web)** (`#89`):
   - Added responsive hamburger menu toggle button (`data-testid="mobile-menu-toggle"`, `sm:hidden`) in `apps/web/src/components/Navbar.tsx` below `sm` breakpoint (< 640px) with accessible ARIA attributes (`aria-expanded`, `aria-controls="mobile-navigation"`, `aria-label="Toggle navigation menu"`).
   - Implemented collapsible mobile navigation panel (`id="mobile-navigation"`, `data-testid="mobile-navigation"`) rendering `Marketplace` and `Chat` route links with WCAG-compliant touch targets (`min-h-[44px]`).

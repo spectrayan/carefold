@@ -420,3 +420,140 @@ export function getProviderPrivacyState(settings: CarefoldUserSettings): Provide
   };
 }
 
+export interface BrowserStorageSummary {
+  conversationCount: number;
+  approximateSizeBytes: number;
+  formattedSize: string;
+  hasStoredApiKeys: boolean;
+  storedKeyProviders: string[];
+}
+
+export function formatStorageSize(bytes: number): string {
+  if (bytes <= 0) return '0 B';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
+ * Calculates current conversation count, approximate byte footprint,
+ * and status of stored API keys in the browser's localStorage.
+ */
+export function getBrowserStorageSummary(settings?: CarefoldUserSettings): BrowserStorageSummary {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return {
+      conversationCount: 0,
+      approximateSizeBytes: 0,
+      formattedSize: '0 B',
+      hasStoredApiKeys: false,
+      storedKeyProviders: []
+    };
+  }
+
+  let conversationCount = 0;
+  let approximateSizeBytes = 0;
+
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (!key) continue;
+      if (key.startsWith('carefold_msgs_')) {
+        conversationCount++;
+        const val = window.localStorage.getItem(key) || '';
+        approximateSizeBytes += (key.length + val.length) * 2; // UTF-16 approximate bytes
+      } else if (key.startsWith('carefold_thread_')) {
+        const val = window.localStorage.getItem(key) || '';
+        approximateSizeBytes += (key.length + val.length) * 2;
+      }
+    }
+  } catch {
+    // Graceful storage failure recovery
+  }
+
+  const currentSettings = settings || loadSettings();
+  const storedKeyProviders: string[] = [];
+  if (currentSettings.keys.google?.trim()) storedKeyProviders.push('Google Gemini');
+  if (currentSettings.keys.anthropic?.trim()) storedKeyProviders.push('Anthropic Claude');
+  if (currentSettings.keys.openai?.trim()) storedKeyProviders.push('OpenAI');
+  if (currentSettings.keys.custom?.trim()) storedKeyProviders.push('Custom');
+
+  return {
+    conversationCount,
+    approximateSizeBytes,
+    formattedSize: formatStorageSize(approximateSizeBytes),
+    hasStoredApiKeys: storedKeyProviders.length > 0,
+    storedKeyProviders
+  };
+}
+
+/**
+ * Deletes the conversation associated with the specified thread ID and/or agent ID.
+ * Dispatches 'carefold:conversation-deleted'.
+ */
+export function deleteCurrentConversation(threadId?: string, agentId?: string): boolean {
+  if (typeof window === 'undefined' || !window.localStorage) return false;
+  try {
+    if (threadId) {
+      window.localStorage.removeItem(`carefold_msgs_${threadId}`);
+    }
+    if (agentId) {
+      const storedThread = window.localStorage.getItem(`carefold_thread_${agentId}`);
+      if (storedThread && !threadId) {
+        window.localStorage.removeItem(`carefold_msgs_${storedThread}`);
+      }
+      window.localStorage.removeItem(`carefold_thread_${agentId}`);
+    }
+    window.dispatchEvent(
+      new CustomEvent('carefold:conversation-deleted', {
+        detail: { threadId, agentId }
+      })
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Permanently removes all cached conversations and threads from localStorage.
+ * Leaves theme, consents, and non-secret user settings intact.
+ * Dispatches 'carefold:conversations-cleared'.
+ */
+export function deleteAllConversations(): { deletedCount: number } {
+  if (typeof window === 'undefined' || !window.localStorage) return { deletedCount: 0 };
+  let deletedCount = 0;
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key && (key.startsWith('carefold_msgs_') || key.startsWith('carefold_thread_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    for (const key of keysToRemove) {
+      if (key.startsWith('carefold_msgs_')) deletedCount++;
+      window.localStorage.removeItem(key);
+    }
+    window.dispatchEvent(new CustomEvent('carefold:conversations-cleared'));
+  } catch {
+    // Storage access protection
+  }
+  return { deletedCount };
+}
+
+/**
+ * Removes all stored API keys from settings while preserving provider, model, and endpoints.
+ * Dispatches 'carefold:settings-changed'.
+ */
+export function clearStoredApiKeys(): CarefoldUserSettings {
+  return saveSettings({
+    keys: {
+      google: '',
+      anthropic: '',
+      openai: '',
+      custom: ''
+    }
+  });
+}
+
+

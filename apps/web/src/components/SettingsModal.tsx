@@ -17,7 +17,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Settings,
   X,
@@ -32,13 +32,20 @@ import {
   Sun,
   Moon,
   Laptop,
-  ShieldAlert
+  ShieldAlert,
+  Database,
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   type CarefoldUserSettings,
   loadSettings,
-  saveSettings
+  saveSettings,
+  getBrowserStorageSummary,
+  deleteAllConversations,
+  deleteCurrentConversation,
+  clearStoredApiKeys,
+  type BrowserStorageSummary
 } from '@/lib/settings';
 import type { AgentSummary } from '@/lib/types';
 import { withdrawAllClinicalConsents, withdrawClinicalConsent } from '@/lib/clinicalConsent';
@@ -60,6 +67,10 @@ export interface SettingsModalProps {
   onSave?: (savedSettings: CarefoldUserSettings) => void;
   /** Optional agent catalog used to show friendly titles for clinical consents. */
   agents?: Pick<AgentSummary, 'id' | 'title'>[];
+  /** Optional active agent ID when opened from chat */
+  currentAgentId?: string;
+  /** Optional active thread ID when opened from chat */
+  currentThreadId?: string;
 }
 
 export function SettingsModal({
@@ -68,7 +79,9 @@ export function SettingsModal({
   initialSettings,
   settings,
   onSave,
-  agents
+  agents,
+  currentAgentId,
+  currentThreadId
 }: SettingsModalProps) {
   const activeInitial = initialSettings || settings;
   const [formData, setFormData] = useState<CarefoldUserSettings>(() => activeInitial || loadSettings());
@@ -100,24 +113,80 @@ export function SettingsModal({
   // Save confirmation banner state
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  // Privacy & Browser Data state (#92)
+  const [storageSummary, setStorageSummary] = useState<BrowserStorageSummary>(() =>
+    getBrowserStorageSummary(activeInitial)
+  );
+  const [confirmModalAction, setConfirmModalAction] = useState<
+    'deleteAll' | 'deleteCurrent' | 'clearKeys' | null
+  >(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const cancelConfirmBtnRef = useRef<HTMLButtonElement>(null);
+
+  const hasCurrentConversation = Boolean(currentThreadId || currentAgentId);
+
   // Sync internal state when modal opens or initial settings change
   useEffect(() => {
     if (isOpen) {
-      setFormData(activeInitial || loadSettings());
+      const initial = activeInitial || loadSettings();
+      setFormData(initial);
       setSavedSuccess(false);
+      setStorageSummary(getBrowserStorageSummary(initial));
+      setFeedbackMessage(null);
+      setConfirmModalAction(null);
     }
   }, [isOpen, activeInitial]);
 
-  // Handle ESC key press
+  // Focus cancel button when confirmation dialog opens
+  useEffect(() => {
+    if (confirmModalAction) {
+      const timer = setTimeout(() => {
+        cancelConfirmBtnRef.current?.focus();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [confirmModalAction]);
+
+  // Handle ESC key press (dismiss confirmation dialog first if open, otherwise close modal)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
-        onClose();
+        if (confirmModalAction) {
+          e.stopPropagation();
+          setConfirmModalAction(null);
+        } else {
+          onClose();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, confirmModalAction]);
+
+  const handleExecuteConfirmedAction = () => {
+    if (confirmModalAction === 'deleteAll') {
+      const res = deleteAllConversations();
+      setStorageSummary(getBrowserStorageSummary(formData));
+      setFeedbackMessage(
+        res.deletedCount === 1
+          ? '1 conversation deleted from browser'
+          : `${res.deletedCount} conversations deleted from browser`
+      );
+    } else if (confirmModalAction === 'deleteCurrent') {
+      deleteCurrentConversation(currentThreadId, currentAgentId);
+      setStorageSummary(getBrowserStorageSummary(formData));
+      setFeedbackMessage('Current conversation deleted from browser');
+    } else if (confirmModalAction === 'clearKeys') {
+      const cleared = clearStoredApiKeys();
+      setFormData(cleared);
+      setStorageSummary(getBrowserStorageSummary(cleared));
+      if (onSave) {
+        onSave(cleared);
+      }
+      setFeedbackMessage('Saved API keys removed from browser');
+    }
+    setConfirmModalAction(null);
+  };
 
   if (!isOpen) return null;
 
@@ -510,6 +579,98 @@ export function SettingsModal({
             </div>
           </div>
 
+          {/* Section 6: Privacy & Browser Data (#92) */}
+          <div
+            data-testid="privacy-data-section"
+            className="space-y-3 pt-2 border-t border-slate-200 dark:border-zinc-800"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
+                <span>Privacy & Browser Data</span>
+              </h3>
+            </div>
+
+            <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
+              Carefold stores conversations and API keys locally in your browser. Clearing this data removes it from this browser only; server-side checkpoints (if any) are not affected. This clears browser data only.
+            </p>
+
+            {/* Storage Overview Card */}
+            <div
+              data-testid="storage-overview-card"
+              className="p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/60 space-y-2 text-xs"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 dark:text-zinc-400">Stored Conversations:</span>
+                <span
+                  data-testid="stored-conversations-stat"
+                  className="font-semibold text-slate-800 dark:text-zinc-200"
+                >
+                  {storageSummary.conversationCount === 0
+                    ? 'None (0 B)'
+                    : `${storageSummary.conversationCount} ${storageSummary.conversationCount === 1 ? 'session' : 'sessions'} (${storageSummary.formattedSize})`}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 dark:text-zinc-400">Stored API Keys:</span>
+                <span
+                  data-testid="stored-keys-stat"
+                  className="font-semibold text-slate-800 dark:text-zinc-200"
+                >
+                  {storageSummary.hasStoredApiKeys
+                    ? `Saved (${storageSummary.storedKeyProviders.join(', ')})`
+                    : 'None saved'}
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-2 pt-1">
+              {hasCurrentConversation && (
+                <button
+                  type="button"
+                  data-testid="delete-current-conversation-btn"
+                  onClick={() => setConfirmModalAction('deleteCurrent')}
+                  className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs font-semibold transition cursor-pointer"
+                >
+                  Delete current conversation
+                </button>
+              )}
+
+              <button
+                type="button"
+                data-testid="clear-conversations-btn"
+                disabled={storageSummary.conversationCount === 0}
+                onClick={() => setConfirmModalAction('deleteAll')}
+                className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Clear all conversations
+              </button>
+
+              <button
+                type="button"
+                data-testid="clear-api-keys-btn"
+                disabled={!storageSummary.hasStoredApiKeys}
+                onClick={() => setConfirmModalAction('clearKeys')}
+                className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs font-semibold transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Remove saved API keys
+              </button>
+            </div>
+
+            {/* In-Modal Feedback Alert */}
+            {feedbackMessage && (
+              <div
+                role="status"
+                data-testid="privacy-action-feedback"
+                className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200 flex items-center gap-2 animate-in fade-in"
+              >
+                <Check className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span>{feedbackMessage}</span>
+              </div>
+            )}
+          </div>
+
           {/* Footer Actions */}
           <div className="pt-4 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-between">
             <div>
@@ -543,6 +704,68 @@ export function SettingsModal({
             </div>
           </div>
         </form>
+
+        {/* Confirmation Dialog Overlay (#92) */}
+        {confirmModalAction && (
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="confirm-dialog-title"
+            aria-describedby="confirm-dialog-desc"
+            data-testid="privacy-confirm-dialog"
+            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setConfirmModalAction(null);
+            }}
+          >
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md p-5 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 id="confirm-dialog-title" className="text-sm font-bold text-slate-900 dark:text-zinc-100">
+                    {confirmModalAction === 'deleteAll'
+                      ? 'Delete all conversations?'
+                      : confirmModalAction === 'deleteCurrent'
+                      ? 'Delete current conversation?'
+                      : 'Remove saved API keys?'}
+                  </h3>
+                  <p id="confirm-dialog-desc" className="text-xs text-slate-600 dark:text-zinc-400 mt-1 leading-relaxed">
+                    {confirmModalAction === 'deleteAll'
+                      ? 'This will permanently remove all cached conversation messages and session threads from this browser. This action cannot be undone.'
+                      : confirmModalAction === 'deleteCurrent'
+                      ? 'This will permanently remove the message history for this conversation from this browser. This action cannot be undone.'
+                      : 'This will remove all stored API keys (Google Gemini, Anthropic Claude, OpenAI, Custom) from this browser. Your provider selection and endpoints will be preserved.'}
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-500 mt-1.5 italic">
+                    This clears browser data only.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
+                <button
+                  type="button"
+                  ref={cancelConfirmBtnRef}
+                  data-testid="confirm-cancel-btn"
+                  onClick={() => setConfirmModalAction(null)}
+                  className="px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  data-testid="confirm-destructive-btn"
+                  onClick={handleExecuteConfirmedAction}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm transition cursor-pointer"
+                >
+                  {confirmModalAction === 'clearKeys' ? 'Remove keys' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

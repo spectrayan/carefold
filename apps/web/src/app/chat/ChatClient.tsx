@@ -327,6 +327,44 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     }
   };
 
+  // Synchronize when conversations are cleared or deleted via SettingsModal (#92)
+  useEffect(() => {
+    const handleAllConversationsCleared = () => {
+      stopGeneration();
+      setMessages([]);
+      setSuggestedQuestions([]);
+      setErrorMessage(null);
+      setPoliteAnnouncement('');
+      setAssertiveAnnouncement('');
+      setInputText('');
+      setIsAtBottom(true);
+      isAtBottomRef.current = true;
+      setUnreadCount(0);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = '42px';
+        textareaRef.current.style.overflowY = 'hidden';
+      }
+      const newThread = `thread-${selectedAgentId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      setThreadId(newThread);
+      // Intentionally do not write newThread to localStorage yet so storage remains clean until a message is sent.
+    };
+
+    const handleSingleConversationDeleted = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail || detail.threadId === threadId || detail.agentId === selectedAgentId) {
+        handleAllConversationsCleared();
+      }
+    };
+
+    window.addEventListener('carefold:conversations-cleared', handleAllConversationsCleared);
+    window.addEventListener('carefold:conversation-deleted', handleSingleConversationDeleted);
+
+    return () => {
+      window.removeEventListener('carefold:conversations-cleared', handleAllConversationsCleared);
+      window.removeEventListener('carefold:conversation-deleted', handleSingleConversationDeleted);
+    };
+  }, [selectedAgentId, threadId]);
+
   /**
    * Core SSE chat streaming pipeline reused by sendMessage and handleRegenerate.
    */
@@ -992,6 +1030,8 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
         initialSettings={settings}
         onSave={handleSettingsChange}
         agents={visibleAgents}
+        currentAgentId={selectedAgentId}
+        currentThreadId={threadId}
       />
 
       {/* Clinical-assist consent dialog (#87) */}
