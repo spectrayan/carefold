@@ -22,6 +22,8 @@ import { skillListCommand, skillAddCommand } from './commands/skill.js';
 import { runCommand } from './commands/run.js';
 import { logCommand } from './commands/log.js';
 import { evalCommand } from './commands/eval.js';
+import { healthCommand } from './commands/health.js';
+import { getCliVersion } from './utils/version.js';
 
 export function createProgram(): Command {
   const program = new Command();
@@ -29,7 +31,38 @@ export function createProgram(): Command {
   program
     .name('carefold')
     .description('Carefold CLI: Local-first runtime for specialist health agents')
-    .version('0.3.0-beta.1');
+    .version(getCliVersion(), '-v, --version', 'Output the current version')
+    .option('-H, --health', 'Run system health diagnostics', false);
+
+  // version
+  program
+    .command('version')
+    .description('Display Carefold CLI version')
+    .option('-j, --json', 'Output version as JSON', false)
+    .action(async (opts) => {
+      const version = getCliVersion();
+      if (opts.json) {
+        console.log(JSON.stringify({ version }, null, 2));
+      } else {
+        console.log(version);
+      }
+    });
+
+  // health / status
+  program
+    .command('health')
+    .alias('status')
+    .description('Run Carefold runtime and environment health diagnostics')
+    .option('-j, --json', 'Output health report as machine-readable JSON', false)
+    .option('-w, --workspace <path>', 'Path to Carefold workspace root')
+    .option('--backend-url <url>', 'Override backend API endpoint URL')
+    .option('--model-url <url>', 'Override model / Ollama endpoint URL')
+    .option('--ollama-url <url>', 'Alias for --model-url')
+    .option('--timeout <ms>', 'Network request timeout in milliseconds', '2000')
+    .option('-q, --quiet', 'Suppress terminal output and signal status via exit code', false)
+    .action(async (opts) => {
+      await healthCommand(opts);
+    });
 
   // init [dir]
   program
@@ -150,6 +183,57 @@ export function createProgram(): Command {
     .action(async (opts) => {
       await evalCommand(opts);
     });
+
+  // Wrap parseAsync to handle top-level --health and -H flag aliases
+  const origParseAsync = program.parseAsync.bind(program);
+  program.parseAsync = async (argv?: readonly string[], parseOptions?: any) => {
+    const rawArgs = argv ? [...argv] : process.argv;
+    const userArgs = rawArgs.slice(2);
+    const isHealthFlag = userArgs.some((a) => a === '-H' || a === '--health');
+    const knownCommands = program.commands
+      .map((c) => c.name())
+      .concat(program.commands.flatMap((c) => c.aliases()));
+    const hasSubcommand = userArgs.some((a) => !a.startsWith('-') && knownCommands.includes(a));
+
+    if (isHealthFlag && !hasSubcommand) {
+      const healthCmd = program.commands.find((c) => c.name() === 'health');
+      if (healthCmd) {
+        const filteredArgs = userArgs.filter((a) => a !== '-H' && a !== '--health');
+        healthCmd.parseOptions(filteredArgs);
+        await healthCommand(healthCmd.opts());
+      } else {
+        await healthCommand();
+      }
+      return program;
+    }
+
+    return origParseAsync(argv, parseOptions);
+  };
+
+  const origParse = program.parse.bind(program);
+  program.parse = (argv?: readonly string[], parseOptions?: any) => {
+    const rawArgs = argv ? [...argv] : process.argv;
+    const userArgs = rawArgs.slice(2);
+    const isHealthFlag = userArgs.some((a) => a === '-H' || a === '--health');
+    const knownCommands = program.commands
+      .map((c) => c.name())
+      .concat(program.commands.flatMap((c) => c.aliases()));
+    const hasSubcommand = userArgs.some((a) => !a.startsWith('-') && knownCommands.includes(a));
+
+    if (isHealthFlag && !hasSubcommand) {
+      const healthCmd = program.commands.find((c) => c.name() === 'health');
+      if (healthCmd) {
+        const filteredArgs = userArgs.filter((a) => a !== '-H' && a !== '--health');
+        healthCmd.parseOptions(filteredArgs);
+        void healthCommand(healthCmd.opts());
+      } else {
+        void healthCommand();
+      }
+      return program;
+    }
+
+    return origParse(argv, parseOptions);
+  };
 
   return program;
 }

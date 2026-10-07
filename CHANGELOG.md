@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Dynamic Version, System Health Diagnostics & Status Checks (CLI)** (`#32`):
+  - Added dynamic CLI version resolution utility `packages/cli/src/utils/version.ts` reading semantic version from `packages/cli/package.json` with safe fallback to `0.4.0-beta.1`.
+  - Configured Commander `.version(getCliVersion(), '-v, --version')` supporting both `-v` and `--version` flags.
+  - Added `carefold version` command with optional `-j, --json` flag for machine-readable version queries.
+  - Added `carefold health` diagnostics command (with `carefold status` alias and top-level `--health` / `-H` flags) in `packages/cli/src/commands/health.ts`.
+  - Implemented 5 system health checks: Node runtime version (`>= 20.0.0`), Backend API connectivity (`:8010/api/health` with `CAREFOLD_BACKEND_URL` / `BACKEND_URL` support), Ollama daemon availability (`:11434/api/tags` with cloud provider key fallback detection), cognitive memory store operational status (`SQLite FTS5` / `Spector`), and specialist agent / skill catalog counts.
+  - Implemented zero-dependency ANSI colors utility (`packages/cli/src/utils/colors.ts`) respecting `NO_COLOR`, `FORCE_COLOR`, and `isTTY`.
+  - Implemented ANSI-aware table formatting in `packages/cli/src/utils/format.ts` (`stripAnsi`, `visibleLength`, `padAnsiEnd`) ensuring colored pills (`[PASS]`, `[WARN]`, `[FAIL]`) align cleanly without distorting column widths.
+  - Added structured machine-readable `--json` output and `--quiet` suppression flag.
+  - Enforced exit code semantics (0 when all checks pass, 1 when any check is degraded or unhealthy).
+  - Ensured offline resilience without unhandled errors or crashing when endpoints are offline.
+  - Added comprehensive automated test suites in `packages/cli/tests/01_unit_args_parsing.test.ts` and `packages/cli/tests/11_unit_health.test.ts`.
 - **Skills Browser & Plain-Language Agent Boundaries Panel (Web)** (`#96`):
   - Created `/skills` catalog page in `apps/web/src/app/skills/page.tsx` and `SkillsClient.tsx` featuring real-time search across names, descriptions, categories, and tools, multi-domain filter tabs (`All Domains`, `Clinical`, `Navigation`, `Wellness`), risk class chips, verified and evals badges, defensive template exclusions, and non-clinical safety disclaimer banner.
   - Created `/skills/[id]` detail view in `apps/web/src/app/skills/[id]/page.tsx` and `SkillDetailClient.tsx` displaying full operating instructions, protocol text, permitted sandbox tools, bundled reference documents list, and forbidden intent guardrails.

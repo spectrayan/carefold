@@ -20,8 +20,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runCli } from './helpers/cli-runner.js';
 
+import fsSync from 'node:fs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../../..');
+const cliPkg = JSON.parse(fsSync.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'));
+const expectedVersion = cliPkg.version;
 
 describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
   it('displays top-level help text with all commands', async () => {
@@ -34,12 +38,33 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
     expect(res.stdout).toContain('run');
     expect(res.stdout).toContain('log');
     expect(res.stdout).toContain('eval');
+    expect(res.stdout).toContain('health');
+    expect(res.stdout).toContain('version');
   });
 
   it('reports the correct version number with --version', async () => {
     const res = await runCli(['--version']);
     expect(res.exitCode).toBe(0);
-    expect(res.stdout.trim()).toBe('0.3.0-beta.1');
+    expect(res.stdout.trim()).toBe(expectedVersion);
+  });
+
+  it('reports the correct version number with -v', async () => {
+    const res = await runCli(['-v']);
+    expect(res.exitCode).toBe(0);
+    expect(res.stdout.trim()).toBe(expectedVersion);
+  });
+
+  it('reports the correct version number with version command', async () => {
+    const res = await runCli(['version']);
+    expect(res.exitCode).toBe(0);
+    expect(res.stdout.trim()).toBe(expectedVersion);
+  });
+
+  it('reports valid JSON with version --json', async () => {
+    const res = await runCli(['version', '--json']);
+    expect(res.exitCode).toBe(0);
+    const parsed = JSON.parse(res.stdout);
+    expect(parsed.version).toBe(expectedVersion);
   });
 
   it('fails with non-zero exit code on unknown command', async () => {

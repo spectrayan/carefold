@@ -38,8 +38,25 @@ export {
 export { runCommand, type RunCommandOptions } from './commands/run.js';
 export { logCommand, type LogCommandOptions } from './commands/log.js';
 export { evalCommand, type EvalOptions } from './commands/eval.js';
+export {
+  healthCommand,
+  runDiagnostics,
+  checkNodeVersion,
+  checkBackendApi,
+  checkOllamaDaemon,
+  checkMemoryStore,
+  checkCatalog,
+  type HealthOptions,
+  type HealthReport,
+  type DiagnosticCheckResult,
+  type DiagnosticStatus,
+  type OverallStatus
+} from './commands/health.js';
 export { CliError, ExitCodes } from './utils/errors.js';
 export { findWorkspaceRoot, getWorkspacePaths, loadWorkspaceConfig } from './utils/workspace.js';
+export { getCliVersion } from './utils/version.js';
+export { colors, formatStatusPill, isColorSupported } from './utils/colors.js';
+export { formatTable, formatRiskBadge, stripAnsi, visibleLength, padAnsiEnd } from './utils/format.js';
 
 // Execute binary if run from CLI
 const isCliEntry =
