@@ -81,10 +81,19 @@ export function SessionHistorySidebar({
 
   const editInputRef = useRef<HTMLInputElement>(null);
   const confirmDeleteBtnRef = useRef<HTMLButtonElement>(null);
+  const cancelDeleteBtnRef = useRef<HTMLButtonElement>(null);
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const refreshSessions = () => {
     discoverAndMigrateLegacySessions();
     setSessions(listSessions());
+  };
+
+  const dismissDeleteDialog = () => {
+    setDeletingSessionId(null);
+    setTimeout(() => {
+      deleteTriggerRef.current?.focus();
+    }, 0);
   };
 
   useEffect(() => {
@@ -118,13 +127,35 @@ export function SessionHistorySidebar({
     }
   }, [deletingSessionId]);
 
-  // Handle escape key
+  // Handle escape key and accessibility focus trapping for delete alertdialog
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (deletingSessionId) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          dismissDeleteDialog();
+        } else if (e.key === 'Tab') {
+          const cancelBtn = cancelDeleteBtnRef.current;
+          const confirmBtn = confirmDeleteBtnRef.current;
+          if (!cancelBtn || !confirmBtn) return;
+
+          if (e.shiftKey) {
+            if (document.activeElement === cancelBtn) {
+              e.preventDefault();
+              confirmBtn.focus();
+            }
+          } else {
+            if (document.activeElement === confirmBtn) {
+              e.preventDefault();
+              cancelBtn.focus();
+            }
+          }
+        }
+        return;
+      }
+
       if (e.key === 'Escape') {
-        if (deletingSessionId) {
-          setDeletingSessionId(null);
-        } else if (editingSessionId) {
+        if (editingSessionId) {
           setEditingSessionId(null);
         } else if (isOpen) {
           onClose();
@@ -160,6 +191,7 @@ export function SessionHistorySidebar({
 
   const handleStartDelete = (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    deleteTriggerRef.current = e.currentTarget as HTMLButtonElement;
     setDeletingSessionId(sessionId);
   };
 
@@ -167,7 +199,7 @@ export function SessionHistorySidebar({
     if (!deletingSessionId) return;
     const idToDelete = deletingSessionId;
     deleteSession(idToDelete);
-    setDeletingSessionId(null);
+    dismissDeleteDialog();
     refreshSessions();
     if (onDeleteSession) {
       onDeleteSession(idToDelete);
@@ -175,7 +207,7 @@ export function SessionHistorySidebar({
   };
 
   const handleCancelDelete = () => {
-    setDeletingSessionId(null);
+    dismissDeleteDialog();
   };
 
   if (!isOpen) return null;
@@ -396,7 +428,9 @@ export function SessionHistorySidebar({
 
               <div className="flex items-center justify-end gap-2 mt-5">
                 <button
+                  ref={cancelDeleteBtnRef}
                   type="button"
+                  data-testid="cancel-delete-session-btn"
                   onClick={handleCancelDelete}
                   className="px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition cursor-pointer"
                 >

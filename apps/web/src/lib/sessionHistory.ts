@@ -16,6 +16,7 @@
  */
 
 export const CAREFOLD_THREADS_INDEX_KEY = 'carefold_threads_index_v1';
+export const MAX_INDEXED_SESSIONS = 50;
 
 export interface ChatSessionMeta {
   id: string;
@@ -119,7 +120,17 @@ export function saveSession(meta: ChatSessionMeta): void {
     index.unshift(meta);
   }
 
-  setRawIndex(index);
+  // Sort by updatedAt descending (most recent first) to maintain genuine LRU order
+  index.sort((a, b) => {
+    const tA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const tB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return tB - tA;
+  });
+
+  // LRU Pruning: bound index to MAX_INDEXED_SESSIONS
+  const pruned = index.slice(0, MAX_INDEXED_SESSIONS);
+
+  setRawIndex(pruned);
   notifySessionsChanged();
 }
 
@@ -248,6 +259,24 @@ const KNOWN_AGENTS = [
 ];
 
 /**
+ * Generates a cryptographically secure thread ID.
+ * Employs crypto.randomUUID() when supported, with cryptographically secure fallback
+ * to crypto.getRandomValues(). Prevents CWE-338 insecure randomness security alerts.
+ */
+export function generateThreadId(agentId: string = 'visit-steward'): string {
+  const secureRandom =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID().slice(0, 8)
+      : typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function'
+      ? Array.from(crypto.getRandomValues(new Uint8Array(8)))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('')
+          .slice(0, 8)
+      : `${Date.now()}`;
+  return `thread-${agentId}-${Date.now()}-${secureRandom}`;
+}
+
+/**
  * Extracts agent ID from thread ID string.
  */
 export function extractAgentIdFromThread(threadId: string): string {
@@ -266,7 +295,7 @@ export function extractAgentIdFromThread(threadId: string): string {
 
   // Fallback heuristic: strip "thread-" and trailing timestamp/random suffixes
   const stripped = threadId.startsWith('thread-') ? threadId.slice(7) : threadId;
-  const match = stripped.match(/^([a-zA-Z0-9_\-]+?)(?:-\d{10,14}(?:-[a-z0-9]+)?)?$/);
+  const match = stripped.match(/^([a-zA-Z0-9_\-]+?)(?:-\d{10,14}(?:-[a-zA-Z0-9_\-]+)?)?$/);
   if (match && match[1]) {
     return match[1];
   }
@@ -322,7 +351,13 @@ export function discoverAndMigrateLegacySessions(): void {
     }
 
     if (modified) {
-      setRawIndex(index);
+      index.sort((a, b) => {
+        const tA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const tB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return tB - tA;
+      });
+      const pruned = index.slice(0, MAX_INDEXED_SESSIONS);
+      setRawIndex(pruned);
       notifySessionsChanged();
     }
   } catch {

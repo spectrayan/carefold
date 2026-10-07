@@ -18,6 +18,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   CAREFOLD_THREADS_INDEX_KEY,
+  MAX_INDEXED_SESSIONS,
   listSessions,
   getSession,
   saveSession,
@@ -26,6 +27,8 @@ import {
   deleteSession,
   discoverAndMigrateLegacySessions,
   initSessionHistoryListeners,
+  generateThreadId,
+  extractAgentIdFromThread,
   type ChatSessionMeta
 } from '@/lib/sessionHistory';
 
@@ -272,6 +275,82 @@ describe('sessionHistory Storage Index Library', () => {
       window.dispatchEvent(new CustomEvent('carefold:conversations-cleared'));
 
       expect(listSessions()).toHaveLength(0);
+    });
+  });
+
+  describe('generateThreadId & extractAgentIdFromThread', () => {
+    it('generates a thread ID prefixed with thread-{agentId} and timestamp', () => {
+      const threadId = generateThreadId('cardiology-guide');
+      expect(threadId).toMatch(/^thread-cardiology-guide-\d+-[a-zA-Z0-9_\-]+$/);
+    });
+
+    it('defaults agentId to visit-steward when not provided', () => {
+      const threadId = generateThreadId();
+      expect(threadId).toMatch(/^thread-visit-steward-\d+-[a-zA-Z0-9_\-]+$/);
+      expect(extractAgentIdFromThread(threadId)).toBe('visit-steward');
+    });
+
+    it('generates unique thread IDs across subsequent calls', () => {
+      const id1 = generateThreadId('visit-steward');
+      const id2 = generateThreadId('visit-steward');
+      expect(id1).not.toBe(id2);
+    });
+
+    it('extracts agent ID cleanly from generated thread IDs for both known and custom agents', () => {
+      const knownThread = generateThreadId('pulmonology-guide');
+      expect(extractAgentIdFromThread(knownThread)).toBe('pulmonology-guide');
+
+      const customThread = generateThreadId('specialist-pediatric');
+      expect(extractAgentIdFromThread(customThread)).toBe('specialist-pediatric');
+    });
+  });
+
+  describe('LRU Bounding & MAX_INDEXED_SESSIONS', () => {
+    it('defines MAX_INDEXED_SESSIONS as 50', () => {
+      expect(MAX_INDEXED_SESSIONS).toBe(50);
+    });
+
+    it('prunes index to exactly 50 sessions when more than 50 sessions are saved, evicting oldest', () => {
+      // Add 60 sessions with increasing timestamps
+      for (let i = 1; i <= 60; i++) {
+        const timestamp = new Date(Date.UTC(2026, 0, 1, 0, i, 0)).toISOString();
+        saveSession({
+          id: `thread-session-${i}`,
+          agentId: 'visit-steward',
+          title: `Session ${i}`,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          messageCount: 1
+        });
+      }
+
+      const sessions = listSessions();
+      expect(sessions).toHaveLength(50);
+
+      // Newest should be session-60, oldest retained should be session-11
+      expect(sessions[0].id).toBe('thread-session-60');
+      expect(sessions[49].id).toBe('thread-session-11');
+
+      // Sessions 1 to 10 should be evicted from the index
+      expect(getSession('thread-session-1')).toBeNull();
+      expect(getSession('thread-session-10')).toBeNull();
+      expect(getSession('thread-session-11')).not.toBeNull();
+    });
+
+    it('prunes to MAX_INDEXED_SESSIONS during discoverAndMigrateLegacySessions', () => {
+      // Store 60 unindexed legacy threads
+      for (let i = 1; i <= 60; i++) {
+        localStorage.setItem(
+          `carefold_msgs_thread-legacy-bulk-${i}`,
+          JSON.stringify([{ role: 'user', content: `Legacy consultation ${i}` }])
+        );
+      }
+
+      discoverAndMigrateLegacySessions();
+
+      const sessions = listSessions();
+      expect(sessions.length).toBeLessThanOrEqual(50);
+      expect(sessions).toHaveLength(50);
     });
   });
 });

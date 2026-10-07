@@ -45,7 +45,11 @@ import { ScrollToBottomButton } from '@/components/chat/ScrollToBottomButton';
 import { DossierExportMenu } from '@/components/chat/DossierExportMenu';
 import { ClinicalConsentDialog } from '@/components/ClinicalConsentDialog';
 import { SessionHistorySidebar } from '@/components/chat/SessionHistorySidebar';
-import { upsertSessionFromMessages, type ChatSessionMeta } from '@/lib/sessionHistory';
+import {
+  upsertSessionFromMessages,
+  generateThreadId,
+  type ChatSessionMeta
+} from '@/lib/sessionHistory';
 import {
   grantClinicalConsent,
   hasClinicalConsent,
@@ -174,7 +178,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           setMessages([]);
         }
       } else {
-        const newThread = `thread-${selectedAgentId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const newThread = generateThreadId(selectedAgentId);
         setThreadId(newThread);
         localStorage.setItem(`carefold_thread_${selectedAgentId}`, newThread);
         setMessages([]);
@@ -301,7 +305,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
 
   const handleNewSession = () => {
     stopGeneration();
-    const newThread = `thread-${selectedAgentId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const newThread = generateThreadId(selectedAgentId);
     setThreadId(newThread);
     if (typeof window !== 'undefined') {
       try {
@@ -355,7 +359,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
         textareaRef.current.style.height = '42px';
         textareaRef.current.style.overflowY = 'hidden';
       }
-      const newThread = `thread-${selectedAgentId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const newThread = generateThreadId(selectedAgentId);
       setThreadId(newThread);
       // Intentionally do not write newThread to localStorage yet so storage remains clean until a message is sent.
     };

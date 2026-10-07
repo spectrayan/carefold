@@ -214,4 +214,83 @@ describe('SessionHistorySidebar Component', () => {
 
     expect(handleClose).toHaveBeenCalled();
   });
+
+  describe('Accessibility Focus Trapping in Delete Dialog', () => {
+    it('traps Tab and Shift+Tab keyboard focus between Cancel and Delete buttons', () => {
+      render(
+        <SessionHistorySidebar
+          isOpen={true}
+          onClose={vi.fn()}
+          activeThreadId="thread-active-1"
+          onSelectSession={vi.fn()}
+          onNewSession={vi.fn()}
+        />
+      );
+
+      const deleteBtn = screen.getByTestId('delete-session-thread-past-2');
+      fireEvent.click(deleteBtn);
+
+      const cancelBtn = screen.getByTestId('cancel-delete-session-btn');
+      const confirmBtn = screen.getByTestId('confirm-delete-session-btn');
+
+      // Initial focus on confirm button
+      expect(document.activeElement).toBe(confirmBtn);
+
+      // Press Tab while on confirmBtn -> should wrap to cancelBtn
+      fireEvent.keyDown(window, { key: 'Tab', shiftKey: false });
+      expect(document.activeElement).toBe(cancelBtn);
+
+      // Press Shift+Tab while on cancelBtn -> should wrap to confirmBtn
+      fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+      expect(document.activeElement).toBe(confirmBtn);
+    });
+
+    it('returns focus to invoking delete button when dismissed via Cancel button', async () => {
+      render(
+        <SessionHistorySidebar
+          isOpen={true}
+          onClose={vi.fn()}
+          activeThreadId="thread-active-1"
+          onSelectSession={vi.fn()}
+          onNewSession={vi.fn()}
+        />
+      );
+
+      const deleteBtn = screen.getByTestId('delete-session-thread-past-2');
+      fireEvent.click(deleteBtn);
+
+      const cancelBtn = screen.getByTestId('cancel-delete-session-btn');
+      fireEvent.click(cancelBtn);
+
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      // Fast-forward timeout for focus restoration
+      await vi.waitFor(() => {
+        expect(document.activeElement).toBe(deleteBtn);
+      });
+    });
+
+    it('returns focus to invoking delete button when dismissed via Escape key', async () => {
+      render(
+        <SessionHistorySidebar
+          isOpen={true}
+          onClose={vi.fn()}
+          activeThreadId="thread-active-1"
+          onSelectSession={vi.fn()}
+          onNewSession={vi.fn()}
+        />
+      );
+
+      const deleteBtn = screen.getByTestId('delete-session-thread-past-2');
+      fireEvent.click(deleteBtn);
+
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+
+      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      await vi.waitFor(() => {
+        expect(document.activeElement).toBe(deleteBtn);
+      });
+    });
+  });
 });
