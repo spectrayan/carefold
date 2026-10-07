@@ -20,7 +20,11 @@
 set -euo pipefail
 
 # Ensure essential tools are discovered in standard environment paths
-export PATH="${HOME}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${PATH}"
+if [ -n "${HOME:-}" ]; then
+    export PATH="${HOME}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${PATH:-/usr/bin:/bin:/usr/sbin:/sbin}"
+else
+    export PATH="${PATH:-/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin}"
+fi
 
 # Resolve real script directory following symlinks
 SOURCE="${BASH_SOURCE[0]}"
@@ -48,6 +52,12 @@ MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
+
+# Track whether CAREFOLD_WEB_PORT was explicitly set by user
+CAREFOLD_WEB_PORT_SET=0
+if [ -n "${CAREFOLD_WEB_PORT:-}" ]; then
+    CAREFOLD_WEB_PORT_SET=1
+fi
 
 # Default Configuration
 CAREFOLD_BACKEND_PORT="${CAREFOLD_BACKEND_PORT:-${PORT:-8010}}"
@@ -78,13 +88,21 @@ log_error() {
 }
 
 check_prerequisites() {
+    local target="${1:-all}"
     local missing=()
-    command -v node >/dev/null 2>&1 || missing+=("node (Node.js runtime >=22)")
-    command -v pnpm >/dev/null 2>&1 || missing+=("pnpm (Node.js package manager)")
 
-    local py_bin="${PROJECT_ROOT}/backend/.venv/bin/python3"
-    if [ ! -x "${py_bin}" ] && ! command -v python3 >/dev/null 2>&1; then
-        missing+=("python3 (Python >=3.12 or backend/.venv)")
+    # Node.js and pnpm checks (required for web, all, start, daemon)
+    if [ "${target}" = "all" ] || [ "${target}" = "web" ]; then
+        command -v node >/dev/null 2>&1 || missing+=("node (Node.js runtime >=22)")
+        command -v pnpm >/dev/null 2>&1 || missing+=("pnpm (Node.js package manager)")
+    fi
+
+    # Python checks (required for backend, all, start, daemon)
+    if [ "${target}" = "all" ] || [ "${target}" = "backend" ]; then
+        local py_bin="${PROJECT_ROOT}/backend/.venv/bin/python3"
+        if [ ! -x "${py_bin}" ] && ! command -v python3 >/dev/null 2>&1; then
+            missing+=("python3 (Python >=3.12 or backend/.venv)")
+        fi
     fi
 
     if [ ${#missing[@]} -gt 0 ]; then
@@ -164,6 +182,8 @@ start_backend() {
         return 0
     fi
 
+    check_prerequisites "backend"
+
     log_info "Starting Backend API on http://${CAREFOLD_BACKEND_HOST}:${CAREFOLD_BACKEND_PORT}..."
     cd "${PROJECT_ROOT}/backend"
 
@@ -203,6 +223,9 @@ start_web() {
         log_warn "Web port ${CAREFOLD_WEB_PORT} is already in use. Skipping start."
         return 0
     fi
+
+    check_prerequisites "web"
+    ensure_dependencies
 
     log_info "Starting Next.js Web UI on http://${CAREFOLD_WEB_HOST}:${CAREFOLD_WEB_PORT}..."
     cd "${PROJECT_ROOT}/apps/web"
@@ -379,38 +402,42 @@ cmd_help() {
 main() {
     local cmd="${1:-all}"
 
-    # Handle help flags before prerequisites check
+    # Handle administrative, diagnostic, and help commands before any prerequisite or dependency checks
     case "${cmd}" in
         help|--help|-h)
             cmd_help
             return 0
             ;;
+        status)
+            cmd_status
+            return 0
+            ;;
+        stop)
+            cmd_stop
+            return 0
+            ;;
     esac
 
-    check_prerequisites
-    ensure_dependencies
-
+    # Command-specific prerequisite validation and execution
     case "${cmd}" in
         all)
+            check_prerequisites "all"
+            ensure_dependencies
             cmd_all
+            ;;
+        start|daemon)
+            check_prerequisites "all"
+            ensure_dependencies
+            cmd_start_daemon
             ;;
         backend)
             start_backend "false"
             ;;
         web)
-            if [ -n "${PORT:-}" ] && [ -z "${CAREFOLD_WEB_PORT_SET:-}" ]; then
+            if [ -n "${PORT:-}" ] && [ "${CAREFOLD_WEB_PORT_SET}" -eq 0 ]; then
                 CAREFOLD_WEB_PORT="${PORT}"
             fi
             start_web "false"
-            ;;
-        start|daemon)
-            cmd_start_daemon
-            ;;
-        stop)
-            cmd_stop
-            ;;
-        status)
-            cmd_status
             ;;
         *)
             log_error "Unknown command: ${cmd}"

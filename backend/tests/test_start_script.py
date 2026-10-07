@@ -21,6 +21,7 @@ import json
 import os
 from pathlib import Path
 import re
+import socket
 import subprocess
 from unittest.mock import patch
 
@@ -167,3 +168,111 @@ def test_package_json_scripts():
     web_pkg = json.loads(web_pkg_path.read_text(encoding="utf-8"))
     assert "--port 3010" in web_pkg["scripts"]["dev"]
     assert "--port 3010" in web_pkg["scripts"]["start"]
+
+
+def test_start_script_status_isolated_environment():
+    """Verify scripts/start.sh status succeeds in stripped environment without pnpm or HOME."""
+    script_path = REPO_ROOT / "scripts" / "start.sh"
+    env = {"PATH": "/usr/bin:/bin"}
+    result = subprocess.run(
+        [str(script_path), "status"],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+        env=env,
+        check=False,
+        timeout=5,
+    )
+    assert result.returncode == 0
+    clean_stdout = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+    assert "Carefold Service Status" in clean_stdout
+    assert "Backend API" in clean_stdout
+    assert "Web UI" in clean_stdout
+
+
+def test_start_script_stop_isolated_environment():
+    """Verify scripts/start.sh stop succeeds in stripped environment without pnpm or HOME."""
+    script_path = REPO_ROOT / "scripts" / "start.sh"
+    env = {"PATH": "/usr/bin:/bin"}
+    result = subprocess.run(
+        [str(script_path), "stop"],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+        env=env,
+        check=False,
+        timeout=5,
+    )
+    assert result.returncode == 0
+
+
+def test_start_script_help_stripped_environment():
+    """Verify scripts/start.sh help succeeds in stripped environment without HOME."""
+    script_path = REPO_ROOT / "scripts" / "start.sh"
+    env = {"PATH": "/usr/bin:/bin"}
+    result = subprocess.run(
+        [str(script_path), "help"],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+        env=env,
+        check=False,
+        timeout=5,
+    )
+    assert result.returncode == 0
+    clean_stdout = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+    assert "Usage: ./scripts/start.sh" in clean_stdout
+
+
+def test_start_script_web_port_precedence():
+    """Verify CAREFOLD_WEB_PORT takes precedence over generic PORT in start.sh web."""
+    script_path = REPO_ROOT / "scripts" / "start.sh"
+    # Bind socket on 3333 so start_web detects the port is in use and exits 0 immediately
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("127.0.0.1", 3333))
+    s.listen(1)
+    try:
+        env = dict(os.environ)
+        env["CAREFOLD_WEB_PORT"] = "3333"
+        env["PORT"] = "9999"
+        result = subprocess.run(
+            [str(script_path), "web"],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+            env=env,
+            check=False,
+            timeout=5,
+        )
+        assert result.returncode == 0
+        clean_stderr = re.sub(r"\x1b\[[0-9;]*m", "", result.stderr)
+        assert "Web port 3333 is already in use" in clean_stderr
+    finally:
+        s.close()
+
+
+def test_start_script_web_port_fallback():
+    """Verify start.sh web falls back to PORT when CAREFOLD_WEB_PORT is not set."""
+    script_path = REPO_ROOT / "scripts" / "start.sh"
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("127.0.0.1", 9999))
+    s.listen(1)
+    try:
+        env = dict(os.environ)
+        env.pop("CAREFOLD_WEB_PORT", None)
+        env["PORT"] = "9999"
+        result = subprocess.run(
+            [str(script_path), "web"],
+            capture_output=True,
+            text=True,
+            cwd=str(REPO_ROOT),
+            env=env,
+            check=False,
+            timeout=5,
+        )
+        assert result.returncode == 0
+        clean_stderr = re.sub(r"\x1b\[[0-9;]*m", "", result.stderr)
+        assert "Web port 9999 is already in use" in clean_stderr
+    finally:
+        s.close()
+
