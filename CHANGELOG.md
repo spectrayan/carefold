@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Markdown & JSON Dossier Export in Consultation Header (Web)** (`#34`):
+  - Added `DossierExportMenu` component in `apps/web/src/components/chat/DossierExportMenu.tsx` positioned in the consultation header adjacent to the New Session button.
+  - Implemented pure client-side export utilities in `apps/web/src/lib/dossierExport.ts` (`formatDossierMarkdown`, `formatDossierJson`, `generateDossierFilename`, `downloadBlob`, `exportDossier`) with 0 network roundtrips.
+  - Prepended mandatory non-clinical safety disclaimer banner to both Markdown and JSON exports per `AGENTS.md` §1.1.
+  - Enforced data minimization and privacy invariants: stripped internal tool traces (`toolTraces`, `traces`) and binary attachment buffers from exports.
+  - Adhered to standard filename pattern: `carefold-<agent-id>-prep-<YYYY-MM-DD>.md` / `.json`.
+  - Added full keyboard accessibility (Escape key dismissal, focus restoration) and click-outside dismissal with disabled states when the transcript is empty or actively streaming.
+  - Added comprehensive automated test coverage in `apps/web/tests/lib/dossier-export.test.ts` and `apps/web/tests/components/dossier-export.test.tsx`.
 - **Privacy & Browser Data Settings: Delete Conversations and Stored API Keys** (`#92`):
   - Added dedicated "Privacy & Browser Data" section in `apps/web/src/components/SettingsModal.tsx` showing stored conversation count, estimated storage footprint, and saved API keys status.
   - Implemented storage utility functions in `apps/web/src/lib/settings.ts` (`getBrowserStorageSummary`, `formatStorageSize`, `deleteCurrentConversation`, `deleteAllConversations`, and `clearStoredApiKeys`).

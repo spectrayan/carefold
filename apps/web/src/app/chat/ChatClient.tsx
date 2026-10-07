@@ -41,6 +41,7 @@ import { AttachmentUploader, type AttachedFile } from '@/components/AttachmentUp
 import { ModelSelector } from '@/components/ModelSelector';
 import { SettingsModal } from '@/components/SettingsModal';
 import { ScrollToBottomButton } from '@/components/chat/ScrollToBottomButton';
+import { DossierExportMenu } from '@/components/chat/DossierExportMenu';
 import { ClinicalConsentDialog } from '@/components/ClinicalConsentDialog';
 import {
   grantClinicalConsent,
@@ -808,7 +809,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           </span>
         </div>
 
-        {/* Right Section: ModelSelector & New Session */}
+        {/* Right Section: ModelSelector, Dossier Export & New Session */}
         <div className="flex items-center gap-2">
           {/* Dynamic Model & Provider Selector */}
           <ModelSelector
@@ -816,6 +817,15 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
             onSettingsChange={handleSettingsChange}
             onOpenSettings={() => setIsSettingsOpen(true)}
             disabled={isStreaming}
+          />
+
+          {/* Dossier Export Dropdown (Markdown & JSON) */}
+          <DossierExportMenu
+            messages={messages}
+            agent={selectedAgent}
+            agentId={selectedAgentId}
+            threadId={threadId}
+            isStreaming={isStreaming}
           />
 
           {/* Clear thread / New session */}
