@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Responsive Mobile Navigation Drawer in Navbar (Web)** (`#89`):
+  - Added responsive hamburger menu toggle button (`data-testid="mobile-menu-toggle"`, `sm:hidden`) in `apps/web/src/components/Navbar.tsx` below `sm` breakpoint (< 640px) with accessible ARIA attributes (`aria-expanded`, `aria-controls="mobile-navigation"`, `aria-label="Toggle navigation menu"`).
+  - Implemented collapsible mobile navigation panel (`id="mobile-navigation"`, `data-testid="mobile-navigation"`) rendering `Marketplace` and `Chat` route links with WCAG-compliant touch targets (`min-h-[44px]`).
+  - Added auto-close on navigation link clicks, route changes (`pathname`), window resize to `>= 640px`, and `Escape` key press with focus restoration to toggle button and focus trap loop.
+  - Added automated test suite `apps/web/tests/components/navbar.test.tsx` asserting all disclosure interactions, keyboard navigation, and desktop layout preservation.
 - **Skip-to-Content Link & Plain-Language Agent Selector Labels (Web)** (`#91`):
   - Added accessible, visually-hidden-until-focused "Skip to main content" bypass link in `apps/web/src/app/layout.tsx` targeting `<main id="main-content" tabIndex={-1}>` (WCAG 2.1 AA SC 2.4.1).
   - Implemented centralized `formatRiskClass` (with aliases `formatRiskLabel` and `formatRiskClassLabel`) in `apps/web/src/lib/utils.ts` mapping internal risk tokens (`clinical_assist`, `wellness`, `admin`, `education`) to plain-language, patient-friendly labels.

@@ -17,13 +17,14 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   HeartHandshake,
   LayoutGrid,
   MessageSquare,
+  Menu,
   Sun,
   Moon,
   ShieldCheck,
@@ -50,6 +51,9 @@ export function Navbar() {
   const [settings, setSettings] = useState<CarefoldUserSettings>(DEFAULT_USER_SETTINGS);
   const [showExplainer, setShowExplainer] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const toggleButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileNavRef = useRef<HTMLElement>(null);
 
   const [mounted, setMounted] = useState(false);
 
@@ -118,6 +122,68 @@ export function Navbar() {
     };
   }, []);
 
+  // Auto-close mobile navigation on route change
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [pathname]);
+
+  // Auto-close mobile navigation on viewport resize to >= 640px (sm breakpoint)
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    const handleResize = () => {
+      if (window.innerWidth >= 640) {
+        setIsMobileOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMobileOpen]);
+
+  // Handle Escape key and focus trap when mobile navigation is open
+  useEffect(() => {
+    if (!isMobileOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsMobileOpen(false);
+        toggleButtonRef.current?.focus();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const focusableElements: HTMLElement[] = [];
+        if (toggleButtonRef.current) focusableElements.push(toggleButtonRef.current);
+        if (mobileNavRef.current) {
+          const interactive = mobileNavRef.current.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          );
+          focusableElements.push(...Array.from(interactive));
+        }
+
+        if (focusableElements.length === 0) return;
+
+        const first = focusableElements[0];
+        const last = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first || !focusableElements.includes(document.activeElement as HTMLElement)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last || !focusableElements.includes(document.activeElement as HTMLElement)) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileOpen]);
+
   const navLinks = [
     { href: '/', label: 'Marketplace', icon: LayoutGrid },
     { href: '/chat', label: 'Chat', icon: MessageSquare }
@@ -168,7 +234,10 @@ export function Navbar() {
               data-testid="provider-status-badge"
               aria-expanded={showExplainer}
               aria-haspopup="dialog"
-              onClick={() => setShowExplainer((prev) => !prev)}
+              onClick={() => {
+                setIsMobileOpen(false);
+                setShowExplainer((prev) => !prev);
+              }}
               className={cn(
                 'min-h-[32px] px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1.5 sm:gap-2 transition cursor-pointer shadow-sm',
                 privacyState.isLocal
@@ -315,8 +384,70 @@ export function Navbar() {
               <Moon data-testid="theme-icon-moon" className="w-4 h-4 text-slate-700" />
             )}
           </button>
+
+          {/* Mobile Menu Toggle Button */}
+          <button
+            ref={toggleButtonRef}
+            type="button"
+            data-testid="mobile-menu-toggle"
+            aria-label="Toggle navigation menu"
+            aria-expanded={isMobileOpen}
+            aria-controls="mobile-navigation"
+            onClick={() => {
+              setShowExplainer(false);
+              setIsMobileOpen((prev) => !prev);
+            }}
+            className="sm:hidden w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-700 transition cursor-pointer shadow-sm shrink-0"
+          >
+            {isMobileOpen ? (
+              <X className="w-4 h-4" />
+            ) : (
+              <Menu className="w-4 h-4" />
+            )}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Backdrop */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 dark:bg-black/40 z-30 sm:hidden"
+          onClick={() => setIsMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Navigation Panel */}
+      {isMobileOpen && (
+        <nav
+          id="mobile-navigation"
+          ref={mobileNavRef}
+          data-testid="mobile-navigation"
+          aria-label="Mobile navigation"
+          className="relative z-40 sm:hidden border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 space-y-1 shadow-lg"
+        >
+          {navLinks.map((link) => {
+            const Icon = link.icon;
+            const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsMobileOpen(false)}
+                className={cn(
+                  'flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition min-h-[44px]',
+                  isActive
+                    ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-semibold'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-50 dark:hover:bg-zinc-800'
+                )}
+              >
+                <Icon className="w-5 h-5 shrink-0" />
+                <span>{link.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      )}
 
       {showSettingsModal && (
         <SettingsModal
