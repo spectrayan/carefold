@@ -29,7 +29,8 @@ import {
   AlertTriangle,
   RotateCcw,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  History
 } from 'lucide-react';
 import type { AgentSummary } from '@/lib/types';
 import { sanitizeAgentDescription, formatRiskClass } from '@/lib/utils';
@@ -43,6 +44,8 @@ import { SettingsModal } from '@/components/SettingsModal';
 import { ScrollToBottomButton } from '@/components/chat/ScrollToBottomButton';
 import { DossierExportMenu } from '@/components/chat/DossierExportMenu';
 import { ClinicalConsentDialog } from '@/components/ClinicalConsentDialog';
+import { SessionHistorySidebar } from '@/components/chat/SessionHistorySidebar';
+import { upsertSessionFromMessages, type ChatSessionMeta } from '@/lib/sessionHistory';
 import {
   grantClinicalConsent,
   hasClinicalConsent,
@@ -87,6 +90,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
   // User Settings & Model Selection State (deterministic initial state to prevent SSR hydration mismatch)
   const [settings, setSettings] = useState<CarefoldUserSettings>(DEFAULT_USER_SETTINGS);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // Session continuity thread ID (deterministic initial state for SSR)
   const [threadId, setThreadId] = useState<string>(`thread-${defaultAgentId}`);
@@ -181,17 +185,23 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     setSuggestedQuestions([]);
   }, [selectedAgentId]);
 
-  // Persist messages to localStorage on completion
+  // Persist messages to localStorage on completion and update session index
   useEffect(() => {
     if (typeof window === 'undefined' || !threadId) return;
     if (!isStreaming && messages.length > 0) {
       try {
         localStorage.setItem(`carefold_msgs_${threadId}`, JSON.stringify(messages));
+        upsertSessionFromMessages(
+          threadId,
+          selectedAgentId,
+          messages,
+          selectedAgent?.title
+        );
       } catch {
         // Storage quota protection
       }
     }
-  }, [messages, isStreaming, threadId]);
+  }, [messages, isStreaming, threadId, selectedAgentId, selectedAgent?.title]);
 
   // Load starters for selected agent
   useEffect(() => {
@@ -352,7 +362,11 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
 
     const handleSingleConversationDeleted = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (!detail || detail.threadId === threadId || detail.agentId === selectedAgentId) {
+      if (!detail) {
+        handleAllConversationsCleared();
+      } else if (detail.threadId && detail.threadId === threadId) {
+        handleAllConversationsCleared();
+      } else if (!detail.threadId && detail.agentId === selectedAgentId) {
         handleAllConversationsCleared();
       }
     };
@@ -365,6 +379,88 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
       window.removeEventListener('carefold:conversation-deleted', handleSingleConversationDeleted);
     };
   }, [selectedAgentId, threadId]);
+
+  const handleResumeSession = async (session: ChatSessionMeta) => {
+    stopGeneration();
+    setErrorMessage(null);
+    setSuggestedQuestions([]);
+    setPoliteAnnouncement(`Resumed consultation: ${session.title}`);
+    setAssertiveAnnouncement('');
+    setInputText('');
+    setIsAtBottom(true);
+    isAtBottomRef.current = true;
+    setUnreadCount(0);
+
+    // Synchronize agent state & URL query param if different
+    if (session.agentId !== selectedAgentId) {
+      setSelectedAgentId(session.agentId);
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.set('agent', session.agentId);
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+
+    setThreadId(session.id);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`carefold_thread_${session.agentId}`, session.id);
+      } catch {}
+    }
+
+    // Load messages from localStorage first
+    let loaded = false;
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(`carefold_msgs_${session.id}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            setMessages(
+              parsed.map((m: any) =>
+                m.role === 'assistant'
+                  ? { ...m, content: stripReferencePreamble(stripSuggestionLeakage(m.content || '')) }
+                  : m
+              )
+            );
+            loaded = true;
+          }
+        }
+      } catch {}
+    }
+
+    // Fallback: fetch from Next.js proxy route /api/chat/threads/[id]
+    if (!loaded) {
+      try {
+        const res = await fetch(`/api/chat/threads/${session.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.messages)) {
+            setMessages(
+              data.messages.map((m: any) =>
+                m.role === 'assistant'
+                  ? { ...m, content: stripReferencePreamble(stripSuggestionLeakage(m.content || '')) }
+                  : m
+              )
+            );
+            loaded = true;
+          }
+        }
+      } catch {
+        // Fallback network error
+      }
+    }
+
+    if (!loaded) {
+      setMessages([]);
+    }
+  };
+
+  const handleDeleteSessionFromSidebar = (deletedThreadId: string) => {
+    if (deletedThreadId === threadId) {
+      handleNewSession();
+    }
+  };
 
   /**
    * Core SSE chat streaming pipeline reused by sendMessage and handleRegenerate.
@@ -757,7 +853,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     <div className="flex flex-col h-[calc(100dvh-120px)] sm:h-[calc(100dvh-140px)] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden transition-colors">
       {/* Chat Header Bar */}
       <div className="px-4 py-3 border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/90 flex items-center justify-between gap-4 transition-colors">
-        {/* Left Section: Back Link & Agent Selector */}
+        {/* Left Section: Back Link, History Toggle & Agent Selector */}
         <div className="flex items-center gap-3">
           <Link
             href="/"
@@ -766,6 +862,23 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
+
+          {/* History Sidebar Toggle Button */}
+          <button
+            type="button"
+            data-testid="history-sidebar-toggle"
+            onClick={() => setIsHistoryOpen((prev) => !prev)}
+            className={`p-1.5 rounded-lg border transition cursor-pointer ${
+              isHistoryOpen
+                ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                : 'border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-700'
+            }`}
+            title="Toggle conversation history"
+            aria-label="Toggle conversation history"
+            aria-expanded={isHistoryOpen}
+          >
+            <History className="w-4 h-4" />
+          </button>
 
           {/* Agent Selector Dropdown */}
           <div className="relative">
@@ -862,8 +975,20 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
         {assertiveAnnouncement}
       </div>
 
-      {/* Message History Area */}
-      <div className="relative flex-1 min-h-0">
+      {/* Main Chat Body with Optional History Sidebar Rail */}
+      <div className="flex-1 flex overflow-hidden relative">
+        <SessionHistorySidebar
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          activeThreadId={threadId}
+          onSelectSession={handleResumeSession}
+          onNewSession={handleNewSession}
+          onDeleteSession={handleDeleteSessionFromSidebar}
+        />
+
+        <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-slate-50/50 dark:bg-zinc-900/50">
+          {/* Message History Area */}
+          <div className="relative flex-1 min-h-0">
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
@@ -1032,8 +1157,10 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           )}
         </form>
       </div>
+    </div>
+  </div>
 
-      {/* API Key & Provider Settings Modal */}
+  {/* API Key & Provider Settings Modal */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}

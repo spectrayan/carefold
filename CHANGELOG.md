@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Conversation History Sidebar: List, Resume, Rename and Delete Past Sessions (Web)** (`#93`):
+  - Created storage index utility module `apps/web/src/lib/sessionHistory.ts` managing `carefold_threads_index_v1` in `localStorage` with automated migration of legacy `carefold_msgs_*` threads, LRU pruning (up to 50 sessions), and cross-tab/event synchronization.
+  - Implemented Next.js route handler proxy `apps/web/src/app/api/chat/threads/[id]/route.ts` with strict alphanumeric slug validation forwarding `GET /api/chat/threads/[id]` to the LangGraph execution backend checkpoint store.
+  - Implemented responsive, accessible `SessionHistorySidebar` component in `apps/web/src/components/chat/SessionHistorySidebar.tsx` with collapsible desktop rail, mobile drawer overlay, inline keyboard/button renaming (Enter/Escape/Save/Cancel), and safe delete confirmation alert dialog (`role="alertdialog"`, `aria-modal="true"`).
+  - Integrated history sidebar toggle button (`data-testid="history-sidebar-toggle"`), atomic session switching without cross-thread contamination, message upsertion, and delete event handling into `apps/web/src/app/chat/ChatClient.tsx`.
+  - Added comprehensive automated unit, route proxy, component, and end-to-end integration test suites across `apps/web/tests/lib/session-history.test.ts`, `apps/web/tests/lib/threads-proxy-route.test.ts`, `apps/web/tests/components/session-history-sidebar.test.tsx`, and `apps/web/tests/components/chat-session-history-integration.test.tsx`.
 - **Data-Driven Marketplace Filters: Real Domains, Care Stages & Caregivers (Web)** (`#88`):
   - Created proxy route `apps/web/src/app/api/agents/categories/route.ts` proxying `GET /api/agents/categories` to the backend with 503 fallback error handling.
   - Updated `apps/web/src/app/page.tsx` to fetch installed agents and category taxonomy in parallel via `Promise.all` and forward `initialCategories` to `MarketplaceClient`.
