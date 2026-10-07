@@ -46,7 +46,7 @@ The Carefold roadmap outlines the architectural and community milestones driving
   - MkDocs Material documentation site with instant search and dark/light modes.
   - Living ADR framework (`docs/adr/`) with Mermaid flowcharts and sequence diagrams.
 - [x] **Production CI/CD Matrix**:
-  - GitHub Actions matrix covering Python 3.12/3.14, Node 20/22, CodeQL, and Docker builds.
+  - GitHub Actions matrix covering Python 3.12/3.14, Node 22 LTS, CodeQL, and Docker builds.
 
 ---
 

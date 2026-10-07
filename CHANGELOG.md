@@ -123,7 +123,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Per-agent consent dialog covering what the agent can help with, its `forbidden` list in plain language, and emergency guidance (911 / 988), with an explicit acknowledgement step.
   - Consent persisted only in browser storage (`carefold_clinical_consent_v1`, with grant timestamp); "Clinical assist: consent given" chip in the chat header; withdraw per agent or all agents in Settings.
   - Agent detail pages show a read-only summary until consent is given.
-  - `GET /api/agents` summaries now include each agent's `forbidden` list.
+
+### Changed
+- **Align CI Python/Node matrix with documentation and engine declarations** (`#74`):
+  - Updated `.github/workflows/ci.yml` `backend` and `security` jobs to run a matrix covering Python `3.12` and `3.14` with `fail-fast: false`.
+  - Retained `node-version: '22'` across frontend and license-check jobs in compliance with workspace `engines.node >=22.0.0`.
+  - Reconciled `ROADMAP.md` and `CHANGELOG.md` to remove unsupported Node 20 claims in favor of `Node 22 LTS`.
+  - Added automated Vitest consistency test suite in `packages/cli/tests/13_ci_version_matrix_consistency.test.ts` to prevent version drift between CI workflows, engine definitions, and documentation.
 
 ### Fixed
 - **Accurate specialist agent and skill pack counts in GET /api/health** (`#71`): Filtered out underscore-prefixed directories (`_system`, `_template`) in backend health workspace statistics to report accurate counts (22 specialists, 24 skills) aligned with the specialist agent catalog, skill packs, and web health route.
@@ -197,7 +203,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automated license check and fix tooling (`scripts/licenses.mjs`, `pnpm check:licenses`, `pnpm fix:licenses`).
   - Spectrayan Apache-2.0 copyright headers applied across 417 source files.
 - **CI/CD Quality Matrix**:
-  - Unified multi-job GitHub Actions CI (`.github/workflows/ci.yml`) covering Python (3.12, 3.14), Node (20, 22), penetration security, and license enforcement.
+  - Unified multi-job GitHub Actions CI (`.github/workflows/ci.yml`) covering Python (3.12, 3.14), Node 22 LTS, penetration security, and license enforcement.
   - GitHub CodeQL static analysis (`codeql.yml`), automated license remediation (`license-fix.yml`), MkDocs Pages deployment (`docs.yml`), and multi-stage Docker build workflow (`docker-publish.yml`).
 - **Verified MkDocs Material Portal & Living ADRs**:
   - Modern documentation site configured with search, dark/light theme, and code annotations.

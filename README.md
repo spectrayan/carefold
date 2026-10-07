@@ -95,7 +95,7 @@ Visit `http://localhost:3000` to browse specialist agents and launch private con
 
 ### 3. Local Monorepo Development
 
-**Prerequisites**: Python 3.12+, Node.js 22 LTS, and `pnpm` (>=9.0.0).
+**Prerequisites**: Python 3.12+ (tested on 3.12 and 3.14), Node.js 22 LTS, and `pnpm` (>=9.0.0).
 
 ```bash
 # Clone repository
