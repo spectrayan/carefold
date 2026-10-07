@@ -40,11 +40,21 @@ export default function RootLayout({
       </head>
       <body className="antialiased min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 transition-colors">
         <ThemeProvider>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-white dark:focus:bg-zinc-900 focus:text-slate-900 dark:focus:text-zinc-100 focus:border focus:border-slate-300 dark:focus:border-zinc-700 focus:shadow-md focus:rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950 text-sm font-semibold transition-all"
+          >
+            Skip to main content
+          </a>
           <div className="sticky top-0 z-40">
             <SafetyDisclaimerBanner />
             <Navbar />
           </div>
-          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 focus:outline-none"
+          >
             {children}
           </main>
           <footer className="border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-6 mt-auto transition-colors">

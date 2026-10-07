@@ -360,6 +360,61 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
     });
     expect(emptyPrivacyText).not.toHaveTextContent('All data remains exclusively on your device');
   });
+
+  it('renders agent selector with accessible label, aria-describedby, and plain-language risk labels', () => {
+    const customAgents: AgentSummary[] = [
+      {
+        id: 'cardiology-guide',
+        title: 'Cardiology Guide',
+        version: '0.1.0',
+        risk_class: 'clinical_assist',
+        skills: ['cardiology-prep'],
+        effectiveTools: ['skill-docs'],
+        starters: []
+      },
+      {
+        id: 'benefits-guide',
+        title: 'Benefits Guide',
+        version: '0.1.0',
+        risk_class: 'admin',
+        skills: ['benefits-explainer'],
+        effectiveTools: ['attach-read'],
+        starters: []
+      },
+      {
+        id: 'visit-steward',
+        title: 'Visit Steward',
+        version: '0.1.0',
+        risk_class: 'wellness',
+        skills: ['visit-prep'],
+        effectiveTools: ['skill-docs'],
+        starters: []
+      }
+    ];
+
+    render(<ChatClient initialAgents={customAgents} />);
+
+    // Combobox accessible name and attributes
+    const selector = screen.getByRole('combobox', { name: /select health agent/i });
+    expect(selector).toBeInTheDocument();
+    expect(selector).toHaveAttribute('id', 'agent-selector');
+    expect(selector).toHaveAttribute('aria-describedby', 'agent-selector-description');
+
+    const desc = document.getElementById('agent-selector-description');
+    expect(desc).toBeInTheDocument();
+
+    // Verify option text has plain labels without raw snake_case tokens
+    const options = screen.getAllByRole('option');
+    expect(options[0]).toHaveTextContent('Cardiology Guide (Clinical assist)');
+    expect(options[0]).not.toHaveTextContent('clinical_assist');
+
+    expect(options[1]).toHaveTextContent('Benefits Guide (Admin)');
+    expect(options[1]).not.toHaveTextContent('(admin)');
+
+    expect(options[2]).toHaveTextContent('Visit Steward (Wellness)');
+    expect(options[2]).not.toHaveTextContent('(wellness)');
+  });
 });
+
 
 

@@ -16,7 +16,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { cn, sanitizeAgentDescription, formatCategoryLabel } from '@/lib/utils';
+import {
+  cn,
+  sanitizeAgentDescription,
+  formatCategoryLabel,
+  formatRiskClass,
+  formatRiskLabel,
+  formatRiskClassLabel
+} from '@/lib/utils';
 
 describe('lib/utils', () => {
   it('combines and merges tailwind classnames', () => {
@@ -80,4 +87,41 @@ describe('lib/utils', () => {
       expect(formatCategoryLabel('wellness.wellness', 'wellness')).toBe('');
     });
   });
+
+  describe('formatRiskClass', () => {
+    it('returns empty string for null, undefined, empty, or whitespace input', () => {
+      expect(formatRiskClass(null)).toBe('');
+      expect(formatRiskClass(undefined)).toBe('');
+      expect(formatRiskClass('')).toBe('');
+      expect(formatRiskClass('   ')).toBe('');
+    });
+
+    it('maps standard risk classes to plain-language labels', () => {
+      expect(formatRiskClass('wellness')).toBe('Wellness');
+      expect(formatRiskClass('admin')).toBe('Admin');
+      expect(formatRiskClass('education')).toBe('Education');
+      expect(formatRiskClass('clinical_assist')).toBe('Clinical assist');
+      expect(formatRiskClass('clinical-assist')).toBe('Clinical assist');
+    });
+
+    it('normalizes uppercase, mixed-case, and whitespace-padded inputs', () => {
+      expect(formatRiskClass(' CLINICAL_ASSIST ')).toBe('Clinical assist');
+      expect(formatRiskClass('Wellness')).toBe('Wellness');
+      expect(formatRiskClass('ADMIN')).toBe('Admin');
+      expect(formatRiskClass('Education')).toBe('Education');
+    });
+
+    it('gracefully handles novel or custom risk classes with word capitalization', () => {
+      expect(formatRiskClass('general_support')).toBe('General Support');
+      expect(formatRiskClass('remote-monitoring')).toBe('Remote Monitoring');
+    });
+
+    it('provides identical behavior across aliases formatRiskLabel and formatRiskClassLabel', () => {
+      expect(formatRiskLabel('clinical_assist')).toBe('Clinical assist');
+      expect(formatRiskClassLabel('clinical_assist')).toBe('Clinical assist');
+      expect(formatRiskLabel('admin')).toBe('Admin');
+      expect(formatRiskClassLabel('wellness')).toBe('Wellness');
+    });
+  });
 });
+

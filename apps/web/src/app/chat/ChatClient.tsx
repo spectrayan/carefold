@@ -32,7 +32,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import type { AgentSummary } from '@/lib/types';
-import { sanitizeAgentDescription } from '@/lib/utils';
+import { sanitizeAgentDescription, formatRiskClass } from '@/lib/utils';
 import { ChatMessageItem, stripSuggestionLeakage, stripReferencePreamble, type ChatMessage } from '@/components/ChatMessageItem';
 import { type ToolTraceItem } from '@/components/ToolTraceCard';
 import { StartersChips } from '@/components/StartersChips';
@@ -696,15 +696,20 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
 
           {/* Agent Selector Dropdown */}
           <div className="relative">
+            <label htmlFor="agent-selector" className="sr-only">
+              Select health agent
+            </label>
             <select
-              aria-label="Select Agent"
+              id="agent-selector"
+              aria-label="Select health agent"
+              aria-describedby="agent-selector-description"
               value={selectedAgentId}
               onChange={(e) => handleAgentChange(e.target.value)}
               className="appearance-none bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl pl-3 pr-8 py-1.5 text-xs font-bold text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer shadow-sm"
             >
               {visibleAgents.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.title} ({a.risk_class})
+                  {a.title} ({formatRiskClass(a.risk_class)})
                 </option>
               ))}
             </select>
@@ -723,7 +728,10 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           )}
 
           <span className="hidden sm:inline text-xs text-slate-400 dark:text-zinc-500">•</span>
-          <span className="hidden sm:inline text-xs font-medium text-slate-600 dark:text-zinc-400 truncate max-w-sm">
+          <span
+            id="agent-selector-description"
+            className="hidden sm:inline text-xs font-medium text-slate-600 dark:text-zinc-400 truncate max-w-sm"
+          >
             {sanitizeAgentDescription(selectedAgent?.description) || 'Task-scoped health assistant'}
           </span>
         </div>

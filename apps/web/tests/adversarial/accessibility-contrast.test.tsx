@@ -26,6 +26,11 @@ import { Navbar } from '@/components/Navbar';
 import { SettingsModal } from '@/components/SettingsModal';
 import { ModelSelector } from '@/components/ModelSelector';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import RootLayout from '@/app/layout';
+
+vi.mock('@/components/ThemeScript', () => ({
+  ThemeScript: () => null
+}));
 import {
   getStoredTheme,
   setStoredTheme,
@@ -565,4 +570,51 @@ describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () =>
       expect(document.documentElement.classList.contains('dark')).toBe(false);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // 6. SKIP TO MAIN CONTENT BYPASS LINK AUDIT
+  // ---------------------------------------------------------------------------
+  describe('Dimension 6: Skip to Content Bypass Link & Accessible Main Landmark', () => {
+    it('renders Skip to Content link as the first focusable element targeting #main-content', () => {
+      render(
+        <RootLayout>
+          <div>Main application content</div>
+        </RootLayout>
+      );
+
+      const skipLink = screen.getByRole('link', { name: /skip to main content/i });
+      expect(skipLink).toBeInTheDocument();
+      expect(skipLink).toHaveAttribute('href', '#main-content');
+      expect(skipLink.className).toContain('sr-only');
+      expect(skipLink.className).toContain('focus:not-sr-only');
+      expect(skipLink.className).toContain('focus:fixed');
+      expect(skipLink.className).toContain('focus:top-3');
+      expect(skipLink.className).toContain('focus:left-3');
+      expect(skipLink.className).toContain('focus:z-50');
+
+      const mainElement = document.getElementById('main-content');
+      expect(mainElement).toBeInTheDocument();
+      expect(mainElement).toHaveAttribute('tabIndex', '-1');
+      expect(mainElement?.tagName.toLowerCase()).toBe('main');
+      expect(mainElement?.className).toContain('focus:outline-none');
+    });
+
+    it('verifies static layout file contains skip link before navigation and proper main landmark', () => {
+      const repoRoot = path.resolve(__dirname, '../../../../');
+      const layoutPath = path.join(repoRoot, 'apps/web/src/app/layout.tsx');
+      const content = fs.readFileSync(layoutPath, 'utf8');
+
+      expect(content).toContain('href="#main-content"');
+      expect(content).toContain('Skip to main content');
+      expect(content).toContain('id="main-content"');
+      expect(content).toContain('tabIndex={-1}');
+
+      const skipLinkIndex = content.indexOf('href="#main-content"');
+      const navbarIndex = content.indexOf('<Navbar');
+      expect(skipLinkIndex).toBeGreaterThan(-1);
+      expect(navbarIndex).toBeGreaterThan(-1);
+      expect(skipLinkIndex).toBeLessThan(navbarIndex);
+    });
+  });
 });
+

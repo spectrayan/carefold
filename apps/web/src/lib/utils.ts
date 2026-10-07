@@ -68,3 +68,36 @@ export function formatCategoryLabel(category?: string | null, domain?: string | 
     .join(' ');
 }
 
+/**
+ * Maps risk classes to human-readable plain language labels.
+ * (e.g. "wellness" -> "Wellness", "clinical_assist" -> "Clinical assist", "admin" -> "Admin", "education" -> "Education")
+ */
+export function formatRiskClass(riskClass?: string | null): string {
+  if (!riskClass) return '';
+  const trimmed = riskClass.trim();
+  if (!trimmed) return '';
+  const normalized = trimmed.toLowerCase();
+  switch (normalized) {
+    case 'wellness':
+      return 'Wellness';
+    case 'admin':
+      return 'Admin';
+    case 'education':
+      return 'Education';
+    case 'clinical_assist':
+    case 'clinical-assist':
+      return 'Clinical assist';
+    default:
+      return trimmed
+        .replace(/[_-]+/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+  }
+}
+
+export const formatRiskLabel = formatRiskClass;
+export const formatRiskClassLabel = formatRiskClass;
+
+

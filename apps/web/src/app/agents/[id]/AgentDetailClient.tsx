@@ -37,6 +37,7 @@ import type { AgentDetail } from '@/lib/types';
 import { toAgentDetail } from '@/lib/agentDetail';
 import { grantClinicalConsent } from '@/lib/clinicalConsent';
 import { useClinicalConsents } from '@/lib/useClinicalConsents';
+import { formatRiskClass } from '@/lib/utils';
 import { ClinicalConsentDialog } from '@/components/ClinicalConsentDialog';
 
 export interface AgentDetailClientProps {
@@ -144,7 +145,7 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 capitalize">
-                {agent.risk_class.replace('_', ' ')}
+                {formatRiskClass(agent.risk_class)}
               </span>
               <span className="text-xs font-mono text-slate-400 dark:text-zinc-500">v{agent.version}</span>
               <span className="text-xs text-slate-400 dark:text-zinc-500">• {agent.license}</span>

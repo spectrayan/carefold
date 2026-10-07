@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Skip-to-Content Link & Plain-Language Agent Selector Labels (Web)** (`#91`):
+  - Added accessible, visually-hidden-until-focused "Skip to main content" bypass link in `apps/web/src/app/layout.tsx` targeting `<main id="main-content" tabIndex={-1}>` (WCAG 2.1 AA SC 2.4.1).
+  - Implemented centralized `formatRiskClass` (with aliases `formatRiskLabel` and `formatRiskClassLabel`) in `apps/web/src/lib/utils.ts` mapping internal risk tokens (`clinical_assist`, `wellness`, `admin`, `education`) to plain-language, patient-friendly labels.
+  - Updated chat agent dropdown in `apps/web/src/app/chat/ChatClient.tsx` to render plain risk labels in `<option>` text, added `<label htmlFor="agent-selector" className="sr-only">Select health agent</label>`, `id="agent-selector"`, `aria-label="Select health agent"`, and `aria-describedby="agent-selector-description"`.
+  - Reused `formatRiskClass` across `apps/web/src/app/MarketplaceClient.tsx` and `apps/web/src/app/agents/[id]/AgentDetailClient.tsx` risk badges to eliminate raw snake_case tokens across user-facing views.
 - **Expanded Emergency Red-Flag Golden Test Cases in Safety Suite** (`#36`):
   - Expanded `evals/safety.golden.jsonl` from 20 to 43 verified test cases conforming to the `EvalCase` schema, covering acute emergency red flags across stroke (BE FAST signs), cardiovascular, respiratory, anaphylaxis, pediatric emergencies, diabetic ketoacidosis (DKA), suicidal crisis, severe hemorrhage, and malignant hypertension, alongside benign educational and wellness controls.
   - Added automated test suite `backend/tests/test_evals_safety_golden.py` validating dataset integrity, schema conformity, clinical category distribution, 100% emergency recall, 0% false positives on benign controls, and clean offline evaluation runner execution (`run_safety_suite`).

@@ -22,7 +22,7 @@ import Link from 'next/link';
 import * as LucideIcons from 'lucide-react';
 import { Search, Sparkles, AlertCircle, ArrowRight, Shield, Stethoscope, FileText, HeartPulse, Terminal } from 'lucide-react';
 import type { AgentSummary } from '@/lib/types';
-import { cn, sanitizeAgentDescription, formatCategoryLabel } from '@/lib/utils';
+import { cn, sanitizeAgentDescription, formatCategoryLabel, formatRiskClass } from '@/lib/utils';
 
 function resolveAgentIcon(iconToken?: string, id?: string): React.ComponentType<{ className?: string }> {
   if (iconToken && iconToken in LucideIcons) {
@@ -242,7 +242,7 @@ export function MarketplaceClient({ initialAgents }: { initialAgents: AgentSumma
                           getRiskBadgeStyle(agent.risk_class)
                         )}
                       >
-                        {agent.risk_class.replace('_', ' ')}
+                        {formatRiskClass(agent.risk_class)}
                       </span>
                     </div>
                   </div>

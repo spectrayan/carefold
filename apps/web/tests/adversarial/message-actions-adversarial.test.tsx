@@ -774,7 +774,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
       expect(stewardThreadId).not.toBeNull();
 
       // Switch to Agent 2: benefits-guide
-      const agentSelector = screen.getByLabelText('Select Agent');
+      const agentSelector = screen.getByLabelText(/select (?:health )?agent/i);
       fireEvent.change(agentSelector, { target: { value: 'benefits-guide' } });
 
       // History should be empty for the new agent
