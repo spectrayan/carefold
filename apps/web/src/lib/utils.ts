@@ -135,4 +135,39 @@ export function formatCareStage(stage?: string | null): string {
   }
 }
 
+/**
+ * Plain-language descriptions for known clinical/safety forbidden intent tokens.
+ */
+export const FORBIDDEN_INTENT_DESCRIPTIONS: Record<string, string> = {
+  diagnose: 'Diagnose a condition or tell you what illness you have.',
+  prescribe: 'Prescribe, recommend, or switch medications or treatments.',
+  dose: 'Tell you how much of a medication to take or how to change a dose.',
+  replace_emergency_care: 'Replace emergency services or your care team in an urgent situation.',
+  instruct_stop_medication: 'Tell you to stop, skip, or pause a medication.',
+  order_lab_tests: 'Order clinical laboratory tests or diagnostic procedures.',
+  interpret_imaging: 'Interpret diagnostic imaging or pathology reports.',
+  emergency_diversion: 'Divert away from immediate emergency department care.',
+  medical_prohibited: 'Engage in unauthorized clinical practices.',
+  policy_prohibited: 'Perform prohibited policy actions.'
+};
+
+/**
+ * Formats a forbidden-intent token into a human-readable plain-language sentence.
+ * Unknown tokens fall back to a humanized title-cased sentence.
+ */
+export function formatForbiddenIntent(token?: string | null): string {
+  if (!token) return '';
+  const key = token.trim().toLowerCase();
+  if (!key) return '';
+  if (FORBIDDEN_INTENT_DESCRIPTIONS[key]) {
+    return FORBIDDEN_INTENT_DESCRIPTIONS[key];
+  }
+  const words = key.replace(/[_-]+/g, ' ').trim();
+  if (!words) return '';
+  const capitalized = `${words.charAt(0).toUpperCase()}${words.slice(1)}`;
+  return capitalized.endsWith('.') ? capitalized : `${capitalized}.`;
+}
+
+export const describeForbiddenIntent = formatForbiddenIntent;
+
 

@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Skills Browser & Plain-Language Agent Boundaries Panel (Web)** (`#96`):
+  - Created `/skills` catalog page in `apps/web/src/app/skills/page.tsx` and `SkillsClient.tsx` featuring real-time search across names, descriptions, categories, and tools, multi-domain filter tabs (`All Domains`, `Clinical`, `Navigation`, `Wellness`), risk class chips, verified and evals badges, defensive template exclusions, and non-clinical safety disclaimer banner.
+  - Created `/skills/[id]` detail view in `apps/web/src/app/skills/[id]/page.tsx` and `SkillDetailClient.tsx` displaying full operating instructions, protocol text, permitted sandbox tools, bundled reference documents list, and forbidden intent guardrails.
+  - Implemented Next.js route proxy `apps/web/src/app/api/skills/[id]/route.ts` with strict alphanumeric slug validation (`/^[a-zA-Z0-9_\-]+$/`) preventing directory traversal, path injection, and access to internal templates with HTTP 400 and 404 responses.
+  - Updated Agent Detail page (`apps/web/src/app/agents/[id]/AgentDetailClient.tsx`) to link declared skills to `/skills/[id]` and replaced raw monospace forbidden tokens with a structured "What this agent will and won't do" transparency panel (`AgentBoundariesPanel`) detailing positive capabilities and humanized non-clinical safety guardrails.
+  - Added shared forbidden intent translation dictionary `FORBIDDEN_INTENT_DESCRIPTIONS` and helper `formatForbiddenIntent` with title-cased sentence fallback for unknown tokens in `apps/web/src/lib/utils.ts`, aligning with `apps/web/src/lib/clinicalConsent.ts`.
+  - Added `/skills` navigation link to desktop and mobile navigation in `apps/web/src/components/Navbar.tsx`.
+  - Added comprehensive automated unit and component test suites across `apps/web/tests/lib/utils.test.ts`, `apps/web/tests/lib/skills-proxy-route.test.ts`, `apps/web/tests/components/skills-catalog.test.tsx`, `apps/web/tests/components/skill-detail.test.tsx`, and `apps/web/tests/components/agent-detail-forbidden.test.tsx`.
 - **Render Extracted Dossiers as Readable Visit-Prep & Insurance Cards (Web)** (`#94`):
   - Created `DossierCard` router component in `apps/web/src/components/chat/DossierCard.tsx` parsing `extract_document_dossier` tool results and dispatching to typed cards while safely falling back (returning null) on malformed or unknown payloads to preserve raw JSON traces in `ToolTraceCard` for full auditability.
   - Implemented `VisitPrepCard` in `apps/web/src/components/chat/VisitPrepCard.tsx` rendering reason for visit, physician instructions, follow-up timeline badge, interactive questions checklist with checkbox toggle, strikethrough styling, custom question addition, and client-side Copy/Export actions.

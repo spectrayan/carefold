@@ -149,6 +149,7 @@ export interface SkillSummary {
   tools: string[];
   forbidden?: string[];
   is_verified?: boolean;
+  has_evals?: boolean;
   unverified?: boolean;
   error?: string;
   domain?: 'clinical' | 'therapy' | 'wellness' | 'navigation' | 'education' | string;

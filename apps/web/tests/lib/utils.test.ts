@@ -22,7 +22,10 @@ import {
   formatCategoryLabel,
   formatRiskClass,
   formatRiskLabel,
-  formatRiskClassLabel
+  formatRiskClassLabel,
+  formatForbiddenIntent,
+  describeForbiddenIntent,
+  FORBIDDEN_INTENT_DESCRIPTIONS
 } from '@/lib/utils';
 
 describe('lib/utils', () => {
@@ -121,6 +124,79 @@ describe('lib/utils', () => {
       expect(formatRiskClassLabel('clinical_assist')).toBe('Clinical assist');
       expect(formatRiskLabel('admin')).toBe('Admin');
       expect(formatRiskClassLabel('wellness')).toBe('Wellness');
+    });
+  });
+
+  describe('formatForbiddenIntent', () => {
+    it('returns empty string for null, undefined, empty, or whitespace-only inputs', () => {
+      expect(formatForbiddenIntent(null)).toBe('');
+      expect(formatForbiddenIntent(undefined)).toBe('');
+      expect(formatForbiddenIntent('')).toBe('');
+      expect(formatForbiddenIntent('   ')).toBe('');
+    });
+
+    it('maps all standard canonical clinical/safety tokens correctly', () => {
+      expect(formatForbiddenIntent('diagnose')).toBe(
+        'Diagnose a condition or tell you what illness you have.'
+      );
+      expect(formatForbiddenIntent('prescribe')).toBe(
+        'Prescribe, recommend, or switch medications or treatments.'
+      );
+      expect(formatForbiddenIntent('dose')).toBe(
+        'Tell you how much of a medication to take or how to change a dose.'
+      );
+      expect(formatForbiddenIntent('replace_emergency_care')).toBe(
+        'Replace emergency services or your care team in an urgent situation.'
+      );
+      expect(formatForbiddenIntent('instruct_stop_medication')).toBe(
+        'Tell you to stop, skip, or pause a medication.'
+      );
+    });
+
+    it('normalizes uppercase, mixed-case, and whitespace around tokens', () => {
+      expect(formatForbiddenIntent(' DIAGNOSE ')).toBe(
+        'Diagnose a condition or tell you what illness you have.'
+      );
+      expect(formatForbiddenIntent('Replace_Emergency_Care')).toBe(
+        'Replace emergency services or your care team in an urgent situation.'
+      );
+      expect(formatForbiddenIntent(' Dose ')).toBe(
+        'Tell you how much of a medication to take or how to change a dose.'
+      );
+    });
+
+    it('gracefully humanizes unknown or custom tokens with title-cased sentence and period', () => {
+      expect(formatForbiddenIntent('custom_forbidden_action')).toBe(
+        'Custom forbidden action.'
+      );
+      expect(formatForbiddenIntent('alter-medication-schedule')).toBe(
+        'Alter medication schedule.'
+      );
+      expect(formatForbiddenIntent('emergency_triage_override')).toBe(
+        'Emergency triage override.'
+      );
+    });
+
+    it('does not duplicate terminal punctuation if already ending with period', () => {
+      expect(formatForbiddenIntent('already_has_period.')).toBe(
+        'Already has period.'
+      );
+    });
+
+    it('provides identical behavior through alias describeForbiddenIntent', () => {
+      expect(describeForbiddenIntent('diagnose')).toBe(
+        formatForbiddenIntent('diagnose')
+      );
+      expect(describeForbiddenIntent('custom_token')).toBe('Custom token.');
+    });
+
+    it('verifies all FORBIDDEN_INTENT_DESCRIPTIONS are non-empty strings', () => {
+      expect(Object.keys(FORBIDDEN_INTENT_DESCRIPTIONS).length).toBeGreaterThanOrEqual(5);
+      for (const [key, desc] of Object.entries(FORBIDDEN_INTENT_DESCRIPTIONS)) {
+        expect(key).toBeTruthy();
+        expect(typeof desc).toBe('string');
+        expect(desc.length).toBeGreaterThan(10);
+      }
     });
   });
 });

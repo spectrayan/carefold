@@ -31,7 +31,8 @@ import {
   ShieldAlert,
   X,
   Cpu,
-  Settings
+  Settings,
+  Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useOptionalTheme } from '@/components/ThemeProvider';
@@ -186,6 +187,7 @@ export function Navbar() {
 
   const navLinks = [
     { href: '/', label: 'Marketplace', icon: LayoutGrid },
+    { href: '/skills', label: 'Skills', icon: Sparkles },
     { href: '/chat', label: 'Chat', icon: MessageSquare }
   ];
 

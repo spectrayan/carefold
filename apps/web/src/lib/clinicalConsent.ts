@@ -51,27 +51,17 @@ export const DEFAULT_FORBIDDEN_INTENTS = [
   'instruct_stop_medication'
 ] as const;
 
-const FORBIDDEN_INTENT_DESCRIPTIONS: Record<string, string> = {
-  diagnose: 'Diagnose a condition or tell you what illness you have.',
-  prescribe: 'Prescribe, recommend, or switch medications or treatments.',
-  dose: 'Tell you how much of a medication to take or how to change a dose.',
-  replace_emergency_care: 'Replace emergency services or your care team in an urgent situation.',
-  instruct_stop_medication: 'Tell you to stop, skip, or pause a medication.'
-};
+import {
+  FORBIDDEN_INTENT_DESCRIPTIONS,
+  formatForbiddenIntent,
+  describeForbiddenIntent
+} from '@/lib/utils';
+
+export { FORBIDDEN_INTENT_DESCRIPTIONS, formatForbiddenIntent, describeForbiddenIntent };
 
 /** Returns true when the agent's risk class requires explicit user consent. */
 export function requiresClinicalConsent(riskClass: string | undefined | null): boolean {
   return (riskClass || '').trim().toLowerCase() === CLINICAL_ASSIST_RISK_CLASS;
-}
-
-/** Translates a manifest forbidden-intent key into plain language. */
-export function describeForbiddenIntent(intent: string): string {
-  const key = intent.trim().toLowerCase();
-  if (FORBIDDEN_INTENT_DESCRIPTIONS[key]) {
-    return FORBIDDEN_INTENT_DESCRIPTIONS[key];
-  }
-  const words = key.replace(/[_-]+/g, ' ').trim();
-  return words ? `${words.charAt(0).toUpperCase()}${words.slice(1)}.` : '';
 }
 
 function isValidRecord(value: unknown): value is ClinicalConsentRecord {
