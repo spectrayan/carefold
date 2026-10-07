@@ -25,6 +25,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import process from 'node:process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,6 +33,13 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 
 const SKILLS_DIR = path.join(ROOT_DIR, 'skills');
 const AGENTS_DIR = path.join(ROOT_DIR, 'agents');
+
+if (process.argv.includes('--table')) {
+  const { readAgentManifests, generateMarkdownTable } = await import('./generate-readme-table.mjs');
+  const agents = readAgentManifests(AGENTS_DIR);
+  console.log(generateMarkdownTable(agents));
+  process.exit(0);
+}
 
 const PHASE0_CLOSED_TOOLS = ['attach-read', 'workspace-note', 'skill-docs'];
 const VALID_RISK_CLASSES = ['wellness', 'admin', 'clinical_assist', 'education'];

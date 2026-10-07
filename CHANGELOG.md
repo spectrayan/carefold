@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Generate README Specialist Agent Table Directly from Manifests (Docs & Tooling)** (`#73`):
+  - Created standalone generator script `scripts/generate-readme-table.mjs` dynamically scanning `agents/` for all 22 specialist agents (excluding `_system` and `_template`).
+  - Extracted metadata across decomposed manifests (`metadata.yaml` for `id`, `domain`, `category`, `risk_class` and `agent.yaml` for `description`).
+  - Implemented folded description normalization (unwrapping `>-` newlines, collapsing whitespace, escaping pipes) and deterministic alphabetical sorting (A-Z by agent identifier).
+  - Generated 5-column GFM table with technical backticks matching canonical schema in `README.md`.
+  - Added CLI execution modes: default / `--update` (in-place replacement between `<!-- agents-table:start -->` and `<!-- agents-table:end -->`), `--check` (asserts table is in sync with manifests; exits 1 on drift or missing markers), and `--stdout` / `--table` / `--print` (emits Markdown table to stdout).
+  - Added `--table` flag support to `scripts/validate-packs.mjs` delegating to table generation.
+  - Synchronized `README.md` Specialist Agent Topology table with all 22 specialist manifests and updated intro count.
+  - Added root npm scripts `"generate:readme"` and `"check:readme"` in `package.json`.
+  - Added automated drift check step to GitHub Actions CI workflow `ci.yml` in `license-check` job.
+  - Added comprehensive automated Vitest test suite in `packages/cli/tests/12_readme_agents_table.test.ts`.
 - **Dynamic Version, System Health Diagnostics & Status Checks (CLI)** (`#32`):
   - Added dynamic CLI version resolution utility `packages/cli/src/utils/version.ts` reading semantic version from `packages/cli/package.json` with safe fallback to `0.4.0-beta.1`.
   - Configured Commander `.version(getCliVersion(), '-v, --version')` supporting both `-v` and `--version` flags.

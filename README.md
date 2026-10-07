@@ -164,30 +164,34 @@ flowchart TD
 
 ## 🏥 Specialist Agent Topology
 
-Carefold includes 20 specialist clinical/navigational agents and 6 internal system infrastructure agents, backed by 22 skill packs (plus `_template` starters for new agents and skills):
+Carefold includes 22 specialist clinical/navigational agents and 6 internal system infrastructure agents, backed by 24 skill packs (plus `_template` starters for new agents and skills):
 
+<!-- agents-table:start -->
 | Agent Identifier | Domain | Category | Risk Class | Clinical Scope & Capabilities |
 |---|---|---|---|---|
-| `cardiology-guide` | `clinical` | `cardiology` | `clinical_assist` | Heart health, hypertension logs, arrhythmia visit agendas, chest pain warnings |
-| `pulmonology-guide` | `clinical` | `pulmonology` | `clinical_assist` | Asthma & COPD action plans, dyspnea tracking, inhaler adherence reviews |
-| `neurology-guide` | `clinical` | `neurology` | `clinical_assist` | Migraine & headache logs, cognitive symptom tracking, neurological visit agendas |
-| `gastro-guide` | `clinical` | `gastroenterology` | `clinical_assist` | IBS/IBD food trigger journals, colonoscopy & endoscopy preparation |
-| `nephrology-guide` | `clinical` | `nephrology` | `clinical_assist` | Kidney health, eGFR/creatinine lab review prep, renal fluid & sodium logs |
-| `endocrinology-guide` | `clinical` | `endocrinology` | `clinical_assist` | Diabetes CGM logs, A1C tracking, thyroid disorder visit preparation |
-| `derma-guide` | `clinical` | `dermatology` | `clinical_assist` | Lesion ABCDE tracking guide, rash documentation, topical adherence |
-| `ortho-guide` | `clinical` | `orthopedics` | `clinical_assist` | Joint pain scales, mobility tracking, physical therapy and surgery consultation prep |
-| `oncology-navigator` | `clinical` | `oncology` | `clinical_assist` | Treatment navigation, chemotherapy side-effect logs, tumor board agendas |
-| `rheuma-guide` | `clinical` | `rheumatology` | `clinical_assist` | Autoimmune flare-up trackers, morning stiffness logs, biologic monitoring |
-| `urology-guide` | `clinical` | `urology` | `clinical_assist` | Bladder health, frequency-volume tracking, prostate consultation prep |
-| `eye-guide` | `clinical` | `ophthalmology` | `clinical_assist` | Vision changes, glaucoma & macular degeneration monitoring, surgery prep |
-| `ent-guide` | `clinical` | `ent` | `clinical_assist` | Sinusitis tracking, tinnitus diaries, audiogram & hearing consultation prep |
-| `visit-steward` | `navigation` | `appointments` | `wellness` | General primary care preparation, doctor agendas, medication reconciliations |
-| `benefits-guide` | `navigation` | `insurance` | `admin` | EOB breakdown, deductible/copay tracking, insurance policy explainer |
-| `claims-appeals-guide`| `navigation`| `appeals` | `admin` | Denied claim analysis, ERISA appeal timelines, external review drafting |
-| `prior-auth-navigator`| `navigation`| `authorizations` | `admin` | Prior authorization criteria, step therapy documentation, physician checklists |
-| `formulary-guide` | `navigation` | `pharmacy` | `admin` | Drug tiers, generic bioequivalent substitutions, copay assistance discovery |
-| `records-coordinator` | `navigation` | `records` | `admin` | Multi-provider medical records organization, lab dossiers, HIPAA requests |
-| `habit-companion` | `wellness` | `habits` | `wellness` | Daily hydration, sleep routines, medication reminder checklists |
+| `benefits-guide` | `navigation` | `navigation.insurance` | `admin` | Healthcare benefits and insurance navigation steward assisting patients with deductible tracking, copays, out-of-pocket maximums, and explanation of benefits (EOB) analysis. |
+| `cardiology-guide` | `clinical` | `clinical.cardiology` | `clinical_assist` | Cardiovascular care navigator assisting patients with hypertension tracking, arrhythmia consultation prep, heart health lifestyle agendas, and vital sign logs. |
+| `claims-appeals-guide` | `navigation` | `navigation.claims` | `admin` | Healthcare claims and insurance appeals steward assisting patients with denied claims analysis, Explanation of Benefits (EOB) interpretation, and ERISA appeal letters. |
+| `derma-guide` | `clinical` | `clinical.dermatology` | `clinical_assist` | Dermatological wellness navigator assisting patients with skin lesion ABCDE tracking documentation, rash onset journals, topical medication routines, and dermatology visit agendas. |
+| `endocrinology-guide` | `clinical` | `clinical.endocrinology` | `clinical_assist` | Endocrine and metabolic care navigator helping patients organize continuous glucose monitor (CGM) logs, A1C trends, thyroid panel questions, and daily metabolic symptom journals. |
+| `ent-guide` | `clinical` | `clinical.ent` | `clinical_assist` | Otolaryngology and ear, nose, and throat navigator assisting individuals with chronic sinusitis, tinnitus and hearing loss evaluation prep, vertigo episodes, and ENT visit agendas. |
+| `eye-guide` | `clinical` | `clinical.ophthalmology` | `clinical_assist` | Vision health and ophthalmology care navigator helping patients prepare for eye examinations, monitor glaucoma and macular changes, and structure cataract surgery discussions. |
+| `formulary-guide` | `navigation` | `navigation.formulary` | `admin` | Prescription medication and formulary guide helping patients understand drug tiers, discover manufacturer copay cards and patient assistance programs, and structure generic substitution questions. |
+| `gastro-guide` | `clinical` | `clinical.gastroenterology` | `clinical_assist` | Digestive health care navigator assisting patients with IBS/IBD food and symptom journals, colonoscopy/endoscopy preparation checklists, and gastroenterology visit agendas. |
+| `habit-companion` | `wellness` | `wellness.habits` | `wellness` | Daily wellness and lifestyle companion supporting hydration, sleep hygiene, activity goals, and positive chronic health habit check-ins. |
+| `nephrology-guide` | `clinical` | `clinical.nephrology` | `clinical_assist` | Renal care navigator helping individuals prepare for nephrology visits, organize kidney lab trends (eGFR, creatinine, BUN, UACR), track daily fluid and sodium habits, and structure renal diet questions. |
+| `neurology-guide` | `clinical` | `clinical.neurology` | `clinical_assist` | Neurological care navigator assisting patients with migraine diaries, neuropathy tracking, cognitive symptom timelines, and neurology consultation agendas. |
+| `oncology-navigator` | `clinical` | `clinical.oncology` | `clinical_assist` | Compassionate oncology care steward assisting cancer patients and caregivers with chemotherapy side-effect tracking, tumor board agenda preparation, and clinical trial discussions. |
+| `ortho-guide` | `clinical` | `clinical.orthopedics` | `clinical_assist` | Musculoskeletal care navigator assisting patients with joint pain and functional mobility logs, physical therapy tracking, and orthopedic surgery consultation preparation. |
+| `podiatry-guide` | `clinical` | `clinical.podiatry` | `clinical_assist` | Podiatry and foot health navigator assisting patients with diabetic foot exam tracking, wound and ulcer logs, gait and mobility agendas, orthotic and footwear preparation, and nail or callus care follow-up. |
+| `prior-auth-navigator` | `navigation` | `navigation.prior_auth` | `admin` | Healthcare administration navigator helping patients verify prior authorization criteria, navigate step-therapy requirements, and prepare clinical appeal documentation. |
+| `pulmonology-guide` | `clinical` | `clinical.pulmonology` | `clinical_assist` | Respiratory health navigator assisting patients with asthma/COPD action plan preparation, inhaler adherence, dyspnea tracking, and pulmonology consultation agendas. |
+| `records-coordinator` | `navigation` | `navigation.records` | `admin` | Healthcare records steward assisting patients and caregivers in organizing multi-provider clinical dossiers, compiling longitudinal lab trends, and exercising HIPAA record request rights. |
+| `rheuma-guide` | `clinical` | `clinical.rheumatology` | `clinical_assist` | Rheumatology care navigator assisting individuals with autoimmune conditions such as rheumatoid arthritis and lupus to track flare-ups, morning stiffness, and biologic safety. |
+| `urology-guide` | `clinical` | `clinical.urology` | `clinical_assist` | Urological health navigator assisting individuals with urinary symptoms, bladder tracking, prostate health and PSA discussion prep, and urology appointment agendas. |
+| `vascular-guide` | `clinical` | `clinical.vascular` | `clinical_assist` | Vascular medicine and vein health navigator assisting patients with claudication tracking (PAD), leg swelling and edema logs, varicose vein consultation prep, and post-DVT follow-up agendas. |
+| `visit-steward` | `navigation` | `navigation.appointments` | `clinical_assist` | Organized wellness and clinical visit preparation steward helping patients prioritize concerns, structure health questions, and prepare doctor consultation agendas. |
+<!-- agents-table:end -->
 
 ### System Infrastructure Agents (`agents/_system`)
 * **`orchestrator`**: Two-hop intent classification, dynamic skill provisioning, and multi-topology dispatch.
