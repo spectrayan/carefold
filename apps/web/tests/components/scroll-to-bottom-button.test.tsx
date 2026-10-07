@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import React from 'react';
 import { ScrollToBottomButton } from '@/components/chat/ScrollToBottomButton';
 import { ChatClient } from '@/app/chat/ChatClient';
@@ -218,7 +218,7 @@ describe('ChatClient Scroll Tracking & Viewport Integration', () => {
       fireEvent.scroll(scrollContainer);
 
       await waitFor(() => {
-        expect(screen.getByText(/Chunk 1/i)).toBeInTheDocument();
+        expect(within(scrollContainer as HTMLElement).getByText(/Chunk 1/i)).toBeInTheDocument();
       });
 
       const scrollBtn = screen.getByTestId('scroll-to-bottom-btn');

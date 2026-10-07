@@ -16,10 +16,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import fs from 'fs';
 import path from 'path';
+import { ChatClient } from '@/app/chat/ChatClient';
+import type { AgentSummary } from '@/lib/types';
 import { StartersChips } from '@/components/StartersChips';
 import { SuggestedQuestionsChips } from '@/components/SuggestedQuestionsChips';
 import { Navbar } from '@/components/Navbar';
@@ -614,6 +616,114 @@ describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () =>
       expect(skipLinkIndex).toBeGreaterThan(-1);
       expect(navbarIndex).toBeGreaterThan(-1);
       expect(skipLinkIndex).toBeLessThan(navbarIndex);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 4. SCREEN READER LIVE REGIONS & RESILIENCE (ISSUE #90)
+  // ---------------------------------------------------------------------------
+  describe('Dimension 4: Screen Reader Live Region Resilience & Anti-Thrashing', () => {
+    function createMockSSEResponse(events: Array<{ event?: string; data: Record<string, any> }>) {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          for (const ev of events) {
+            const eventLine = ev.event ? `event: ${ev.event}\n` : '';
+            const dataLine = `data: ${JSON.stringify(ev.data)}\n\n`;
+            controller.enqueue(encoder.encode(eventLine + dataLine));
+          }
+          controller.close();
+        }
+      });
+
+      return new Response(stream, {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' }
+      });
+    }
+
+    const mockChatAgents: AgentSummary[] = [
+      {
+        id: 'visit-steward',
+        title: 'Visit Steward',
+        version: '0.1.0',
+        risk_class: 'wellness',
+        skills: ['visit-prep'],
+        effectiveTools: ['skill-docs'],
+        starters: ['What should I ask my doctor?']
+      }
+    ];
+
+    it('resets both polite and assertive announcers upon starting a New Session', async () => {
+      const mockFetch = vi.fn().mockImplementation((url) => {
+        if (url === '/api/chat') {
+          return Promise.resolve(
+            createMockSSEResponse([
+              { event: 'token', data: { type: 'token', delta: 'First answer' } },
+              { event: 'done', data: { type: 'done', fullText: 'First answer' } }
+            ])
+          );
+        }
+        return Promise.resolve(new Response('{}', { status: 200 }));
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      render(<ChatClient initialAgents={mockChatAgents} />);
+
+      // Complete first turn
+      const input = screen.getByPlaceholderText(/Message/i);
+      fireEvent.change(input, { target: { value: 'Question 1' } });
+      fireEvent.click(screen.getByTitle('Send Prompt'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chat-live-announcer-polite')).toHaveTextContent('Response from Visit Steward: First answer');
+      });
+
+      // Click "New Session"
+      fireEvent.click(screen.getByTitle('Start a new chat session'));
+
+      // Both announcers must be cleared to prevent stale repeat utterances
+      expect(screen.getByTestId('chat-live-announcer-polite')).toHaveTextContent('');
+      expect(screen.getByTestId('chat-live-announcer-assertive')).toHaveTextContent('');
+    });
+
+    it('guarantees suggestion chips are accessible in logical DOM order following assistant reply', async () => {
+      const mockFetch = vi.fn().mockImplementation((url) => {
+        if (url === '/api/chat') {
+          return Promise.resolve(
+            createMockSSEResponse([
+              { event: 'token', data: { type: 'token', delta: 'Checklist created' } },
+              {
+                event: 'suggestions',
+                data: { type: 'suggestions', suggestions: ['What to bring?', 'When to arrive?'] }
+              },
+              { event: 'done', data: { type: 'done', fullText: 'Checklist created' } }
+            ])
+          );
+        }
+        return Promise.resolve(new Response('{}', { status: 200 }));
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      render(<ChatClient initialAgents={mockChatAgents} />);
+
+      fireEvent.change(screen.getByPlaceholderText(/Message/i), { target: { value: 'Help me plan' } });
+      fireEvent.click(screen.getByTitle('Send Prompt'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('suggested-questions-container')).toBeInTheDocument();
+      });
+
+      // Suggestion chips container has aria-label
+      const chipsContainer = screen.getByTestId('suggested-questions-container');
+      expect(chipsContainer).toHaveAttribute('aria-label', 'Suggested follow-up questions');
+
+      // Chips are standard keyboard-focusable buttons with accessible text
+      const chips = screen.getAllByTestId('suggested-question-chip');
+      expect(chips).toHaveLength(2);
+      expect(chips[0]).toHaveTextContent('What to bring?');
+      expect(chips[1]).toHaveTextContent('When to arrive?');
+      expect(chips[0].tagName).toBe('BUTTON');
     });
   });
 });

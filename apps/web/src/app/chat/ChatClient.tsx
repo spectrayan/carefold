@@ -79,6 +79,10 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Screen reader live region announcement states (Issue #90)
+  const [politeAnnouncement, setPoliteAnnouncement] = useState('');
+  const [assertiveAnnouncement, setAssertiveAnnouncement] = useState('');
+
   // User Settings & Model Selection State (deterministic initial state to prevent SSR hydration mismatch)
   const [settings, setSettings] = useState<CarefoldUserSettings>(DEFAULT_USER_SETTINGS);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -296,6 +300,8 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     setMessages([]);
     setSuggestedQuestions([]);
     setErrorMessage(null);
+    setPoliteAnnouncement('');
+    setAssertiveAnnouncement('');
     setInputText('');
     setIsAtBottom(true);
     isAtBottomRef.current = true;
@@ -333,6 +339,10 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     setErrorMessage(null);
     setSuggestedQuestions([]);
     setIsStreaming(true);
+
+    const agentTitle = selectedAgent?.title || 'Carefold Assistant';
+    setPoliteAnnouncement(`Thinking... Generating response from ${agentTitle}.`);
+    setAssertiveAnnouncement('');
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -390,6 +400,9 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
       const decoder = new TextDecoder();
       let buffer = '';
       let currentEvent = 'token';
+      let streamIsEmergency = false;
+      let accumulatedAssistantText = '';
+      let refusalMessage = '';
 
       while (true) {
         const { value, done } = await reader.read();
@@ -416,6 +429,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
 
               if (eventType === 'token') {
                 const delta = data.delta || data.token || '';
+                accumulatedAssistantText += delta;
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg.id === assistantMessageId
@@ -469,6 +483,14 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
               } else if (eventType === 'refusal') {
                 const isHard = !data.reason || !data.reason.includes('diagnose');
                 const isEmergency = Boolean(data.reason && data.reason.startsWith('emergency_red_flag'));
+                if (data.message) {
+                  refusalMessage = data.message;
+                }
+                if (isEmergency) {
+                  streamIsEmergency = true;
+                  const alertText = data.message || 'Acute symptoms detected. Please call 911 or visit the nearest emergency room immediately.';
+                  setAssertiveAnnouncement(`Emergency Alert: ${alertText}`);
+                }
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg.id === assistantMessageId
@@ -500,17 +522,26 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
                 const isEmergency = Boolean(
                   (data.refusalReason && data.refusalReason.startsWith('emergency_red_flag'))
                 );
+                const messageIsEmergency = isEmergency || streamIsEmergency;
+                if (!messageIsEmergency) {
+                  const cleanFullText = stripReferencePreamble(
+                    stripSuggestionLeakage(data.fullText || accumulatedAssistantText || refusalMessage || '')
+                  );
+                  if (cleanFullText) {
+                    setPoliteAnnouncement(`Response from ${agentTitle}: ${cleanFullText}`);
+                  }
+                }
                 setMessages((prev) =>
                   prev.map((msg) => {
                     if (msg.id !== assistantMessageId) return msg;
-                    const messageIsEmergency = isEmergency || Boolean(msg.isEmergency);
+                    const finalEmergency = messageIsEmergency || Boolean(msg.isEmergency);
                     return {
                       ...msg,
-                      content: messageIsEmergency
+                      content: finalEmergency
                         ? (msg.content || stripReferencePreamble(stripSuggestionLeakage(data.fullText || '')))
                         : stripReferencePreamble(stripSuggestionLeakage(data.fullText || msg.content)),
                       isRefusal: isRefusal,
-                      isEmergency: messageIsEmergency,
+                      isEmergency: finalEmergency,
                       emergencyCategory: msg.emergencyCategory,
                       refusalReason: data.refusalReason || msg.refusalReason,
                       boundaryWarning: hasBoundaryWarning || (!isRefusal && Boolean(msg.boundaryWarning)),
@@ -520,7 +551,9 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
                   })
                 );
               } else if (eventType === 'error') {
-                setErrorMessage(data.message || 'An error occurred during agent execution.');
+                const errText = data.message || 'An error occurred during agent execution.';
+                setErrorMessage(errText);
+                setAssertiveAnnouncement(`Error: ${errText}`);
               }
             } catch {
               // Ignore partial JSON chunks
@@ -532,11 +565,12 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
       if (err.name === 'AbortError') {
         // Stream aborted by user
       } else {
-        setErrorMessage(
+        const errText =
           err.message && (err.message.includes('fetch') || err.message.includes('ECONNREFUSED'))
             ? 'Ollama is unreachable. Please verify Ollama is running on http://127.0.0.1:11434.'
-            : err.message || 'Execution error.'
-        );
+            : err.message || 'Execution error.';
+        setErrorMessage(errText);
+        setAssertiveAnnouncement(`Error: ${errText}`);
       }
     } finally {
       setIsStreaming(false);
@@ -760,12 +794,36 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
         </div>
       </div>
 
+      {/* Live Region Announcers for Screen Readers */}
+      <div
+        data-testid="chat-live-announcer-polite"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {politeAnnouncement}
+      </div>
+      <div
+        data-testid="chat-live-announcer-assertive"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {assertiveAnnouncement}
+      </div>
+
       {/* Message History Area */}
       <div className="relative flex-1 min-h-0">
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="h-full overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-4"
+          role="log"
+          aria-label={`Chat history with ${selectedAgent?.title || 'Carefold Assistant'}`}
+          aria-live="off"
+          tabIndex={0}
+          className="h-full overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-4 focus:outline-none"
         >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center max-w-lg mx-auto py-12">
@@ -816,8 +874,13 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
 
           {/* Error Notification */}
           {errorMessage && (
-            <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs text-rose-800 dark:text-rose-200 flex items-center gap-2 max-w-xl mx-auto my-2">
-              <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+            <div
+              data-testid="chat-error-banner"
+              role="alert"
+              aria-live="assertive"
+              className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs text-rose-800 dark:text-rose-200 flex items-center gap-2 max-w-xl mx-auto my-2"
+            >
+              <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" aria-hidden="true" />
               <span>{errorMessage}</span>
             </div>
           )}

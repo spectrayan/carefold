@@ -414,6 +414,210 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
     expect(options[2]).toHaveTextContent('Visit Steward (Wellness)');
     expect(options[2]).not.toHaveTextContent('(wellness)');
   });
+
+  // ---------------------------------------------------------------------------
+  // Screen Reader Live Region Announcements & Anti-Thrashing (Issue #90)
+  // ---------------------------------------------------------------------------
+
+  it('renders persistent polite and assertive screen reader live regions and message log container', () => {
+    render(<ChatClient initialAgents={mockAgents} />);
+
+    // Polite live region
+    const politeAnnouncer = screen.getByTestId('chat-live-announcer-polite');
+    expect(politeAnnouncer).toBeInTheDocument();
+    expect(politeAnnouncer).toHaveAttribute('role', 'status');
+    expect(politeAnnouncer).toHaveAttribute('aria-live', 'polite');
+    expect(politeAnnouncer).toHaveAttribute('aria-atomic', 'true');
+    expect(politeAnnouncer.className).toContain('sr-only');
+
+    // Assertive live region
+    const assertiveAnnouncer = screen.getByTestId('chat-live-announcer-assertive');
+    expect(assertiveAnnouncer).toBeInTheDocument();
+    expect(assertiveAnnouncer).toHaveAttribute('role', 'alert');
+    expect(assertiveAnnouncer).toHaveAttribute('aria-live', 'assertive');
+    expect(assertiveAnnouncer).toHaveAttribute('aria-atomic', 'true');
+    expect(assertiveAnnouncer.className).toContain('sr-only');
+
+    // Message log container
+    const messageLog = screen.getByRole('log', { name: /chat history with visit steward/i });
+    expect(messageLog).toBeInTheDocument();
+    expect(messageLog).toHaveAttribute('aria-live', 'off');
+  });
+
+  it('announces generation start status politely when stream begins', async () => {
+    const mockFetch = vi.fn().mockImplementation((url) => {
+      if (url === '/api/chat') {
+        return Promise.resolve(
+          createMockSSEResponse([
+            { event: 'token', data: { type: 'token', delta: 'Hello' } },
+            { event: 'done', data: { type: 'done', fullText: 'Hello' } }
+          ])
+        );
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<ChatClient initialAgents={mockAgents} />);
+
+    const input = screen.getByPlaceholderText(/Message/i);
+    fireEvent.change(input, { target: { value: 'Schedule checkup' } });
+    fireEvent.click(screen.getByTitle('Send Prompt'));
+
+    // Immediately on submission, polite announcer is populated with status
+    const politeAnnouncer = screen.getByTestId('chat-live-announcer-polite');
+    expect(politeAnnouncer).toHaveTextContent('Thinking... Generating response from Visit Steward.');
+  });
+
+  it('prevents screen reader thrashing by keeping announcer silent during token stream', async () => {
+    let streamController: ReadableStreamDefaultController | null = null;
+    const stream = new ReadableStream({
+      start(controller) {
+        streamController = controller;
+      }
+    });
+
+    const mockFetch = vi.fn().mockImplementation((url) => {
+      if (url === '/api/chat') {
+        return Promise.resolve(
+          new Response(stream, {
+            status: 200,
+            headers: { 'Content-Type': 'text/event-stream' }
+          })
+        );
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<ChatClient initialAgents={mockAgents} />);
+
+    const input = screen.getByPlaceholderText(/Message/i);
+    fireEvent.change(input, { target: { value: 'Tell me more' } });
+    fireEvent.click(screen.getByTitle('Send Prompt'));
+
+    const politeAnnouncer = screen.getByTestId('chat-live-announcer-polite');
+    expect(politeAnnouncer).toHaveTextContent('Thinking... Generating response from Visit Steward.');
+
+    // Push individual token chunks
+    const encoder = new TextEncoder();
+    streamController!.enqueue(encoder.encode('event: token\ndata: {"type":"token","delta":"Token 1 "}\n\n'));
+    streamController!.enqueue(encoder.encode('event: token\ndata: {"type":"token","delta":"Token 2 "}\n\n'));
+
+    // Announcer text must NOT contain raw streaming tokens (anti-thrashing guarantee)
+    expect(politeAnnouncer).not.toHaveTextContent('Token 1');
+    expect(politeAnnouncer).not.toHaveTextContent('Token 2');
+    expect(politeAnnouncer).toHaveTextContent('Thinking... Generating response from Visit Steward.');
+
+    // Close stream
+    streamController!.enqueue(encoder.encode('event: done\ndata: {"type":"done","fullText":"Token 1 Token 2"}\n\n'));
+    streamController!.close();
+
+    // Once stream completes, full text is announced with attribution
+    await waitFor(() => {
+      expect(politeAnnouncer).toHaveTextContent('Response from Visit Steward: Token 1 Token 2');
+    });
+  });
+
+  it('announces completed assistant response once upon done event with agent attribution', async () => {
+    const mockFetch = vi.fn().mockImplementation((url) => {
+      if (url === '/api/chat') {
+        return Promise.resolve(
+          createMockSSEResponse([
+            { event: 'token', data: { type: 'token', delta: 'Your visit notes are ready.' } },
+            { event: 'done', data: { type: 'done', fullText: 'Your visit notes are ready.' } }
+          ])
+        );
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<ChatClient initialAgents={mockAgents} />);
+
+    const input = screen.getByPlaceholderText(/Message/i);
+    fireEvent.change(input, { target: { value: 'Prepare summary' } });
+    fireEvent.click(screen.getByTitle('Send Prompt'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-live-announcer-polite')).toHaveTextContent(
+        'Response from Visit Steward: Your visit notes are ready.'
+      );
+    });
+  });
+
+  it('announces emergency refusal assertively in alert live region', async () => {
+    const mockFetch = vi.fn().mockImplementation((url) => {
+      if (url === '/api/chat') {
+        return Promise.resolve(
+          createMockSSEResponse([
+            {
+              event: 'refusal',
+              data: {
+                type: 'refusal',
+                reason: 'emergency_red_flag:acute_stroke',
+                message: 'EMERGENCY WARNING: Acute stroke symptoms detected. Call 911 immediately.',
+                category: 'acute_stroke'
+              }
+            },
+            {
+              event: 'done',
+              data: {
+                type: 'done',
+                fullText: 'Educational navigation only.',
+                refused: true,
+                refusalReason: 'emergency_red_flag:acute_stroke'
+              }
+            }
+          ])
+        );
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<ChatClient initialAgents={mockAgents} />);
+
+    const input = screen.getByPlaceholderText(/Message/i);
+    fireEvent.change(input, { target: { value: 'Sudden facial droop and arm weakness' } });
+    fireEvent.click(screen.getByTitle('Send Prompt'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-live-announcer-assertive')).toHaveTextContent(
+        'Emergency Alert: EMERGENCY WARNING: Acute stroke symptoms detected. Call 911 immediately.'
+      );
+    });
+  });
+
+  it('announces runtime errors assertively with role="alert"', async () => {
+    const mockFetch = vi.fn().mockImplementation((url) => {
+      if (url === '/api/chat') {
+        return Promise.resolve(
+          createMockSSEResponse([
+            { event: 'error', data: { type: 'error', message: 'Ollama is unreachable.' } }
+          ])
+        );
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<ChatClient initialAgents={mockAgents} />);
+
+    const input = screen.getByPlaceholderText(/Message/i);
+    fireEvent.change(input, { target: { value: 'Ping model' } });
+    fireEvent.click(screen.getByTitle('Send Prompt'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-live-announcer-assertive')).toHaveTextContent(
+        'Error: Ollama is unreachable.'
+      );
+    });
+
+    const errorBanner = screen.getByTestId('chat-error-banner');
+    expect(errorBanner).toHaveAttribute('role', 'alert');
+    expect(errorBanner).toHaveAttribute('aria-live', 'assertive');
+  });
 });
 
 

@@ -177,6 +177,7 @@ export function ChatMessageItem({
   return (
     <div
       data-testid={isHardRefusal ? 'chat-message-refusal' : 'chat-message-assistant'}
+      aria-busy={message.isStreaming}
       className={`relative group flex flex-col my-3 max-w-[95%] md:max-w-[85%] min-w-[240px] rounded-2xl p-4 shadow-sm transition-colors ${
         isHardRefusal
           ? 'border-2 border-amber-500 bg-amber-50/70 dark:bg-amber-950/25 text-amber-950 dark:text-amber-100'
@@ -225,6 +226,7 @@ export function ChatMessageItem({
             {message.isStreaming && displayContent.length > 0 && (
               <span
                 data-testid="streaming-indicator"
+                aria-hidden="true"
                 className="inline-block w-2 h-4 ml-1 bg-blue-600 dark:bg-blue-400 animate-pulse align-middle"
               />
             )}
