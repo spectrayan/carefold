@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import os
 from pathlib import Path
 import re
 from typing import Any, Dict, List
@@ -120,6 +121,13 @@ async def list_notes() -> List[WorkspaceNoteSummary]:
     for item in notes_dir.iterdir():
         if item.is_file() and item.suffix.lower() == ".md" and not item.name.startswith("."):
             try:
+                real_path = item.resolve()
+                real_path.relative_to(notes_dir.resolve())
+            except (ValueError, RuntimeError, OSError):
+                logger.warning("note_symlink_escape_ignored", file=item.name)
+                continue
+
+            try:
                 parsed = parse_note_file(item, settings.workspace_root)
                 summaries.append(
                     WorkspaceNoteSummary(
@@ -141,12 +149,23 @@ async def list_notes() -> List[WorkspaceNoteSummary]:
 @router.get(ROUTE_NOTE_DETAIL, response_model=WorkspaceNoteDetail)
 async def get_note_detail(slug: str) -> WorkspaceNoteDetail:
     """Reads a specific note by slug with strict path traversal protection."""
-    if not slug or not slug.strip():
-        raise HTTPException(status_code=400, detail="Invalid note slug.")
+    SAFE_SLUG_PATTERN = re.compile(r"^[a-zA-Z0-9_\-]+$")
 
-    clean_slug = slug.strip()
+    if "/" in slug or "\\" in slug:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid note slug: must contain only alphanumeric characters, dashes, and underscores.",
+        )
+
+    clean_slug = os.path.basename(slug.strip())
     if clean_slug.endswith(".md"):
         clean_slug = clean_slug[:-3]
+
+    if not clean_slug or not SAFE_SLUG_PATTERN.match(clean_slug):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid note slug: must contain only alphanumeric characters, dashes, and underscores.",
+        )
 
     filename = f"{clean_slug}.md"
     notes_dir = settings.get_notes_dir()

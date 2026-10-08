@@ -237,3 +237,65 @@ def test_get_note_detail_rejects_symlink_escape(client: TestClient, temp_workspa
     resp = client.get("/api/notes/escaping_symlink")
     assert resp.status_code == 400
     assert "invalid note path" in resp.json()["detail"].lower()
+
+
+def test_list_notes_ignores_escaping_symlink(client: TestClient, temp_workspace: Path, tmp_path: Path):
+    """Verifies that symlinks escaping the notes directory are safely ignored by list_notes."""
+    notes_dir = settings.get_notes_dir()
+    for f in notes_dir.iterdir():
+        if f.is_file():
+            f.unlink()
+
+    external_file = tmp_path / "outside_secret.md"
+    external_file.write_text("# Secret Note\nOutside content", encoding="utf-8")
+
+    symlink_note = notes_dir / "leaked_symlink.md"
+    try:
+        os.symlink(external_file, symlink_note)
+    except OSError:
+        pytest.skip("Symlink creation not permitted in this environment")
+
+    # Also add a valid note
+    (notes_dir / "valid_note.md").write_text("# Valid Note\nInside content", encoding="utf-8")
+
+    resp = client.get("/api/notes")
+    assert resp.status_code == 200
+    items = resp.json()
+    assert len(items) == 1
+    assert items[0]["slug"] == "valid_note"
+
+
+@pytest.mark.parametrize(
+    "invalid_slug",
+    [
+        "invalid slug with spaces",
+        "invalid!chars",
+        "invalid@note",
+        "note%00",
+        "note.with.dots",
+        "note:colon",
+        "invalid^slug",
+    ],
+)
+def test_get_note_detail_invalid_slug_validation(
+    client: TestClient, temp_workspace: Path, invalid_slug: str
+):
+    """Verifies that invalid slug formats are rejected with 400 Bad Request."""
+    resp = client.get(f"/api/notes/{invalid_slug}")
+    assert resp.status_code == 400
+    assert "Invalid note slug" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_get_note_detail_dot_slugs_raise_400():
+    """Verifies that dot slugs raise 400 when processed directly by get_note_detail."""
+    from fastapi import HTTPException
+    from carefold.api.notes import get_note_detail
+
+    for dot_slug in ("..", ".", "", "   "):
+        with pytest.raises(HTTPException) as exc_info:
+            await get_note_detail(dot_slug)
+        assert exc_info.value.status_code == 400
+        assert "Invalid note slug" in exc_info.value.detail
+
+
