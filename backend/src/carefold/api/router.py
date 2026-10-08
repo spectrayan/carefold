@@ -17,9 +17,11 @@
 
 from fastapi import APIRouter
 
+from carefold.api.admin import router as admin_router
 from carefold.api.agents import router as agents_router
 from carefold.api.attachments import router as attachments_router
 from carefold.api.audit import router as audit_router
+from carefold.api.auth import router as auth_router
 from carefold.api.chat import router as chat_router
 from carefold.api.health import router as health_router
 from carefold.api.memory import router as memory_router
@@ -38,5 +40,7 @@ api_router.include_router(attachments_router)
 api_router.include_router(notes_router)
 api_router.include_router(memory_router, prefix="/memory", tags=["memory"])
 api_router.include_router(memory_router, prefix="/memories", tags=["memory"], include_in_schema=False)
+api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
+api_router.include_router(admin_router, prefix="/admin", tags=["admin"])
 
 __all__ = ["api_router"]

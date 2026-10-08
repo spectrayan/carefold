@@ -57,11 +57,17 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
   }
   query.set('limit', String(limit));
 
+  const incomingCookie = req.headers.get('cookie');
+  const authHeader = req.headers.get('authorization');
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (incomingCookie) headers['cookie'] = incomingCookie;
+  if (authHeader) headers['authorization'] = authHeader;
+
   try {
     const targetUrl = `${backendUrl}/api/memory?${query.toString()}`;
     const res = await fetch(targetUrl, {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers,
       cache: 'no-store'
     });
 
@@ -90,11 +96,17 @@ export async function DELETE(req: Request | NextRequest): Promise<NextResponse> 
   const url = new URL(req.url);
   const namespace = url.searchParams.get('namespace')?.trim() || 'default';
 
+  const incomingCookie = req.headers.get('cookie');
+  const authHeader = req.headers.get('authorization');
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (incomingCookie) headers['cookie'] = incomingCookie;
+  if (authHeader) headers['authorization'] = authHeader;
+
   try {
     const targetUrl = `${backendUrl}/api/memory?namespace=${encodeURIComponent(namespace)}`;
     const res = await fetch(targetUrl, {
       method: 'DELETE',
-      headers: { Accept: 'application/json' },
+      headers,
       cache: 'no-store'
     });
 

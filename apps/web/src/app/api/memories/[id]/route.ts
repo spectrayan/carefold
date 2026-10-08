@@ -53,12 +53,17 @@ export async function GET(
   const url = new URL(req.url);
   const namespace = url.searchParams.get('namespace')?.trim() || 'default';
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const incomingCookie = req.headers.get('cookie');
+  const authHeader = req.headers.get('authorization');
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (incomingCookie) headers['cookie'] = incomingCookie;
+  if (authHeader) headers['authorization'] = authHeader;
 
   try {
     const targetUrl = `${backendUrl}/api/memory/${encodeURIComponent(rawKey)}?namespace=${encodeURIComponent(namespace)}`;
     const res = await fetch(targetUrl, {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers,
       cache: 'no-store'
     });
 
@@ -106,11 +111,17 @@ export async function PUT(
   const url = new URL(req.url);
   const namespace = body.namespace || url.searchParams.get('namespace')?.trim() || 'default';
 
+  const incomingCookie = req.headers.get('cookie');
+  const authHeader = req.headers.get('authorization');
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' };
+  if (incomingCookie) headers['cookie'] = incomingCookie;
+  if (authHeader) headers['authorization'] = authHeader;
+
   try {
     const targetUrl = `${backendUrl}/api/memory/${encodeURIComponent(rawKey)}?namespace=${encodeURIComponent(namespace)}`;
     const res = await fetch(targetUrl, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers,
       body: JSON.stringify(body),
       cache: 'no-store'
     });
@@ -151,11 +162,17 @@ export async function DELETE(
   const namespace = url.searchParams.get('namespace')?.trim() || 'default';
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
 
+  const incomingCookie = req.headers.get('cookie');
+  const authHeader = req.headers.get('authorization');
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (incomingCookie) headers['cookie'] = incomingCookie;
+  if (authHeader) headers['authorization'] = authHeader;
+
   try {
     const targetUrl = `${backendUrl}/api/memory/${encodeURIComponent(rawKey)}?namespace=${encodeURIComponent(namespace)}`;
     const res = await fetch(targetUrl, {
       method: 'DELETE',
-      headers: { Accept: 'application/json' },
+      headers,
       cache: 'no-store'
     });
 

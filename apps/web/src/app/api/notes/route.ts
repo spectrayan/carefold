@@ -15,18 +15,24 @@
  * limitations under the License.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req?: Request | NextRequest): Promise<NextResponse> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+
+  const incomingCookie = req?.headers.get('cookie');
+  const authHeader = req?.headers.get('authorization');
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (incomingCookie) headers['cookie'] = incomingCookie;
+  if (authHeader) headers['authorization'] = authHeader;
 
   try {
     const res = await fetch(`${backendUrl}/api/notes`, {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers,
       cache: 'no-store'
     });
 

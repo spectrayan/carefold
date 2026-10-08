@@ -28,6 +28,7 @@ import uvicorn
 from carefold import __version__
 from carefold.api.router import api_router
 from carefold.config import settings
+from carefold.db import close_db, init_db
 from carefold.constants.api import API_PREFIX, ROUTE_ROOT_HEALTH
 from carefold.constants.defaults import (
     APP_DESCRIPTION,
@@ -47,7 +48,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("starting_carefold_backend", version=__version__, log_level=settings.log_level)
     logger.info("workspace_configuration", root=str(settings.workspace_root), ollama=settings.ollama_url)
     logger.info("audit_configuration", path=str(settings.get_audit_log_path()), store_bodies=settings.audit_store_bodies)
+    await init_db()
     yield
+    await close_db()
     logger.info("shutdown_complete")
 
 

@@ -56,6 +56,10 @@ DEFAULT_CHECKPOINTS_DB: str = "checkpoints.db"
 CATALOG_DB_FILENAME: str = "catalog.db"
 DEFAULT_CATALOG_DB: str = "catalog.db"
 
+SQL_DB_FILENAME: str = "carefold.db"
+DEFAULT_SQL_DB_PATH: str = "workspace/carefold.db"
+DEFAULT_SQL_DB_FILE: str = "workspace/carefold.db"
+
 
 # ============================================================================
 # 3. Manifest & Asset Filenames
@@ -107,3 +111,5 @@ ENV_AUDIT_LOG_PATH: str = "CAREFOLD_AUDIT_LOG_PATH"
 ENV_MEMORY_BACKEND: str = "CAREFOLD_MEMORY_BACKEND"
 ENV_SPECTOR_URL: str = "CAREFOLD_SPECTOR_URL"
 ENV_CATALOG_DB_PATH: str = "CAREFOLD_CATALOG_DB_PATH"
+ENV_DATABASE_URL: str = "CAREFOLD_DATABASE_URL"
+ENV_DATABASE_URL_FALLBACK: str = "DATABASE_URL"

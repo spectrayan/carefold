@@ -402,3 +402,49 @@ export interface MemoryUpdateRequest {
   metadata?: Record<string, any>;
 }
 
+// ---------------------------------------------------------------------------
+// Authentication & User Types
+// ---------------------------------------------------------------------------
+export type UserRole = 'admin' | 'steward' | 'member';
+export type UserStatus = 'active' | 'disabled';
+export type AuthProviderType = 'local' | 'oidc' | 'google' | 'github' | 'disabled';
+
+export interface UserProfile {
+  id: string; // UUID v4
+  email: string;
+  username: string;
+  full_name?: string | null;
+  role: UserRole;
+  status: UserStatus;
+  auth_provider: AuthProviderType;
+  created_at: string;
+  updated_at?: string;
+  last_login_at?: string | null;
+}
+
+export type User = UserProfile;
+
+export interface AuthProvidersInfo {
+  active_provider: 'local' | 'oidc' | 'disabled';
+  sso_providers: string[];
+  registration_enabled: boolean;
+  allow_registration?: boolean;
+  min_password_length?: number;
+}
+
+export interface UserSessionItem {
+  id: string;
+  user_id: string;
+  client_ip: string | null;
+  user_agent: string | null;
+  created_at: string;
+  last_active_at: string | null;
+  expires_at: string;
+  is_current?: boolean;
+}
+
+export interface SystemSettings {
+  [key: string]: any;
+}
+
+

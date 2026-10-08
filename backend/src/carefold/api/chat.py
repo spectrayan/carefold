@@ -22,8 +22,10 @@ import logging
 from typing import Any, AsyncIterator, Dict, List, Optional
 import uuid
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from carefold.api.deps import get_current_user
+from carefold.auth.ports import UserProfile
 from carefold.config import settings
 from carefold.constants.api import (
     HTTP_400_BAD_REQUEST,
@@ -49,7 +51,10 @@ router = APIRouter(tags=["Chat"])
 
 
 @router.post(ROUTE_CHAT)
-async def chat_stream(request: ChatRequestBody) -> StreamingResponse:
+async def chat_stream(
+    request: ChatRequestBody,
+    user: UserProfile = Depends(get_current_user),
+) -> StreamingResponse:
     """Streams token chunks, tool traces, refusals, suggestions, and completion records via SSE.
     
     Supports:
@@ -131,7 +136,10 @@ async def chat_stream(request: ChatRequestBody) -> StreamingResponse:
 
 
 @router.get(ROUTE_CHAT_THREADS)
-async def get_thread_history(thread_id: str) -> Dict[str, Any]:
+async def get_thread_history(
+    thread_id: str,
+    user: UserProfile = Depends(get_current_user),
+) -> Dict[str, Any]:
     """Retrieves conversation history and checkpoints for a given thread ID."""
     chats_dir = settings.workspace_root / CHATS_DIR
     db_path = chats_dir / DEFAULT_CHECKPOINTS_DB

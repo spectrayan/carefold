@@ -21,7 +21,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  _req: Request | NextRequest,
+  req: Request | NextRequest,
   context: { params: Promise<{ slug: string }> }
 ): Promise<NextResponse> {
   const resolvedParams = await context.params;
@@ -54,11 +54,17 @@ export async function GET(
 
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
 
+  const incomingCookie = req.headers.get('cookie');
+  const authHeader = req.headers.get('authorization');
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (incomingCookie) headers['cookie'] = incomingCookie;
+  if (authHeader) headers['authorization'] = authHeader;
+
   try {
     const targetUrl = `${backendUrl}/api/notes/${encodeURIComponent(cleanSlug)}`;
     const res = await fetch(targetUrl, {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers,
       cache: 'no-store'
     });
 

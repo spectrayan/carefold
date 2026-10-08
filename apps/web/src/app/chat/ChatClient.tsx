@@ -35,7 +35,7 @@ import {
   Brain
 } from 'lucide-react';
 import type { AgentSummary } from '@/lib/types';
-import { sanitizeAgentDescription, formatRiskClass } from '@/lib/utils';
+import { cn, sanitizeAgentDescription, formatRiskClass } from '@/lib/utils';
 import { ChatMessageItem, stripSuggestionLeakage, stripReferencePreamble, type ChatMessage } from '@/components/ChatMessageItem';
 import { type ToolTraceItem } from '@/components/ToolTraceCard';
 import { StartersChips } from '@/components/StartersChips';
@@ -58,6 +58,7 @@ import {
   hasClinicalConsent,
   requiresClinicalConsent
 } from '@/lib/clinicalConsent';
+import { useAuth } from '@/lib/auth';
 import { useClinicalConsents } from '@/lib/useClinicalConsents';
 import {
   type CarefoldUserSettings,
@@ -95,13 +96,14 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
   const [assertiveAnnouncement, setAssertiveAnnouncement] = useState('');
 
   // User Settings & Model Selection State (deterministic initial state to prevent SSR hydration mismatch)
+  const { user } = useAuth();
   const [settings, setSettings] = useState<CarefoldUserSettings>(DEFAULT_USER_SETTINGS);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'settings' | 'diagnostics' | 'memory'>('settings');
+  const [settingsTab, setSettingsTab] = useState<'settings' | 'diagnostics' | 'memory' | 'security'>('settings');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isActivityOpen, setIsActivityOpen] = useState(false);
 
-  const openSettingsModal = (tab: 'settings' | 'diagnostics' | 'memory' = 'settings') => {
+  const openSettingsModal = (tab: 'settings' | 'diagnostics' | 'memory' | 'security' = 'settings') => {
     setSettingsTab(tab);
     setIsSettingsOpen(true);
   };
@@ -967,6 +969,40 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
             onOpenSettings={() => openSettingsModal('settings')}
             disabled={isStreaming}
           />
+
+          {/* User Profile Badge */}
+          {user && (
+            <button
+              type="button"
+              data-testid="chat-user-profile-badge"
+              onClick={() => openSettingsModal('security')}
+              className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-xs transition cursor-pointer"
+              title={`Signed in as @${user.username} (${user.role}). Click to view account & security settings.`}
+              aria-label={`User profile: ${user.full_name || user.username}`}
+            >
+              <div className="w-4 h-4 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-[9px]">
+                {user.full_name
+                  ? user.full_name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+                  : user.username.slice(0, 2).toUpperCase()}
+              </div>
+              <span className="hidden lg:inline font-semibold text-[11px] max-w-[80px] truncate">
+                {user.username}
+              </span>
+              <span
+                data-testid="chat-user-role-badge"
+                className={cn(
+                  'text-[9px] font-semibold px-1 py-0.2 rounded-full border',
+                  user.role === 'admin'
+                    ? 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900/60 dark:bg-purple-950/40 dark:text-purple-300'
+                    : user.role === 'steward'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300'
+                    : 'border-slate-200 bg-slate-100 text-slate-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                )}
+              >
+                {user.role}
+              </span>
+            </button>
+          )}
 
           {/* Dossier Export Dropdown (Markdown & JSON) */}
           <DossierExportMenu

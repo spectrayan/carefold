@@ -22,9 +22,11 @@ import os
 from pathlib import Path
 import re
 from typing import Any, Dict, List
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 import yaml
 
+from carefold.api.deps import get_current_user
+from carefold.auth.ports import UserProfile
 from carefold.config import settings
 from carefold.constants.api import ROUTE_NOTES, ROUTE_NOTE_DETAIL
 from carefold.logging import get_logger
@@ -110,7 +112,9 @@ def parse_note_file(path: Path, workspace_root: Path | None = None) -> Dict[str,
 
 
 @router.get(ROUTE_NOTES, response_model=List[WorkspaceNoteSummary])
-async def list_notes() -> List[WorkspaceNoteSummary]:
+async def list_notes(
+    user: UserProfile = Depends(get_current_user),
+) -> List[WorkspaceNoteSummary]:
     """Lists all markdown notes saved in the workspace notes directory."""
     notes_dir = settings.get_notes_dir()
     if not notes_dir.is_dir():
@@ -146,7 +150,10 @@ async def list_notes() -> List[WorkspaceNoteSummary]:
 
 
 @router.get(ROUTE_NOTE_DETAIL, response_model=WorkspaceNoteDetail)
-async def get_note_detail(slug: str) -> WorkspaceNoteDetail:
+async def get_note_detail(
+    slug: str,
+    user: UserProfile = Depends(get_current_user),
+) -> WorkspaceNoteDetail:
     """Reads a specific note by slug with strict path traversal protection."""
     SAFE_SLUG_PATTERN = re.compile(r"^[a-zA-Z0-9_\-]+$")
 

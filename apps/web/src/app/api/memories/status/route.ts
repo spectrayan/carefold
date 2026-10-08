@@ -20,13 +20,19 @@ import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req?: Request): Promise<NextResponse> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+
+  const forwardHeaders: Record<string, string> = { Accept: 'application/json' };
+  const incomingCookie = req?.headers.get('cookie');
+  if (incomingCookie) {
+    forwardHeaders['cookie'] = incomingCookie;
+  }
 
   try {
     const res = await fetch(`${backendUrl}/api/memory/status`, {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers: forwardHeaders,
       cache: 'no-store'
     });
 

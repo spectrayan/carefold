@@ -62,6 +62,7 @@ import {
 
 import { SetupChecklist } from './setup/SetupChecklist';
 import { MemoryManagementPanel } from './memory/MemoryManagementPanel';
+import { SecurityProfilePanel } from './settings/SecurityProfilePanel';
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -76,7 +77,7 @@ export interface SettingsModalProps {
   /** Optional active thread ID when opened from chat */
   currentThreadId?: string;
   /** Initial tab to display */
-  initialTab?: 'settings' | 'diagnostics' | 'memory';
+  initialTab?: 'settings' | 'diagnostics' | 'memory' | 'security';
 }
 
 export function SettingsModal({
@@ -90,7 +91,7 @@ export function SettingsModal({
   currentThreadId,
   initialTab
 }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<'settings' | 'diagnostics' | 'memory'>(initialTab || 'settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'diagnostics' | 'memory' | 'security'>(initialTab || 'settings');
 
   useEffect(() => {
     if (isOpen && initialTab) {
@@ -306,10 +307,30 @@ export function SettingsModal({
             <Brain className="w-3.5 h-3.5" />
             <span>What Carefold Remembers</span>
           </button>
+          <button
+            type="button"
+            data-testid="settings-tab-security"
+            aria-selected={activeTab === 'security'}
+            role="tab"
+            onClick={() => setActiveTab('security')}
+            className={cn(
+              'px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-1.5 cursor-pointer',
+              activeTab === 'security'
+                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
+                : 'border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+            )}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Account & Security</span>
+          </button>
         </div>
 
         {/* Modal Scrollable Body */}
-        {activeTab === 'memory' ? (
+        {activeTab === 'security' ? (
+          <div className="flex-1 overflow-y-auto p-5" data-testid="settings-security-panel">
+            <SecurityProfilePanel />
+          </div>
+        ) : activeTab === 'memory' ? (
           <div className="flex-1 overflow-y-auto p-5" data-testid="settings-memory-panel">
             <MemoryManagementPanel />
           </div>

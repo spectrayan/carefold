@@ -20,7 +20,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import List, Optional
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from carefold.constants.defaults import DEFAULT_CORS_ORIGINS
@@ -93,6 +93,12 @@ class Settings(BaseSettings):
     # SQLite checkpointer database path
     db_path: Optional[Path] = None
 
+    # Relational Database configuration (R1)
+    database_url: Optional[str] = Field(
+        default=None,
+        description="Database URL supporting SQLite and PostgreSQL (CAREFOLD_DATABASE_URL or DATABASE_URL)",
+    )
+
     # Memory and Catalog abstraction configuration (R2)
     memory_backend: str = "sqlite"
     spector_url: str = "http://localhost:7070"
@@ -102,8 +108,41 @@ class Settings(BaseSettings):
         description="Fallback to local SQLite/InMemory store if Spector is unreachable",
     )
 
+    # Authentication provider configuration (R2)
+    auth_provider: str = Field(
+        default="disabled",
+        description="Active authentication provider (disabled, local, oidc)",
+    )
+
     # CORS configuration
     cors_origins: List[str] = list(DEFAULT_CORS_ORIGINS)
+
+    @model_validator(mode="after")
+    def _resolve_database_url(self) -> "Settings":
+        if not self.database_url:
+            env_cf = os.getenv("CAREFOLD_DATABASE_URL")
+            if env_cf and env_cf.strip():
+                self.database_url = env_cf.strip()
+            else:
+                env_db = os.getenv("DATABASE_URL")
+                if env_db and env_db.strip():
+                    self.database_url = env_db.strip()
+                else:
+                    self.database_url = f"sqlite+aiosqlite:///{self.workspace_root}/workspace/carefold.db"
+        return self
+
+    def get_database_url(self) -> str:
+        """Resolves active database URL, honoring environment overrides or workspace root."""
+        env_cf = os.getenv("CAREFOLD_DATABASE_URL")
+        if env_cf and env_cf.strip():
+            return env_cf.strip()
+        env_db = os.getenv("DATABASE_URL")
+        if env_db and env_db.strip():
+            return env_db.strip()
+        if self.database_url and not self.database_url.endswith("/workspace/carefold.db"):
+            return self.database_url
+        return f"sqlite+aiosqlite:///{self.workspace_root}/workspace/carefold.db"
+
 
     def get_catalog_db_path(self) -> Path:
         """Resolves catalog database path, defaulting to workspace_root / DEFAULT_CATALOG_DB."""

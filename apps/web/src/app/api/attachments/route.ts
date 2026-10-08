@@ -40,8 +40,15 @@ export async function POST(
     const forwardData = new FormData();
     forwardData.append('file', file, file.name);
 
+    const incomingCookie = req.headers.get('cookie');
+    const authHeader = req.headers.get('authorization');
+    const headers: Record<string, string> = {};
+    if (incomingCookie) headers['cookie'] = incomingCookie;
+    if (authHeader) headers['authorization'] = authHeader;
+
     const res = await fetch(`${backendUrl}/api/attachments`, {
       method: 'POST',
+      headers,
       body: forwardData
     });
 
@@ -64,13 +71,19 @@ export async function POST(
   }
 }
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req?: Request | NextRequest): Promise<NextResponse> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+
+  const incomingCookie = req?.headers.get('cookie');
+  const authHeader = req?.headers.get('authorization');
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (incomingCookie) headers['cookie'] = incomingCookie;
+  if (authHeader) headers['authorization'] = authHeader;
 
   try {
     const res = await fetch(`${backendUrl}/api/attachments`, {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers,
       cache: 'no-store'
     });
 

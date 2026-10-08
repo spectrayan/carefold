@@ -21,9 +21,11 @@ from datetime import datetime, timezone
 import os
 from pathlib import Path
 import re
-from typing import Any, Dict, List
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
+from carefold.api.deps import get_current_user
+from carefold.auth.ports import UserProfile
 from carefold.config import settings
 from carefold.constants.api import (
     HTTP_400_BAD_REQUEST,
@@ -84,6 +86,7 @@ def _get_unique_filename(attachments_dir: Path, filename: str) -> tuple[str, boo
 @router.post(ROUTE_ATTACHMENTS, status_code=201)
 async def upload_attachment(
     file: UploadFile = File(...),
+    user: UserProfile = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """Uploads a document to the workspace attachments directory."""
     if not file or not file.filename:
@@ -143,7 +146,9 @@ async def upload_attachment(
 
 
 @router.get(ROUTE_ATTACHMENTS)
-async def list_attachments() -> List[Dict[str, Any]]:
+async def list_attachments(
+    user: UserProfile = Depends(get_current_user),
+) -> List[Dict[str, Any]]:
     """Lists all files in the workspace attachments directory."""
     attachments_dir = settings.get_attachments_dir()
     if not attachments_dir.is_dir():

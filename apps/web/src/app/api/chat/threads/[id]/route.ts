@@ -41,9 +41,15 @@ export async function GET(
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
 
   try {
+    const forwardHeaders: Record<string, string> = { Accept: 'application/json' };
+    const incomingCookie = _req.headers.get('cookie');
+    if (incomingCookie) {
+      forwardHeaders['cookie'] = incomingCookie;
+    }
+
     const res = await fetch(`${backendUrl}/api/chat/threads/${threadId}`, {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers: forwardHeaders,
       cache: 'no-store'
     });
 

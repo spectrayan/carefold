@@ -22,7 +22,8 @@ import logging
 from typing import List, Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
 
-from carefold.api.deps import get_current_memory_port
+from carefold.api.deps import get_current_memory_port, get_current_user
+from carefold.auth.ports import UserProfile
 from carefold.config import settings
 from carefold.constants.api import (
     HTTP_400_BAD_REQUEST,
@@ -81,6 +82,7 @@ async def recall_memories(
     namespace: str = Query(default="default", description="Memory isolation namespace"),
     limit: int = Query(default=10, ge=1, le=100, description="Maximum number of memories to return"),
     port: MemoryPort = Depends(get_current_memory_port),
+    user: UserProfile = Depends(get_current_user),
 ) -> List[MemoryRecordResponse]:
     """Recalls or lists cognitive memories matching query, tier filter, and namespace."""
     clean_ns = _validate_namespace(namespace)
@@ -128,6 +130,7 @@ async def recall_memories(
 @router.get("/status", response_model=MemoryStatusResponse)
 async def get_memory_status(
     port: MemoryPort = Depends(get_current_memory_port),
+    user: UserProfile = Depends(get_current_user),
 ) -> MemoryStatusResponse:
     """Returns active cognitive memory backend health, fallback state, and configuration."""
     backend_val = getattr(port, "backend", None)
@@ -167,6 +170,7 @@ async def get_memory_status(
 async def delete_all_memories(
     namespace: str = Query(default="default", description="Memory isolation namespace"),
     port: MemoryPort = Depends(get_current_memory_port),
+    user: UserProfile = Depends(get_current_user),
 ) -> MemoryBulkDeleteResponse:
     """Bulk forgets/deletes all memories within the specified namespace."""
     clean_ns = _validate_namespace(namespace)
@@ -201,6 +205,7 @@ async def get_memory(
     key: str = Path(..., description="Unique key of the memory record to retrieve"),
     namespace: str = Query(default="default", description="Memory isolation namespace"),
     port: MemoryPort = Depends(get_current_memory_port),
+    user: UserProfile = Depends(get_current_user),
 ) -> MemoryRecordResponse:
     """Retrieves a single memory record by key in the specified namespace."""
     clean_key = _validate_memory_key(key)
@@ -242,6 +247,7 @@ async def update_memory(
     body: MemoryUpdateRequest = Body(..., description="Updated memory record payload"),
     namespace: Optional[str] = Query(default=None, description="Memory isolation namespace override"),
     port: MemoryPort = Depends(get_current_memory_port),
+    user: UserProfile = Depends(get_current_user),
 ) -> MemoryRecordResponse:
     """Updates or upserts a memory record in the specified namespace."""
     clean_key = _validate_memory_key(key)
@@ -324,6 +330,7 @@ async def delete_memory(
     key: str = Path(..., description="Unique key of the memory record to forget"),
     namespace: str = Query(default="default", description="Memory isolation namespace"),
     port: MemoryPort = Depends(get_current_memory_port),
+    user: UserProfile = Depends(get_current_user),
 ) -> MemoryDeleteResponse:
     """Forgets/deletes a memory record identified by key in the specified namespace."""
     clean_key = _validate_memory_key(key)

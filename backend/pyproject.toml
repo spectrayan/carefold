@@ -30,6 +30,9 @@ dependencies = [
     "jinja2>=3.1.0",
     "deepagents>=0.7",
     "spector-client>=0.1.0a4",
+    "sqlalchemy[asyncio]>=2.0.35",
+    "asyncpg>=0.29.0",
+    "pwdlib[argon2]>=0.2.0",
 ]
 
 [project.optional-dependencies]
