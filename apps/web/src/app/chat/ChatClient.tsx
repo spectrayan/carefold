@@ -96,8 +96,14 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
   // User Settings & Model Selection State (deterministic initial state to prevent SSR hydration mismatch)
   const [settings, setSettings] = useState<CarefoldUserSettings>(DEFAULT_USER_SETTINGS);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'settings' | 'diagnostics'>('settings');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isActivityOpen, setIsActivityOpen] = useState(false);
+
+  const openSettingsModal = (tab: 'settings' | 'diagnostics' = 'settings') => {
+    setSettingsTab(tab);
+    setIsSettingsOpen(true);
+  };
 
   // Session continuity thread ID (deterministic initial state for SSR)
   const [threadId, setThreadId] = useState<string>(`thread-${defaultAgentId}`);
@@ -957,7 +963,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           <ModelSelector
             settings={settings}
             onSettingsChange={handleSettingsChange}
-            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenSettings={() => openSettingsModal('settings')}
             disabled={isStreaming}
           />
 
@@ -1096,10 +1102,20 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
               data-testid="chat-error-banner"
               role="alert"
               aria-live="assertive"
-              className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs text-rose-800 dark:text-rose-200 flex items-center gap-2 max-w-xl mx-auto my-2"
+              className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs text-rose-800 dark:text-rose-200 flex items-center justify-between gap-3 max-w-xl mx-auto my-2"
             >
-              <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" aria-hidden="true" />
-              <span>{errorMessage}</span>
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" aria-hidden="true" />
+                <span>{errorMessage}</span>
+              </div>
+              <button
+                type="button"
+                data-testid="chat-open-diagnostics-btn"
+                onClick={() => openSettingsModal('diagnostics')}
+                className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white dark:bg-zinc-800 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 hover:bg-rose-50 dark:hover:bg-zinc-700 transition cursor-pointer"
+              >
+                Run Diagnostics
+              </button>
             </div>
           )}
 
@@ -1214,6 +1230,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
         agents={visibleAgents}
         currentAgentId={selectedAgentId}
         currentThreadId={threadId}
+        initialTab={settingsTab}
       />
 
       {/* Clinical-assist consent dialog (#87) */}

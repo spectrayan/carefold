@@ -77,6 +77,7 @@ def test_api_health(client: TestClient):
     assert data["workspace"]["agentsCount"] == 22
     assert data["workspace"]["skillsCount"] == 24
     assert "ollama" in data
+    assert data.get("backendReachable") is True
 
 
 def test_api_health_excludes_underscore_and_dot_directories(client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
@@ -662,3 +663,23 @@ def test_api_agents_detail_resolved_skills_titles(client: TestClient):
     skill_map = {s["id"]: s for s in data["resolvedSkills"]}
     assert "cardiology-prep" in skill_map
     assert skill_map["cardiology-prep"]["title"] == "Cardiovascular Consultation & Vitals Prep"
+
+
+def test_api_models_endpoint(client: TestClient):
+    """Verify that GET /api/models returns provider models and reachability info."""
+    # Test Ollama fallback when daemon is offline
+    res = client.get("/api/models?provider=ollama")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["provider"] == "ollama"
+    assert "models" in data
+    assert "reachable" in data
+
+    # Test cloud provider (e.g. google) returns predefined models
+    res_cloud = client.get("/api/models?provider=google")
+    assert res_cloud.status_code == 200
+    cloud_data = res_cloud.json()
+    assert cloud_data["provider"] == "google"
+    assert cloud_data["reachable"] is True
+    assert len(cloud_data["models"]) > 0
+

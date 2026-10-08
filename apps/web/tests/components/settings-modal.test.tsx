@@ -513,4 +513,53 @@ describe('SettingsModal Component', () => {
       expect(cleared.keys.custom).toBe('');
     });
   });
+
+  describe('Diagnostics Tab (#99)', () => {
+    it('renders tab bar with Model & Providers and Diagnostics tabs', () => {
+      render(
+        <SettingsModal
+          isOpen={true}
+          onClose={vi.fn()}
+          initialSettings={DEFAULT_USER_SETTINGS}
+        />
+      );
+
+      expect(screen.getByTestId('settings-tab-providers')).toBeInTheDocument();
+      expect(screen.getByTestId('settings-tab-diagnostics')).toBeInTheDocument();
+      expect(screen.getByTestId('settings-tab-providers')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('settings-tab-diagnostics')).toHaveAttribute('aria-selected', 'false');
+    });
+
+    it('switches to Diagnostics tab and renders SetupChecklist', () => {
+      render(
+        <SettingsModal
+          isOpen={true}
+          onClose={vi.fn()}
+          initialSettings={DEFAULT_USER_SETTINGS}
+        />
+      );
+
+      fireEvent.click(screen.getByTestId('settings-tab-diagnostics'));
+
+      expect(screen.getByTestId('settings-tab-diagnostics')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('settings-tab-providers')).toHaveAttribute('aria-selected', 'false');
+      expect(screen.getByTestId('settings-diagnostics-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('setup-checklist')).toBeInTheDocument();
+    });
+
+    it('opens directly to Diagnostics tab when initialTab is diagnostics', () => {
+      render(
+        <SettingsModal
+          isOpen={true}
+          onClose={vi.fn()}
+          initialSettings={DEFAULT_USER_SETTINGS}
+          initialTab="diagnostics"
+        />
+      );
+
+      expect(screen.getByTestId('settings-tab-diagnostics')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('settings-diagnostics-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('setup-checklist')).toBeInTheDocument();
+    });
+  });
 });

@@ -41,6 +41,7 @@ import {
   formatRiskClass,
   formatCareStage,
 } from '@/lib/utils';
+import { FirstRunSetupCard } from '@/components/setup/FirstRunSetupCard';
 
 function resolveAgentIcon(iconToken?: string, id?: string): React.ComponentType<{ className?: string }> {
   if (iconToken && iconToken in LucideIcons) {
@@ -212,6 +213,9 @@ export function MarketplaceClient({
 
   return (
     <div className="space-y-8">
+      {/* First-Run Setup Check Card (#99) */}
+      <FirstRunSetupCard />
+
       {/* Header Banner */}
       <section className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 sm:p-8 shadow-sm transition-colors">
         <div className="max-w-3xl">

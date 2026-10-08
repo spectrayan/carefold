@@ -85,7 +85,8 @@ export async function GET(_req: Request | NextRequest): Promise<NextResponse<Hea
         agentsCount,
         skillsCount
       },
-      ollama: ollamaStatus
+      ollama: ollamaStatus,
+      backendReachable: Boolean(backendData)
     };
 
     return NextResponse.json(healthData, { status: 200 });

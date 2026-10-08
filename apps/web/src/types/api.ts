@@ -56,6 +56,7 @@ export interface HealthResponse {
   uptime: number; // process uptime in seconds
   timestamp: string; // ISO 8601 string
   modelReachable?: boolean; // convenience alias for tests
+  backendReachable?: boolean;
   workspace: {
     root: string;
     agentsCount: number;

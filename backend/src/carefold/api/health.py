@@ -55,11 +55,47 @@ async def get_health() -> HealthResponse:
     # Check Ollama connectivity
     ollama_status: OllamaHealthStatus
     try:
+        raw_url = settings.ollama_url.rstrip("/")
+        clean_endpoint = raw_url.removesuffix("/v1")
         async with httpx.AsyncClient(timeout=HEALTH_CHECK_TIMEOUT_SECONDS) as client:
-            res = await client.get(f"{settings.ollama_url.rstrip('/')}{OLLAMA_MODELS_PATH}")
-            if res.status_code == HTTP_OK:
-                data = res.json()
-                models = [m.get("id") for m in data.get("data", []) if "id" in m]
+            models: list[str] = []
+            connected = False
+            last_err: str | None = None
+
+            # First attempt native Ollama /api/tags
+            try:
+                res_tags = await client.get(f"{clean_endpoint}/api/tags")
+                if res_tags.status_code == HTTP_OK:
+                    data = res_tags.json()
+                    models = [
+                        m.get("name")
+                        for m in data.get("models", [])
+                        if isinstance(m, dict) and "name" in m
+                    ]
+                    connected = True
+                else:
+                    last_err = f"HTTP {res_tags.status_code}"
+            except Exception as e:
+                last_err = str(e)
+
+            # Fallback to OpenAI-compatible /v1/models if native probe was unsuccessful
+            if not connected:
+                try:
+                    res_v1 = await client.get(f"{clean_endpoint}/v1/models")
+                    if res_v1.status_code == HTTP_OK:
+                        data = res_v1.json()
+                        models = [
+                            m.get("id")
+                            for m in data.get("data", [])
+                            if isinstance(m, dict) and "id" in m
+                        ]
+                        connected = True
+                    else:
+                        last_err = f"HTTP {res_v1.status_code}"
+                except Exception as e:
+                    last_err = str(e)
+
+            if connected:
                 ollama_status = OllamaHealthStatus(
                     status="connected",
                     endpoint=settings.ollama_url,
@@ -75,7 +111,7 @@ async def get_health() -> HealthResponse:
                     reachable=False,
                     activeModel=settings.default_model,
                     availableModels=[],
-                    error=f"HTTP {res.status_code}",
+                    error=last_err or "Ollama unreachable",
                 )
     except Exception as err:
         ollama_status = OllamaHealthStatus(
@@ -97,4 +133,5 @@ async def get_health() -> HealthResponse:
         modelReachable=ollama_status.reachable,
         workspace=workspace_info,
         ollama=ollama_status,
+        backendReachable=True,
     )

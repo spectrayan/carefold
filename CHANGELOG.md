@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **First-Run Setup Checklist & Settings Diagnostics Panel (Web & Engine)** (`#99`):
+  - Implemented `FirstRunSetupCard.tsx` dismissible card displayed on first launch when `carefold_setup_complete` flag is absent in `localStorage`.
+  - Implemented reusable `SetupChecklist.tsx` executing 3-tier runtime verification:
+    1. Backend API status (`/api/health`): PASS (`[READY]`) when online on `:8010`; FAIL (`[OFFLINE]`) with copyable fix commands (`pnpm dev:backend` / `bash scripts/start.sh backend`) and documentation link.
+    2. Local Model / Provider status (`/api/models?provider=ollama` or cloud keys):
+       - If Ollama daemon offline: FAIL (`[OFFLINE]`) with copyable fix command (`ollama serve`).
+       - If Ollama daemon online with 0 chat models: WARN (`[MISSING MODEL]`) with copyable fix command (`ollama pull llama3.2`), mentioning alternatives (`mistral`, `deepseek-r1`).
+       - If Ollama online with chat models: PASS (`[READY]`) listing available local models.
+       - If cloud provider selected: PASS (`[CLOUD ACTIVE]`) with data residency note (#85) when API key present; WARN (`[API KEY MISSING]`) directing to Settings when missing.
+    3. Flagship consultation starters: PASS (`[READY]`) with direct "Try a starter" action link to `visit-steward`.
+  - Embedded `SetupChecklist` as a reusable Diagnostics tab in `SettingsModal.tsx` allowing on-demand re-testing anytime.
+  - Added "Run Diagnostics" button to chat error notification banner in `ChatClient.tsx` opening Settings directly to the Diagnostics tab.
+  - Normalized Ollama URL resolution in `backend/src/carefold/api/health.py` by probing native `/api/tags` first and falling back to `/v1/models` so base URLs with or without `/v1` succeed gracefully.
+  - Added comprehensive automated test suite in `apps/web/tests/components/setup-checklist.test.tsx` and updated `settings-modal.test.tsx` and `backend/tests/test_api.py`.
 - **Activity & Safety Log Drawer and Audit Proxy (Web & Engine)** (`#97`):
   - Added Next.js proxy route `apps/web/src/app/api/audit/route.ts` proxying `GET /api/audit` to backend (`:8010/api/audit`) with client-side limit clamping between `[1, 1000]` (defaulting to 50), forwarding only `limit`, `agent_id`, and `event`.
   - Strictly enforced redacted mode in proxy route by unconditionally querying `full=false` and stripping any prompt/completion bodies.

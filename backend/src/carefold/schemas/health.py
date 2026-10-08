@@ -44,3 +44,4 @@ class HealthResponse(BaseModel):
     modelReachable: bool
     workspace: WorkspaceInfo
     ollama: OllamaHealthStatus
+    backendReachable: bool = True

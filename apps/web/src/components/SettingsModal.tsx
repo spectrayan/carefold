@@ -59,6 +59,8 @@ import {
   applyThemeToDOM
 } from '@/lib/theme';
 
+import { SetupChecklist } from './setup/SetupChecklist';
+
 export interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -71,6 +73,8 @@ export interface SettingsModalProps {
   currentAgentId?: string;
   /** Optional active thread ID when opened from chat */
   currentThreadId?: string;
+  /** Initial tab to display */
+  initialTab?: 'settings' | 'diagnostics';
 }
 
 export function SettingsModal({
@@ -81,8 +85,16 @@ export function SettingsModal({
   onSave,
   agents,
   currentAgentId,
-  currentThreadId
+  currentThreadId,
+  initialTab
 }: SettingsModalProps) {
+  const [activeTab, setActiveTab] = useState<'settings' | 'diagnostics'>(initialTab || 'settings');
+
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
   const activeInitial = initialSettings || settings;
   const [formData, setFormData] = useState<CarefoldUserSettings>(() => activeInitial || loadSettings());
   const { consents: clinicalConsents } = useClinicalConsents();
@@ -242,8 +254,49 @@ export function SettingsModal({
           </button>
         </div>
 
+        {/* Modal Tab Bar */}
+        <div className="flex items-center px-5 border-b border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/40" role="tablist" aria-label="Settings navigation">
+          <button
+            type="button"
+            data-testid="settings-tab-providers"
+            aria-selected={activeTab === 'settings'}
+            role="tab"
+            onClick={() => setActiveTab('settings')}
+            className={cn(
+              'px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-1.5 cursor-pointer',
+              activeTab === 'settings'
+                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
+                : 'border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+            )}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>Model & Providers</span>
+          </button>
+          <button
+            type="button"
+            data-testid="settings-tab-diagnostics"
+            aria-selected={activeTab === 'diagnostics'}
+            role="tab"
+            onClick={() => setActiveTab('diagnostics')}
+            className={cn(
+              'px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-1.5 cursor-pointer',
+              activeTab === 'diagnostics'
+                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
+                : 'border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+            )}
+          >
+            <Server className="w-3.5 h-3.5" />
+            <span>Diagnostics</span>
+          </button>
+        </div>
+
         {/* Modal Scrollable Body */}
-        <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-5">
+        {activeTab === 'diagnostics' ? (
+          <div className="flex-1 overflow-y-auto p-5" data-testid="settings-diagnostics-panel">
+            <SetupChecklist isSettingsView={true} />
+          </div>
+        ) : (
+          <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-5">
 
           {/* Local-First Privacy Notice */}
           <div
@@ -704,6 +757,7 @@ export function SettingsModal({
             </div>
           </div>
         </form>
+        )}
 
         {/* Confirmation Dialog Overlay (#92) */}
         {confirmModalAction && (
