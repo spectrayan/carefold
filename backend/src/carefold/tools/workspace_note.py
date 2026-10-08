@@ -102,9 +102,10 @@ async def execute_workspace_note(params: Dict[str, Any], context: Any) -> ToolRe
             agent_id = context.agent.id
 
         now_iso = datetime.now(timezone.utc).isoformat()
+        escaped_title = title.strip().replace("\\", "\\\\").replace('"', '\\"')
         frontmatter = (
             f"---\n"
-            f'title: "{safe_title}"\n'
+            f'title: "{escaped_title}"\n'
             f'created_at: "{now_iso}"\n'
             f'agent_id: "{agent_id}"\n'
             f"---\n\n"
@@ -124,6 +125,8 @@ async def execute_workspace_note(params: Dict[str, Any], context: Any) -> ToolRe
             success=True,
             output={
                 "title": safe_title,
+                "slug": safe_title,
+                "display_title": title.strip(),
                 "filename": filename,
                 "path": rel_path,
                 "full_path": abs_path,

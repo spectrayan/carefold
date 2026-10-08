@@ -67,6 +67,13 @@ from carefold.schemas.plan import (
     ExecutionPlan,
 )
 
+from carefold.schemas.notes import (
+    WorkspaceNoteSummary,
+    WorkspaceNoteDetail,
+    NoteSummary,
+    NoteDetailResponse,
+)
+
 __all__ = [
     "RiskClass",
     "AgentDomain",
@@ -107,5 +114,9 @@ __all__ = [
     "AgentTask",
     "ExecutionMode",
     "ExecutionPlan",
+    "WorkspaceNoteSummary",
+    "WorkspaceNoteDetail",
+    "NoteSummary",
+    "NoteDetailResponse",
 ]
 

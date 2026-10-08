@@ -55,6 +55,32 @@ def _sanitize_filename(name: str) -> str:
     return sanitized if sanitized not in (".", "..", "") else "unnamed_attachment.txt"
 
 
+def _get_unique_filename(attachments_dir: Path, filename: str) -> tuple[str, bool]:
+    """Finds a non-conflicting filename if the file already exists, returning (filename, renamed)."""
+    target = attachments_dir / filename
+    if not target.exists():
+        return filename, False
+
+    path_obj = Path(filename)
+    stem = path_obj.stem
+    ext = path_obj.suffix
+
+    # Check if stem already ends with _<number>
+    match = re.match(r"^(.*?)(?:_(\d+))$", stem)
+    base_stem = stem
+    counter = 1
+    if match:
+        base_stem = match.group(1)
+        counter = int(match.group(2)) + 1
+
+    candidate_name = f"{base_stem}_{counter}{ext}"
+    while (attachments_dir / candidate_name).exists():
+        counter += 1
+        candidate_name = f"{base_stem}_{counter}{ext}"
+
+    return candidate_name, True
+
+
 @router.post(ROUTE_ATTACHMENTS, status_code=201)
 async def upload_attachment(
     file: UploadFile = File(...),
@@ -78,7 +104,8 @@ async def upload_attachment(
     attachments_dir = settings.get_attachments_dir()
     attachments_dir.mkdir(parents=True, exist_ok=True)
 
-    dest_path = attachments_dir / sanitized_name
+    final_name, renamed = _get_unique_filename(attachments_dir, sanitized_name)
+    dest_path = attachments_dir / final_name
 
     # Read and check size
     content = await file.read()
@@ -92,23 +119,26 @@ async def upload_attachment(
 
     dest_path.write_bytes(content)
 
-    rel_path = f"attachments/{sanitized_name}"
+    rel_path = f"attachments/{final_name}"
     timestamp = datetime.now(timezone.utc).isoformat()
 
     logger.info(
         "attachment_uploaded",
-        filename=sanitized_name,
+        filename=final_name,
+        original_filename=sanitized_name,
+        renamed=renamed,
         size_bytes=file_size,
         path=rel_path,
     )
 
     return {
         "success": True,
-        "filename": sanitized_name,
+        "filename": final_name,
         "path": rel_path,
         "size": file_size,
         "type": file.content_type or "application/octet-stream",
         "timestamp": timestamp,
+        "renamed": renamed,
     }
 
 
@@ -130,6 +160,7 @@ async def list_attachments() -> List[Dict[str, Any]]:
                 "timestamp": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
             })
 
+    results.sort(key=lambda x: x["timestamp"], reverse=True)
     return results
 
 

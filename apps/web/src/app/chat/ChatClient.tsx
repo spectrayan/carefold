@@ -118,6 +118,23 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     };
   }, []);
 
+  // Pre-populate attachedFiles when navigating with ?attach=<filename> (Issue #95)
+  useEffect(() => {
+    const attachParam = searchParams.get('attach');
+    if (attachParam) {
+      const filename = attachParam.trim();
+      if (filename) {
+        const format: 'text' | 'pdf' = filename.toLowerCase().endsWith('.pdf') ? 'pdf' : 'text';
+        const path = searchParams.get('path') || `attachments/${filename}`;
+        const size_bytes = Number(searchParams.get('size')) || 0;
+        setAttachedFiles((prev) => {
+          if (prev.some((f) => f.filename === filename)) return prev;
+          return [...prev, { filename, path, size_bytes, format }];
+        });
+      }
+    }
+  }, [searchParams]);
+
   const privacyState = getProviderPrivacyState(settings);
 
   const abortControllerRef = useRef<AbortController | null>(null);

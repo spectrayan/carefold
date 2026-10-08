@@ -23,6 +23,7 @@ import { usePathname } from 'next/navigation';
 import {
   HeartHandshake,
   LayoutGrid,
+  Library,
   MessageSquare,
   Menu,
   Sun,
@@ -188,6 +189,7 @@ export function Navbar() {
   const navLinks = [
     { href: '/', label: 'Marketplace', icon: LayoutGrid },
     { href: '/skills', label: 'Skills', icon: Sparkles },
+    { href: '/library', label: 'Library', icon: Library },
     { href: '/chat', label: 'Chat', icon: MessageSquare }
   ];
 

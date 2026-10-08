@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Documents & Notes Library Page and Notes API (Web & Engine)** (`#95`):
+  - Added dedicated `/library` page (`apps/web/src/app/library/page.tsx` and `LibraryClient.tsx`) linked from desktop and mobile navigation in `Navbar.tsx` with `Library` icon.
+  - Displayed prominent local-first data residency notice: *"Stored on this computer in your Carefold workspace"*.
+  - Implemented Documents tab listing uploaded attachments with filename, size, upload date, format badge, "Use in chat" direct navigation (`/chat?attach=...`), and duplicate warning modal.
+  - Implemented Notes tab prominently displaying human-readable note title as primary card header, specialist agent badge, creation timestamp, formatted size, slug, and interactive modal/drawer to inspect Markdown content with "Copy" and "Export .md" actions.
+  - Added contextual empty states for both tabs explaining how documents arrive via composer uploads and how specialist agents save structured notes.
+  - Updated `ChatClient.tsx` to handle `?attach=<filename>` query parameters and pre-populate composer `attachedFiles`.
+  - Preserved human-readable note titles in YAML frontmatter in `workspace_note.py` while saving safely to sanitized slug `.md` files, keeping backward-compatible `output["title"] = safe_title`.
+  - Added backend endpoints `GET /api/notes` (listing notes with 3-tier title resolution: frontmatter -> `# ` heading -> title-cased slug) and `GET /api/notes/{slug}` (reading notes protected by `resolve_sandboxed_path`).
+  - Added path traversal, null-byte, and symlink escape security protections returning HTTP 400 (`SandboxSecurityError`) and missing notes returning HTTP 404.
+  - Enhanced `upload_attachment` in `api/attachments.py` with automatic collision-free renaming (`{stem}_{counter}{ext}`) returning `renamed: true` to prevent silent file overwriting.
+  - Added Next.js proxy routes `api/notes/route.ts` and `api/notes/[slug]/route.ts`.
+  - Added comprehensive backend tests (`test_notes_api.py`, `test_attachments_api.py`) and frontend tests (`library.test.tsx`, `notes-proxy-route.test.ts`, `navbar.test.tsx`).
 - **Display Skill Titles from Metadata & Aligned Chat Header (Web & Engine)** (`#153`):
   - Added curated `metadata.title` to all 25 skill manifests in `skills/*/SKILL.md` (24 production packs plus `_template`).
   - Updated backend schemas in `backend/src/carefold/schemas/manifest.py` adding `title` field across `SkillFrontmatterMetadata`, `SkillFrontmatter`, `SkillManifest`, `ResolvedSkillSummary`, `SkillSummary`, and `SkillDetailResponse`.

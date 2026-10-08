@@ -58,6 +58,7 @@ describe('Navbar Mobile Navigation (Issue #89)', () => {
       const desktopNav = container.querySelector('nav.hidden.sm\\:flex');
       expect(desktopNav).toBeInTheDocument();
       expect(within(desktopNav as HTMLElement).getByRole('link', { name: /Marketplace/i })).toBeInTheDocument();
+      expect(within(desktopNav as HTMLElement).getByRole('link', { name: /Library/i })).toBeInTheDocument();
       expect(within(desktopNav as HTMLElement).getByRole('link', { name: /Chat/i })).toBeInTheDocument();
     });
   });
@@ -92,15 +93,19 @@ describe('Navbar Mobile Navigation (Issue #89)', () => {
       expect(mobileNav).toHaveAttribute('aria-label', 'Mobile navigation');
 
       const marketplaceLink = within(mobileNav).getByRole('link', { name: /Marketplace/i });
+      const libraryLink = within(mobileNav).getByRole('link', { name: /Library/i });
       const chatLink = within(mobileNav).getByRole('link', { name: /Chat/i });
 
       expect(marketplaceLink).toBeInTheDocument();
+      expect(libraryLink).toBeInTheDocument();
       expect(chatLink).toBeInTheDocument();
       expect(marketplaceLink).toHaveAttribute('href', '/');
+      expect(libraryLink).toHaveAttribute('href', '/library');
       expect(chatLink).toHaveAttribute('href', '/chat');
 
       // Check min-h-[44px] touch targets
       expect(marketplaceLink.className).toContain('min-h-[44px]');
+      expect(libraryLink.className).toContain('min-h-[44px]');
       expect(chatLink.className).toContain('min-h-[44px]');
     });
 

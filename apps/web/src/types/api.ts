@@ -272,4 +272,34 @@ export interface AttachmentUploadResponse {
   filename: string;
   path: string;
   size: number;
+  type?: string;
+  timestamp?: string;
+  renamed?: boolean;
+}
+
+export interface AttachmentItem {
+  filename: string;
+  path: string;
+  size: number;
+  timestamp: string;
+}
+
+export interface WorkspaceNoteSummary {
+  slug: string;
+  title: string;
+  agent?: string | null;
+  created_at: string;
+  size_bytes: number;
+}
+
+export interface WorkspaceNoteDetail {
+  slug: string;
+  title: string;
+  agent?: string | null;
+  created_at: string;
+  size_bytes: number;
+  content: string;
+  raw_content: string;
+  metadata: Record<string, any>;
+  path: string;
 }

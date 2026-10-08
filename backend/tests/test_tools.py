@@ -332,8 +332,8 @@ async def test_workspace_note_success(temp_workspace: Path):
     assert saved_note.is_file()
 
     content = saved_note.read_text(encoding="utf-8")
-    assert "title: \"appointment-goals\"" in content
-    assert "agent_id: \"visit-steward\"" in content
+    assert 'title: "Appointment Goals"' in content
+    assert 'agent_id: "visit-steward"' in content
     assert "1. Ask about lab tests" in content
 
 

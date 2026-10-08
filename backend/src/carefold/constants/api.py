@@ -60,6 +60,12 @@ MODELS_ENDPOINT: str = "/api/models"
 API_ATTACHMENTS: str = "/api/attachments"
 ATTACHMENTS_ENDPOINT: str = "/api/attachments"
 
+API_NOTES: str = "/api/notes"
+NOTES_ENDPOINT: str = "/api/notes"
+
+API_NOTE_DETAIL: str = "/api/notes/{slug}"
+NOTE_DETAIL_ENDPOINT: str = "/api/notes/{slug}"
+
 # Sub-router relative paths (used in APIRouter decorators)
 ROUTE_HEALTH: str = "/health"
 ROUTE_ROOT_HEALTH: str = "/health"
@@ -73,6 +79,8 @@ ROUTE_CHAT: str = "/chat"
 ROUTE_CHAT_THREADS: str = "/chat/threads/{thread_id}"
 ROUTE_MODELS: str = "/models"
 ROUTE_ATTACHMENTS: str = "/attachments"
+ROUTE_NOTES: str = "/notes"
+ROUTE_NOTE_DETAIL: str = "/notes/{slug}"
 
 
 # ============================================================================
