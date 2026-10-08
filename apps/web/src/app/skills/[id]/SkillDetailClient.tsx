@@ -108,7 +108,7 @@ export function SkillDetailClient({ skill }: SkillDetailClientProps) {
             {/* Title & Description */}
             <div>
               <h1 className="text-3xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight">
-                {skill.name}
+                {skill.title || skill.name}
               </h1>
               <p className="mt-3 text-sm text-slate-600 dark:text-zinc-300 leading-relaxed">
                 {skill.description || 'No description provided for this skill.'}

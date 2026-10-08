@@ -22,6 +22,7 @@ license: Apache-2.0
 compatibility: Requires local LLM or API key for model access
 allowed-tools: attach-read skill-docs
 metadata:
+  title: Vascular Medicine & Vein Health Visit Prep
   risk_class: wellness
   domain: clinical
   category: clinical.vascular

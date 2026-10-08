@@ -618,6 +618,33 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
     expect(errorBanner).toHaveAttribute('role', 'alert');
     expect(errorBanner).toHaveAttribute('aria-live', 'assertive');
   });
+
+  it('renders chat header agent description sub-caption without bullet dot, preserving aria-describedby', () => {
+    const agentsWithDesc: AgentSummary[] = [
+      {
+        id: 'visit-steward',
+        title: 'Visit Steward',
+        description: 'Comprehensive preparation for clinical visits.',
+        version: '0.1.0',
+        risk_class: 'wellness',
+        skills: ['visit-prep'],
+        effectiveTools: ['skill-docs'],
+        starters: ['What should I ask my doctor?']
+      }
+    ];
+
+    render(<ChatClient initialAgents={agentsWithDesc} />);
+
+    const select = screen.getByRole('combobox', { name: /Select health agent/i });
+    expect(select).toHaveAttribute('aria-describedby', 'agent-selector-description');
+
+    const desc = screen.getByText('Comprehensive preparation for clinical visits.');
+    expect(desc).toHaveAttribute('id', 'agent-selector-description');
+
+    // Bullet dot • is removed from header
+    const bullet = screen.queryByText('•');
+    expect(bullet).not.toBeInTheDocument();
+  });
 });
 
 

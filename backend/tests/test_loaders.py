@@ -732,3 +732,124 @@ def test_all_agents_have_valid_descriptions():
         )
 
 
+def test_skill_title_precedence_and_fallback(tmp_path: Path):
+    """Test title resolution precedence: metadata.title -> frontmatter title -> title-cased slug."""
+    mandatory_intended_use = (
+        "## Intended Use & Safety Disclosures\n"
+        "- Not a clinician and not emergency care\n"
+        "- If this is an emergency, contact local emergency services\n"
+        "- Do not change medication without the prescribing clinician\n"
+    )
+
+    # Case A: metadata.title is defined
+    s_a = tmp_path / "skill-a"
+    s_a.mkdir()
+    (s_a / "SKILL.md").write_text(
+        f"""---
+name: skill-a
+description: Skill A
+metadata:
+  title: Explicit Metadata Title
+  risk_class: wellness
+---
+# Skill A
+{mandatory_intended_use}
+""",
+        encoding="utf-8",
+    )
+    loaded_a = load_skill(s_a)
+    assert loaded_a.title == "Explicit Metadata Title"
+
+    # Case B: both metadata.title and root title defined (metadata.title takes precedence)
+    s_b = tmp_path / "skill-b"
+    s_b.mkdir()
+    (s_b / "SKILL.md").write_text(
+        f"""---
+name: skill-b
+title: Root Title
+description: Skill B
+metadata:
+  title: Metadata Priority Title
+  risk_class: wellness
+---
+# Skill B
+{mandatory_intended_use}
+""",
+        encoding="utf-8",
+    )
+    loaded_b = load_skill(s_b)
+    assert loaded_b.title == "Metadata Priority Title"
+
+    # Case C: only root title defined
+    s_c = tmp_path / "skill-c"
+    s_c.mkdir()
+    (s_c / "SKILL.md").write_text(
+        f"""---
+name: skill-c
+title: Root Only Title
+description: Skill C
+metadata:
+  risk_class: wellness
+---
+# Skill C
+{mandatory_intended_use}
+""",
+        encoding="utf-8",
+    )
+    loaded_c = load_skill(s_c)
+    assert loaded_c.title == "Root Only Title"
+
+    # Case D: neither defined, falls back to title-cased slug
+    s_d = tmp_path / "cardiology-prep"
+    s_d.mkdir()
+    (s_d / "SKILL.md").write_text(
+        f"""---
+name: cardiology-prep
+description: Skill D
+metadata:
+  risk_class: wellness
+---
+# Skill D
+{mandatory_intended_use}
+""",
+        encoding="utf-8",
+    )
+    loaded_d = load_skill(s_d)
+    assert loaded_d.title == "Cardiology Prep"
+
+    # Case E: metadata.title is whitespace only, falls back to slug
+    s_e = tmp_path / "pulmonology-prep"
+    s_e.mkdir()
+    (s_e / "SKILL.md").write_text(
+        f"""---
+name: pulmonology-prep
+description: Skill E
+metadata:
+  title: "   "
+  risk_class: wellness
+---
+# Skill E
+{mandatory_intended_use}
+""",
+        encoding="utf-8",
+    )
+    loaded_e = load_skill(s_e)
+    assert loaded_e.title == "Pulmonology Prep"
+
+
+def test_all_bundled_skills_have_human_readable_titles(temp_workspace: Path):
+    """Verify that all 24 bundled skills and _template have curated, human-readable titles."""
+    skills_dir = temp_workspace / "skills"
+    skills = load_all_skills(skills_dir)
+    assert len(skills) == 24
+
+    for skill in skills:
+        assert skill.title, f"Skill {skill.id} has empty title"
+        assert skill.title != skill.name, f"Skill {skill.id} title is identical to slug"
+        assert skill.title != skill.id, f"Skill {skill.id} title is identical to id"
+        assert " " in skill.title, f"Skill {skill.id} title should contain spaces: {skill.title}"
+
+    template_skill = load_skill(skills_dir / "_template")
+    assert template_skill.title == "Skill Starter Template"
+
+

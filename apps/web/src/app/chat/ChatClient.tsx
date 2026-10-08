@@ -858,10 +858,10 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
       {/* Chat Header Bar */}
       <div className="px-4 py-3 border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/90 flex items-center justify-between gap-4 transition-colors">
         {/* Left Section: Back Link, History Toggle & Agent Selector */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
           <Link
             href="/"
-            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition cursor-pointer"
+            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition cursor-pointer shrink-0"
             title="Back to Marketplace"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -872,7 +872,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
             type="button"
             data-testid="history-sidebar-toggle"
             onClick={() => setIsHistoryOpen((prev) => !prev)}
-            className={`p-1.5 rounded-lg border transition cursor-pointer ${
+            className={`p-1.5 rounded-lg border transition cursor-pointer shrink-0 ${
               isHistoryOpen
                 ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
                 : 'border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-700'
@@ -884,50 +884,55 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
             <History className="w-4 h-4" />
           </button>
 
-          {/* Agent Selector Dropdown */}
-          <div className="relative">
-            <label htmlFor="agent-selector" className="sr-only">
-              Select health agent
-            </label>
-            <select
-              id="agent-selector"
-              aria-label="Select health agent"
-              aria-describedby="agent-selector-description"
-              value={selectedAgentId}
-              onChange={(e) => handleAgentChange(e.target.value)}
-              className="appearance-none bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl pl-3 pr-8 py-1.5 text-xs font-bold text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer shadow-sm"
-            >
-              {visibleAgents.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.title} ({formatRiskClass(a.risk_class)})
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
+          {/* Agent Selector Column (Dropdown & Consent Chip on Top Row, Description Below) */}
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <div className="flex items-center gap-2">
+              {/* Agent Selector Dropdown */}
+              <div className="relative">
+                <label htmlFor="agent-selector" className="sr-only">
+                  Select health agent
+                </label>
+                <select
+                  id="agent-selector"
+                  aria-label="Select health agent"
+                  aria-describedby="agent-selector-description"
+                  value={selectedAgentId}
+                  onChange={(e) => handleAgentChange(e.target.value)}
+                  className="appearance-none bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl pl-3 pr-8 py-1.5 text-xs font-bold text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer shadow-sm"
+                >
+                  {visibleAgents.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.title} ({formatRiskClass(a.risk_class)})
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
 
-          {needsClinicalConsent && consentRecord && (
+              {needsClinicalConsent && consentRecord && (
+                <span
+                  data-testid="clinical-consent-chip"
+                  title={`Clinical assist consent given ${new Date(consentRecord.grantedAt).toLocaleString()}. Withdraw it in Settings.`}
+                  className="inline-flex items-center gap-1 shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+                >
+                  <ShieldCheck className="w-3 h-3" aria-hidden="true" />
+                  <span className="sr-only sm:not-sr-only">Clinical assist: consent given</span>
+                </span>
+              )}
+            </div>
+
+            {/* Sub-caption description directly below agent dropdown */}
             <span
-              data-testid="clinical-consent-chip"
-              title={`Clinical assist consent given ${new Date(consentRecord.grantedAt).toLocaleString()}. Withdraw it in Settings.`}
-              className="inline-flex items-center gap-1 shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+              id="agent-selector-description"
+              className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 truncate max-w-xs sm:max-w-sm md:max-w-md block"
             >
-              <ShieldCheck className="w-3 h-3" aria-hidden="true" />
-              <span className="sr-only sm:not-sr-only">Clinical assist: consent given</span>
+              {sanitizeAgentDescription(selectedAgent?.description) || 'Task-scoped health assistant'}
             </span>
-          )}
-
-          <span className="hidden sm:inline text-xs text-slate-400 dark:text-zinc-500">•</span>
-          <span
-            id="agent-selector-description"
-            className="hidden sm:inline text-xs font-medium text-slate-600 dark:text-zinc-400 truncate max-w-sm"
-          >
-            {sanitizeAgentDescription(selectedAgent?.description) || 'Task-scoped health assistant'}
-          </span>
+          </div>
         </div>
 
         {/* Right Section: ModelSelector, Dossier Export & New Session */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Dynamic Model & Provider Selector */}
           <ModelSelector
             settings={settings}

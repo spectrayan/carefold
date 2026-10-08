@@ -171,4 +171,83 @@ describe('SkillsClient Component (/skills catalog)', () => {
     expect(screen.getByText('Visit Prep')).toBeInTheDocument();
     expect(screen.getByText('Benefits Explainer')).toBeInTheDocument();
   });
+
+  it('renders skill.title when available and falls back to skill.name when absent', () => {
+    const skillsWithTitles: SkillSummary[] = [
+      {
+        id: 'cardiology-prep',
+        name: 'cardiology-prep',
+        title: 'Cardiovascular Consultation & Vitals Prep',
+        description: 'Prepares for cardiology appointments.',
+        version: '0.1.0',
+        risk_class: 'wellness',
+        domain: 'clinical',
+        category: 'clinical.cardiology',
+        tools: ['attach-read'],
+        has_evals: true,
+        is_verified: true
+      },
+      {
+        id: 'custom-skill',
+        name: 'Custom Skill Slug',
+        description: 'Third-party skill without metadata title.',
+        version: '0.1.0',
+        risk_class: 'wellness',
+        domain: 'wellness',
+        category: 'wellness.lifestyle',
+        tools: [],
+        has_evals: false,
+        is_verified: false
+      }
+    ];
+
+    render(<SkillsClient initialSkills={skillsWithTitles} />);
+
+    // Renders title for cardiology-prep
+    expect(screen.getByText('Cardiovascular Consultation & Vitals Prep')).toBeInTheDocument();
+    expect(screen.queryByText('cardiology-prep')).not.toBeInTheDocument();
+
+    // Falls back to name for custom-skill
+    expect(screen.getByText('Custom Skill Slug')).toBeInTheDocument();
+  });
+
+  it('matches search query against skill.title in addition to name and slug', () => {
+    const skillsWithTitles: SkillSummary[] = [
+      {
+        id: 'cardiology-prep',
+        name: 'cardiology-prep',
+        title: 'Cardiovascular Consultation & Vitals Prep',
+        description: 'Prepares for cardiology appointments.',
+        version: '0.1.0',
+        risk_class: 'wellness',
+        domain: 'clinical',
+        category: 'clinical.cardiology',
+        tools: ['attach-read'],
+        has_evals: true,
+        is_verified: true
+      },
+      {
+        id: 'visit-prep',
+        name: 'visit-prep',
+        title: 'Clinical Visit Preparation & Agenda Planning',
+        description: 'General visit prep.',
+        version: '0.1.0',
+        risk_class: 'wellness',
+        domain: 'clinical',
+        category: 'clinical.general',
+        tools: [],
+        has_evals: true,
+        is_verified: true
+      }
+    ];
+
+    render(<SkillsClient initialSkills={skillsWithTitles} />);
+
+    const searchInput = screen.getByTestId('skills-search-input');
+
+    // Searching 'Cardiovascular' (word only present in title, not slug)
+    fireEvent.change(searchInput, { target: { value: 'cardiovascular' } });
+    expect(screen.getByText('Cardiovascular Consultation & Vitals Prep')).toBeInTheDocument();
+    expect(screen.queryByText('Clinical Visit Preparation & Agenda Planning')).not.toBeInTheDocument();
+  });
 });

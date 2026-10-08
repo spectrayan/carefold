@@ -57,6 +57,7 @@ async def list_skills(
         SkillSummary(
             id=s.id,
             name=s.name,
+            title=s.title,
             description=s.description,
             version=s.version,
             risk_class=s.risk_class.value,
@@ -117,6 +118,7 @@ async def get_skill(skill_id: str) -> SkillDetailResponse:
     return SkillDetailResponse(
         id=skill.id,
         name=skill.name,
+        title=skill.title,
         description=skill.description,
         version=skill.version,
         risk_class=skill.risk_class.value,

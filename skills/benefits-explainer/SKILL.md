@@ -22,6 +22,7 @@ license: Apache-2.0
 compatibility: Requires local LLM or API key for model access
 allowed-tools: skill-docs
 metadata:
+  title: Health Insurance Benefits & Coverage Explainer
   risk_class: admin
   domain: navigation
   category: navigation.insurance

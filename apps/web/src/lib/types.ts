@@ -78,6 +78,7 @@ export interface AgentDetail {
   skills: Array<{
     id: string;
     name: string;
+    title?: string;
     description: string;
     version: string;
     risk_class: string;

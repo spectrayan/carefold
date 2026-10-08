@@ -257,10 +257,23 @@ def load_skill(skill_dir: Union[Path, str]) -> SkillManifest:
         fm.allowed_tools is not None
     )
 
+    # Title resolution: metadata.title -> frontmatter title -> cf.title -> title-cased slug
+    resolved_title: str = ""
+    if meta and getattr(meta, "title", None) and str(meta.title).strip():
+        resolved_title = str(meta.title).strip()
+    elif getattr(fm, "title", None) and str(fm.title).strip():
+        resolved_title = str(fm.title).strip()
+    elif cf and getattr(cf, "title", None) and str(cf.title).strip():
+        resolved_title = str(cf.title).strip()
+    else:
+        slug_for_title = (cf.id if cf else None) or skill_id or fm.name
+        resolved_title = slug_for_title.replace("_", " ").replace("-", " ").title()
+
     if has_spec:
         return SkillManifest(
             id=(cf.id if cf else None) or skill_id,
             name=fm.name,
+            title=resolved_title,
             description=fm.description,
             version=version,
             license=license_val,
@@ -281,6 +294,7 @@ def load_skill(skill_dir: Union[Path, str]) -> SkillManifest:
     return SkillManifest(
         id=skill_id,
         name=fm.name,
+        title=resolved_title,
         description=fm.description,
         version=version,
         license=fm.license,

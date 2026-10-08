@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Display Skill Titles from Metadata & Aligned Chat Header (Web & Engine)** (`#153`):
+  - Added curated `metadata.title` to all 25 skill manifests in `skills/*/SKILL.md` (24 production packs plus `_template`).
+  - Updated backend schemas in `backend/src/carefold/schemas/manifest.py` adding `title` field across `SkillFrontmatterMetadata`, `SkillFrontmatter`, `SkillManifest`, `ResolvedSkillSummary`, `SkillSummary`, and `SkillDetailResponse`.
+  - Implemented 3-tier precedence title resolution in `backend/src/carefold/loaders/skill_loader.py` (`metadata.title` -> frontmatter `title` -> legacy `carefold.yaml` `title` -> title-cased slug fallback).
+  - Propagated human-readable skill titles in `backend/src/carefold/api/skills.py` and `backend/src/carefold/api/agents.py`.
+  - Updated frontend TypeScript interfaces in `apps/web/src/types/api.ts` and `apps/web/src/lib/types.ts` with `title?: string`.
+  - Mapped `title: s.title || s.name` in `toAgentDetail()` and title-cased fallback in `toAgentPreview()` in `apps/web/src/lib/agentDetail.ts`.
+  - Displayed `{skill.title || skill.name}` across `SkillsClient.tsx` (card `<h2>`), `SkillDetailClient.tsx` (hero `<h1>`), and `AgentDetailClient.tsx` (positive capabilities and declared skills links).
+  - Enhanced search filter in `SkillsClient.tsx` to index `skill.title` alongside slug, name, and description.
+  - Restructured chat header in `apps/web/src/app/chat/ChatClient.tsx` into vertical column layout (`flex flex-col gap-0.5 min-w-0`), placing agent dropdown and consent chip on top row and sub-caption description directly below, removing separator bullet dot (`•`) and preserving `aria-describedby` accessibility link.
+  - Added automated unit and integration tests across backend (`test_loaders.py`, `test_api.py`) and frontend (`skills-catalog.test.tsx`, `chat-integration.test.tsx`).
 - **Generate README Specialist Agent Table Directly from Manifests (Docs & Tooling)** (`#73`):
   - Created standalone generator script `scripts/generate-readme-table.mjs` dynamically scanning `agents/` for all 22 specialist agents (excluding `_system` and `_template`).
   - Extracted metadata across decomposed manifests (`metadata.yaml` for `id`, `domain`, `category`, `risk_class` and `agent.yaml` for `description`).

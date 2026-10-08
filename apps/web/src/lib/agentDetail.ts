@@ -35,6 +35,7 @@ export function toAgentDetail(data: any): AgentDetail {
     skills: (data.resolvedSkills || []).map((s: any) => ({
       id: s.id,
       name: s.name,
+      title: s.title || s.name,
       description: s.description,
       version: s.version || '0.1.0',
       risk_class: s.risk_class,
@@ -65,6 +66,7 @@ export function toAgentPreview(summary: AgentSummary): AgentDetail {
     skills: (summary.skills || []).map((skillId) => ({
       id: skillId,
       name: skillId,
+      title: skillId.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
       description: '',
       version: '',
       risk_class: summary.risk_class,

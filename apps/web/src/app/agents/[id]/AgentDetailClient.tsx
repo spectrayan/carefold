@@ -298,7 +298,7 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
                 {agent.skills && agent.skills.length > 0 ? (
                   agent.skills.map((s) => (
                     <li key={s.id}>
-                      <span className="font-medium text-slate-700 dark:text-zinc-200">{s.name}:</span>{' '}
+                      <span className="font-medium text-slate-700 dark:text-zinc-200">{s.title || s.name}:</span>{' '}
                       {s.description || 'Structured clinical navigation protocol.'}
                     </li>
                   ))
@@ -355,7 +355,7 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
                 >
                   <div className="flex items-center justify-between font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-emerald-700 dark:group-hover:text-emerald-300">
                     <span className="flex items-center gap-1.5">
-                      <span>{skill.name}</span>
+                      <span>{skill.title || skill.name}</span>
                       <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-emerald-600 transition" />
                     </span>
                     {skill.version && (

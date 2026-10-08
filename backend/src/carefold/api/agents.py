@@ -207,6 +207,7 @@ async def get_agent(
         ResolvedSkillSummary(
             id=s.id,
             name=s.name,
+            title=getattr(s, "title", None) or s.name.replace("_", " ").replace("-", " ").title(),
             description=s.description,
             version=s.version,
             risk_class=s.risk_class.value,

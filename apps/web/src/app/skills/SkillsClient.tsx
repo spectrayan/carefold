@@ -90,6 +90,7 @@ export function SkillsClient({ initialSkills }: SkillsClientProps) {
       if (search.trim()) {
         const q = search.trim().toLowerCase();
         const matches =
+          (skill.title && skill.title.toLowerCase().includes(q)) ||
           skill.name.toLowerCase().includes(q) ||
           skill.id.toLowerCase().includes(q) ||
           (skill.description && skill.description.toLowerCase().includes(q)) ||
@@ -339,7 +340,7 @@ export function SkillsClient({ initialSkills }: SkillsClientProps) {
                   <div>
                     <div className="flex items-center justify-between gap-2">
                       <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
-                        {skill.name}
+                        {skill.title || skill.name}
                       </h2>
                       {skill.version && (
                         <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 shrink-0">

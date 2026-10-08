@@ -21,6 +21,7 @@ license: Apache-2.0
 compatibility: Requires local LLM or API key for model access
 allowed-tools: skill-docs
 metadata:
+  title: Emergency Red Flags & Acute Triage Protocol
   risk_class: wellness
   domain: clinical
   category: clinical.emergency

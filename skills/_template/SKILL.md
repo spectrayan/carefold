@@ -21,6 +21,7 @@ license: Apache-2.0
 compatibility: Requires local LLM or API key for model access
 allowed-tools: ''
 metadata:
+  title: Skill Starter Template
   risk_class: wellness
   domain: wellness
   category: wellness.template

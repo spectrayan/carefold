@@ -110,6 +110,7 @@ export interface AgentDetailResponse {
   resolvedSkills: Array<{
     id: string;
     name: string;
+    title?: string;
     description: string;
     version: string;
     risk_class: RiskClass | string;
@@ -143,6 +144,7 @@ export interface AgentDetailResponse {
 export interface SkillSummary {
   id: string;
   name: string;
+  title?: string;
   description: string;
   version: string;
   risk_class: RiskClass | string;
@@ -164,6 +166,7 @@ export interface SkillSummary {
 export interface SkillDetailResponse {
   id: string;
   name: string;
+  title?: string;
   description: string;
   version: string;
   risk_class: RiskClass | string;

@@ -132,6 +132,7 @@ class CarefoldYaml(BaseModel):
 class SkillFrontmatterMetadata(BaseModel):
     model_config = ConfigDict(extra="allow")
 
+    title: Optional[str] = None
     author: Optional[str] = None
     version: Optional[str] = None
     risk_class: Optional[RiskClass] = None
@@ -147,6 +148,7 @@ class SkillFrontmatter(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     name: str
+    title: Optional[str] = None
     description: str
     license: Optional[str] = None
     domain: Optional[AgentDomain] = AgentDomain.WELLNESS
@@ -167,6 +169,7 @@ class SkillFrontmatter(BaseModel):
 class SkillManifest(BaseModel):
     id: str
     name: str
+    title: str = ""
     description: str
     version: str = "0.1.0"
     license: Optional[str] = None
@@ -216,6 +219,7 @@ class AgentSummary(BaseModel):
 class ResolvedSkillSummary(BaseModel):
     id: str
     name: str
+    title: str = ""
     description: str
     version: str = "0.1.0"
     risk_class: str = "wellness"
@@ -265,6 +269,7 @@ class AgentDetailResponse(BaseModel):
 class SkillSummary(BaseModel):
     id: str
     name: str
+    title: str = ""
     description: str
     version: str = "0.1.0"
     risk_class: str = "wellness"
@@ -281,6 +286,7 @@ class SkillSummary(BaseModel):
 class SkillDetailResponse(BaseModel):
     id: str
     name: str
+    title: str = ""
     description: str
     version: str = "0.1.0"
     risk_class: str = "wellness"

@@ -617,7 +617,7 @@ def test_api_agents_detail_taxonomy_fields(client: TestClient):
 
 
 def test_api_skills_list_taxonomy_fields(client: TestClient):
-    """Verify that GET /api/skills includes domain, category, and tags on SkillSummary."""
+    """Verify that GET /api/skills includes domain, category, tags, and human-readable title on SkillSummary."""
     res = client.get("/api/skills")
     assert res.status_code == 200
     skills = res.json()
@@ -632,10 +632,13 @@ def test_api_skills_list_taxonomy_fields(client: TestClient):
         assert isinstance(skill["category"], str)
         assert "tags" in skill
         assert isinstance(skill["tags"], list)
+        assert "title" in skill
+        assert isinstance(skill["title"], str)
+        assert len(skill["title"]) > 0
 
 
 def test_api_skills_detail_taxonomy_fields(client: TestClient):
-    """Verify that GET /api/skills/{skill_id} returns domain, category, and tags on SkillDetailResponse."""
+    """Verify that GET /api/skills/{skill_id} returns domain, category, tags, and title on SkillDetailResponse."""
     res = client.get("/api/skills/visit-prep")
     assert res.status_code == 200
     data = res.json()
@@ -645,3 +648,17 @@ def test_api_skills_detail_taxonomy_fields(client: TestClient):
     assert isinstance(data["category"], str)
     assert "tags" in data
     assert isinstance(data["tags"], list)
+    assert "title" in data
+    assert data["title"] == "Clinical Visit Preparation & Agenda Planning"
+
+
+def test_api_agents_detail_resolved_skills_titles(client: TestClient):
+    """Verify that GET /api/agents/{id} returns resolvedSkills with human-readable titles."""
+    res = client.get("/api/agents/cardiology-guide?allow_clinical=true")
+    assert res.status_code == 200
+    data = res.json()
+    assert "resolvedSkills" in data
+    assert len(data["resolvedSkills"]) > 0
+    skill_map = {s["id"]: s for s in data["resolvedSkills"]}
+    assert "cardiology-prep" in skill_map
+    assert skill_map["cardiology-prep"]["title"] == "Cardiovascular Consultation & Vitals Prep"
