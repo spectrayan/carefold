@@ -152,6 +152,15 @@ describe('Auth Pages', () => {
       fireEvent.change(screen.getByTestId('register-confirm-password-input'), { target: { value: 'StrongPass123!' } });
       expect(submitBtn).not.toBeDisabled();
     });
+
+    it('renders administrator setup UI when in setup mode', () => {
+      mockSearchParams = new URLSearchParams('mode=admin-setup');
+      render(<RegisterPage />);
+
+      expect(screen.getByRole('heading', { name: /Administrator Setup/i })).toBeInTheDocument();
+      expect(screen.getByTestId('admin-setup-badge')).toHaveTextContent(/Primary Administrator/i);
+      expect(screen.getByTestId('register-submit-btn')).toHaveTextContent(/Initialize Administrator Account/i);
+    });
   });
 
   describe('ForgotPasswordPage (/forgot-password)', () => {

@@ -99,10 +99,12 @@ def e2e_workspace(tmp_path: Path, e2e_repo_root: Path):
     old_root = settings.workspace_root
     old_log = settings.audit_log_path
     old_store = settings.audit_store_bodies
+    old_auth = settings.auth_provider
 
     settings.workspace_root = ws
     settings.audit_log_path = logs_dir / "audit.jsonl"
     settings.audit_store_bodies = False
+    settings.auth_provider = "disabled"
 
     yield ws
 
@@ -110,6 +112,7 @@ def e2e_workspace(tmp_path: Path, e2e_repo_root: Path):
     settings.workspace_root = old_root
     settings.audit_log_path = old_log
     settings.audit_store_bodies = old_store
+    settings.auth_provider = old_auth
 
 
 @pytest.fixture

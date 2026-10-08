@@ -98,14 +98,22 @@ def validate_password_complexity(password: Optional[str]) -> None:
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(
     body: RegisterUserRequest,
+    request: Request,
+    response: Response,
     auth_port: AuthPort = Depends(get_auth),
 ) -> Dict[str, Any]:
     """Registers a new user account.
 
+    If no administrator accounts exist yet, the first registered user is automatically
+    elevated to role='admin', immediately authenticated, and issued a session cookie.
+    Subsequent user registrations default to role='member'.
     Validates password complexity (min 10 characters, mixed case, digit/special).
     Returns 409 Conflict if email or username is already registered.
     """
     validate_password_complexity(body.password)
+
+    has_admin = await auth_port.has_admin_user()
+    assigned_role = "admin" if not has_admin else "member"
 
     try:
         user = await auth_port.register_user(
@@ -113,7 +121,7 @@ async def register(
             username=body.username,
             password=body.password,
             full_name=body.full_name,
-            role="member",
+            role=assigned_role,
             auth_provider="local",
         )
     except ValueError as err:
@@ -122,7 +130,30 @@ async def register(
             detail=str(err),
         )
 
-    return {"user": user}
+    # If this is the initial admin creation on first-run, automatically establish the session
+    session_token = None
+    if not has_admin:
+        token, sess = await auth_port.create_session(
+            user_id=user.id,
+            client_ip=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+        session_token = token
+        response.set_cookie(
+            key="carefold_session",
+            value=token,
+            httponly=True,
+            samesite="lax",
+            secure=False,
+            max_age=60 * 60 * 24 * 7,
+            path="/",
+        )
+
+    return {
+        "user": user,
+        "is_initial_admin": not has_admin,
+        "token": session_token,
+    }
 
 
 @router.post("/login")
@@ -263,10 +294,11 @@ async def change_password(
 
 @router.get("/providers")
 async def providers(
+    auth_port: AuthPort = Depends(get_auth),
     settings_port: SettingsPort = Depends(get_settings),
 ) -> Dict[str, Any]:
     """Returns the active authentication provider and supported SSO options."""
-    active_provider = getattr(settings, "auth_provider", "disabled")
+    active_provider = getattr(settings, "auth_provider", "local")
     try:
         configured = await settings_port.get_setting("auth.provider")
         if configured:
@@ -274,11 +306,30 @@ async def providers(
     except Exception:
         pass
 
+    has_admin = await auth_port.has_admin_user()
+
     return {
         "active_provider": active_provider,
         "sso_providers": [],
         "registration_enabled": True,
+        "has_admin": has_admin,
+        "needs_admin_setup": not has_admin,
+    }
+
+
+@router.get("/setup-status")
+async def setup_status(
+    auth_port: AuthPort = Depends(get_auth),
+) -> Dict[str, Any]:
+    """Returns whether the system requires initial administrator account initialization."""
+    has_admin = await auth_port.has_admin_user()
+    active_provider = getattr(settings, "auth_provider", "local")
+    return {
+        "needs_admin_setup": not has_admin,
+        "has_admin": has_admin,
+        "active_provider": active_provider,
     }
 
 
 __all__ = ["router", "validate_password_complexity"]
+

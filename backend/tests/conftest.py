@@ -66,16 +66,19 @@ def temp_workspace(tmp_path: Path, repo_root: Path):
     old_root = settings.workspace_root
     old_log = settings.audit_log_path
     old_store = settings.audit_store_bodies
+    old_auth = settings.auth_provider
 
     settings.workspace_root = ws
     settings.audit_log_path = ws / "logs" / "audit.jsonl"
     settings.audit_store_bodies = False
+    settings.auth_provider = "disabled"
 
     yield ws
 
     settings.workspace_root = old_root
     settings.audit_log_path = old_log
     settings.audit_store_bodies = old_store
+    settings.auth_provider = old_auth
 
 
 @pytest.fixture

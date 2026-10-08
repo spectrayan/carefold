@@ -17,9 +17,9 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   HeartHandshake,
   Lock,
@@ -37,9 +37,11 @@ import { useAuth } from '@/lib/auth';
 import { evaluatePasswordStrength } from '@/lib/passwordStrength';
 import { cn } from '@/lib/utils';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
-  const { register, allowRegistration, authProvider } = useAuth();
+  const searchParams = useSearchParams();
+  const { register, allowRegistration, authProvider, needsAdminSetup } = useAuth();
+  const isSetupMode = needsAdminSetup || searchParams.get('mode') === 'admin-setup';
 
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
@@ -91,7 +93,11 @@ export default function RegisterPage() {
       });
       setSuccess(true);
       setTimeout(() => {
-        router.push('/login');
+        if (isSetupMode) {
+          router.push('/admin');
+        } else {
+          router.push('/login');
+        }
       }, 1500);
     } catch (err: any) {
       setError(err.message || 'Registration failed. Email or username may already be in use.');
@@ -105,15 +111,31 @@ export default function RegisterPage() {
       <div className="w-full max-w-md mx-auto p-6 sm:p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl space-y-6">
         {/* Brand & Heading */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-600 text-white shadow-md mx-auto">
-            <HeartHandshake className="w-6 h-6" />
+          <div
+            className={cn(
+              "inline-flex items-center justify-center w-12 h-12 rounded-xl text-white shadow-md mx-auto",
+              isSetupMode ? "bg-purple-600" : "bg-emerald-600"
+            )}
+          >
+            {isSetupMode ? <ShieldCheck className="w-6 h-6" /> : <HeartHandshake className="w-6 h-6" />}
           </div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
-            Create an Account
+            {isSetupMode ? 'Administrator Setup' : 'Create an Account'}
           </h1>
           <p className="text-xs text-slate-500 dark:text-zinc-400">
-            Sign up for personalized health records, consultation dossiers, and navigation
+            {isSetupMode
+              ? 'Create the primary administrator account for your Carefold workspace'
+              : 'Sign up for personalized health records, consultation dossiers, and navigation'}
           </p>
+          {isSetupMode && (
+            <div
+              data-testid="admin-setup-badge"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+              <span>Role: Primary Administrator</span>
+            </div>
+          )}
         </div>
 
         {/* Disabled Mode Banner */}
@@ -140,7 +162,7 @@ export default function RegisterPage() {
         )}
 
         {/* Registration Disabled Notice */}
-        {!allowRegistration && authProvider !== 'disabled' && (
+        {!allowRegistration && !isSetupMode && authProvider !== 'disabled' && (
           <div
             role="alert"
             data-testid="registration-disabled-alert"
@@ -184,12 +206,16 @@ export default function RegisterPage() {
             className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-200 flex items-start gap-2.5 animate-in fade-in"
           >
             <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-            <span className="leading-relaxed">Account created successfully! Redirecting to sign in...</span>
+            <span className="leading-relaxed">
+              {isSetupMode
+                ? 'Administrator account initialized! Logging you in and redirecting to Admin Console...'
+                : 'Account created successfully! Redirecting to sign in...'}
+            </span>
           </div>
         )}
 
         {/* Register Form */}
-        {allowRegistration && (
+        {(allowRegistration || isSetupMode) && (
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Full Name */}
             <div className="space-y-1.5">
@@ -427,12 +453,22 @@ export default function RegisterPage() {
               type="submit"
               data-testid="register-submit-btn"
               disabled={isSubmitting || !strength.isValid || !passwordsMatch}
-              className="w-full py-2.5 px-4 text-xs font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 shadow-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className={cn(
+                "w-full py-2.5 px-4 text-xs font-semibold rounded-xl text-white focus:outline-none focus:ring-2 shadow-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                isSetupMode
+                  ? "bg-purple-600 hover:bg-purple-700 active:bg-purple-800 focus:ring-purple-500/30"
+                  : "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 focus:ring-emerald-500/30"
+              )}
             >
               {isSubmitting ? (
                 <>
                   <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Creating Account...</span>
+                  <span>{isSetupMode ? 'Initializing Administrator...' : 'Creating Account...'}</span>
+                </>
+              ) : isSetupMode ? (
+                <>
+                  <span>Initialize Administrator Account</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </>
               ) : (
                 <span>Register</span>
@@ -453,5 +489,21 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[75vh] flex items-center justify-center py-10 px-4">
+          <div className="w-full max-w-md mx-auto p-6 sm:p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        </div>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
   );
 }

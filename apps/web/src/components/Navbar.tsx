@@ -53,7 +53,7 @@ import { useAuth } from '@/lib/auth';
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, isAuthenticated, isAdmin, authProvider, allowRegistration, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, authProvider, allowRegistration, needsAdminSetup, logout } = useAuth();
   const [ollamaOnline, setOllamaOnline] = useState<boolean | null>(null);
   const [settings, setSettings] = useState<CarefoldUserSettings>(DEFAULT_USER_SETTINGS);
   const [showExplainer, setShowExplainer] = useState(false);
@@ -499,6 +499,17 @@ export function Navbar() {
                 </>
               )}
             </div>
+          ) : needsAdminSetup ? (
+            <div className="hidden sm:flex items-center gap-1.5">
+              <Link
+                href="/register?mode=admin-setup"
+                data-testid="nav-admin-setup-btn"
+                className="px-3 py-1.5 text-xs font-semibold rounded-xl text-white bg-purple-600 hover:bg-purple-700 transition shadow-sm flex items-center gap-1.5"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Admin Setup</span>
+              </Link>
+            </div>
           ) : (
             <div className="hidden sm:flex items-center gap-1.5">
               <Link
@@ -646,6 +657,18 @@ export function Navbar() {
                   <LogOut className="w-4 h-4" />
                   <span>Sign Out</span>
                 </button>
+              </div>
+            ) : needsAdminSetup ? (
+              <div className="pt-1">
+                <Link
+                  href="/register?mode=admin-setup"
+                  onClick={() => setIsMobileOpen(false)}
+                  data-testid="mobile-admin-setup-link"
+                  className="w-full py-2 text-center text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-700 text-white shadow-sm flex items-center justify-center gap-1.5"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Set Up Administrator</span>
+                </Link>
               </div>
             ) : (
               <div className="flex items-center gap-2 pt-1">

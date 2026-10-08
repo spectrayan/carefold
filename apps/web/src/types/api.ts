@@ -430,6 +430,8 @@ export interface AuthProvidersInfo {
   registration_enabled: boolean;
   allow_registration?: boolean;
   min_password_length?: number;
+  has_admin?: boolean;
+  needs_admin_setup?: boolean;
 }
 
 export interface UserSessionItem {

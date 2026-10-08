@@ -173,3 +173,8 @@ class DisabledAuthAdapter(AuthPort):
         **kwargs: Any,
     ) -> Optional[UserProfile]:
         return self._steward
+
+    async def has_admin_user(self) -> bool:
+        """In disabled single-user steward mode, an admin steward always exists."""
+        return True
+
