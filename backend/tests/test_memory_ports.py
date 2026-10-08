@@ -120,6 +120,16 @@ class TestMemoryPortContract:
                 if ns_key in self.storage:
                     self.storage[ns_key]["salience"] = max(0.0, self.storage[ns_key]["salience"] + delta)
 
+            async def get(self, key: str, namespace: str = "default") -> Optional[Dict[str, Any]]:
+                ns_key = f"{namespace}:{key}"
+                return self.storage.get(ns_key)
+
+            async def forget_all(self, namespace: str = "default") -> int:
+                to_del = [k for k, v in self.storage.items() if v["namespace"] == namespace]
+                for k in to_del:
+                    del self.storage[k]
+                return len(to_del)
+
         adapter = InMemoryMemoryAdapter()
         await adapter.remember("note_1", "Patient has penicillin allergy", MemoryTier.SEMANTIC, namespace="user:42")
         await adapter.remember("note_2", "Follow up next week", MemoryTier.EPISODIC, namespace="user:42")

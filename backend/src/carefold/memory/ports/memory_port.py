@@ -122,6 +122,38 @@ class MemoryPort(ABC):
         """
         ...
 
+    @abstractmethod
+    async def get(
+        self,
+        key: str,
+        namespace: str = "default",
+    ) -> Optional[Dict[str, Any]]:
+        """Retrieves a single memory record by key in the specified namespace.
+        
+        Args:
+            key: Memory key to retrieve.
+            namespace: Isolation namespace.
+            
+        Returns:
+            Dictionary of memory record if found, None otherwise.
+        """
+        ...
+
+    @abstractmethod
+    async def forget_all(
+        self,
+        namespace: str = "default",
+    ) -> int:
+        """Deletes all memory records within the specified namespace.
+        
+        Args:
+            namespace: Isolation namespace.
+            
+        Returns:
+            Number of deleted memory records.
+        """
+        ...
+
     async def close(self) -> None:
         """Closes any underlying resources (database connections, network sessions).
         

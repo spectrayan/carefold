@@ -19,6 +19,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { SettingsModal } from '@/components/SettingsModal';
+import * as memoryLib from '@/lib/memory';
 import {
   DEFAULT_USER_SETTINGS,
   CAREFOLD_SETTINGS_STORAGE_KEY,
@@ -33,6 +34,12 @@ import {
 describe('SettingsModal Component', () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.spyOn(memoryLib, 'fetchMemories').mockResolvedValue([]);
+    vi.spyOn(memoryLib, 'fetchMemoryStatus').mockResolvedValue({
+      backend: 'sqlite',
+      healthy: true,
+      fallback_active: false,
+    });
   });
 
   afterEach(() => {
@@ -561,5 +568,40 @@ describe('SettingsModal Component', () => {
       expect(screen.getByTestId('settings-diagnostics-panel')).toBeInTheDocument();
       expect(screen.getByTestId('setup-checklist')).toBeInTheDocument();
     });
+
+    it('switches to What Carefold Remembers tab and renders memory panel', () => {
+      render(
+        <SettingsModal
+          isOpen={true}
+          onClose={vi.fn()}
+          initialSettings={DEFAULT_USER_SETTINGS}
+        />
+      );
+
+      const memoryTab = screen.getByTestId('settings-tab-memory');
+      expect(memoryTab).toBeInTheDocument();
+      expect(memoryTab).toHaveAttribute('aria-selected', 'false');
+
+      fireEvent.click(memoryTab);
+
+      expect(memoryTab).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('settings-tab-providers')).toHaveAttribute('aria-selected', 'false');
+      expect(screen.getByTestId('settings-memory-panel')).toBeInTheDocument();
+    });
+
+    it('opens directly to Memory tab when initialTab is memory', () => {
+      render(
+        <SettingsModal
+          isOpen={true}
+          onClose={vi.fn()}
+          initialSettings={DEFAULT_USER_SETTINGS}
+          initialTab="memory"
+        />
+      );
+
+      expect(screen.getByTestId('settings-tab-memory')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('settings-memory-panel')).toBeInTheDocument();
+    });
   });
 });
+

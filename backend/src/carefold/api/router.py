@@ -37,5 +37,6 @@ api_router.include_router(models_router)
 api_router.include_router(attachments_router)
 api_router.include_router(notes_router)
 api_router.include_router(memory_router, prefix="/memory", tags=["memory"])
+api_router.include_router(memory_router, prefix="/memories", tags=["memory"], include_in_schema=False)
 
 __all__ = ["api_router"]

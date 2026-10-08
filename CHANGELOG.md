@@ -10,6 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **"What Carefold Remembers About You": View, Edit, and Delete Episodic & Semantic Memories (Web & Engine)** (`#102`):
+  - Fortified backend memory management REST APIs in `backend/src/carefold/api/memory.py`:
+    - Added `GET /api/memory/{key}`: Point lookup of individual memory record by key, returning HTTP 404 if not found.
+    - Added `PUT /api/memory/{key}`: Updates or upserts memory record value, tier, or metadata via `port.remember` and returns updated `MemoryRecordResponse`.
+    - Added bulk `DELETE /api/memory`: Purges all memories in a given namespace via `port.forget_all(namespace)` and returns `MemoryBulkDeleteResponse`.
+    - Added path traversal, null byte, and empty input sanitization and validation on memory keys and namespaces.
+    - Mounted memory endpoints under both `/memory` and `/memories` in `backend/src/carefold/api/router.py` for seamless plural route compatibility.
+  - Extended hexagonal port contracts in `backend/src/carefold/memory/ports/memory_port.py` with `get(key, namespace)` and `forget_all(namespace)` abstract coroutines, implemented in both `SqliteMemoryAdapter` and `SpectorMemoryAdapter`.
+  - Added Pydantic schemas in `backend/src/carefold/schemas/memory.py` (`MemoryUpdateRequest`, `MemoryBulkDeleteResponse`).
+  - Added Next.js proxy routes in `apps/web/src/app/api/memories/`:
+    - `route.ts`: Proxies `GET` (recall with query, tier, namespace, and clamped limit `1..100`) and `DELETE` (bulk forget).
+    - `[id]/route.ts`: Strictly validates memory keys against path traversal (`..`, `/`, `\`, null bytes, control characters) returning HTTP 400 (`INVALID_KEY`); handles `GET`, `PUT`, and `DELETE`.
+    - `status/route.ts`: Proxies memory backend status, health, and fallback state.
+  - Implemented client helpers in `apps/web/src/lib/memory.ts` (`fetchMemories`, `fetchMemoryStatus`, `updateMemory`, `deleteMemory`, `clearAllMemories`, `isSessionMemoryPaused`, `setSessionMemoryPaused`).
+  - Implemented accessible Memory Management UI components in `apps/web/src/components/memory/`:
+    - `MemoryManagementPanel.tsx`: Engine status indicator, "Pause memory for this session" toggle switch, search input with clear button, cognitive tier selector pills (`All`, `[EPISODIC]`, `[SEMANTIC]`, `[WORKING]`, `[PROCEDURAL]`) with distinct icons and non-color text markers, chronological memory list, "Forget all memories" button, empty states, and local-first privacy notice banner.
+    - `MemoryItemCard.tsx`: Formatted fact text, tier badge, provenance tags (agent ID, session thread ID, timestamp), salience weight, Edit and Forget action buttons.
+    - `MemoryEditModal.tsx`: Accessible dialog (`role="dialog"`) with key, tier selector, fact textarea, and Save/Cancel controls.
+    - `MemoryForgetModal.tsx`: Accessible alert dialog (`role="alertdialog"`) with focus trapping on Cancel for both single-item and bulk-delete confirmations.
+  - Integrated "What Carefold Remembers" tab (`settings-tab-memory`) into `apps/web/src/components/SettingsModal.tsx` and added quick launch button in `apps/web/src/app/chat/ChatClient.tsx`.
+  - Added comprehensive automated test coverage in `backend/tests/test_memory_api.py`, `apps/web/tests/lib/memories-proxy-route.test.ts`, `apps/web/tests/components/memory-management-panel.test.tsx`, and `apps/web/tests/components/settings-modal.test.tsx`.
 - **First-Run Setup Checklist & Settings Diagnostics Panel (Web & Engine)** (`#99`):
   - Implemented `FirstRunSetupCard.tsx` dismissible card displayed on first launch when `carefold_setup_complete` flag is absent in `localStorage`.
   - Implemented reusable `SetupChecklist.tsx` executing 3-tier runtime verification:

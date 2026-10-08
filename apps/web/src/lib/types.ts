@@ -156,3 +156,16 @@ export type {
   AuditFilterParams
 } from '../types/api.js';
 
+// ---------------------------------------------------------------------------
+// Memory Types (Re-exported from types/api.ts for convenience)
+// ---------------------------------------------------------------------------
+export type {
+  MemoryTier,
+  MemoryRecord,
+  MemoryFilterParams,
+  MemoryStatus,
+  MemoryDeleteResponse,
+  MemoryBulkDeleteResponse,
+  MemoryUpdateRequest,
+} from '../types/api.js';
+

@@ -31,7 +31,8 @@ import {
   ShieldCheck,
   ShieldAlert,
   History,
-  Activity
+  Activity,
+  Brain
 } from 'lucide-react';
 import type { AgentSummary } from '@/lib/types';
 import { sanitizeAgentDescription, formatRiskClass } from '@/lib/utils';
@@ -96,11 +97,11 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
   // User Settings & Model Selection State (deterministic initial state to prevent SSR hydration mismatch)
   const [settings, setSettings] = useState<CarefoldUserSettings>(DEFAULT_USER_SETTINGS);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'settings' | 'diagnostics'>('settings');
+  const [settingsTab, setSettingsTab] = useState<'settings' | 'diagnostics' | 'memory'>('settings');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isActivityOpen, setIsActivityOpen] = useState(false);
 
-  const openSettingsModal = (tab: 'settings' | 'diagnostics' = 'settings') => {
+  const openSettingsModal = (tab: 'settings' | 'diagnostics' | 'memory' = 'settings') => {
     setSettingsTab(tab);
     setIsSettingsOpen(true);
   };
@@ -988,6 +989,19 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           >
             <Activity className="w-4 h-4" />
             <span className="hidden md:inline">Activity</span>
+          </button>
+
+          {/* Memory Inspection Launcher */}
+          <button
+            type="button"
+            data-testid="memory-settings-toggle"
+            onClick={() => openSettingsModal('memory')}
+            className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 px-2.5 py-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-zinc-800 transition cursor-pointer"
+            title="Inspect episodic and clinical memories"
+            aria-label="What Carefold remembers about you"
+          >
+            <Brain className="w-4 h-4" />
+            <span className="hidden md:inline">Memory</span>
           </button>
 
           {/* Clear thread / New session */}

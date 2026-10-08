@@ -343,3 +343,62 @@ export interface AuditFilterParams {
   event?: AuditEventType | string;
 }
 
+// ---------------------------------------------------------------------------
+// Memory Types (Issue #102)
+// ---------------------------------------------------------------------------
+export type MemoryTier = 'working' | 'episodic' | 'semantic' | 'procedural';
+
+export interface MemoryRecord {
+  key: string;
+  value: any;
+  tier: MemoryTier | string;
+  namespace: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+  last_accessed_at?: string | null;
+  metadata?: {
+    source?: string;
+    agent_id?: string;
+    session_id?: string;
+    category?: string;
+    [key: string]: any;
+  } | null;
+  score?: number | null;
+  salience?: number | null;
+  access_count?: number;
+}
+
+export interface MemoryFilterParams {
+  query?: string;
+  tier?: MemoryTier | 'all';
+  namespace?: string;
+  limit?: number;
+}
+
+export interface MemoryStatus {
+  backend: 'sqlite' | 'spector' | string;
+  healthy: boolean;
+  fallback_active: boolean;
+  spector_url?: string;
+  cooldown_seconds?: number;
+}
+
+export interface MemoryDeleteResponse {
+  deleted: boolean;
+  key: string;
+  namespace: string;
+}
+
+export interface MemoryBulkDeleteResponse {
+  deleted: boolean;
+  deleted_count: number;
+  namespace: string;
+}
+
+export interface MemoryUpdateRequest {
+  value: any;
+  tier?: MemoryTier | string;
+  namespace?: string;
+  metadata?: Record<string, any>;
+}
+

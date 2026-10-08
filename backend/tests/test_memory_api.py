@@ -716,3 +716,215 @@ class TestLogSanitization:
         assert len(sanitized.splitlines()) == 1
         assert "valid_key2026-10-06" in sanitized
 
+
+# =============================================================================
+# 7. Milestone 5: Memory Inspection & Controls (Issue #102)
+# =============================================================================
+
+class TestMemoryInspectionAndControlsAPI:
+    """Test suite for Milestone 5 memory inspection, editing, and bulk deletion controls."""
+
+    def test_get_memory_by_key_success(self, client: TestClient, sqlite_port: MemoryPort) -> None:
+        """GET /api/memory/{key} returns the memory record when it exists."""
+        asyncio.run(
+            sqlite_port.remember(
+                key="allergy_penicillin",
+                value="Severe rash with penicillin",
+                tier=MemoryTier.SEMANTIC,
+                namespace="patient_1",
+                metadata={"source": "intake_form"},
+            )
+        )
+
+        res = client.get("/api/memory/allergy_penicillin?namespace=patient_1")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["key"] == "allergy_penicillin"
+        assert data["value"] == "Severe rash with penicillin"
+        assert data["tier"] == "semantic"
+        assert data["namespace"] == "patient_1"
+        assert data["metadata"]["source"] == "intake_form"
+
+    def test_get_memory_by_key_not_found(self, client: TestClient, sqlite_port: MemoryPort) -> None:
+        """GET /api/memory/{key} returns 404 when key does not exist."""
+        res = client.get("/api/memory/nonexistent_key?namespace=default")
+        assert res.status_code == 404
+        assert "not found" in res.json()["detail"].lower()
+
+    def test_get_memory_invalid_key_path_traversal(self, client: TestClient, sqlite_port: MemoryPort) -> None:
+        """GET /api/memory/{key} rejects path traversal sequences with 400 or 404."""
+        # Key containing traversal characters
+        res = client.get("/api/memory/evil..key")
+        assert res.status_code == 400
+        assert "invalid characters" in res.json()["detail"].lower()
+
+        res_traversal = client.get("/api/memory/..%2Fsecret")
+        assert res_traversal.status_code in (400, 404)
+
+    def test_put_memory_creates_new_record(self, client: TestClient, sqlite_port: MemoryPort) -> None:
+        """PUT /api/memory/{key} creates a new memory record with provided tier and metadata."""
+        payload = {
+            "value": "BP reading 120/80 mmHg",
+            "tier": "episodic",
+            "namespace": "vitals",
+            "metadata": {"device": "omron_cuff"},
+        }
+        res = client.put("/api/memory/bp_reading_1", json=payload)
+        assert res.status_code == 200
+        data = res.json()
+        assert data["key"] == "bp_reading_1"
+        assert data["value"] == "BP reading 120/80 mmHg"
+        assert data["tier"] == "episodic"
+        assert data["namespace"] == "vitals"
+        assert data["metadata"]["device"] == "omron_cuff"
+
+        # Verify persisted record
+        persisted = asyncio.run(sqlite_port.get("bp_reading_1", namespace="vitals"))
+        assert persisted is not None
+        assert persisted["value"] == "BP reading 120/80 mmHg"
+
+    def test_put_memory_updates_existing_record_and_preserves_tier(
+        self, client: TestClient, sqlite_port: MemoryPort
+    ) -> None:
+        """PUT /api/memory/{key} updates value and preserves tier if tier is omitted."""
+        asyncio.run(
+            sqlite_port.remember(
+                key="diet_pref",
+                value="Low sodium diet",
+                tier=MemoryTier.SEMANTIC,
+                namespace="default",
+            )
+        )
+
+        # Update without specifying tier
+        update_payload = {
+            "value": "Strict low sodium (under 1500mg) diet",
+            "metadata": {"updated_by": "patient"},
+        }
+        res = client.put("/api/memory/diet_pref", json=update_payload)
+        assert res.status_code == 200
+        data = res.json()
+        assert data["value"] == "Strict low sodium (under 1500mg) diet"
+        assert data["tier"] == "semantic"  # preserved
+        assert data["metadata"]["updated_by"] == "patient"
+
+    def test_put_memory_invalid_tier_returns_400(self, client: TestClient, sqlite_port: MemoryPort) -> None:
+        """PUT /api/memory/{key} with invalid tier returns 400 Bad Request."""
+        payload = {
+            "value": "Sample data",
+            "tier": "invalid_tier_name",
+        }
+        res = client.put("/api/memory/some_key", json=payload)
+        assert res.status_code == 400
+        assert "invalid memory tier" in res.json()["detail"].lower()
+
+    def test_put_memory_invalid_key_returns_400(self, client: TestClient, sqlite_port: MemoryPort) -> None:
+        """PUT /api/memory/{key} with path traversal key returns 400 Bad Request or 404."""
+        payload = {"value": "Malicious payload"}
+        res = client.put("/api/memory/evil..key", json=payload)
+        assert res.status_code == 400
+        assert "invalid characters" in res.json()["detail"].lower()
+
+        res_traversal = client.put("/api/memory/..%2Fhack", json=payload)
+        assert res_traversal.status_code in (400, 404)
+
+    def test_bulk_delete_memories_clears_namespace(self, client: TestClient, sqlite_port: MemoryPort) -> None:
+        """DELETE /api/memory clears all records in the given namespace."""
+        asyncio.run(
+            sqlite_port.remember(
+                key="rec_1",
+                value="Fact 1",
+                tier=MemoryTier.EPISODIC,
+                namespace="session_a",
+            )
+        )
+        asyncio.run(
+            sqlite_port.remember(
+                key="rec_2",
+                value="Fact 2",
+                tier=MemoryTier.EPISODIC,
+                namespace="session_a",
+            )
+        )
+        asyncio.run(
+            sqlite_port.remember(
+                key="rec_3",
+                value="Fact 3",
+                tier=MemoryTier.SEMANTIC,
+                namespace="session_b",
+            )
+        )
+
+        # Bulk delete session_a
+        res = client.delete("/api/memory?namespace=session_a")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["deleted"] is True
+        assert data["deleted_count"] == 2
+        assert data["namespace"] == "session_a"
+
+        # Verify session_a memories are gone
+        recalled_a = asyncio.run(sqlite_port.recall(query="", namespace="session_a"))
+        assert len(recalled_a) == 0
+
+        # Verify session_b memory is untouched
+        recalled_b = asyncio.run(sqlite_port.recall(query="", namespace="session_b"))
+        assert len(recalled_b) == 1
+
+    def test_plural_route_alias_memories(self, client: TestClient, sqlite_port: MemoryPort) -> None:
+        """Verifies that /api/memories functions identically to /api/memory."""
+        # 1. PUT via /api/memories/{key}
+        put_res = client.put(
+            "/api/memories/plural_key",
+            json={"value": "Plural test fact", "tier": "episodic", "namespace": "plural_ns"},
+        )
+        assert put_res.status_code == 200
+        assert put_res.json()["key"] == "plural_key"
+
+        # 2. GET single via /api/memories/{key}
+        get_single = client.get("/api/memories/plural_key?namespace=plural_ns")
+        assert get_single.status_code == 200
+        assert get_single.json()["value"] == "Plural test fact"
+
+        # 3. GET list via /api/memories
+        get_list = client.get("/api/memories?namespace=plural_ns")
+        assert get_list.status_code == 200
+        assert len(get_list.json()) == 1
+
+        # 4. DELETE single via /api/memories/{key}
+        del_single = client.delete("/api/memories/plural_key?namespace=plural_ns")
+        assert del_single.status_code == 200
+        assert del_single.json()["deleted"] is True
+
+        # 5. Bulk DELETE via /api/memories
+        bulk_del = client.delete("/api/memories?namespace=plural_ns")
+        assert bulk_del.status_code == 200
+        assert bulk_del.json()["deleted_count"] == 0
+
+    def test_spector_forget_all_parity(self, client: TestClient, spector_port: MemoryPort) -> None:
+        """Verifies bulk forget_all parity when running on SpectorMemoryAdapter."""
+        asyncio.run(
+            spector_port.remember(
+                key="sp_1",
+                value="Spector episodic 1",
+                tier=MemoryTier.EPISODIC,
+                namespace="spector_ns",
+            )
+        )
+        asyncio.run(
+            spector_port.remember(
+                key="sp_2",
+                value="Spector episodic 2",
+                tier=MemoryTier.EPISODIC,
+                namespace="spector_ns",
+            )
+        )
+
+        res = client.delete("/api/memory?namespace=spector_ns")
+        assert res.status_code == 200
+        assert res.json()["deleted_count"] == 2
+
+        recalled = asyncio.run(spector_port.recall(query="", namespace="spector_ns"))
+        assert len(recalled) == 0
+
+

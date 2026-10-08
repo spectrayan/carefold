@@ -34,7 +34,8 @@ import {
   Laptop,
   ShieldAlert,
   Database,
-  AlertTriangle
+  AlertTriangle,
+  Brain
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -60,6 +61,7 @@ import {
 } from '@/lib/theme';
 
 import { SetupChecklist } from './setup/SetupChecklist';
+import { MemoryManagementPanel } from './memory/MemoryManagementPanel';
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -74,7 +76,7 @@ export interface SettingsModalProps {
   /** Optional active thread ID when opened from chat */
   currentThreadId?: string;
   /** Initial tab to display */
-  initialTab?: 'settings' | 'diagnostics';
+  initialTab?: 'settings' | 'diagnostics' | 'memory';
 }
 
 export function SettingsModal({
@@ -88,7 +90,7 @@ export function SettingsModal({
   currentThreadId,
   initialTab
 }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<'settings' | 'diagnostics'>(initialTab || 'settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'diagnostics' | 'memory'>(initialTab || 'settings');
 
   useEffect(() => {
     if (isOpen && initialTab) {
@@ -288,10 +290,30 @@ export function SettingsModal({
             <Server className="w-3.5 h-3.5" />
             <span>Diagnostics</span>
           </button>
+          <button
+            type="button"
+            data-testid="settings-tab-memory"
+            aria-selected={activeTab === 'memory'}
+            role="tab"
+            onClick={() => setActiveTab('memory')}
+            className={cn(
+              'px-4 py-2.5 text-xs font-bold border-b-2 transition flex items-center gap-1.5 cursor-pointer',
+              activeTab === 'memory'
+                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
+                : 'border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+            )}
+          >
+            <Brain className="w-3.5 h-3.5" />
+            <span>What Carefold Remembers</span>
+          </button>
         </div>
 
         {/* Modal Scrollable Body */}
-        {activeTab === 'diagnostics' ? (
+        {activeTab === 'memory' ? (
+          <div className="flex-1 overflow-y-auto p-5" data-testid="settings-memory-panel">
+            <MemoryManagementPanel />
+          </div>
+        ) : activeTab === 'diagnostics' ? (
           <div className="flex-1 overflow-y-auto p-5" data-testid="settings-diagnostics-panel">
             <SetupChecklist isSettingsView={true} />
           </div>

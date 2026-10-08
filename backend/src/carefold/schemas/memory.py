@@ -87,8 +87,38 @@ class MemoryStatusResponse(BaseModel):
     )
 
 
+class MemoryUpdateRequest(BaseModel):
+    """Schema representing an update or upsert request for a cognitive memory record."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    value: Any = Field(..., description="Memory payload content or structured value")
+    tier: Optional[str] = Field(
+        default=None,
+        description="Optional cognitive tier (working, episodic, semantic, procedural)",
+    )
+    namespace: Optional[str] = Field(
+        default="default",
+        description="Memory isolation namespace",
+    )
+    metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Optional metadata dictionary, tags, and provenance",
+    )
+
+
+class MemoryBulkDeleteResponse(BaseModel):
+    """Schema representing the outcome of a bulk memory deletion request."""
+
+    deleted: bool = Field(default=True, description="Whether the bulk deletion operation succeeded")
+    deleted_count: int = Field(..., description="Number of memory records deleted")
+    namespace: str = Field(default="default", description="Namespace from which records were deleted")
+
+
 __all__ = [
     "MemoryRecordResponse",
     "MemoryDeleteResponse",
     "MemoryStatusResponse",
+    "MemoryUpdateRequest",
+    "MemoryBulkDeleteResponse",
 ]

@@ -233,6 +233,28 @@ class SpectorMemoryAdapter(MemoryPort):
         await self._store.adelete(namespace=(namespace,), key=key)
         return True
 
+    async def forget_all(self, namespace: str = "default") -> int:
+        """Deletes all memory records within the specified namespace.
+
+        Args:
+            namespace: Isolation namespace.
+
+        Returns:
+            Number of deleted memory records.
+        """
+        items = await self._store.asearch(
+            (namespace,),
+            query=None,
+            limit=10000,
+        )
+        count = 0
+        for item in items:
+            key = getattr(item, "key", None)
+            if key:
+                await self._store.adelete(namespace=(namespace,), key=key)
+                count += 1
+        return count
+
     async def reinforce(
         self,
         key: str,

@@ -300,6 +300,22 @@ class SqliteMemoryAdapter(MemoryPort):
 
         return await _run_write_with_retry(_do_forget, conn=conn)
 
+    async def forget_all(self, namespace: str = "default") -> int:
+        conn = await self._get_conn()
+
+        async def _do_forget_all():
+            async with self._lock:
+                cur = await conn.execute(
+                    "DELETE FROM memories WHERE namespace = ?;",
+                    (namespace,),
+                )
+                deleted_count = cur.rowcount if cur.rowcount is not None and cur.rowcount >= 0 else 0
+                await conn.execute("DELETE FROM memories_fts WHERE namespace = ?;", (namespace,))
+                await conn.commit()
+                return deleted_count
+
+        return await _run_write_with_retry(_do_forget_all, conn=conn)
+
     async def reinforce(self, key: str, namespace: str = "default", delta: float = 0.1) -> None:
         if not math.isfinite(delta):
             raise ValueError(f"delta must be a finite float, got: {delta}")
