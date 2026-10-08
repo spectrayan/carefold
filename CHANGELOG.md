@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Activity & Safety Log Drawer and Audit Proxy (Web & Engine)** (`#97`):
+  - Added Next.js proxy route `apps/web/src/app/api/audit/route.ts` proxying `GET /api/audit` to backend (`:8010/api/audit`) with client-side limit clamping between `[1, 1000]` (defaulting to 50), forwarding only `limit`, `agent_id`, and `event`.
+  - Strictly enforced redacted mode in proxy route by unconditionally querying `full=false` and stripping any prompt/completion bodies.
+  - Implemented `apps/web/src/lib/audit.ts` providing `fetchAuditEvents()`, clipboard copy, and export JSON download helpers.
+  - Implemented `ActivityLogDrawer.tsx` slide-over drawer with backdrop, Escape key dismissal, search input, agent filter, event type filter, "Only Blocked & Refused" toggle, localized timestamps, collapsible JSON cards, and non-color distinction badges (`[TOOL DENIED]`, `[SAFETY REFUSAL]`, `[ALLOWED]`, `[COMPLETED]`, `[BOUNDARY WARNING]`).
+  - Integrated Activity toggle button (`<Activity className="w-4 h-4" />` with `data-testid="activity-log-toggle"`) in chat header right action cluster in `ChatClient.tsx`.
+  - Added standalone `/activity` page route (`page.tsx` & `ActivityClient.tsx`) and added Activity link in `Navbar.tsx`.
+  - Added backend schema support for `synthesis` event type and `thread_id` in `backend/src/carefold/schemas/audit.py`.
+  - Added automated unit tests covering proxy route clamping, security invariants, and 503 handling (`apps/web/tests/lib/audit-proxy-route.test.ts`) and drawer component interactions, dismissal, filtering, and non-color denial indicators (`apps/web/tests/components/activity-log-drawer.test.tsx`, `apps/web/tests/components/activity-client.test.tsx`).
 - **Documents & Notes Library Page and Notes API (Web & Engine)** (`#95`):
   - Added dedicated `/library` page (`apps/web/src/app/library/page.tsx` and `LibraryClient.tsx`) linked from desktop and mobile navigation in `Navbar.tsx` with `Library` icon.
   - Displayed prominent local-first data residency notice: *"Stored on this computer in your Carefold workspace"*.

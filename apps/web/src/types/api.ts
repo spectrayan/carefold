@@ -303,3 +303,42 @@ export interface WorkspaceNoteDetail {
   metadata: Record<string, any>;
   path: string;
 }
+
+// ---------------------------------------------------------------------------
+// Audit & Activity Types (Issue #97)
+// ---------------------------------------------------------------------------
+export type AuditEventType =
+  | 'run'
+  | 'tool'
+  | 'refuse'
+  | 'error'
+  | 'boundary_warning'
+  | 'synthesis';
+
+export interface AuditEvent {
+  ts: string;
+  agent_id: string;
+  skill_id?: string | null;
+  skill_version?: string | null;
+  event: AuditEventType;
+  tool?: string | null;
+  allowed?: boolean | null;
+  reason?: string | null;
+  duration_ms?: number | null;
+  prompt?: string | null;
+  completion?: string | null;
+  thread_id?: string | null;
+}
+
+export interface AuditListResponse {
+  total: number;
+  limit: number;
+  events: AuditEvent[];
+}
+
+export interface AuditFilterParams {
+  limit?: number;
+  agent_id?: string;
+  event?: AuditEventType | string;
+}
+

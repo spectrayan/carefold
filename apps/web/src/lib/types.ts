@@ -145,3 +145,14 @@ export interface ChecklistItemState {
   completed: boolean;
   isCustom?: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Audit & Activity Types (Re-exported from types/api.ts for convenience)
+// ---------------------------------------------------------------------------
+export type {
+  AuditEventType,
+  AuditEvent,
+  AuditListResponse,
+  AuditFilterParams
+} from '../types/api.js';
+

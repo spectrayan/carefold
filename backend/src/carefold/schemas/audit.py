@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from typing import List, Literal, Optional
 from pydantic import BaseModel, Field
 
-AuditEventType = Literal["run", "tool", "refuse", "error", "boundary_warning"]
+AuditEventType = Literal["run", "tool", "refuse", "error", "boundary_warning", "synthesis"]
 
 
 class AuditEvent(BaseModel):
@@ -36,6 +36,7 @@ class AuditEvent(BaseModel):
     duration_ms: Optional[float] = None
     prompt: Optional[str] = None      # Redacted unless store_bodies=True
     completion: Optional[str] = None  # Redacted unless store_bodies=True
+    thread_id: Optional[str] = None
 
 
 class AuditListResponse(BaseModel):

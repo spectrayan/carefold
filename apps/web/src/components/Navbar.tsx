@@ -33,7 +33,8 @@ import {
   X,
   Cpu,
   Settings,
-  Sparkles
+  Sparkles,
+  Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useOptionalTheme } from '@/components/ThemeProvider';
@@ -190,6 +191,7 @@ export function Navbar() {
     { href: '/', label: 'Marketplace', icon: LayoutGrid },
     { href: '/skills', label: 'Skills', icon: Sparkles },
     { href: '/library', label: 'Library', icon: Library },
+    { href: '/activity', label: 'Activity', icon: Activity },
     { href: '/chat', label: 'Chat', icon: MessageSquare }
   ];
 

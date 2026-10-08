@@ -30,7 +30,8 @@ import {
   RotateCcw,
   ShieldCheck,
   ShieldAlert,
-  History
+  History,
+  Activity
 } from 'lucide-react';
 import type { AgentSummary } from '@/lib/types';
 import { sanitizeAgentDescription, formatRiskClass } from '@/lib/utils';
@@ -45,6 +46,7 @@ import { ScrollToBottomButton } from '@/components/chat/ScrollToBottomButton';
 import { DossierExportMenu } from '@/components/chat/DossierExportMenu';
 import { ClinicalConsentDialog } from '@/components/ClinicalConsentDialog';
 import { SessionHistorySidebar } from '@/components/chat/SessionHistorySidebar';
+import { ActivityLogDrawer } from '@/components/chat/ActivityLogDrawer';
 import {
   upsertSessionFromMessages,
   generateThreadId,
@@ -95,6 +97,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
   const [settings, setSettings] = useState<CarefoldUserSettings>(DEFAULT_USER_SETTINGS);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isActivityOpen, setIsActivityOpen] = useState(false);
 
   // Session continuity thread ID (deterministic initial state for SSR)
   const [threadId, setThreadId] = useState<string>(`thread-${defaultAgentId}`);
@@ -967,6 +970,20 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
             isStreaming={isStreaming}
           />
 
+          {/* Activity & Safety Log Drawer Toggle */}
+          <button
+            type="button"
+            data-testid="activity-log-toggle"
+            onClick={() => setIsActivityOpen((prev) => !prev)}
+            className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 px-2.5 py-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-zinc-800 transition cursor-pointer"
+            title="Inspect activity and safety logs"
+            aria-label="Toggle activity and safety logs"
+            aria-expanded={isActivityOpen}
+          >
+            <Activity className="w-4 h-4" />
+            <span className="hidden md:inline">Activity</span>
+          </button>
+
           {/* Clear thread / New session */}
           <button
             type="button"
@@ -1208,6 +1225,13 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           onDecline={handleDeclineConsent}
         />
       )}
+
+      {/* Activity & Safety Log Drawer (#97) */}
+      <ActivityLogDrawer
+        isOpen={isActivityOpen}
+        onClose={() => setIsActivityOpen(false)}
+        activeAgentId={selectedAgentId}
+      />
     </div>
   );
 }
