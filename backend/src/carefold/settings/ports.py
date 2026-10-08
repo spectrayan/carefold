@@ -44,7 +44,7 @@ class SettingsPort(ABC):
         self,
         key: str,
         value: Any,
-        is_secret: bool = False,
+        is_secret: Optional[bool] = None,
         updated_by: Optional[str] = None,
     ) -> None:
         """Serializes and persists configuration value in storage.
@@ -53,6 +53,7 @@ class SettingsPort(ABC):
             key: Configuration key identifier.
             value: JSON-serializable value.
             is_secret: Whether this value is sensitive (e.g. API keys) and should be masked on export.
+                If None and updating an existing setting, preserves the existing is_secret flag.
             updated_by: Optional identifier of the user or system component making the modification.
         """
         ...

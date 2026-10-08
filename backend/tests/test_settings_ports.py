@@ -155,6 +155,33 @@ async def test_sql_settings_secret_masking(sql_settings_adapter: SqlSettingsAdap
 
 
 @pytest.mark.asyncio
+async def test_sql_settings_secret_mask_placeholder_preserves_secret(
+    sql_settings_adapter: SqlSettingsAdapter,
+):
+    """Verifies that set_setting with SECRET_MASK does not overwrite stored secret."""
+    # Seed a secret setting
+    await sql_settings_adapter.set_setting(
+        "api.secret_token", "super-secret-token-val", is_secret=True
+    )
+    assert await sql_settings_adapter.get_setting("api.secret_token") == "super-secret-token-val"
+
+    # Attempt to write SECRET_MASK (simulating client resubmission)
+    await sql_settings_adapter.set_setting("api.secret_token", SECRET_MASK)
+    # Stored secret must be preserved
+    assert await sql_settings_adapter.get_setting("api.secret_token") == "super-secret-token-val"
+
+    # Clear cache and verify database row was untouched
+    sql_settings_adapter.invalidate_cache("api.secret_token")
+    assert await sql_settings_adapter.get_setting("api.secret_token") == "super-secret-token-val"
+
+    # Updating with new genuine secret without passing is_secret preserves is_secret=True
+    await sql_settings_adapter.set_setting("api.secret_token", "new-secret-token-val")
+    assert await sql_settings_adapter.get_setting("api.secret_token") == "new-secret-token-val"
+    all_masked = await sql_settings_adapter.get_all_settings(mask_secrets=True)
+    assert all_masked["api.secret_token"] == SECRET_MASK
+
+
+@pytest.mark.asyncio
 async def test_sql_settings_empty_key_validation(sql_settings_adapter: SqlSettingsAdapter):
     """Verifies empty and invalid key handling."""
     with pytest.raises(ValueError, match="cannot be empty"):

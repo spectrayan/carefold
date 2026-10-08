@@ -33,7 +33,7 @@ from carefold.config import settings as app_settings
 from carefold.constants.defaults import DEFAULT_VERSION
 from carefold.db.models import PasswordReset, Session, SystemSetting, User
 from carefold.db.session import get_db, get_engine, sanitize_db_url
-from carefold.settings.ports import SettingsPort
+from carefold.settings.ports import SECRET_MASK, SettingsPort
 
 router = APIRouter(dependencies=[Depends(require_admin)])
 
@@ -44,7 +44,7 @@ class UpdateSettingsRequest(BaseModel):
     settings: Optional[Dict[str, Any]] = Field(default=None, description="Key-value mapping of settings")
     key: Optional[str] = Field(default=None, description="Single setting key")
     value: Optional[Any] = Field(default=None, description="Single setting value")
-    is_secret: bool = Field(default=False, description="Whether setting is confidential")
+    is_secret: Optional[bool] = Field(default=None, description="Whether setting is confidential")
 
 
 class AdminCreateUserRequest(BaseModel):
@@ -90,19 +90,29 @@ async def update_settings_endpoint(
     if isinstance(body, UpdateSettingsRequest):
         if body.settings is not None:
             for k, v in body.settings.items():
+                if v == SECRET_MASK:
+                    continue
                 await settings_port.set_setting(k, v)
         elif body.key is not None:
-            await settings_port.set_setting(body.key, body.value, is_secret=body.is_secret)
+            if body.value != SECRET_MASK:
+                await settings_port.set_setting(body.key, body.value, is_secret=body.is_secret)
     elif isinstance(body, dict):
         if "settings" in body and isinstance(body["settings"], dict):
             for k, v in body["settings"].items():
+                if v == SECRET_MASK:
+                    continue
                 await settings_port.set_setting(k, v)
         elif "key" in body:
-            await settings_port.set_setting(
-                body["key"], body.get("value"), is_secret=bool(body.get("is_secret", False))
-            )
+            if body.get("value") != SECRET_MASK:
+                raw_is_secret = body.get("is_secret")
+                is_secret_val = bool(raw_is_secret) if raw_is_secret is not None else None
+                await settings_port.set_setting(
+                    body["key"], body.get("value"), is_secret=is_secret_val
+                )
         else:
             for k, v in body.items():
+                if v == SECRET_MASK:
+                    continue
                 await settings_port.set_setting(k, v)
 
     all_settings = await settings_port.get_all_settings(mask_secrets=True)

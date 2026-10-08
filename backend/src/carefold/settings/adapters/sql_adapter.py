@@ -91,7 +91,7 @@ class SqlSettingsAdapter(SettingsPort):
         self,
         key: str,
         value: Any,
-        is_secret: bool = False,
+        is_secret: Optional[bool] = None,
         updated_by: Optional[str] = None,
     ) -> None:
         if not key or not key.strip():
@@ -107,15 +107,19 @@ class SqlSettingsAdapter(SettingsPort):
             existing = (await session.scalars(stmt)).first()
 
             if existing is not None:
+                if existing.is_secret and value == SECRET_MASK:
+                    return
+                effective_is_secret = existing.is_secret if is_secret is None else is_secret
                 existing.value_json = serialized
-                existing.is_secret = is_secret
+                existing.is_secret = effective_is_secret
                 existing.updated_at = now
                 existing.updated_by = updated_by
             else:
+                effective_is_secret = False if is_secret is None else is_secret
                 new_setting = SystemSetting(
                     key=clean_key,
                     value_json=serialized,
-                    is_secret=is_secret,
+                    is_secret=effective_is_secret,
                     updated_at=now,
                     updated_by=updated_by,
                 )
@@ -125,7 +129,7 @@ class SqlSettingsAdapter(SettingsPort):
 
         async with self._lock:
             self._cache[clean_key] = value
-            self._cache_is_secret[clean_key] = is_secret
+            self._cache_is_secret[clean_key] = effective_is_secret
 
     async def get_all_settings(
         self,

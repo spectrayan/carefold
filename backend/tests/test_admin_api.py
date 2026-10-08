@@ -28,6 +28,7 @@ from carefold.config import settings
 from carefold.db.session import create_db_engine, get_session_factory, init_db
 from carefold.settings.adapters.sql_adapter import SqlSettingsAdapter
 from carefold.settings.factory import reset_settings_port, set_settings_port
+from carefold.settings.ports import SECRET_MASK
 
 
 @pytest.fixture
@@ -137,6 +138,39 @@ def test_admin_settings_get_and_put(client: TestClient, admin_test_env):
     updated_settings = update_resp.json()["settings"]
     assert updated_settings.get("auth.registration_enabled") is False
     assert updated_settings.get("models.default_provider") == "google"
+
+
+@pytest.mark.asyncio
+async def test_admin_settings_does_not_clobber_secret_with_mask(client: TestClient, admin_test_env):
+    """Verifies that submitting SECRET_MASK does not overwrite stored secret via PUT /api/admin/settings."""
+    admin_token = admin_test_env["admin_token"]
+    settings_adapter = admin_test_env["settings"]
+    cookies = {"carefold_session": admin_token}
+
+    await settings_adapter.set_setting("models.anthropic_key", "sk-ant-live-12345", is_secret=True)
+
+    # 1. Update with SECRET_MASK in settings dictionary
+    resp = client.put(
+        "/api/admin/settings",
+        json={
+            "settings": {
+                "models.anthropic_key": SECRET_MASK,
+                "models.default_provider": "anthropic",
+            }
+        },
+        cookies=cookies,
+    )
+    assert resp.status_code == 200
+    assert await settings_adapter.get_setting("models.anthropic_key") == "sk-ant-live-12345"
+
+    # 2. Update with SECRET_MASK in single key/value payload
+    resp2 = client.put(
+        "/api/admin/settings",
+        json={"key": "models.anthropic_key", "value": SECRET_MASK},
+        cookies=cookies,
+    )
+    assert resp2.status_code == 200
+    assert await settings_adapter.get_setting("models.anthropic_key") == "sk-ant-live-12345"
 
 
 def test_admin_list_users(client: TestClient, admin_test_env):
