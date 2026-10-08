@@ -55,7 +55,7 @@ def test_auth_providers(client: TestClient):
 
 
 def test_register_user_success(client: TestClient, auth_test_env):
-    """Verifies successful user registration with valid credentials."""
+    """Verifies successful user registration: first user becomes admin, subsequent users become member."""
     payload = {
         "email": "alice@example.com",
         "username": "alice",
@@ -68,8 +68,23 @@ def test_register_user_success(client: TestClient, auth_test_env):
     assert "user" in data
     assert data["user"]["email"] == "alice@example.com"
     assert data["user"]["username"] == "alice"
-    assert data["user"]["role"] == "member"
+    assert data["user"]["role"] == "admin"
+    assert data["is_initial_admin"] is True
     assert data["user"]["status"] == "active"
+
+    # Second user registration defaults to member
+    payload2 = {
+        "email": "bob@example.com",
+        "username": "bob",
+        "password": "Password123!",
+        "full_name": "Bob Jones",
+    }
+    resp2 = client.post("/api/auth/register", json=payload2)
+    assert resp2.status_code == 201
+    data2 = resp2.json()
+    assert data2["user"]["role"] == "member"
+    assert data2["is_initial_admin"] is False
+
 
 
 def test_register_user_password_complexity(client: TestClient, auth_test_env):
