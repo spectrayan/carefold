@@ -29,7 +29,6 @@ from carefold.config import settings
 from carefold.constants.api import ROUTE_NOTES, ROUTE_NOTE_DETAIL
 from carefold.logging import get_logger
 from carefold.schemas.notes import WorkspaceNoteDetail, WorkspaceNoteSummary
-from carefold.tools.sandbox import SandboxSecurityError, resolve_sandboxed_path
 
 logger = get_logger("carefold.api.notes")
 
@@ -169,16 +168,30 @@ async def get_note_detail(slug: str) -> WorkspaceNoteDetail:
 
     filename = f"{clean_slug}.md"
     notes_dir = settings.get_notes_dir()
-
-    try:
-        file_path = resolve_sandboxed_path(notes_dir, filename, must_exist=True)
-    except FileNotFoundError:
+    if not notes_dir.is_dir():
         raise HTTPException(status_code=404, detail=f"Note '{clean_slug}' not found.")
-    except (SandboxSecurityError, ValueError) as sec_err:
-        logger.warning("note_path_traversal_blocked", slug=slug, error=str(sec_err))
-        raise HTTPException(status_code=400, detail=f"Invalid note path: {sec_err}")
 
-    parsed = parse_note_file(file_path, settings.workspace_root)
+    target_file: Path | None = None
+    for entry in notes_dir.iterdir():
+        if entry.is_file() and entry.name == filename and not entry.name.startswith("."):
+            try:
+                real_path = entry.resolve()
+                if not real_path.is_relative_to(notes_dir.resolve()):
+                    logger.warning("note_symlink_escape_blocked", file=entry.name)
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Invalid note path: escapes sandbox directory",
+                    )
+                target_file = real_path
+                break
+            except (ValueError, RuntimeError, OSError) as path_err:
+                logger.warning("note_symlink_escape_blocked", file=entry.name, error=str(path_err))
+                raise HTTPException(status_code=400, detail=f"Invalid note path: {path_err}")
+
+    if target_file is None:
+        raise HTTPException(status_code=404, detail=f"Note '{clean_slug}' not found.")
+
+    parsed = parse_note_file(target_file, settings.workspace_root)
     return WorkspaceNoteDetail(**parsed)
 
 
