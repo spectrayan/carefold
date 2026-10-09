@@ -22,7 +22,7 @@ import json
 from typing import Any, List, Optional
 import uuid
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from carefold.db.base import Base
@@ -109,6 +109,12 @@ class User(Base):
     )
     password_resets: Mapped[List[PasswordReset]] = relationship(
         "PasswordReset",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    notes: Mapped[List[Note]] = relationship(
+        "Note",
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -270,3 +276,517 @@ class SystemSetting(Base):
 
     def __repr__(self) -> str:
         return f"<SystemSetting key={self.key!r} is_secret={self.is_secret}>"
+
+
+class Agent(Base):
+    """Agent entity representing both system/bundled specialists and user-defined agents."""
+
+    __tablename__ = "agent"
+
+    id: Mapped[str] = mapped_column(
+        String(64),
+        primary_key=True,
+        doc="Unique agent identifier (e.g. cardiology-guide, custom-nutrition)",
+    )
+    type: Mapped[str] = mapped_column(
+        String(32),
+        default="bundled",
+        nullable=False,
+        index=True,
+        doc="Agent type: system, bundled, or user",
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        doc="Owner user ID for user-created agents; None for bundled/system",
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Agent display name / title",
+    )
+    description: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="",
+        doc="Short agent summary or purpose",
+    )
+    persona: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="",
+        doc="Detailed system persona instructions (markdown prompt)",
+    )
+    model: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        default="ollama:llama3.2",
+        doc="Default model configuration string",
+    )
+    skills_json: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="[]",
+        doc="Serialized JSON array of attached skill IDs",
+    )
+    tools_json: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="[]",
+        doc="Serialized JSON array of allowed tool names",
+    )
+    starters_json: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="[]",
+        doc="Serialized JSON array of sample conversation starter prompts",
+    )
+    domain: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="clinical",
+        doc="Agent domain: clinical, wellness, navigation",
+    )
+    category: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="general",
+        doc="Specialist category (e.g. cardiology, gastroenterology, general)",
+    )
+    risk_class: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="clinical_assist",
+        doc="Clinical risk classification: wellness, admin, clinical_assist, education",
+    )
+    tags_json: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="[]",
+        doc="Serialized JSON array of taxonomy tags",
+    )
+    care_stages_json: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="[]",
+        doc="Serialized JSON array of care stages (e.g. pre_visit, post_visit)",
+    )
+    target_audience_json: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="[]",
+        doc="Serialized JSON array of target audience groups (e.g. patient, caregiver)",
+    )
+    forbidden_json: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="[]",
+        doc="Serialized JSON array of forbidden intent tokens",
+    )
+    icon: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="Bot",
+        doc="Lucide icon identifier",
+    )
+    maturity: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="stable",
+        doc="Lifecycle maturity: draft, beta, stable, deprecated",
+    )
+    can_delegate: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="Whether agent can delegate to other agents",
+    )
+    max_iterations: Mapped[int] = mapped_column(
+        Integer,
+        default=3,
+        nullable=False,
+        doc="Maximum tool iteration turns",
+    )
+    hidden: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="Whether to hide from marketplace listings",
+    )
+    is_public: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+        doc="Whether visible to other users or public listings",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    user: Mapped[Optional[User]] = relationship("User")
+
+    def get_skills(self) -> List[str]:
+        return json.loads(self.skills_json) if self.skills_json else []
+
+    def set_skills(self, skills: List[str]) -> None:
+        self.skills_json = json.dumps(skills)
+
+    def get_tools(self) -> List[str]:
+        return json.loads(self.tools_json) if self.tools_json else []
+
+    def set_tools(self, tools: List[str]) -> None:
+        self.tools_json = json.dumps(tools)
+
+    def get_starters(self) -> List[str]:
+        return json.loads(self.starters_json) if self.starters_json else []
+
+    def set_starters(self, starters: List[str]) -> None:
+        self.starters_json = json.dumps(starters)
+
+    def get_tags(self) -> List[str]:
+        return json.loads(self.tags_json) if self.tags_json else []
+
+    def set_tags(self, tags: List[str]) -> None:
+        self.tags_json = json.dumps(tags)
+
+    def get_care_stages(self) -> List[str]:
+        return json.loads(self.care_stages_json) if self.care_stages_json else []
+
+    def set_care_stages(self, stages: List[str]) -> None:
+        self.care_stages_json = json.dumps(stages)
+
+    def get_target_audience(self) -> List[str]:
+        return json.loads(self.target_audience_json) if self.target_audience_json else []
+
+    def set_target_audience(self, audience: List[str]) -> None:
+        self.target_audience_json = json.dumps(audience)
+
+    def get_forbidden(self) -> List[str]:
+        return json.loads(self.forbidden_json) if self.forbidden_json else []
+
+    def set_forbidden(self, forbidden: List[str]) -> None:
+        self.forbidden_json = json.dumps(forbidden)
+
+    def __repr__(self) -> str:
+        return f"<Agent id={self.id!r} type={self.type!r} title={self.title!r}>"
+
+
+class Skill(Base):
+    """Skill entity representing both system/bundled skills and user-defined skills."""
+
+    __tablename__ = "skill"
+
+    id: Mapped[str] = mapped_column(
+        String(64),
+        primary_key=True,
+        doc="Unique skill identifier (e.g. cardiology-prep)",
+    )
+    type: Mapped[str] = mapped_column(
+        String(32),
+        default="bundled",
+        nullable=False,
+        index=True,
+        doc="Skill type: system, bundled, or user",
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        doc="Owner user ID for user-created skills; None for bundled/system",
+    )
+    name: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        doc="Skill technical name / slug",
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Skill display title",
+    )
+    description: Mapped[Text] = mapped_column(
+        Text,
+        nullable=False,
+        default="",
+        doc="Description of skill capability and usage",
+    )
+    domain: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="clinical",
+        doc="Skill domain: clinical, wellness, navigation",
+    )
+    category: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="general",
+        doc="Skill category (e.g. cardiology, pulmonology, general)",
+    )
+    risk_class: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="clinical_assist",
+        doc="Clinical risk classification: wellness, admin, clinical_assist, education",
+    )
+    tags_json: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="[]",
+        doc="Serialized JSON array of taxonomy tags",
+    )
+    tools_json: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="[]",
+        doc="Serialized JSON array of allowed tool names",
+    )
+    instructions: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="",
+        doc="Skill instruction body with safety boundaries and guidelines",
+    )
+    forbidden_json: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="[]",
+        doc="Serialized JSON array of forbidden patterns / actions",
+    )
+    is_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="Whether clinical safety review has verified this skill",
+    )
+    is_public: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+        doc="Whether visible to other users or public listings",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    user: Mapped[Optional[User]] = relationship("User")
+
+    def get_tags(self) -> List[str]:
+        return json.loads(self.tags_json) if self.tags_json else []
+
+    def set_tags(self, tags: List[str]) -> None:
+        self.tags_json = json.dumps(tags)
+
+    def get_tools(self) -> List[str]:
+        return json.loads(self.tools_json) if self.tools_json else []
+
+    def set_tools(self, tools: List[str]) -> None:
+        self.tools_json = json.dumps(tools)
+
+    def get_forbidden(self) -> List[str]:
+        return json.loads(self.forbidden_json) if self.forbidden_json else []
+
+    def set_forbidden(self, forbidden: List[str]) -> None:
+        self.forbidden_json = json.dumps(forbidden)
+
+    def __repr__(self) -> str:
+        return f"<Skill id={self.id!r} type={self.type!r} title={self.title!r}>"
+
+
+class KnowledgeBase(Base):
+    """Reference document entity in knowledge base attached to agents, skills, or global scope."""
+
+    __tablename__ = "knowledge_base"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique knowledge base document identifier (UUID)",
+    )
+    type: Mapped[str] = mapped_column(
+        String(32),
+        default="bundled",
+        nullable=False,
+        index=True,
+        doc="Document source type: bundled or user",
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        doc="Owner user ID for user-created documents; None for bundled",
+    )
+    target_type: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        index=True,
+        doc="Attachment target type: agent, skill, or global",
+    )
+    target_id: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        index=True,
+        doc="Identifier of the target agent or skill (e.g. cardiology-prep)",
+    )
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        index=True,
+        doc="Document filename (e.g. hypertension_protocol.md)",
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Human-readable document title",
+    )
+    content: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="",
+        doc="Raw document text or markdown content",
+    )
+    format: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="markdown",
+        doc="Document format: markdown, text",
+    )
+    size_bytes: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+        doc="Size of content in bytes",
+    )
+    metadata_json: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="{}",
+        doc="Serialized JSON metadata dictionary",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    __table_args__ = (
+        UniqueConstraint("target_type", "target_id", "name", name="uq_kb_target_name"),
+    )
+
+    user: Mapped[Optional[User]] = relationship("User")
+
+    def get_metadata(self) -> dict[str, Any]:
+        return json.loads(self.metadata_json) if self.metadata_json else {}
+
+    def set_metadata(self, meta: dict[str, Any]) -> None:
+        self.metadata_json = json.dumps(meta)
+
+    def __repr__(self) -> str:
+        return f"<KnowledgeBase id={self.id!r} target={self.target_type}:{self.target_id} name={self.name!r}>"
+
+
+class Note(Base):
+    """Note entity for user clinical visit notes, prep items, and summaries."""
+
+    __tablename__ = "note"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique note identifier (UUID)",
+    )
+    type: Mapped[str] = mapped_column(
+        String(32),
+        default="scratchpad",
+        nullable=False,
+        index=True,
+        doc="Note category: scratchpad, clinical_prep, visit_summary, general",
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+        doc="Referenced User identifier (nullable for single-user offline mode)",
+    )
+    slug: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        index=True,
+        doc="Note slug or filename identifier",
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Note title",
+    )
+    content: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="",
+        doc="Markdown content of the note",
+    )
+    tags_json: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="[]",
+        doc="Serialized JSON array of note tags",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    user: Mapped[Optional[User]] = relationship("User", back_populates="notes")
+
+    def get_tags(self) -> List[str]:
+        return json.loads(self.tags_json) if self.tags_json else []
+
+    def set_tags(self, tags: List[str]) -> None:
+        self.tags_json = json.dumps(tags)
+
+    def __repr__(self) -> str:
+        return f"<Note id={self.id!r} slug={self.slug!r} title={self.title!r}>"
+

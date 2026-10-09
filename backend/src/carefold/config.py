@@ -110,7 +110,7 @@ class Settings(BaseSettings):
 
     # Authentication provider configuration (R2)
     auth_provider: str = Field(
-        default="local",
+        default="disabled",
         description="Active authentication provider (local, disabled, oidc)",
     )
 

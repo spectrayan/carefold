@@ -51,3 +51,43 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
     );
   }
 }
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+
+  const forwardHeaders = new Headers();
+  const incomingCookie = req.headers.get('cookie');
+  if (incomingCookie) forwardHeaders.set('cookie', incomingCookie);
+  const authHeader = req.headers.get('authorization');
+  if (authHeader) forwardHeaders.set('authorization', authHeader);
+  forwardHeaders.set('content-type', 'application/json');
+  forwardHeaders.set('accept', 'application/json');
+
+  let body = '';
+  try {
+    body = await req.text();
+  } catch {
+    body = '{}';
+  }
+
+  try {
+    const targetUrl = `${backendUrl}/api/skills`;
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      headers: forwardHeaders,
+      body,
+      cache: 'no-store'
+    });
+
+    const data = await res.json().catch(() => ({}));
+    return NextResponse.json(data, { status: res.status });
+  } catch (err: any) {
+    return NextResponse.json(
+      {
+        error: `Carefold Python backend is unreachable at ${backendUrl}: ${err.message}`,
+        code: 'BACKEND_UNREACHABLE'
+      },
+      { status: 503 }
+    );
+  }
+}

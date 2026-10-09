@@ -20,31 +20,30 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(req?: Request | NextRequest): Promise<NextResponse> {
-  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+export async function GET(
+  req: Request | NextRequest,
+  context: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
+  const resolvedParams = await context.params;
+  const agentId = (resolvedParams.id || '').trim();
 
-  const incomingCookie = req?.headers.get('cookie');
-  const authHeader = req?.headers.get('authorization');
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const incomingCookie = req.headers.get('cookie');
+  const authHeader = req.headers.get('authorization');
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (incomingCookie) headers['cookie'] = incomingCookie;
   if (authHeader) headers['authorization'] = authHeader;
 
   try {
-    const res = await fetch(`${backendUrl}/api/notes`, {
+    const targetUrl = `${backendUrl}/api/agents/${encodeURIComponent(agentId)}/docs`;
+    const res = await fetch(targetUrl, {
       method: 'GET',
       headers,
       cache: 'no-store'
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      return NextResponse.json(err || { error: `Backend responded with HTTP ${res.status}` }, {
-        status: res.status
-      });
-    }
-
-    const data = await res.json();
-    return NextResponse.json(data, { status: 200 });
+    const data = await res.json().catch(() => ({}));
+    return NextResponse.json(data, { status: res.status });
   } catch (err: any) {
     return NextResponse.json(
       {
@@ -56,9 +55,14 @@ export async function GET(req?: Request | NextRequest): Promise<NextResponse> {
   }
 }
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+export async function POST(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
+  const resolvedParams = await context.params;
+  const agentId = (resolvedParams.id || '').trim();
 
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
   const forwardHeaders = new Headers();
   const incomingCookie = req.headers.get('cookie');
   if (incomingCookie) forwardHeaders.set('cookie', incomingCookie);
@@ -75,7 +79,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const targetUrl = `${backendUrl}/api/notes`;
+    const targetUrl = `${backendUrl}/api/agents/${encodeURIComponent(agentId)}/docs`;
     const res = await fetch(targetUrl, {
       method: 'POST',
       headers: forwardHeaders,

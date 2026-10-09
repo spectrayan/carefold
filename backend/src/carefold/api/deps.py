@@ -126,6 +126,15 @@ async def require_admin(
     return user
 
 
+def resolve_owner_user_id(user: Optional[UserProfile]) -> Optional[str]:
+    """Returns foreign key user_id for DB entities, or None if in disabled/offline single-user mode."""
+    if not user:
+        return None
+    if user.id == DEFAULT_STEWARD_USER.id or getattr(settings, "auth_provider", "disabled") == "disabled":
+        return None
+    return user.id
+
+
 __all__ = [
     "get_current_memory_port",
     "get_auth",
@@ -134,4 +143,5 @@ __all__ = [
     "get_current_settings_port",
     "get_current_user",
     "require_admin",
+    "resolve_owner_user_id",
 ]

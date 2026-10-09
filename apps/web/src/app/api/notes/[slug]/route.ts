@@ -20,37 +20,44 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+function validateNoteSlug(rawSlug: string): { cleanSlug: string } | { error: string; status: number } {
+  const trimmed = rawSlug.trim();
+  if (
+    trimmed.includes('..') ||
+    trimmed.includes('/') ||
+    trimmed.includes('\\') ||
+    trimmed.includes('\0') ||
+    trimmed.includes(';') ||
+    trimmed.includes('%')
+  ) {
+    return {
+      error: `Invalid note slug "${rawSlug}". Path traversal characters are not permitted.`,
+      status: 400
+    };
+  }
+
+  const cleanSlug = trimmed.endsWith('.md') ? trimmed.slice(0, -3) : trimmed;
+
+  if (!cleanSlug || !/^[a-zA-Z0-9_\-]+$/.test(cleanSlug)) {
+    return {
+      error: `Invalid note slug "${rawSlug}". Must be a valid alphanumeric slug.`,
+      status: 400
+    };
+  }
+
+  return { cleanSlug };
+}
+
 export async function GET(
   req: Request | NextRequest,
   context: { params: Promise<{ slug: string }> }
 ): Promise<NextResponse> {
   const resolvedParams = await context.params;
-  const rawSlug = (resolvedParams.slug || '').trim();
-
-  // Reject path traversal, slashes, and null bytes immediately with HTTP 400
-  if (
-    rawSlug.includes('..') ||
-    rawSlug.includes('/') ||
-    rawSlug.includes('\\') ||
-    rawSlug.includes('\0') ||
-    rawSlug.includes(';') ||
-    rawSlug.includes('%')
-  ) {
-    return NextResponse.json(
-      { error: `Invalid note slug "${rawSlug}". Path traversal characters are not permitted.`, code: 'INVALID_SLUG' },
-      { status: 400 }
-    );
+  const validation = validateNoteSlug(resolvedParams.slug || '');
+  if ('error' in validation) {
+    return NextResponse.json({ error: validation.error, code: 'INVALID_SLUG' }, { status: validation.status });
   }
-
-  const cleanSlug = rawSlug.endsWith('.md') ? rawSlug.slice(0, -3) : rawSlug;
-
-  // Validate slug format to ensure strictly alphanumeric with dashes and underscores
-  if (!cleanSlug || !/^[a-zA-Z0-9_\-]+$/.test(cleanSlug)) {
-    return NextResponse.json(
-      { error: `Invalid note slug "${rawSlug}". Must be a valid alphanumeric slug.`, code: 'INVALID_SLUG' },
-      { status: 400 }
-    );
-  }
+  const cleanSlug = validation.cleanSlug;
 
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
 
@@ -82,6 +89,97 @@ export async function GET(
     return NextResponse.json(
       {
         error: `Carefold Python backend is unreachable at ${backendUrl}. Please ensure it is running: ${err.message}`,
+        code: 'BACKEND_UNREACHABLE'
+      },
+      { status: 503 }
+    );
+  }
+}
+
+export async function PUT(
+  req: NextRequest,
+  context: { params: Promise<{ slug: string }> }
+): Promise<NextResponse> {
+  const resolvedParams = await context.params;
+  const validation = validateNoteSlug(resolvedParams.slug || '');
+  if ('error' in validation) {
+    return NextResponse.json({ error: validation.error, code: 'INVALID_SLUG' }, { status: validation.status });
+  }
+  const cleanSlug = validation.cleanSlug;
+
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+
+  const forwardHeaders = new Headers();
+  const incomingCookie = req.headers.get('cookie');
+  if (incomingCookie) forwardHeaders.set('cookie', incomingCookie);
+  const authHeader = req.headers.get('authorization');
+  if (authHeader) forwardHeaders.set('authorization', authHeader);
+  forwardHeaders.set('content-type', 'application/json');
+  forwardHeaders.set('accept', 'application/json');
+
+  let body = '';
+  try {
+    body = await req.text();
+  } catch {
+    body = '{}';
+  }
+
+  try {
+    const targetUrl = `${backendUrl}/api/notes/${encodeURIComponent(cleanSlug)}`;
+    const res = await fetch(targetUrl, {
+      method: 'PUT',
+      headers: forwardHeaders,
+      body,
+      cache: 'no-store'
+    });
+
+    const data = await res.json().catch(() => ({}));
+    return NextResponse.json(data, { status: res.status });
+  } catch (err: any) {
+    return NextResponse.json(
+      {
+        error: `Carefold Python backend is unreachable at ${backendUrl}: ${err.message}`,
+        code: 'BACKEND_UNREACHABLE'
+      },
+      { status: 503 }
+    );
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<{ slug: string }> }
+): Promise<NextResponse> {
+  const resolvedParams = await context.params;
+  const validation = validateNoteSlug(resolvedParams.slug || '');
+  if ('error' in validation) {
+    return NextResponse.json({ error: validation.error, code: 'INVALID_SLUG' }, { status: validation.status });
+  }
+  const cleanSlug = validation.cleanSlug;
+
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+
+  const forwardHeaders = new Headers();
+  const incomingCookie = req.headers.get('cookie');
+  if (incomingCookie) forwardHeaders.set('cookie', incomingCookie);
+  const authHeader = req.headers.get('authorization');
+  if (authHeader) forwardHeaders.set('authorization', authHeader);
+  forwardHeaders.set('accept', 'application/json');
+
+  try {
+    const targetUrl = `${backendUrl}/api/notes/${encodeURIComponent(cleanSlug)}`;
+    const res = await fetch(targetUrl, {
+      method: 'DELETE',
+      headers: forwardHeaders,
+      cache: 'no-store'
+    });
+
+    const data = await res.json().catch(() => ({}));
+    return NextResponse.json(data, { status: res.status });
+  } catch (err: any) {
+    return NextResponse.json(
+      {
+        error: `Carefold Python backend is unreachable at ${backendUrl}: ${err.message}`,
         code: 'BACKEND_UNREACHABLE'
       },
       { status: 503 }

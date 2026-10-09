@@ -29,26 +29,30 @@ import {
   AlertCircle,
   X,
   ArrowRight,
-  ShieldAlert
+  ShieldAlert,
+  Plus
 } from 'lucide-react';
 import { cn, formatCategoryLabel, formatRiskClass } from '@/lib/utils';
 import type { SkillSummary } from '@/types/api';
+import { SkillFormModal } from '@/components/skills/SkillFormModal';
 
 interface SkillsClientProps {
   initialSkills: SkillSummary[];
 }
 
 export function SkillsClient({ initialSkills }: SkillsClientProps) {
+  const [skills, setSkills] = useState<SkillSummary[]>(initialSkills);
   const [search, setSearch] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('all');
   const [selectedRisk, setSelectedRisk] = useState('all');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   // Defensively exclude _template and private/hidden entries
   const productionSkills = useMemo(() => {
-    return initialSkills.filter(
+    return skills.filter(
       (s) => s.id !== '_template' && !s.id.startsWith('_') && !s.id.startsWith('.')
     );
-  }, [initialSkills]);
+  }, [skills]);
 
   // Extract distinct domains from installed skills, ordered canonically
   const domainFilters = useMemo(() => {
@@ -141,9 +145,19 @@ export function SkillsClient({ initialSkills }: SkillsClientProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/80 px-3.5 py-2 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 shrink-0">
-          <FileCheck2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>{filteredSkills.length} of {productionSkills.length} skills listed</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Create Skill</span>
+          </button>
+
+          <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/80 px-3.5 py-2 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 shrink-0">
+            <FileCheck2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>{filteredSkills.length} of {productionSkills.length} skills listed</span>
+          </div>
         </div>
       </div>
 
@@ -374,6 +388,30 @@ export function SkillsClient({ initialSkills }: SkillsClientProps) {
           })}
         </div>
       )}
+
+      {/* Create Skill Modal */}
+      <SkillFormModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onSuccess={(newSkill) => {
+          setSkills((prev) => [
+            {
+              id: newSkill.id,
+              name: newSkill.name,
+              title: newSkill.title,
+              description: newSkill.description,
+              version: newSkill.version,
+              risk_class: newSkill.risk_class,
+              tools: newSkill.tools,
+              domain: newSkill.domain,
+              category: newSkill.category,
+              tags: newSkill.tags,
+              is_verified: newSkill.is_verified,
+            },
+            ...prev,
+          ]);
+        }}
+      />
     </div>
   );
 }
