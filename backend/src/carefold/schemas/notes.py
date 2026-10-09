@@ -45,6 +45,21 @@ class WorkspaceNoteDetail(BaseModel):
     path: str = Field(description="Relative workspace path to note")
 
 
+class NoteCreateRequest(BaseModel):
+    title: str
+    content: str
+    slug: Optional[str] = None
+    type: str = "scratchpad"
+    tags: list[str] = Field(default_factory=list)
+
+
+class NoteUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    type: Optional[str] = None
+    tags: Optional[list[str]] = None
+
+
 # Backward-compatibility aliases
 NoteSummary = WorkspaceNoteSummary
 NoteDetailResponse = WorkspaceNoteDetail
@@ -54,4 +69,6 @@ __all__ = [
     "WorkspaceNoteDetail",
     "NoteSummary",
     "NoteDetailResponse",
+    "NoteCreateRequest",
+    "NoteUpdateRequest",
 ]

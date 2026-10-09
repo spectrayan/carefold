@@ -280,6 +280,33 @@ async def execute_skill_docs(params: Dict[str, Any], context: Any) -> ToolResult
             if target_path.is_file():
                 content = target_path.read_text(encoding="utf-8", errors="replace")
 
+        # If not found on filesystem, check database knowledge_base table
+        if content is None:
+            try:
+                from carefold.db.session import get_session_factory
+                from carefold.db.models import KnowledgeBase
+                from sqlalchemy import select
+
+                session_factory = get_session_factory()
+                async with session_factory() as session:
+                    doc_candidates = [resolved_doc]
+                    if not resolved_doc.endswith(".md"):
+                        doc_candidates.append(f"{resolved_doc}.md")
+                    else:
+                        doc_candidates.append(resolved_doc[:-3])
+
+                    stmt = select(KnowledgeBase).where(
+                        KnowledgeBase.target_type.in_(["skill", "agent"]),
+                        KnowledgeBase.target_id.in_([resolved_skill_id, skill_id]),
+                        KnowledgeBase.name.in_(doc_candidates),
+                    )
+                    res = await session.execute(stmt)
+                    db_doc = res.scalars().first()
+                    if db_doc and db_doc.content:
+                        content = db_doc.content
+            except Exception:
+                pass
+
         if content is None:
             # Dynamically synthesize missing reference document on demand in-memory so UI never fails with error.
             # Do NOT persist synthesized content to disk in skills/ to prevent repository leaks and untracked stubs.

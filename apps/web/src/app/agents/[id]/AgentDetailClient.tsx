@@ -33,14 +33,19 @@ import {
   Sparkles,
   CheckCircle2,
   XCircle,
-  ExternalLink
+  ExternalLink,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 import type { AgentDetail } from '@/lib/types';
+import type { SkillSummary } from '@/types/api';
 import { toAgentDetail } from '@/lib/agentDetail';
 import { grantClinicalConsent } from '@/lib/clinicalConsent';
 import { useClinicalConsents } from '@/lib/useClinicalConsents';
 import { formatRiskClass, formatForbiddenIntent } from '@/lib/utils';
 import { ClinicalConsentDialog } from '@/components/ClinicalConsentDialog';
+import { KnowledgeBasePanel } from '@/components/knowledge/KnowledgeBasePanel';
+import { AgentFormModal } from '@/components/agents/AgentFormModal';
 
 export interface AgentDetailClientProps {
   agent: AgentDetail;
@@ -60,6 +65,9 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
   const [isConsentDialogOpen, setIsConsentDialogOpen] = useState(false);
   const [consentDeclined, setConsentDeclined] = useState(false);
   const [pendingNav, setPendingNav] = useState<string | null>(null);
+
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [availableSkills, setAvailableSkills] = useState<SkillSummary[]>([]);
 
   // With stored consent, upgrade the read-only preview to the full detail view.
   useEffect(() => {
@@ -81,6 +89,46 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
   }, [consentRequired, consentRecord, fullDetail, previewAgent.id]);
 
   const agent = isGated ? previewAgent : fullDetail || previewAgent;
+  const isBundled = Boolean(
+    (agent as any).is_bundled ||
+    (agent as any).isBundled ||
+    (agent as any).type === 'bundled' ||
+    (agent as any).type === 'system'
+  );
+
+  const handleOpenEdit = async () => {
+    setIsEditOpen(true);
+    if (availableSkills.length === 0) {
+      try {
+        const res = await fetch('/api/skills');
+        if (res.ok) {
+          const data = await res.json();
+          setAvailableSkills(Array.isArray(data) ? data : []);
+        }
+      } catch {
+        // Fallback
+      }
+    }
+  };
+
+  const handleDeleteAgent = async () => {
+    if (!window.confirm(`Are you sure you want to permanently delete custom agent "${agent.title}"?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/agents/${encodeURIComponent(agent.id)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status} failed to delete`);
+      }
+      router.push('/');
+    } catch (err: any) {
+      alert(`Delete failed: ${err.message}`);
+    }
+  };
 
   const requestConsent = (nextHref: string | null) => {
     setPendingNav(nextHref);
@@ -130,8 +178,8 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
-      {/* Back button */}
-      <div>
+      {/* Navigation Breadcrumb & Actions */}
+      <div className="flex items-center justify-between">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition"
@@ -139,6 +187,25 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Marketplace</span>
         </Link>
+
+        {!isBundled && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleOpenEdit}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Edit Agent</span>
+            </button>
+            <button
+              onClick={handleDeleteAgent}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 transition"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Hero Header */}
@@ -396,6 +463,15 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
         </div>
       </div>
 
+      {/* Knowledge Base Documents & Clinical Protocols */}
+      {!isGated && (!consentRequired || Boolean(fullDetail)) && (
+        <KnowledgeBasePanel
+          targetType="agent"
+          targetId={agent.id}
+          isBundled={isBundled}
+        />
+      )}
+
       {/* Clinical-assist consent dialog (#87) */}
       {consentRequired && (
         <ClinicalConsentDialog
@@ -403,6 +479,20 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
           agent={previewAgent}
           onAccept={handleAcceptConsent}
           onDecline={handleDeclineConsent}
+        />
+      )}
+
+      {/* Edit Agent Modal */}
+      {!isBundled && (
+        <AgentFormModal
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+          availableSkills={availableSkills}
+          initialAgent={agent as any}
+          onSuccess={(updatedAgent) => {
+            setIsEditOpen(false);
+            setFullDetail(toAgentDetail(updatedAgent as any));
+          }}
         />
       )}
     </div>

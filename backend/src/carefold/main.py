@@ -29,6 +29,7 @@ from carefold import __version__
 from carefold.api.router import api_router
 from carefold.config import settings
 from carefold.db import close_db, init_db
+from carefold.db.seeding import sync_bundled_assets_to_db
 from carefold.constants.api import API_PREFIX, ROUTE_ROOT_HEALTH
 from carefold.constants.defaults import (
     APP_DESCRIPTION,
@@ -49,6 +50,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("workspace_configuration", root=str(settings.workspace_root), ollama=settings.ollama_url)
     logger.info("audit_configuration", path=str(settings.get_audit_log_path()), store_bodies=settings.audit_store_bodies)
     await init_db()
+    try:
+        await sync_bundled_assets_to_db()
+    except Exception as err:
+        logger.warning("bundled_assets_seeding_failed", error=str(err))
     yield
     await close_db()
     logger.info("shutdown_complete")
