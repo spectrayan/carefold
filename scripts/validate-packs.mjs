@@ -34,13 +34,6 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const SKILLS_DIR = path.join(ROOT_DIR, 'skills');
 const AGENTS_DIR = path.join(ROOT_DIR, 'agents');
 
-if (process.argv.includes('--table')) {
-  const { readAgentManifests, generateMarkdownTable } = await import('./generate-readme-table.mjs');
-  const agents = readAgentManifests(AGENTS_DIR);
-  console.log(generateMarkdownTable(agents));
-  process.exit(0);
-}
-
 const PHASE0_CLOSED_TOOLS = ['attach-read', 'workspace-note', 'skill-docs'];
 const VALID_RISK_CLASSES = ['wellness', 'admin', 'clinical_assist', 'education'];
 const MANDATORY_INTENDED_USE = [

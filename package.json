@@ -9,8 +9,6 @@
   "scripts": {
     "check:licenses": "node scripts/licenses.mjs --check",
     "fix:licenses": "node scripts/licenses.mjs --fix",
-    "generate:readme": "node scripts/generate-readme-table.mjs",
-    "check:readme": "node scripts/generate-readme-table.mjs --check",
     "start": "bash scripts/start.sh",
     "version:bump": "node scripts/bump-version.mjs",
     "build": "pnpm -r --if-present run build",
