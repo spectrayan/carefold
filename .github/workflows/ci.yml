@@ -36,9 +36,6 @@ jobs:
       - name: Verify Spectrayan license headers
         run: pnpm run check:licenses
 
-      - name: Verify README agent table is in sync
-        run: pnpm run check:readme
-
   backend:
     name: Backend Pytest Suite (${{ matrix.python-version }})
     runs-on: ubuntu-latest

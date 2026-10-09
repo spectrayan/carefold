@@ -164,34 +164,18 @@ flowchart TD
 
 ## 🏥 Specialist Agent Topology
 
-Carefold includes 22 specialist clinical/navigational agents and 6 internal system infrastructure agents, backed by 24 skill packs (plus `_template` starters for new agents and skills):
+Carefold features a modular, growing catalog of specialist clinical and administrative agents, organized into three core domains:
 
-<!-- agents-table:start -->
-| Agent Identifier | Domain | Category | Risk Class | Clinical Scope & Capabilities |
-|---|---|---|---|---|
-| `benefits-guide` | `navigation` | `navigation.insurance` | `admin` | Healthcare benefits and insurance navigation steward assisting patients with deductible tracking, copays, out-of-pocket maximums, and explanation of benefits (EOB) analysis. |
-| `cardiology-guide` | `clinical` | `clinical.cardiology` | `clinical_assist` | Cardiovascular care navigator assisting patients with hypertension tracking, arrhythmia consultation prep, heart health lifestyle agendas, and vital sign logs. |
-| `claims-appeals-guide` | `navigation` | `navigation.claims` | `admin` | Healthcare claims and insurance appeals steward assisting patients with denied claims analysis, Explanation of Benefits (EOB) interpretation, and ERISA appeal letters. |
-| `derma-guide` | `clinical` | `clinical.dermatology` | `clinical_assist` | Dermatological wellness navigator assisting patients with skin lesion ABCDE tracking documentation, rash onset journals, topical medication routines, and dermatology visit agendas. |
-| `endocrinology-guide` | `clinical` | `clinical.endocrinology` | `clinical_assist` | Endocrine and metabolic care navigator helping patients organize continuous glucose monitor (CGM) logs, A1C trends, thyroid panel questions, and daily metabolic symptom journals. |
-| `ent-guide` | `clinical` | `clinical.ent` | `clinical_assist` | Otolaryngology and ear, nose, and throat navigator assisting individuals with chronic sinusitis, tinnitus and hearing loss evaluation prep, vertigo episodes, and ENT visit agendas. |
-| `eye-guide` | `clinical` | `clinical.ophthalmology` | `clinical_assist` | Vision health and ophthalmology care navigator helping patients prepare for eye examinations, monitor glaucoma and macular changes, and structure cataract surgery discussions. |
-| `formulary-guide` | `navigation` | `navigation.formulary` | `admin` | Prescription medication and formulary guide helping patients understand drug tiers, discover manufacturer copay cards and patient assistance programs, and structure generic substitution questions. |
-| `gastro-guide` | `clinical` | `clinical.gastroenterology` | `clinical_assist` | Digestive health care navigator assisting patients with IBS/IBD food and symptom journals, colonoscopy/endoscopy preparation checklists, and gastroenterology visit agendas. |
-| `habit-companion` | `wellness` | `wellness.habits` | `wellness` | Daily wellness and lifestyle companion supporting hydration, sleep hygiene, activity goals, and positive chronic health habit check-ins. |
-| `nephrology-guide` | `clinical` | `clinical.nephrology` | `clinical_assist` | Renal care navigator helping individuals prepare for nephrology visits, organize kidney lab trends (eGFR, creatinine, BUN, UACR), track daily fluid and sodium habits, and structure renal diet questions. |
-| `neurology-guide` | `clinical` | `clinical.neurology` | `clinical_assist` | Neurological care navigator assisting patients with migraine diaries, neuropathy tracking, cognitive symptom timelines, and neurology consultation agendas. |
-| `oncology-navigator` | `clinical` | `clinical.oncology` | `clinical_assist` | Compassionate oncology care steward assisting cancer patients and caregivers with chemotherapy side-effect tracking, tumor board agenda preparation, and clinical trial discussions. |
-| `ortho-guide` | `clinical` | `clinical.orthopedics` | `clinical_assist` | Musculoskeletal care navigator assisting patients with joint pain and functional mobility logs, physical therapy tracking, and orthopedic surgery consultation preparation. |
-| `podiatry-guide` | `clinical` | `clinical.podiatry` | `clinical_assist` | Podiatry and foot health navigator assisting patients with diabetic foot exam tracking, wound and ulcer logs, gait and mobility agendas, orthotic and footwear preparation, and nail or callus care follow-up. |
-| `prior-auth-navigator` | `navigation` | `navigation.prior_auth` | `admin` | Healthcare administration navigator helping patients verify prior authorization criteria, navigate step-therapy requirements, and prepare clinical appeal documentation. |
-| `pulmonology-guide` | `clinical` | `clinical.pulmonology` | `clinical_assist` | Respiratory health navigator assisting patients with asthma/COPD action plan preparation, inhaler adherence, dyspnea tracking, and pulmonology consultation agendas. |
-| `records-coordinator` | `navigation` | `navigation.records` | `admin` | Healthcare records steward assisting patients and caregivers in organizing multi-provider clinical dossiers, compiling longitudinal lab trends, and exercising HIPAA record request rights. |
-| `rheuma-guide` | `clinical` | `clinical.rheumatology` | `clinical_assist` | Rheumatology care navigator assisting individuals with autoimmune conditions such as rheumatoid arthritis and lupus to track flare-ups, morning stiffness, and biologic safety. |
-| `urology-guide` | `clinical` | `clinical.urology` | `clinical_assist` | Urological health navigator assisting individuals with urinary symptoms, bladder tracking, prostate health and PSA discussion prep, and urology appointment agendas. |
-| `vascular-guide` | `clinical` | `clinical.vascular` | `clinical_assist` | Vascular medicine and vein health navigator assisting patients with claudication tracking (PAD), leg swelling and edema logs, varicose vein consultation prep, and post-DVT follow-up agendas. |
-| `visit-steward` | `navigation` | `navigation.appointments` | `clinical_assist` | Organized wellness and clinical visit preparation steward helping patients prioritize concerns, structure health questions, and prepare doctor consultation agendas. |
-<!-- agents-table:end -->
+- **Clinical Organ & Specialty Navigators (`clinical_assist`)**: Dedicated navigators for Cardiology, Pulmonology, Gastroenterology, Oncology, Neurology, Nephrology, Dermatology, Endocrinology, Orthopedics, Rheumatology, Urology, ENT, Vision, Podiatry, Vascular Medicine, and more. Each specialist assists with appointment preparation, symptom tracking logs, vital signs, and prioritized clinical discussion agendas.
+- **Administrative & Insurance Stewards (`admin`)**: Stewards for Health Insurance Benefits & Coverage explanation, Prior Authorization verification, Claims & Denials Appeals (ERISA), Prescription Drug Formularies, and Multi-Provider Medical Records coordination.
+- **Wellness & Habit Companions (`wellness`)**: Daily companions for chronic care routines, hydration tracking, sleep hygiene, and lifestyle check-ins.
+
+### Exploring Available Agents
+
+You can explore, search, and interact with all specialist agents through:
+- **Web Marketplace UI**: Launch the consultation studio (`pnpm dev:web` at `http://localhost:3000`) to browse and chat with any agent in the interactive gallery.
+- **Living Documentation Catalog**: Read [`docs/agents/catalog.md`](docs/agents/catalog.md) for detailed descriptions, taxonomy classifications, and key capabilities.
+- **Carefold CLI & API**: Run `carefold list` or query `GET /api/agents` to inspect the runtime catalog programmatically.
 
 ### System Infrastructure Agents (`agents/_system`)
 * **`orchestrator`**: Two-hop intent classification, dynamic skill provisioning, and multi-topology dispatch.

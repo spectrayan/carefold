@@ -65,6 +65,8 @@ export interface AuthContextValue {
   allowRegistration: boolean;
   minPasswordLength: number;
   ssoProviders: string[];
+  hasAdmin: boolean;
+  needsAdminSetup: boolean;
   login: (usernameOrOpts: string | LoginOptions, password?: string) => Promise<UserProfile>;
   register: (
     emailOrOpts: string | RegisterOptions,
@@ -215,11 +217,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await res.json();
       const newUser: UserProfile = data.user || data;
-      // Note: registration does not establish session directly in backend (login does),
-      // but if the caller immediately logs in or uses the profile, return the UserProfile.
+      // If this was the initial admin registration, the session cookie was established automatically
+      if (data.is_initial_admin || data.token) {
+        setUser(newUser);
+        try {
+          await refreshUser();
+        } catch {
+          // Best effort refresh
+        }
+      }
       return newUser;
     },
-    []
+    [refreshUser]
   );
 
   // Logout handler
@@ -272,6 +281,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ? providersInfo.registration_enabled
       : providersInfo.allow_registration ?? true;
 
+  const hasAdmin = providersInfo.has_admin ?? true;
+  const needsAdminSetup =
+    providersInfo.needs_admin_setup !== undefined
+      ? providersInfo.needs_admin_setup
+      : !hasAdmin && providersInfo.active_provider !== 'disabled';
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -285,13 +300,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       allowRegistration: registrationEnabled,
       minPasswordLength: providersInfo.min_password_length ?? 10,
       ssoProviders: providersInfo.sso_providers || [],
+      hasAdmin,
+      needsAdminSetup,
       login,
       register,
       logout,
       changePassword,
       refreshUser
     }),
-    [user, isLoading, providersInfo, registrationEnabled, login, register, logout, changePassword, refreshUser]
+    [
+      user,
+      isLoading,
+      providersInfo,
+      registrationEnabled,
+      hasAdmin,
+      needsAdminSetup,
+      login,
+      register,
+      logout,
+      changePassword,
+      refreshUser
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -309,6 +338,8 @@ const DEFAULT_AUTH_FALLBACK: AuthContextValue = {
   allowRegistration: true,
   minPasswordLength: 10,
   ssoProviders: [],
+  hasAdmin: true,
+  needsAdminSetup: false,
   login: async () => DEFAULT_STEWARD_USER,
   register: async () => DEFAULT_STEWARD_USER,
   logout: async () => {},

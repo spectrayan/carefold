@@ -360,3 +360,8 @@ class AuthPort(ABC):
         Returns updated UserProfile, or None if user not found.
         """
         ...
+
+    @abstractmethod
+    async def has_admin_user(self) -> bool:
+        """Returns True if at least one active administrator user exists in the system."""
+        ...

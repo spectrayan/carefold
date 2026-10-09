@@ -719,7 +719,7 @@ export default function AdminClient() {
                     </p>
                   </label>
 
-                  {/* Local Argon2id */}
+                  {/* Local Database */}
                   <label
                     className={`p-4 rounded-xl border flex flex-col justify-between cursor-pointer transition ${
                       authProviderVal === 'local'
@@ -729,7 +729,7 @@ export default function AdminClient() {
                   >
                     <div className="flex items-start justify-between">
                       <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">
-                        Local (Argon2id)
+                        Local Database
                       </span>
                       <input
                         type="radio"
@@ -741,7 +741,7 @@ export default function AdminClient() {
                       />
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-2">
-                      Self-hosted accounts stored in SQL database with OWASP Argon2id password hashing.
+                      Self-hosted accounts stored securely in the local SQL database.
                     </p>
                   </label>
 
@@ -812,11 +812,11 @@ export default function AdminClient() {
 
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-700/60 space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-700 dark:text-zinc-300">Hashing Algorithm:</span>
-                      <span className="font-mono font-bold text-purple-600 dark:text-purple-400">Argon2id (OWASP)</span>
+                      <span className="font-semibold text-slate-700 dark:text-zinc-300">Password Security:</span>
+                      <span className="font-medium text-emerald-600 dark:text-emerald-400">Enterprise Salted & Hashed</span>
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-                      Memory-hard resistance against GPU-accelerated brute force attacks.
+                      High-security cryptographic protection against unauthorized access and brute force attacks.
                     </p>
                   </div>
                 </div>

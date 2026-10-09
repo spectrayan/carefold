@@ -45,6 +45,24 @@ class CatalogPort(ABC):
         ...
 
     @abstractmethod
+    async def remove_agent(self, agent_id: str) -> None:
+        """Removes an agent from the catalog index.
+        
+        Args:
+            agent_id: Identifier of the agent to remove.
+        """
+        ...
+
+    @abstractmethod
+    async def remove_skill(self, skill_id: str) -> None:
+        """Removes a skill from the catalog index.
+        
+        Args:
+            skill_id: Identifier of the skill to remove.
+        """
+        ...
+
+    @abstractmethod
     async def search_agents(
         self,
         query: Optional[str] = None,

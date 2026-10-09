@@ -20,14 +20,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(
-  _req: Request | NextRequest,
-  context: { params: Promise<{ id: string }> }
-): Promise<NextResponse> {
-  const resolvedParams = await context.params;
-  const skillId = (resolvedParams.id || '').trim();
-
-  // Reject explicit path traversal, slashes, and null bytes immediately with HTTP 400
+function validateSkillId(skillId: string): string | null {
   if (
     skillId.includes('..') ||
     skillId.includes('/') ||
@@ -36,26 +29,31 @@ export async function GET(
     skillId.includes(' ') ||
     skillId.includes(';')
   ) {
-    return NextResponse.json(
-      { error: `Invalid skill ID "${skillId}". Must be an alphanumeric slug.`, code: 'INVALID_ID' },
-      { status: 400 }
-    );
+    return 'Invalid skill ID. Must be an alphanumeric slug.';
   }
 
-  // Defensively reject template or private/hidden folders with HTTP 404
   if (skillId.startsWith('_') || skillId.startsWith('.') || skillId === '_template') {
-    return NextResponse.json(
-      { error: `Skill "${skillId}" not found.`, code: 'NOT_FOUND' },
-      { status: 404 }
-    );
+    return 'Skill not found.';
   }
 
-  // Validate slug format to ensure strictly alphanumeric with dashes/underscores
   if (!/^[a-zA-Z0-9_\-]+$/.test(skillId)) {
-    return NextResponse.json(
-      { error: `Invalid skill ID "${skillId}". Must be an alphanumeric slug.`, code: 'INVALID_ID' },
-      { status: 400 }
-    );
+    return 'Invalid skill ID. Must be an alphanumeric slug.';
+  }
+
+  return null;
+}
+
+export async function GET(
+  _req: Request | NextRequest,
+  context: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
+  const resolvedParams = await context.params;
+  const skillId = (resolvedParams.id || '').trim();
+
+  const valError = validateSkillId(skillId);
+  if (valError) {
+    const status = valError.includes('not found') ? 404 : 400;
+    return NextResponse.json({ error: valError, code: status === 404 ? 'NOT_FOUND' : 'INVALID_ID' }, { status });
   }
 
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
@@ -82,6 +80,101 @@ export async function GET(
     return NextResponse.json(
       {
         error: `Carefold Python backend is unreachable at ${backendUrl}. Please ensure it is running: ${err.message}`,
+        code: 'BACKEND_UNREACHABLE'
+      },
+      { status: 503 }
+    );
+  }
+}
+
+export async function PUT(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
+  const resolvedParams = await context.params;
+  const skillId = (resolvedParams.id || '').trim();
+
+  const valError = validateSkillId(skillId);
+  if (valError) {
+    const status = valError.includes('not found') ? 404 : 400;
+    return NextResponse.json({ error: valError, code: status === 404 ? 'NOT_FOUND' : 'INVALID_ID' }, { status });
+  }
+
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+
+  const forwardHeaders = new Headers();
+  const incomingCookie = req.headers.get('cookie');
+  if (incomingCookie) forwardHeaders.set('cookie', incomingCookie);
+  const authHeader = req.headers.get('authorization');
+  if (authHeader) forwardHeaders.set('authorization', authHeader);
+  forwardHeaders.set('content-type', 'application/json');
+  forwardHeaders.set('accept', 'application/json');
+
+  let body = '';
+  try {
+    body = await req.text();
+  } catch {
+    body = '{}';
+  }
+
+  try {
+    const targetUrl = `${backendUrl}/api/skills/${encodeURIComponent(skillId)}`;
+    const res = await fetch(targetUrl, {
+      method: 'PUT',
+      headers: forwardHeaders,
+      body,
+      cache: 'no-store'
+    });
+
+    const data = await res.json().catch(() => ({}));
+    return NextResponse.json(data, { status: res.status });
+  } catch (err: any) {
+    return NextResponse.json(
+      {
+        error: `Carefold Python backend is unreachable at ${backendUrl}: ${err.message}`,
+        code: 'BACKEND_UNREACHABLE'
+      },
+      { status: 503 }
+    );
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
+  const resolvedParams = await context.params;
+  const skillId = (resolvedParams.id || '').trim();
+
+  const valError = validateSkillId(skillId);
+  if (valError) {
+    const status = valError.includes('not found') ? 404 : 400;
+    return NextResponse.json({ error: valError, code: status === 404 ? 'NOT_FOUND' : 'INVALID_ID' }, { status });
+  }
+
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+
+  const forwardHeaders = new Headers();
+  const incomingCookie = req.headers.get('cookie');
+  if (incomingCookie) forwardHeaders.set('cookie', incomingCookie);
+  const authHeader = req.headers.get('authorization');
+  if (authHeader) forwardHeaders.set('authorization', authHeader);
+  forwardHeaders.set('accept', 'application/json');
+
+  try {
+    const targetUrl = `${backendUrl}/api/skills/${encodeURIComponent(skillId)}`;
+    const res = await fetch(targetUrl, {
+      method: 'DELETE',
+      headers: forwardHeaders,
+      cache: 'no-store'
+    });
+
+    const data = await res.json().catch(() => ({}));
+    return NextResponse.json(data, { status: res.status });
+  } catch (err: any) {
+    return NextResponse.json(
+      {
+        error: `Carefold Python backend is unreachable at ${backendUrl}: ${err.message}`,
         code: 'BACKEND_UNREACHABLE'
       },
       { status: 503 }

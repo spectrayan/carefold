@@ -16,7 +16,16 @@
 """Carefold relational database layer with multi-dialect support (SQLite & PostgreSQL)."""
 
 from carefold.db.base import Base
-from carefold.db.models import PasswordReset, Session, SystemSetting, User
+from carefold.db.models import (
+    Agent,
+    KnowledgeBase,
+    Note,
+    PasswordReset,
+    Session,
+    Skill,
+    SystemSetting,
+    User,
+)
 from carefold.db.session import (
     close_db,
     create_db_engine,
@@ -36,6 +45,10 @@ __all__ = [
     "Session",
     "PasswordReset",
     "SystemSetting",
+    "Agent",
+    "Skill",
+    "KnowledgeBase",
+    "Note",
     "create_db_engine",
     "get_engine",
     "get_session_factory",

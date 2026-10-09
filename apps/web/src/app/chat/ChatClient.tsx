@@ -927,7 +927,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
                   aria-describedby="agent-selector-description"
                   value={selectedAgentId}
                   onChange={(e) => handleAgentChange(e.target.value)}
-                  className="appearance-none bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl pl-3 pr-8 py-1.5 text-xs font-bold text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer shadow-sm"
+                  className="appearance-none bg-white dark:bg-zinc-800 border border-[#7f8ea3] dark:border-[#657895] rounded-xl pl-3 pr-8 py-1.5 text-xs font-bold text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer shadow-sm"
                 >
                   {visibleAgents.map((a) => (
                     <option key={a.id} value={a.id}>

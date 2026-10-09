@@ -17,34 +17,63 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   ShieldCheck,
   CheckCircle2,
-  FileText,
   Wrench,
   ShieldAlert,
   XCircle,
+  BookOpen,
+  Edit3,
+  Trash2,
   FileCode2,
-  BookOpen
+  FileText,
 } from 'lucide-react';
 import { formatCategoryLabel, formatRiskClass, formatForbiddenIntent } from '@/lib/utils';
 import type { SkillDetailResponse } from '@/types/api';
+import { KnowledgeBasePanel } from '@/components/knowledge/KnowledgeBasePanel';
+import { SkillFormModal } from '@/components/skills/SkillFormModal';
 
 interface SkillDetailClientProps {
   skill: SkillDetailResponse;
 }
 
-export function SkillDetailClient({ skill }: SkillDetailClientProps) {
+export function SkillDetailClient({ skill: initialSkill }: SkillDetailClientProps) {
+  const router = useRouter();
+  const [skill, setSkill] = useState<SkillDetailResponse>(initialSkill);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
   const categoryLabel = formatCategoryLabel(skill.category, skill.domain);
   const riskClassLabel = formatRiskClass(skill.risk_class);
+  const isBundled = Boolean(skill.is_bundled || (skill as any).type === 'bundled' || (skill as any).type === 'system');
+
+  const handleDeleteSkill = async () => {
+    if (!window.confirm(`Are you sure you want to permanently delete custom skill "${skill.name}"?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/skills/${encodeURIComponent(skill.id)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status} failed to delete`);
+      }
+      router.push('/skills');
+    } catch (err: any) {
+      alert(`Delete failed: ${err.message}`);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Navigation Breadcrumb */}
-      <div>
+      <div className="flex items-center justify-between">
         <Link
           href="/skills"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition"
@@ -52,6 +81,25 @@ export function SkillDetailClient({ skill }: SkillDetailClientProps) {
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Skills catalog</span>
         </Link>
+
+        {!isBundled && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsEditOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Edit Skill</span>
+            </button>
+            <button
+              onClick={handleDeleteSkill}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 transition"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Hero Banner */}
@@ -148,54 +196,52 @@ export function SkillDetailClient({ skill }: SkillDetailClientProps) {
             </h2>
             <div
               data-testid="skill-instructions-content"
-              className="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed max-h-[640px] overflow-y-auto bg-slate-50/70 dark:bg-zinc-800/60 p-5 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 font-mono whitespace-pre-wrap select-text"
+              className="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800/80 text-xs font-mono text-slate-800 dark:text-zinc-200 whitespace-pre-wrap leading-relaxed overflow-x-auto"
             >
-              {skill.instructions ? (
-                skill.instructions
-              ) : (
-                <span className="italic text-slate-400 dark:text-zinc-500">
-                  No operating instructions text bundled in this skill manifest.
-                </span>
-              )}
+              {skill.instructions || 'No instructions declared in manifest.'}
             </div>
           </div>
-        </div>
 
-        {/* Sidebar Column: References, Tools, and Safety Boundaries */}
-        <div className="space-y-6">
-          {/* Bundled Reference Documents */}
+          {/* Static Reference Documents */}
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-4">
             <h2 className="text-sm font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-2">
-              <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span>Reference Documents ({skill.references?.length || 0})</span>
+              <FileCode2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Static Reference Documents</span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-zinc-400">
-              Clinical guidelines, questionnaires, and checklists bundled with this skill:
+              Reference guidelines and templates declared with this skill:
             </p>
 
             {skill.references && skill.references.length > 0 ? (
               <div data-testid="skill-references-list" className="space-y-2">
-                {skill.references.map((refDoc) => (
+                {skill.references.map((ref) => (
                   <div
-                    key={refDoc}
-                    className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-50 dark:bg-zinc-800/80 border border-slate-200/70 dark:border-zinc-700/70 text-xs font-mono text-slate-800 dark:text-zinc-200"
+                    key={ref}
+                    className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/60 text-xs font-mono text-slate-700 dark:text-zinc-300"
                   >
-                    <FileCode2 className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />
-                    <span className="truncate">{refDoc}</span>
+                    <FileText className="w-4 h-4 text-slate-400 dark:text-zinc-500 shrink-0" />
+                    <span>{ref}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div
-                data-testid="skill-references-empty"
-                className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-dashed border-slate-200 dark:border-zinc-700 text-xs text-slate-500 dark:text-zinc-400 italic text-center"
-              >
+              <p data-testid="skill-references-empty" className="text-xs text-slate-400 dark:text-zinc-500 italic">
                 No static reference documents declared for this skill.
-              </div>
+              </p>
             )}
           </div>
 
-          {/* Permitted Sandbox Tools */}
+          {/* Knowledge Base Documents Panel */}
+          <KnowledgeBasePanel
+            targetType="skill"
+            targetId={skill.id}
+            isBundled={isBundled}
+          />
+        </div>
+
+        {/* Sidebar Column: Tools & Guardrails */}
+        <div className="space-y-6">
+          {/* Allowed Sandbox Tools */}
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-4">
             <h2 className="text-sm font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-2">
               <Wrench className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -260,6 +306,14 @@ export function SkillDetailClient({ skill }: SkillDetailClientProps) {
           </div>
         </div>
       </div>
+
+      {/* Edit Skill Modal */}
+      <SkillFormModal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        initialSkill={skill}
+        onSuccess={(updated) => setSkill(updated)}
+      />
     </div>
   );
 }

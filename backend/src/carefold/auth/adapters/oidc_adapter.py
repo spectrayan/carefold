@@ -218,3 +218,7 @@ class OidcAuthAdapter(AuthPort):
         **kwargs: Any,
     ) -> Optional[UserProfile]:
         return await self.sql_adapter.update_user(user_id=user_id, updates=updates, **kwargs)
+
+    async def has_admin_user(self) -> bool:
+        return await self.sql_adapter.has_admin_user()
+

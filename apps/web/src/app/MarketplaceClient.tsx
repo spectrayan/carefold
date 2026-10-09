@@ -32,8 +32,10 @@ import {
   Terminal,
   Users,
   RotateCcw,
+  Plus,
 } from 'lucide-react';
 import type { AgentSummary } from '@/lib/types';
+import type { SkillSummary } from '@/types/api';
 import {
   cn,
   sanitizeAgentDescription,
@@ -42,6 +44,7 @@ import {
   formatCareStage,
 } from '@/lib/utils';
 import { FirstRunSetupCard } from '@/components/setup/FirstRunSetupCard';
+import { AgentFormModal } from '@/components/agents/AgentFormModal';
 
 function resolveAgentIcon(iconToken?: string, id?: string): React.ComponentType<{ className?: string }> {
   if (iconToken && iconToken in LucideIcons) {
@@ -63,11 +66,35 @@ export function MarketplaceClient({
   initialAgents: AgentSummary[];
   initialCategories?: Record<string, any> | null;
 }) {
+  const [agents, setAgents] = useState<AgentSummary[]>(initialAgents);
+
+  React.useEffect(() => {
+    setAgents(initialAgents);
+  }, [initialAgents]);
+
   const [search, setSearch] = useState('');
   const [selectedRisk, setSelectedRisk] = useState<string>('all');
   const [selectedDomain, setSelectedDomain] = useState<string>('all');
   const [selectedCareStage, setSelectedCareStage] = useState<string>('all');
   const [forCaregivers, setForCaregivers] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [availableSkills, setAvailableSkills] = useState<SkillSummary[]>([]);
+
+  // Fetch skills when create modal is opened
+  const handleOpenCreate = async () => {
+    setIsCreateOpen(true);
+    if (availableSkills.length === 0) {
+      try {
+        const res = await fetch('/api/skills');
+        if (res.ok) {
+          const data = await res.json();
+          setAvailableSkills(Array.isArray(data) ? data : []);
+        }
+      } catch {
+        // Fallback
+      }
+    }
+  };
 
   const riskFilters = [
     { id: 'all', label: 'All Agents' },
@@ -88,15 +115,15 @@ export function MarketplaceClient({
       }
     }
 
-    // Offline fallback derived from initialAgents
+    // Offline fallback derived from agents
     const fallbackSet = new Set<string>();
-    for (const agent of initialAgents) {
+    for (const agent of agents) {
       if (!agent.hidden && agent.domain) {
         fallbackSet.add(agent.domain.toLowerCase());
       }
     }
     return Array.from(fallbackSet);
-  }, [initialCategories, initialAgents]);
+  }, [initialCategories, agents]);
 
   const domainFilters = useMemo(() => {
     const list = [{ id: 'all', label: 'All Domains' }];
@@ -129,7 +156,7 @@ export function MarketplaceClient({
   ];
 
   const filteredAgents = useMemo(() => {
-    return initialAgents.filter((agent) => {
+    return agents.filter((agent) => {
       if (agent.hidden) return false;
 
       // 1. Keyword search (case-insensitive across name, id, description, category, tags, skills)
@@ -179,7 +206,7 @@ export function MarketplaceClient({
 
       return true;
     });
-  }, [initialAgents, search, selectedRisk, selectedDomain, selectedCareStage, forCaregivers]);
+  }, [agents, search, selectedRisk, selectedDomain, selectedCareStage, forCaregivers]);
 
   const hasActiveFilters =
     search.trim().length > 0 ||
@@ -218,18 +245,30 @@ export function MarketplaceClient({
 
       {/* Header Banner */}
       <section className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 sm:p-8 shadow-sm transition-colors">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Local Agent Marketplace</span>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 mb-3">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Local Agent Marketplace</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight">
+              Specialist Health & Wellness Agents
+            </h1>
+            <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-zinc-400 leading-relaxed">
+              Discover and interact with private, task-scoped agents running completely on your machine.
+              No cloud account, zero prompt retention, and closed tool permissions.
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight">
-            Specialist Health & Wellness Agents
-          </h1>
-          <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-zinc-400 leading-relaxed">
-            Discover and interact with private, task-scoped agents running completely on your machine.
-            No cloud account, zero prompt retention, and closed tool permissions.
-          </p>
+          <div>
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition active:scale-95 whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Agent</span>
+            </button>
+          </div>
         </div>
 
         {/* Search & Filters */}
@@ -243,7 +282,7 @@ export function MarketplaceClient({
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search agents by name, skill, or keyword..."
                 aria-label="Search agents by name, skill, or keyword"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/70 focus:bg-white dark:focus:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-slate-50 dark:bg-zinc-800/70 focus:bg-white dark:focus:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition"
               />
             </div>
 
@@ -536,6 +575,16 @@ export function MarketplaceClient({
           })}
         </div>
       )}
+
+      {/* Agent Creation Modal */}
+      <AgentFormModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        availableSkills={availableSkills}
+        onSuccess={(newAgent) => {
+          setAgents((prev) => [newAgent, ...prev]);
+        }}
+      />
     </div>
   );
 }

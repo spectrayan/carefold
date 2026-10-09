@@ -38,7 +38,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect') || '/';
 
-  const { login, user, isAuthenticated, authProvider, allowRegistration } = useAuth();
+  const { login, user, isAuthenticated, authProvider, allowRegistration, needsAdminSetup } = useAuth();
 
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,6 +49,11 @@ function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (needsAdminSetup) {
+      setError('No administrator account exists yet. Please set up your administrator account above.');
+      return;
+    }
 
     if (!usernameOrEmail.trim()) {
       setError('Username or email is required.');
@@ -84,6 +89,30 @@ function LoginForm() {
           Access your clinical visits, health navigation agents, and workspace
         </p>
       </div>
+
+      {/* First-Run Setup Banner */}
+      {needsAdminSetup && (
+        <div
+          data-testid="needs-admin-setup-banner"
+          className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 text-xs text-purple-900 dark:text-purple-200 space-y-2.5 animate-in fade-in"
+        >
+          <div className="flex items-center gap-2 font-bold text-purple-800 dark:text-purple-300">
+            <ShieldCheck className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <span>First-Time Setup Required</span>
+          </div>
+          <p className="text-[11px] leading-relaxed text-purple-700 dark:text-purple-300">
+            No administrator account exists yet. Create your primary administrator account to initialize your Carefold workspace.
+          </p>
+          <Link
+            href="/register?mode=admin-setup"
+            data-testid="first-run-setup-btn"
+            className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-700 text-white shadow-sm transition"
+          >
+            <span>Set Up Administrator Account</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
 
       {/* Disabled Mode Banner */}
       {authProvider === 'disabled' && (
@@ -163,7 +192,7 @@ function LoginForm() {
               value={usernameOrEmail}
               onChange={(e) => setUsernameOrEmail(e.target.value)}
               placeholder="username or user@example.com"
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
             />
           </div>
         </div>
@@ -197,7 +226,7 @@ function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••"
-              className="w-full pl-9 pr-9 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+              className="w-full pl-9 pr-9 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
             />
             <button
               type="button"

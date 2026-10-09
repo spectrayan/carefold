@@ -22,7 +22,7 @@ from pathlib import Path
 import re
 from typing import AsyncIterator, Optional
 
-from sqlalchemy import event
+from sqlalchemy import event, inspect
 from sqlalchemy.engine.url import make_url, URL
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -199,6 +199,20 @@ async def get_db() -> AsyncIterator[AsyncSession]:
             raise
 
 
+def _run_schema_migrations(connection) -> None:
+    """Safely adds missing columns to existing SQLite / PostgreSQL tables without data loss."""
+    inspector = inspect(connection)
+    tables = inspector.get_table_names()
+    if "agent" in tables:
+        columns = [c["name"] for c in inspector.get_columns("agent")]
+        if "care_stages_json" not in columns:
+            connection.exec_driver_sql("ALTER TABLE agent ADD COLUMN care_stages_json TEXT NOT NULL DEFAULT '[]'")
+        if "target_audience_json" not in columns:
+            connection.exec_driver_sql("ALTER TABLE agent ADD COLUMN target_audience_json TEXT NOT NULL DEFAULT '[]'")
+        if "forbidden_json" not in columns:
+            connection.exec_driver_sql("ALTER TABLE agent ADD COLUMN forbidden_json TEXT NOT NULL DEFAULT '[]'")
+
+
 async def init_db(engine: Optional[AsyncEngine] = None) -> None:
     """Initializes database tables via Base.metadata.create_all."""
     target_engine = engine or get_engine()
@@ -206,6 +220,7 @@ async def init_db(engine: Optional[AsyncEngine] = None) -> None:
 
     async with target_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_run_schema_migrations)
 
     logger.info(
         "database_initialized",

@@ -534,3 +534,12 @@ class SqlAuthAdapter(AuthPort):
             await session.commit()
             await session.refresh(user)
             return self._user_to_profile(user)
+
+    async def has_admin_user(self) -> bool:
+        """Returns True if at least one active administrator user exists in the database."""
+        session_factory = self._get_session_factory()
+        async with session_factory() as session:
+            stmt = select(func.count(User.id)).where(User.role == "admin", User.status == "active")
+            count = (await session.execute(stmt)).scalar_one()
+            return count > 0
+

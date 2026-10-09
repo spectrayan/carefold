@@ -91,6 +91,12 @@ class TestCatalogPortContract:
                     res = [s for s in res if query.lower() in s.name.lower() or query.lower() in s.description.lower()]
                 return res[:limit]
 
+            async def remove_agent(self, agent_id: str) -> None:
+                self.agents.pop(agent_id, None)
+
+            async def remove_skill(self, skill_id: str) -> None:
+                self.skills.pop(skill_id, None)
+
             async def get_category_tree(self) -> Dict[str, Any]:
                 rows = [{"domain": a.domain, "category": a.category} for a in self.agents.values()]
                 return build_category_tree_from_rows(rows)

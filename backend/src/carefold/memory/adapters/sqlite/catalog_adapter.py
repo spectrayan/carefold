@@ -532,6 +532,30 @@ class SqliteCatalogAdapter(CatalogPort):
                 row = await cur.fetchone()
                 return row[0] if row else 0
 
+    async def remove_agent(self, agent_id: str) -> None:
+        """Removes an agent from the catalog index."""
+        conn = await self._get_conn()
+
+        async def _do_remove_agent():
+            async with self._lock:
+                await conn.execute("DELETE FROM agents WHERE id = ?;", (agent_id,))
+                await conn.execute("DELETE FROM agents_fts WHERE id = ?;", (agent_id,))
+                await conn.commit()
+
+        await _run_write_with_retry(_do_remove_agent, conn=conn)
+
+    async def remove_skill(self, skill_id: str) -> None:
+        """Removes a skill from the catalog index."""
+        conn = await self._get_conn()
+
+        async def _do_remove_skill():
+            async with self._lock:
+                await conn.execute("DELETE FROM skills WHERE id = ?;", (skill_id,))
+                await conn.execute("DELETE FROM skills_fts WHERE id = ?;", (skill_id,))
+                await conn.commit()
+
+        await _run_write_with_retry(_do_remove_skill, conn=conn)
+
     async def close(self) -> None:
         async with self._lock:
             if self._conn is not None:

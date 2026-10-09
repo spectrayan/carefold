@@ -99,6 +99,8 @@ export interface AgentSummary {
 export interface AgentDetailResponse {
   id: string;
   title: string;
+  description?: string;
+  type?: 'bundled' | 'system' | 'user' | string;
   version: string;
   license?: string;
   risk_class: RiskClass | string;
@@ -152,6 +154,9 @@ export interface SkillSummary {
   tools: string[];
   forbidden?: string[];
   is_verified?: boolean;
+  is_bundled?: boolean;
+  isBundled?: boolean;
+  type?: 'bundled' | 'system' | 'user' | string;
   has_evals?: boolean;
   unverified?: boolean;
   error?: string;
@@ -177,6 +182,9 @@ export interface SkillDetailResponse {
   references?: string[];
   has_evals?: boolean;
   is_verified?: boolean;
+  is_bundled?: boolean;
+  isBundled?: boolean;
+  type?: 'bundled' | 'system' | 'user' | string;
   domain?: 'clinical' | 'therapy' | 'wellness' | 'navigation' | 'education' | string;
   category?: string;
   care_stages?: string[];
@@ -430,6 +438,8 @@ export interface AuthProvidersInfo {
   registration_enabled: boolean;
   allow_registration?: boolean;
   min_password_length?: number;
+  has_admin?: boolean;
+  needs_admin_setup?: boolean;
 }
 
 export interface UserSessionItem {
@@ -447,4 +457,117 @@ export interface SystemSettings {
   [key: string]: any;
 }
 
+// ---------------------------------------------------------------------------
+// Knowledge Base & Documentation Types
+// ---------------------------------------------------------------------------
+export interface DocSummary {
+  id: string;
+  name: string;
+  title: string;
+  size_bytes: number;
+  updated_at?: string;
+  created_at?: string;
+  source?: string;
+  source_id?: string;
+}
 
+export interface DocDetailResponse {
+  id: string;
+  name: string;
+  title: string;
+  content: string;
+  size_bytes: number;
+  updated_at?: string;
+  created_at?: string;
+  source?: string;
+  source_id?: string;
+}
+
+export interface AgentDocsResponse {
+  agent_id: string;
+  docs: DocSummary[];
+}
+
+export interface DocCreateRequest {
+  name: string;
+  title?: string;
+  content: string;
+}
+
+export interface DocUpdateRequest {
+  title?: string;
+  content?: string;
+}
+
+export interface SkillCreateRequest {
+  id?: string;
+  name: string;
+  title?: string;
+  description: string;
+  version?: string;
+  risk_class?: string;
+  tools?: string[];
+  instructions?: string;
+  domain?: string;
+  category?: string;
+  tags?: string[];
+}
+
+export interface SkillUpdateRequest {
+  name?: string;
+  title?: string;
+  description?: string;
+  version?: string;
+  risk_class?: string;
+  tools?: string[];
+  instructions?: string;
+  domain?: string;
+  category?: string;
+  tags?: string[];
+}
+
+export interface AgentCreateRequest {
+  id?: string;
+  title: string;
+  description?: string;
+  version?: string;
+  risk_class?: string;
+  model?: string | AgentModelConfig;
+  skills?: string[];
+  tools?: string[];
+  persona?: AgentPersona;
+  starters?: string[];
+  domain?: string;
+  category?: string;
+  tags?: string[];
+}
+
+export interface AgentUpdateRequest {
+  title?: string;
+  description?: string;
+  version?: string;
+  risk_class?: string;
+  model?: string | AgentModelConfig;
+  skills?: string[];
+  tools?: string[];
+  persona?: AgentPersona;
+  starters?: string[];
+  domain?: string;
+  category?: string;
+  tags?: string[];
+}
+
+export interface NoteCreateRequest {
+  slug?: string;
+  title: string;
+  content: string;
+  type?: string;
+  tags?: string[];
+}
+
+export interface NoteUpdateRequest {
+  title?: string;
+  content?: string;
+  type?: string;
+  tags?: string[];
+}
