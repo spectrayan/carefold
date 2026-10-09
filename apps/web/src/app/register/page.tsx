@@ -237,7 +237,7 @@ function RegisterForm() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Jane Doe"
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
                 />
               </div>
             </div>
@@ -263,7 +263,7 @@ function RegisterForm() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="janedoe"
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
                 />
               </div>
             </div>
@@ -289,7 +289,7 @@ function RegisterForm() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="jane@example.com"
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
                 />
               </div>
             </div>
@@ -315,7 +315,7 @@ function RegisterForm() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Min 10 characters, mixed case & numbers"
-                  className="w-full pl-9 pr-9 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full pl-9 pr-9 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
                 />
                 <button
                   type="button"
@@ -427,8 +427,8 @@ function RegisterForm() {
                   className={cn(
                     'w-full pl-9 pr-9 py-2 text-xs rounded-xl border bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 transition',
                     confirmPassword.length > 0 && !passwordsMatch
-                      ? 'border-rose-300 dark:border-rose-800 focus:ring-rose-500/20 focus:border-rose-500'
-                      : 'border-slate-300 dark:border-zinc-700 focus:ring-emerald-500/20 focus:border-emerald-500'
+                      ? 'border-rose-500 dark:border-rose-400 focus:ring-rose-500/20 focus:border-rose-500'
+                      : 'border-[#7f8ea3] dark:border-[#657895] focus:ring-emerald-500/20 focus:border-emerald-500'
                   )}
                 />
                 <button
