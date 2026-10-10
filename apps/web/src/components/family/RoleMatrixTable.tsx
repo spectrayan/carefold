@@ -32,15 +32,15 @@ export function RoleMatrixTable({ profiles: profilesProp, className }: RoleMatri
   const [household, setHousehold] = React.useState<CareProfile[]>(() => profilesProp || []);
 
   React.useEffect(() => {
-    if (profilesProp && profilesProp.length > 0) {
+    if (profilesProp !== undefined) {
       setHousehold(profilesProp);
     } else {
       setHousehold(loadHouseholdProfiles());
     }
   }, [profilesProp]);
 
-  // If household is empty, fallback to loaded profiles
-  const members: CareProfile[] = household.length > 0 ? household : loadHouseholdProfiles();
+  // Derive members strictly from props or mounted state (avoids synchronous localStorage reads during SSR/hydration)
+  const members: CareProfile[] = profilesProp !== undefined ? profilesProp : household;
 
   // Find self profile
   const selfMember = members.find((m: CareProfile) => m.role === 'self' || m.relationship.toLowerCase() === 'self') || members[0];
