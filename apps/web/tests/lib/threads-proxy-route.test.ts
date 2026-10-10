@@ -71,7 +71,7 @@ describe('GET /api/chat/threads/[id] proxy route', () => {
     const data = await res.json();
     expect(data.threadId).toBe('thread-123');
     expect(data.count).toBe(2);
-    expect(backendCalls[0].url).toContain('/api/chat/threads/thread-123');
+    expect(backendCalls[0].url).toContain('/api/v1/chat/threads/thread-123');
   });
 
   it('rejects invalid or traversal slugs with 400', async () => {

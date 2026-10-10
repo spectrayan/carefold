@@ -187,7 +187,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="space-y-8">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -218,7 +218,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
             onClick={() => handleTabChange('documents')}
             className={`flex items-center gap-2 py-4 px-1 text-sm font-semibold border-b-2 transition ${
               activeTab === 'documents'
-                ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
+                ? 'border-emerald-700 text-emerald-700 dark:border-emerald-400 dark:text-emerald-400'
                 : 'border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:border-slate-300'
             }`}
           >
@@ -235,7 +235,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
             onClick={() => handleTabChange('notes')}
             className={`flex items-center gap-2 py-4 px-1 text-sm font-semibold border-b-2 transition ${
               activeTab === 'notes'
-                ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
+                ? 'border-emerald-700 text-emerald-700 dark:border-emerald-400 dark:text-emerald-400'
                 : 'border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:border-slate-300'
             }`}
           >
@@ -260,9 +260,9 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
             placeholder={
               activeTab === 'documents'
                 ? 'Search documents by filename...'
-                : 'Search notes by title, agent, or slug...'
+                : 'Search notes by title or helper...'
             }
-            className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 placeholder:text-slate-500 dark:placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
 
@@ -280,7 +280,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
               data-testid="upload-document-button"
               disabled={isUploading}
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium text-sm transition shadow-sm disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] text-white font-medium text-sm transition shadow-sm disabled:opacity-50"
             >
               {isUploading ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
@@ -350,7 +350,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
                 type="button"
                 data-testid="confirm-duplicate-upload-button"
                 onClick={() => performUpload(duplicateWarning.file)}
-                className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition"
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] transition"
               >
                 Save as new version
               </button>
@@ -367,7 +367,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
               data-testid="documents-empty-state"
               className="text-center py-16 px-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-zinc-800"
             >
-              <div className="w-12 h-12 mx-auto rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-4">
+              <div className="w-12 h-12 mx-auto rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-700 dark:text-emerald-400 mb-4">
                 <FileText className="w-6 h-6" />
               </div>
               <h3 className="text-base font-semibold text-slate-900 dark:text-zinc-100">
@@ -383,7 +383,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] font-medium text-sm transition"
                   >
                     <Upload className="w-4 h-4" />
                     <span>Upload your first document</span>
@@ -493,10 +493,10 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
                 <div className="mt-6">
                   <Link
                     href="/chat"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] font-medium text-sm transition"
                   >
                     <MessageSquare className="w-4 h-4" />
-                    <span>Start a consultation</span>
+                    <span>Start a chat</span>
                   </Link>
                 </div>
               )}
@@ -515,7 +515,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
                     <div className="flex items-start justify-between gap-2">
                       <h2
                         data-testid={`note-title-${note.slug}`}
-                        className="text-base sm:text-lg font-semibold text-slate-900 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition line-clamp-2"
+                        className="text-base sm:text-lg font-semibold text-slate-900 dark:text-zinc-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition line-clamp-2"
                       >
                         {note.title}
                       </h2>
@@ -534,14 +534,14 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
                   <div className="pt-3 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
                     <div className="space-y-0.5">
                       <div>{formatDate(note.created_at)}</div>
-                      <div className="font-mono text-[11px] text-slate-400 dark:text-zinc-500">
+                      <div className="font-mono text-xs text-slate-500 dark:text-zinc-400">
                         {note.slug}.md • {formatFileSize(note.size_bytes)}
                       </div>
                     </div>
                     <button
                       type="button"
                       data-testid={`read-note-${note.slug}`}
-                      className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-medium group-hover:bg-emerald-600 group-hover:text-white transition"
+                      className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-medium group-hover:bg-emerald-700 group-hover:text-white transition"
                     >
                       Read Note
                     </button>
@@ -572,13 +572,13 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
                 {selectedNote && (
                   <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-zinc-400">
                     {selectedNote.agent && (
-                      <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                      <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
                         <Bot className="w-3.5 h-3.5" />
                         @{selectedNote.agent}
                       </span>
                     )}
                     <span>{formatDate(selectedNote.created_at)}</span>
-                    <span className="font-mono bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-[11px]">
+                    <span className="font-mono bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-xs">
                       {selectedNote.slug}.md
                     </span>
                     <span>{formatFileSize(selectedNote.size_bytes)}</span>
@@ -597,7 +597,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
                     >
                       {copiedNote ? (
                         <>
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <Check className="w-3.5 h-3.5 text-emerald-700" />
                           <span>Copied!</span>
                         </>
                       ) : (
@@ -636,7 +636,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
             <div className="p-6 overflow-y-auto flex-1">
               {isLoadingNote ? (
                 <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-zinc-400">
-                  <RefreshCw className="w-6 h-6 animate-spin text-emerald-600" />
+                  <RefreshCw className="w-6 h-6 animate-spin text-emerald-700" />
                   <span>Loading note contents...</span>
                 </div>
               ) : noteError ? (

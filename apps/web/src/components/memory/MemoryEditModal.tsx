@@ -114,7 +114,7 @@ export function MemoryEditModal({
               <h3 id="edit-memory-title" className="text-base font-bold text-slate-900 dark:text-zinc-100">
                 Edit Clinical Memory
               </h3>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+              <p className="text-xs text-slate-500 dark:text-zinc-400">
                 Correct or refine clinical facts remembered by Carefold agents
               </p>
             </div>
@@ -134,7 +134,7 @@ export function MemoryEditModal({
           {/* Key and Tier info */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-400 mb-1">
                 Memory Identifier
               </label>
               <div className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700/60 text-xs font-mono text-slate-700 dark:text-zinc-300 truncate">
@@ -143,13 +143,13 @@ export function MemoryEditModal({
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+              <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-400 mb-1">
                 Cognitive Tier
               </label>
               <select
                 value={selectedTier}
                 onChange={(e) => setSelectedTier(e.target.value as MemoryTier)}
-                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs text-slate-800 dark:text-zinc-200 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/30 cursor-pointer"
+                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs text-slate-800 dark:text-zinc-200 font-medium focus:border-emerald-700 dark:focus:border-emerald-400 cursor-pointer"
               >
                 <option value="episodic">Episodic (Conversation turn / visit)</option>
                 <option value="semantic">Semantic (Consolidated fact)</option>
@@ -168,7 +168,7 @@ export function MemoryEditModal({
               >
                 Remembered Fact Text
               </label>
-              <span className="text-[10px] text-slate-400 dark:text-zinc-500">
+              <span className="text-xs text-slate-400 dark:text-zinc-500">
                 {valueText.length} characters
               </span>
             </div>
@@ -183,7 +183,7 @@ export function MemoryEditModal({
                 if (error) setError(null);
               }}
               placeholder="Enter the corrected clinical or navigational fact..."
-              className="w-full p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none font-sans"
+              className="w-full p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 resize-none font-sans"
             />
           </div>
 
@@ -207,7 +207,7 @@ export function MemoryEditModal({
               type="submit"
               data-testid="save-memory-edit-btn"
               disabled={isSaving || !valueText.trim()}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm shadow-emerald-900/20 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] text-xs font-semibold shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-3.5 h-3.5" />
               <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>

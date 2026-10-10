@@ -49,6 +49,10 @@ export function findWorkspaceRoot(explicitDir?: string): string {
     return path.resolve(/*turbopackIgnore: true*/ process.cwd(), process.env.CAREFOLD_WORKSPACE);
   }
 
+  if (process.env.CAREFOLD_HOME) {
+    return path.resolve(/*turbopackIgnore: true*/ process.cwd(), process.env.CAREFOLD_HOME);
+  }
+
   // Walk upwards from current working directory
   let current = process.cwd();
   while (true) {

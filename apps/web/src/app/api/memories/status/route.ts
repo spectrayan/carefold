@@ -29,8 +29,13 @@ export async function GET(req?: Request): Promise<NextResponse> {
     forwardHeaders['cookie'] = incomingCookie;
   }
 
+  const authHeader = req?.headers.get('authorization');
+  if (authHeader) {
+    forwardHeaders['authorization'] = authHeader;
+  }
+
   try {
-    const res = await fetch(`${backendUrl}/api/memory/status`, {
+    const res = await fetch(`${backendUrl}/api/v1/memory/status`, {
       method: 'GET',
       headers: forwardHeaders,
       cache: 'no-store'

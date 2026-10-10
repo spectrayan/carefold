@@ -42,6 +42,7 @@ import { StartersChips } from '@/components/StartersChips';
 import { SuggestedQuestionsChips } from '@/components/SuggestedQuestionsChips';
 import { AttachmentUploader, type AttachedFile } from '@/components/AttachmentUploader';
 import { ModelSelector } from '@/components/ModelSelector';
+import { mapChatErrorToFriendlyNotice, type ChatErrorNotice } from '@/lib/chatErrorMapper';
 import { SettingsModal } from '@/components/SettingsModal';
 import { ScrollToBottomButton } from '@/components/chat/ScrollToBottomButton';
 import { DossierExportMenu } from '@/components/chat/DossierExportMenu';
@@ -59,6 +60,11 @@ import {
   requiresClinicalConsent
 } from '@/lib/clinicalConsent';
 import { useAuth } from '@/lib/auth';
+import {
+  getScopedStorageKey,
+  getStorageUserId,
+  STORAGE_DETACHED_EVENT,
+} from '@/lib/storageNamespace';
 import { useClinicalConsents } from '@/lib/useClinicalConsents';
 import {
   type CarefoldUserSettings,
@@ -89,7 +95,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [starters, setStarters] = useState<string[]>([]);
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [chatError, setChatError] = useState<ChatErrorNotice | null>(null);
 
   // Screen reader live region announcement states (Issue #90)
   const [politeAnnouncement, setPoliteAnnouncement] = useState('');
@@ -188,10 +194,17 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      const savedThreadId = localStorage.getItem(`carefold_thread_${selectedAgentId}`);
+      const threadKey = getScopedStorageKey(`thread_${selectedAgentId}`);
+      const savedThreadId =
+        localStorage.getItem(threadKey) ||
+        (!getStorageUserId() ? localStorage.getItem(`carefold_thread_${selectedAgentId}`) : null);
+
       if (savedThreadId) {
         setThreadId(savedThreadId);
-        const cached = localStorage.getItem(`carefold_msgs_${savedThreadId}`);
+        const msgsKey = getScopedStorageKey(`msgs_${savedThreadId}`);
+        const cached =
+          localStorage.getItem(msgsKey) ||
+          (!getStorageUserId() ? localStorage.getItem(`carefold_msgs_${savedThreadId}`) : null);
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed)) {
@@ -209,7 +222,10 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
       } else {
         const newThread = generateThreadId(selectedAgentId);
         setThreadId(newThread);
-        localStorage.setItem(`carefold_thread_${selectedAgentId}`, newThread);
+        localStorage.setItem(threadKey, newThread);
+        if (!getStorageUserId()) {
+          localStorage.setItem(`carefold_thread_${selectedAgentId}`, newThread);
+        }
         setMessages([]);
       }
     } catch {
@@ -223,7 +239,11 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     if (typeof window === 'undefined' || !threadId) return;
     if (!isStreaming && messages.length > 0) {
       try {
-        localStorage.setItem(`carefold_msgs_${threadId}`, JSON.stringify(messages));
+        const msgsKey = getScopedStorageKey(`msgs_${threadId}`);
+        localStorage.setItem(msgsKey, JSON.stringify(messages));
+        if (!getStorageUserId()) {
+          localStorage.setItem(`carefold_msgs_${threadId}`, JSON.stringify(messages));
+        }
         upsertSessionFromMessages(
           threadId,
           selectedAgentId,
@@ -235,6 +255,19 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
       }
     }
   }, [messages, isStreaming, threadId, selectedAgentId, selectedAgent?.title]);
+
+  // Listen for storage detachment (logout/account switch) to clear memory & UI state
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleStorageDetached = () => {
+      setMessages([]);
+      const newThread = generateThreadId(selectedAgentId);
+      setThreadId(newThread);
+      setSuggestedQuestions([]);
+    };
+    window.addEventListener(STORAGE_DETACHED_EVENT, handleStorageDetached);
+    return () => window.removeEventListener(STORAGE_DETACHED_EVENT, handleStorageDetached);
+  }, [selectedAgentId]);
 
   // Load starters for selected agent
   useEffect(() => {
@@ -248,7 +281,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
         try {
           const allowClinical = hasClinicalConsent(selectedAgentId);
           const res = await fetch(
-            `/api/agents?id=${encodeURIComponent(selectedAgentId)}&allow_clinical=${allowClinical}`
+            `/api/v1/agents?id=${encodeURIComponent(selectedAgentId)}&allow_clinical=${allowClinical}`
           );
           if (res.ok) {
             const data = await res.json();
@@ -309,6 +342,16 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
   };
 
   const scrollToBottom = () => {
+    try {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({
+          top: scrollContainerRef.current.scrollHeight,
+          behavior: process.env.NODE_ENV === 'test' ? 'auto' : 'smooth'
+        });
+      }
+    } catch {
+      // Safe fallback in test environments
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     setIsAtBottom(true);
     isAtBottomRef.current = true;
@@ -318,6 +361,13 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
   // Auto scroll to bottom only when user is already at the bottom
   useEffect(() => {
     if (isAtBottomRef.current) {
+      try {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        }
+      } catch {
+        // Safe fallback in test environments
+      }
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isStreaming, suggestedQuestions]);
@@ -338,12 +388,16 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     setThreadId(newThread);
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem(`carefold_thread_${selectedAgentId}`, newThread);
+        const threadKey = getScopedStorageKey(`thread_${selectedAgentId}`);
+        localStorage.setItem(threadKey, newThread);
+        if (!getStorageUserId()) {
+          localStorage.setItem(`carefold_thread_${selectedAgentId}`, newThread);
+        }
       } catch {}
     }
     setMessages([]);
     setSuggestedQuestions([]);
-    setErrorMessage(null);
+    setChatError(null);
     setPoliteAnnouncement('');
     setAssertiveAnnouncement('');
     setInputText('');
@@ -377,7 +431,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
       stopGeneration();
       setMessages([]);
       setSuggestedQuestions([]);
-      setErrorMessage(null);
+      setChatError(null);
       setPoliteAnnouncement('');
       setAssertiveAnnouncement('');
       setInputText('');
@@ -404,18 +458,24 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
       }
     };
 
+    const handleStorageDetached = () => {
+      handleAllConversationsCleared();
+    };
+
     window.addEventListener('carefold:conversations-cleared', handleAllConversationsCleared);
     window.addEventListener('carefold:conversation-deleted', handleSingleConversationDeleted);
+    window.addEventListener('carefold:storage-detached', handleStorageDetached);
 
     return () => {
       window.removeEventListener('carefold:conversations-cleared', handleAllConversationsCleared);
       window.removeEventListener('carefold:conversation-deleted', handleSingleConversationDeleted);
+      window.removeEventListener('carefold:storage-detached', handleStorageDetached);
     };
   }, [selectedAgentId, threadId]);
 
   const handleResumeSession = async (session: ChatSessionMeta) => {
     stopGeneration();
-    setErrorMessage(null);
+    setChatError(null);
     setSuggestedQuestions([]);
     setPoliteAnnouncement(`Resumed consultation: ${session.title}`);
     setAssertiveAnnouncement('');
@@ -437,7 +497,11 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     setThreadId(session.id);
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem(`carefold_thread_${session.agentId}`, session.id);
+        const threadKey = getScopedStorageKey(`thread_${session.agentId}`);
+        localStorage.setItem(threadKey, session.id);
+        if (!getStorageUserId()) {
+          localStorage.setItem(`carefold_thread_${session.agentId}`, session.id);
+        }
       } catch {}
     }
 
@@ -445,7 +509,10 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     let loaded = false;
     if (typeof window !== 'undefined') {
       try {
-        const cached = localStorage.getItem(`carefold_msgs_${session.id}`);
+        const msgsKey = getScopedStorageKey(`msgs_${session.id}`);
+        const cached =
+          localStorage.getItem(msgsKey) ||
+          (!getStorageUserId() ? localStorage.getItem(`carefold_msgs_${session.id}`) : null);
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed)) {
@@ -462,10 +529,10 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
       } catch {}
     }
 
-    // Fallback: fetch from Next.js proxy route /api/chat/threads/[id]
+    // Fallback: fetch from Next.js proxy route /api/v1/chat/threads/[id]
     if (!loaded) {
       try {
-        const res = await fetch(`/api/chat/threads/${session.id}`);
+        const res = await fetch(`/api/v1/chat/threads/${session.id}`);
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data.messages)) {
@@ -504,7 +571,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     historyMessages: ChatMessage[],
     assistantMessageId: string
   ) => {
-    setErrorMessage(null);
+    setChatError(null);
     setSuggestedQuestions([]);
     setIsStreaming(true);
 
@@ -529,7 +596,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     const allowClinical = hasClinicalConsent(selectedAgentId);
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch('/api/v1/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -720,7 +787,9 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
                 );
               } else if (eventType === 'error') {
                 const errText = data.message || 'An error occurred during agent execution.';
-                setErrorMessage(errText);
+                const notice = mapChatErrorToFriendlyNotice(new Error(errText), promptText, attachments);
+                setChatError(notice);
+                setSuggestedQuestions([]);
                 setAssertiveAnnouncement(`Error: ${errText}`);
               }
             } catch {
@@ -737,18 +806,22 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           err.message && (err.message.includes('fetch') || err.message.includes('ECONNREFUSED'))
             ? 'Ollama is unreachable. Please verify Ollama is running on http://127.0.0.1:11434.'
             : err.message || 'Execution error.';
-        setErrorMessage(errText);
+        const notice = mapChatErrorToFriendlyNotice(err, promptText, attachments);
+        setChatError(notice);
+        setSuggestedQuestions([]);
         setAssertiveAnnouncement(`Error: ${errText}`);
       }
     } finally {
       setIsStreaming(false);
       abortControllerRef.current = null;
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === assistantMessageId
-            ? { ...msg, isStreaming: false }
-            : msg
-        )
+        prev
+          .filter((msg) => msg.id !== assistantMessageId || msg.content.trim().length > 0)
+          .map((msg) =>
+            msg.id === assistantMessageId
+              ? { ...msg, isStreaming: false }
+              : msg
+          )
       );
     }
   };
@@ -762,6 +835,8 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
       setDeclinedConsentAgentId(null);
       return;
     }
+
+    setChatError(null);
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -783,6 +858,16 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     setIsAtBottom(true);
     isAtBottomRef.current = true;
     setUnreadCount(0);
+    try {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({
+          top: scrollContainerRef.current.scrollHeight,
+          behavior: process.env.NODE_ENV === 'test' ? 'auto' : 'smooth'
+        });
+      }
+    } catch {
+      // Safe fallback in test environments
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
     const assistantMessageId = `assistant-${Date.now() + 1}`;
@@ -882,8 +967,31 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
     sendMessage(question);
   };
 
+  const handleRetryLastFailedTurn = () => {
+    if (!chatError?.failedPrompt) return;
+    const promptToRetry = chatError.failedPrompt;
+    const attachmentsToRetry = chatError.failedAttachments || [];
+    setChatError(null);
+    if (attachmentsToRetry.length > 0) {
+      setAttachedFiles(
+        attachmentsToRetry.map((path) => ({
+          filename: path.split('/').pop() || 'file',
+          path,
+          size_bytes: 0,
+          format: path.toLowerCase().endsWith('.pdf') ? 'pdf' : 'text'
+        }))
+      );
+    }
+    sendMessage(promptToRetry);
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100dvh-120px)] sm:h-[calc(100dvh-140px)] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden transition-colors">
+    <div
+      data-chat-page="true"
+      className="flex flex-col flex-1 min-h-0 h-[calc(100dvh-120px)] sm:h-[calc(100dvh-140px)] md:h-full bg-white dark:bg-zinc-900 border-0 sm:border sm:border-slate-200 dark:sm:border-zinc-800 sm:rounded-2xl shadow-none sm:shadow-sm overflow-hidden transition-colors"
+    >
+      {/* Accessible Landmark Heading */}
+      <h1 className="sr-only">{selectedAgent?.title ? `${selectedAgent.title} Consultation Session` : 'Carefold Consultation Session'}</h1>
       {/* Chat Header Bar */}
       <div className="px-4 py-3 border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/90 flex items-center justify-between gap-4 transition-colors">
         {/* Left Section: Back Link, History Toggle & Agent Selector */}
@@ -927,7 +1035,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
                   aria-describedby="agent-selector-description"
                   value={selectedAgentId}
                   onChange={(e) => handleAgentChange(e.target.value)}
-                  className="appearance-none bg-white dark:bg-zinc-800 border border-[#7f8ea3] dark:border-[#657895] rounded-xl pl-3 pr-8 py-1.5 text-xs font-bold text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer shadow-sm"
+                  className="appearance-none bg-white dark:bg-zinc-800 border border-[#7f8ea3] dark:border-[#657895] rounded-xl pl-3 pr-8 py-1.5 text-xs font-bold text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400 cursor-pointer shadow-sm max-w-[130px] sm:max-w-none truncate"
                 >
                   {visibleAgents.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -942,7 +1050,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
                 <span
                   data-testid="clinical-consent-chip"
                   title={`Clinical assist consent given ${new Date(consentRecord.grantedAt).toLocaleString()}. Withdraw it in Settings.`}
-                  className="inline-flex items-center gap-1 shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+                  className="inline-flex items-center gap-1 shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
                 >
                   <ShieldCheck className="w-3 h-3" aria-hidden="true" />
                   <span className="sr-only sm:not-sr-only">Clinical assist: consent given</span>
@@ -953,7 +1061,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
             {/* Sub-caption description directly below agent dropdown */}
             <span
               id="agent-selector-description"
-              className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 truncate max-w-xs sm:max-w-sm md:max-w-md block"
+              className="text-xs font-medium text-slate-500 dark:text-zinc-400 truncate max-w-xs sm:max-w-sm md:max-w-md block"
             >
               {sanitizeAgentDescription(selectedAgent?.description) || 'Task-scoped health assistant'}
             </span>
@@ -961,7 +1069,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
         </div>
 
         {/* Right Section: ModelSelector, Dossier Export & New Session */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
           {/* Dynamic Model & Provider Selector */}
           <ModelSelector
             settings={settings}
@@ -976,22 +1084,22 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
               type="button"
               data-testid="chat-user-profile-badge"
               onClick={() => openSettingsModal('security')}
-              className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-xs transition cursor-pointer"
+              className="hidden md:flex items-center gap-1.5 px-2 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-xs transition cursor-pointer"
               title={`Signed in as @${user.username} (${user.role}). Click to view account & security settings.`}
               aria-label={`User profile: ${user.full_name || user.username}`}
             >
-              <div className="w-4 h-4 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-[9px]">
+              <div className="w-5 h-5 rounded-full bg-emerald-700 text-white dark:bg-emerald-500 dark:text-[#04201a] font-bold flex items-center justify-center text-xs">
                 {user.full_name
                   ? user.full_name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
                   : user.username.slice(0, 2).toUpperCase()}
               </div>
-              <span className="hidden lg:inline font-semibold text-[11px] max-w-[80px] truncate">
+              <span className="hidden lg:inline font-semibold text-xs max-w-[80px] truncate">
                 {user.username}
               </span>
               <span
                 data-testid="chat-user-role-badge"
                 className={cn(
-                  'text-[9px] font-semibold px-1 py-0.2 rounded-full border',
+                  'text-xs font-semibold px-1.5 py-0.5 rounded-full border',
                   user.role === 'admin'
                     ? 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900/60 dark:bg-purple-950/40 dark:text-purple-300'
                     : user.role === 'steward'
@@ -1087,7 +1195,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
 
         <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-slate-50/50 dark:bg-zinc-900/50">
           {/* Message History Area */}
-          <div className="relative flex-1 min-h-0">
+          <div className="relative flex-1 min-h-0 overflow-hidden">
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
@@ -1095,7 +1203,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           aria-label={`Chat history with ${selectedAgent?.title || 'Carefold Assistant'}`}
           aria-live="off"
           tabIndex={0}
-          className="h-full overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-4 focus:outline-none"
+          className="absolute inset-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-4 focus:outline-none overscroll-contain"
         >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center max-w-lg mx-auto py-12">
@@ -1147,25 +1255,51 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           )}
 
           {/* Error Notification */}
-          {errorMessage && (
+          {chatError && (
             <div
               data-testid="chat-error-banner"
               role="alert"
               aria-live="assertive"
-              className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs text-rose-800 dark:text-rose-200 flex items-center justify-between gap-3 max-w-xl mx-auto my-2"
+              className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs text-rose-900 dark:text-rose-200 space-y-2 max-w-xl mx-auto my-2 shadow-sm"
             >
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" aria-hidden="true" />
-                <span>{errorMessage}</span>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" aria-hidden="true" />
+                  <div>
+                    <p className="font-semibold">{chatError.userMessage}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {chatError.canRetry && (
+                    <button
+                      type="button"
+                      data-testid="chat-retry-turn-btn"
+                      onClick={handleRetryLastFailedTurn}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-700 hover:bg-rose-800 text-white transition cursor-pointer shadow-sm flex items-center gap-1.5"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Try again</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    data-testid="chat-open-diagnostics-btn"
+                    onClick={() => openSettingsModal(chatError.code === 'UNAUTHORIZED' ? 'settings' : 'diagnostics')}
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-zinc-800 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 hover:bg-rose-50 dark:hover:bg-zinc-700 transition cursor-pointer"
+                  >
+                    {chatError.code === 'UNAUTHORIZED' ? 'Settings' : 'Diagnostics'}
+                  </button>
+                </div>
               </div>
-              <button
-                type="button"
-                data-testid="chat-open-diagnostics-btn"
-                onClick={() => openSettingsModal('diagnostics')}
-                className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white dark:bg-zinc-800 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 hover:bg-rose-50 dark:hover:bg-zinc-700 transition cursor-pointer"
-              >
-                Run Diagnostics
-              </button>
+
+              {chatError.technicalDetails && (
+                <details className="mt-1 pt-1 border-t border-rose-200/60 dark:border-rose-900/40 text-xs text-rose-700/80 dark:text-rose-400">
+                  <summary className="cursor-pointer hover:underline font-mono">Technical details</summary>
+                  <pre className="mt-1 p-2 bg-rose-100/60 dark:bg-zinc-900 rounded font-mono text-xs whitespace-pre-wrap break-all">
+                    {chatError.technicalDetails}
+                  </pre>
+                </details>
+              )}
             </div>
           )}
 
@@ -1242,7 +1376,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
             }
             disabled={isStreaming || isConsentGated}
             data-testid="chat-composer-textarea"
-            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 focus:bg-white dark:focus:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-base sm:text-sm text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 transition-colors disabled:opacity-50 resize-none min-h-[42px] max-h-[160px] leading-normal"
+            className="flex-1 min-w-0 px-4 py-2.5 rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-slate-50 dark:bg-zinc-800 focus:bg-white dark:focus:bg-zinc-700 text-base sm:text-sm text-slate-900 dark:text-zinc-100 placeholder:text-slate-500 dark:placeholder:text-zinc-400 transition-colors disabled:opacity-50 resize-none min-h-[44px] max-h-[160px] leading-normal"
           />
 
           {isStreaming ? (
@@ -1250,7 +1384,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
               type="button"
               data-testid="chat-stop-btn"
               onClick={stopGeneration}
-              className="min-w-[42px] min-h-[42px] p-2.5 rounded-xl bg-slate-900 dark:bg-zinc-700 text-white hover:bg-slate-800 dark:hover:bg-zinc-600 transition shadow-sm cursor-pointer flex items-center justify-center shrink-0"
+              className="min-w-[44px] min-h-[44px] p-2.5 rounded-xl bg-slate-900 dark:bg-zinc-700 text-white hover:bg-slate-800 dark:hover:bg-zinc-600 transition shadow-sm cursor-pointer flex items-center justify-center shrink-0"
               title="Stop Generation"
             >
               <Square className="w-4 h-4 fill-current" />
@@ -1260,13 +1394,17 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
               type="submit"
               data-testid="chat-submit-btn"
               disabled={(!inputText.trim() && attachedFiles.length === 0) || isStreaming || isConsentGated}
-              className="min-w-[42px] min-h-[42px] p-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-sm cursor-pointer flex items-center justify-center shrink-0"
+              className="min-w-[44px] min-h-[44px] p-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] transition disabled:opacity-40 disabled:cursor-not-allowed shadow-sm cursor-pointer flex items-center justify-center shrink-0"
               title="Send Prompt"
             >
               <Send className="w-4 h-4" />
             </button>
           )}
         </form>
+
+        <p className="text-xs text-slate-500 dark:text-zinc-400 text-center select-none pt-1">
+          Carefold provides informational visit preparation, not medical diagnosis. In emergencies, call 911.
+        </p>
       </div>
     </div>
   </div>

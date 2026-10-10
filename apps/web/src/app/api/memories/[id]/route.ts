@@ -60,7 +60,7 @@ export async function GET(
   if (authHeader) headers['authorization'] = authHeader;
 
   try {
-    const targetUrl = `${backendUrl}/api/memory/${encodeURIComponent(rawKey)}?namespace=${encodeURIComponent(namespace)}`;
+    const targetUrl = `${backendUrl}/api/v1/memory/${encodeURIComponent(rawKey)}?namespace=${encodeURIComponent(namespace)}`;
     const res = await fetch(targetUrl, {
       method: 'GET',
       headers,
@@ -118,7 +118,7 @@ export async function PUT(
   if (authHeader) headers['authorization'] = authHeader;
 
   try {
-    const targetUrl = `${backendUrl}/api/memory/${encodeURIComponent(rawKey)}?namespace=${encodeURIComponent(namespace)}`;
+    const targetUrl = `${backendUrl}/api/v1/memory/${encodeURIComponent(rawKey)}?namespace=${encodeURIComponent(namespace)}`;
     const res = await fetch(targetUrl, {
       method: 'PUT',
       headers,
@@ -169,7 +169,7 @@ export async function DELETE(
   if (authHeader) headers['authorization'] = authHeader;
 
   try {
-    const targetUrl = `${backendUrl}/api/memory/${encodeURIComponent(rawKey)}?namespace=${encodeURIComponent(namespace)}`;
+    const targetUrl = `${backendUrl}/api/v1/memory/${encodeURIComponent(rawKey)}?namespace=${encodeURIComponent(namespace)}`;
     const res = await fetch(targetUrl, {
       method: 'DELETE',
       headers,

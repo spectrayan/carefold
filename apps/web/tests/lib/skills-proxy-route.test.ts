@@ -116,7 +116,7 @@ describe('GET /api/skills/[id] proxy route', () => {
     expect(data.is_verified).toBe(true);
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/\/api\/skills\/visit-prep$/),
+      expect.stringMatching(/\/api\/v1\/skills\/visit-prep$/),
       expect.objectContaining({ method: 'GET' })
     );
   });

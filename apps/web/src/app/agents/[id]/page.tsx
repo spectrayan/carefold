@@ -34,14 +34,14 @@ export default async function AgentDetailPage({ params }: PageProps) {
   try {
     // The server never has the user's consent (it lives in browser storage), so it
     // always requests without allow_clinical (#87).
-    const res = await fetch(`${backendUrl}/api/agents/${id}`, {
+    const res = await fetch(`${backendUrl}/api/v1/agents/${id}`, {
       headers: { Accept: 'application/json' },
       cache: 'no-store'
     });
 
     if (res.status === 403) {
       // clinical_assist agent without consent: render a read-only summary instead.
-      const listRes = await fetch(`${backendUrl}/api/agents`, {
+      const listRes = await fetch(`${backendUrl}/api/v1/agents`, {
         headers: { Accept: 'application/json' },
         cache: 'no-store'
       });

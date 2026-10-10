@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import { getScopedStorageKey, getStorageUserId } from '@/lib/storageNamespace';
+
 export const CAREFOLD_THREADS_INDEX_KEY = 'carefold_threads_index_v1';
 export const MAX_INDEXED_SESSIONS = 50;
 
@@ -57,10 +59,12 @@ export function cleanAutoTitle(text: string): string {
   return truncated + '...';
 }
 
-function getRawIndex(): ChatSessionMeta[] {
+function getRawIndex(userId?: string | null): ChatSessionMeta[] {
   if (typeof window === 'undefined' || !window.localStorage) return [];
   try {
-    const raw = window.localStorage.getItem(CAREFOLD_THREADS_INDEX_KEY);
+    const effectiveUserId = userId !== undefined ? userId : getStorageUserId();
+    const key = getScopedStorageKey(effectiveUserId, CAREFOLD_THREADS_INDEX_KEY);
+    const raw = window.localStorage.getItem(key) || (!effectiveUserId ? window.localStorage.getItem(CAREFOLD_THREADS_INDEX_KEY) : null);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -69,10 +73,16 @@ function getRawIndex(): ChatSessionMeta[] {
   }
 }
 
-function setRawIndex(sessions: ChatSessionMeta[]): void {
+function setRawIndex(sessions: ChatSessionMeta[], userId?: string | null): void {
   if (typeof window === 'undefined' || !window.localStorage) return;
   try {
-    window.localStorage.setItem(CAREFOLD_THREADS_INDEX_KEY, JSON.stringify(sessions));
+    const effectiveUserId = userId !== undefined ? userId : getStorageUserId();
+    const key = getScopedStorageKey(effectiveUserId, CAREFOLD_THREADS_INDEX_KEY);
+    const serialized = JSON.stringify(sessions);
+    window.localStorage.setItem(key, serialized);
+    if (!effectiveUserId) {
+      window.localStorage.setItem(CAREFOLD_THREADS_INDEX_KEY, serialized);
+    }
   } catch {
     // Storage access protection
   }
@@ -87,8 +97,8 @@ function notifySessionsChanged(): void {
  * Lists all indexed sessions, sorted by updatedAt descending.
  * Optionally filters by agentId.
  */
-export function listSessions(agentId?: string): ChatSessionMeta[] {
-  const index = getRawIndex();
+export function listSessions(agentId?: string, userId?: string | null): ChatSessionMeta[] {
+  const index = getRawIndex(userId);
   const sorted = [...index].sort((a, b) => {
     const tA = new Date(a.updatedAt || a.createdAt || 0).getTime();
     const tB = new Date(b.updatedAt || b.createdAt || 0).getTime();
@@ -102,16 +112,16 @@ export function listSessions(agentId?: string): ChatSessionMeta[] {
 /**
  * Retrieves a single session by thread ID.
  */
-export function getSession(threadId: string): ChatSessionMeta | null {
-  const index = getRawIndex();
+export function getSession(threadId: string, userId?: string | null): ChatSessionMeta | null {
+  const index = getRawIndex(userId);
   return index.find((s) => s.id === threadId) || null;
 }
 
 /**
  * Saves or updates a session metadata in the index.
  */
-export function saveSession(meta: ChatSessionMeta): void {
-  const index = getRawIndex();
+export function saveSession(meta: ChatSessionMeta, userId?: string | null): void {
+  const index = getRawIndex(userId);
   const existingIdx = index.findIndex((s) => s.id === meta.id);
 
   if (existingIdx >= 0) {
@@ -130,7 +140,7 @@ export function saveSession(meta: ChatSessionMeta): void {
   // LRU Pruning: bound index to MAX_INDEXED_SESSIONS
   const pruned = index.slice(0, MAX_INDEXED_SESSIONS);
 
-  setRawIndex(pruned);
+  setRawIndex(pruned, userId);
   notifySessionsChanged();
 }
 
@@ -212,9 +222,11 @@ export function deleteSession(threadId: string, agentId?: string): boolean {
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
       window.localStorage.removeItem(`carefold_msgs_${threadId}`);
-      const currentActive = window.localStorage.getItem(`carefold_thread_${targetAgentId}`);
+      window.localStorage.removeItem(getScopedStorageKey(`msgs_${threadId}`));
+      const currentActive = window.localStorage.getItem(`carefold_thread_${targetAgentId}`) || window.localStorage.getItem(getScopedStorageKey(`thread_${targetAgentId}`));
       if (currentActive === threadId) {
         window.localStorage.removeItem(`carefold_thread_${targetAgentId}`);
+        window.localStorage.removeItem(getScopedStorageKey(`thread_${targetAgentId}`));
       }
     } catch {
       // Storage protection
@@ -374,6 +386,7 @@ export function initSessionHistoryListeners(): () => void {
   const handleCleared = () => {
     try {
       window.localStorage.removeItem(CAREFOLD_THREADS_INDEX_KEY);
+      window.localStorage.removeItem(getScopedStorageKey(CAREFOLD_THREADS_INDEX_KEY));
       notifySessionsChanged();
     } catch {
       // Storage access protection

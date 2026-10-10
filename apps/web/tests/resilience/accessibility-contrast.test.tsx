@@ -75,7 +75,7 @@ function calculateContrastRatio(hex1: string, hex2: string): number {
 // ADVERSARIAL STRESS TEST SUITE
 // =============================================================================
 
-describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () => {
+describe('Stress Suite: Contrast, Accessibility & Resilience', () => {
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.className = '';
@@ -185,9 +185,9 @@ describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () =>
       const chips = screen.getAllByTestId('starter-chip');
       expect(chips.length).toBe(2);
       chips.forEach((chip) => {
-        expect(chip.className).toContain('min-h-[32px]');
+        expect(chip.className).toContain('min-h-[44px]');
         expect(chip.className).toContain('px-3.5');
-        expect(chip.className).toContain('py-1.5');
+        expect(chip.className).toContain('py-2');
       });
     });
 
@@ -203,9 +203,9 @@ describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () =>
       const chips = screen.getAllByTestId('suggested-question-chip');
       expect(chips.length).toBe(2);
       chips.forEach((chip) => {
-        expect(chip.className).toContain('min-h-[32px]');
+        expect(chip.className).toContain('min-h-[44px]');
         expect(chip.className).toContain('px-3.5');
-        expect(chip.className).toContain('py-1.5');
+        expect(chip.className).toContain('py-2');
       });
     });
 
@@ -217,8 +217,8 @@ describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () =>
       );
 
       const toggleBtn = screen.getByTestId('theme-toggle-btn');
-      expect(toggleBtn.className).toContain('w-9');
-      expect(toggleBtn.className).toContain('h-9');
+      expect(toggleBtn.className).toContain('w-11');
+      expect(toggleBtn.className).toContain('h-11');
     });
 
     it('verifies SettingsModal theme option buttons guarantee >= 32px touch target (py-2 = 16px padding + line height)', () => {
@@ -289,7 +289,7 @@ describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () =>
       // Verify focus outline classes exist
       expect(chip.className).toContain('focus:outline-none');
       expect(chip.className).toContain('focus:ring-2');
-      expect(chip.className).toContain('focus:ring-blue-500');
+      expect(chip.className).toContain('focus:ring-emerald-500');
     });
 
     it('supports full keyboard navigation (Tab, Enter, Space) on SuggestedQuestionsChips', () => {
@@ -312,7 +312,7 @@ describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () =>
       // Focus outline classes
       expect(chip.className).toContain('focus:outline-none');
       expect(chip.className).toContain('focus:ring-2');
-      expect(chip.className).toContain('focus:ring-blue-500');
+      expect(chip.className).toContain('focus:ring-emerald-500');
 
       fireEvent.click(chip);
       expect(mockSelect).toHaveBeenCalledWith('Follow-up question 1');
@@ -492,7 +492,7 @@ describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () =>
       Storage.prototype.setItem = originalSetItem;
     });
 
-    it('safely filters, trims, and deduplicates adversarial suggestion inputs', () => {
+    it('safely filters, trims, and deduplicates malformed suggestion inputs', () => {
       const mockSelect = vi.fn();
       const noisySuggestions = [
         '   First unique question   ',
@@ -560,8 +560,8 @@ describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () =>
       const chip = screen.getByTestId('starter-chip');
       const textSpan = chip.querySelector('span');
       expect(textSpan).toBeInTheDocument();
-      expect(textSpan?.className).toContain('truncate');
-      expect(textSpan?.className).toContain('max-w-sm');
+      expect(textSpan?.className).toContain('break-words');
+      expect(textSpan?.className).toContain('max-w-full');
     });
 
     it('safely applies theme to DOM in non-browser or simulated DOM environments', () => {
@@ -604,18 +604,22 @@ describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () =>
     it('verifies static layout file contains skip link before navigation and proper main landmark', () => {
       const repoRoot = path.resolve(__dirname, '../../../../');
       const layoutPath = path.join(repoRoot, 'apps/web/src/app/layout.tsx');
-      const content = fs.readFileSync(layoutPath, 'utf8');
+      const appLayoutPath = path.join(repoRoot, 'apps/web/src/components/layout/AppLayout.tsx');
 
-      expect(content).toContain('href="#main-content"');
-      expect(content).toContain('Skip to main content');
-      expect(content).toContain('id="main-content"');
-      expect(content).toContain('tabIndex={-1}');
+      const layoutContent = fs.readFileSync(layoutPath, 'utf8');
+      expect(layoutContent).toContain('<AppLayout');
 
-      const skipLinkIndex = content.indexOf('href="#main-content"');
-      const navbarIndex = content.indexOf('<Navbar');
+      const appLayoutContent = fs.readFileSync(appLayoutPath, 'utf8');
+      expect(appLayoutContent).toContain('href="#main-content"');
+      expect(appLayoutContent).toContain('Skip to main content');
+      expect(appLayoutContent).toContain('id="main-content"');
+      expect(appLayoutContent).toContain('tabIndex={-1}');
+
+      const skipLinkIndex = appLayoutContent.indexOf('href="#main-content"');
+      const appRailIndex = appLayoutContent.indexOf('<AppRail');
       expect(skipLinkIndex).toBeGreaterThan(-1);
-      expect(navbarIndex).toBeGreaterThan(-1);
-      expect(skipLinkIndex).toBeLessThan(navbarIndex);
+      expect(appRailIndex).toBeGreaterThan(-1);
+      expect(skipLinkIndex).toBeLessThan(appRailIndex);
     });
   });
 
@@ -656,7 +660,7 @@ describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () =>
 
     it('resets both polite and assertive announcers upon starting a New Session', async () => {
       const mockFetch = vi.fn().mockImplementation((url) => {
-        if (url === '/api/chat') {
+        if ((url === '/api/chat' || url === '/api/v1/chat')) {
           return Promise.resolve(
             createMockSSEResponse([
               { event: 'token', data: { type: 'token', delta: 'First answer' } },
@@ -689,7 +693,7 @@ describe('Adversarial Stress Suite: Contrast, Accessibility & Resilience', () =>
 
     it('guarantees suggestion chips are accessible in logical DOM order following assistant reply', async () => {
       const mockFetch = vi.fn().mockImplementation((url) => {
-        if (url === '/api/chat') {
+        if ((url === '/api/chat' || url === '/api/v1/chat')) {
           return Promise.resolve(
             createMockSSEResponse([
               { event: 'token', data: { type: 'token', delta: 'Checklist created' } },

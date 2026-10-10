@@ -128,7 +128,7 @@ export function SkillsClient({ initialSkills }: SkillsClientProps) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="space-y-8">
       {/* Hero Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 dark:border-zinc-800 pb-6">
         <div>
@@ -148,7 +148,7 @@ export function SkillsClient({ initialSkills }: SkillsClientProps) {
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm transition"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Create Skill</span>
@@ -225,7 +225,7 @@ export function SkillsClient({ initialSkills }: SkillsClientProps) {
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition min-h-[36px] sm:min-h-0',
                   selectedDomain === df.id
-                    ? 'bg-emerald-600 dark:bg-emerald-500 text-white shadow-sm'
+                    ? 'bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm'
                     : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 hover:text-slate-900 dark:hover:text-zinc-100'
                 )}
               >
@@ -308,21 +308,21 @@ export function SkillsClient({ initialSkills }: SkillsClientProps) {
                   <div className="flex flex-wrap items-center gap-1.5">
                     {/* Domain Badge */}
                     {skill.domain && (
-                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60">
+                      <span className="text-xs uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60">
                         {String(skill.domain)}
                       </span>
                     )}
 
                     {/* Category Specialty Badge */}
                     {categoryLabel && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
                         {categoryLabel}
                       </span>
                     )}
 
                     {/* Risk Class Badge */}
                     {riskClassLabel && (
-                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">
                         {riskClassLabel}
                       </span>
                     )}
@@ -331,9 +331,9 @@ export function SkillsClient({ initialSkills }: SkillsClientProps) {
                     {skill.is_verified !== false && (
                       <span
                         data-testid="badge-verified"
-                        className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
                       >
-                        <ShieldCheck className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                        <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                         <span>Verified</span>
                       </span>
                     )}
@@ -342,9 +342,9 @@ export function SkillsClient({ initialSkills }: SkillsClientProps) {
                     {skill.has_evals && (
                       <span
                         data-testid="badge-has-evals"
-                        className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60"
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/60 dark:border-zinc-700/60"
                       >
-                        <CheckCircle2 className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                         <span>Has evals</span>
                       </span>
                     )}
@@ -353,11 +353,11 @@ export function SkillsClient({ initialSkills }: SkillsClientProps) {
                   {/* Title & Version */}
                   <div>
                     <div className="flex items-center justify-between gap-2">
-                      <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                      <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition">
                         {skill.title || skill.name}
                       </h2>
                       {skill.version && (
-                        <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 shrink-0">
+                        <span className="text-xs font-mono text-slate-400 dark:text-zinc-500 shrink-0">
                           v{skill.version}
                         </span>
                       )}
@@ -373,12 +373,12 @@ export function SkillsClient({ initialSkills }: SkillsClientProps) {
                 <div className="mt-4 pt-3 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1.5 overflow-hidden">
                     <Wrench className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 shrink-0" />
-                    <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-400 truncate">
+                    <span className="text-xs font-mono text-slate-500 dark:text-zinc-400 truncate">
                       {skill.tools && skill.tools.length > 0 ? skill.tools.join(', ') : 'no tools'}
                     </span>
                   </div>
 
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition shrink-0 ml-2">
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 group-hover:translate-x-0.5 transition shrink-0 ml-2">
                     <span>View details</span>
                     <ArrowRight className="w-3 h-3" />
                   </span>

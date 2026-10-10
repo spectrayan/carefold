@@ -57,7 +57,7 @@ export function SkillDetailClient({ skill: initialSkill }: SkillDetailClientProp
     }
 
     try {
-      const res = await fetch(`/api/skills/${encodeURIComponent(skill.id)}`, {
+      const res = await fetch(`/api/v1/skills/${encodeURIComponent(skill.id)}`, {
         method: 'DELETE',
       });
       if (!res.ok) {
@@ -71,7 +71,7 @@ export function SkillDetailClient({ skill: initialSkill }: SkillDetailClientProp
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="space-y-8">
       {/* Navigation Breadcrumb */}
       <div className="flex items-center justify-between">
         <Link
@@ -291,7 +291,7 @@ export function SkillDetailClient({ skill: initialSkill }: SkillDetailClientProp
                       <p className="font-semibold text-amber-900 dark:text-amber-200">
                         {formatForbiddenIntent(token)}
                       </p>
-                      <p className="font-mono text-[10px] text-amber-700/80 dark:text-amber-400/80">
+                      <p className="font-mono text-xs text-amber-700/80 dark:text-amber-400/80">
                         Token: {token}
                       </p>
                     </div>

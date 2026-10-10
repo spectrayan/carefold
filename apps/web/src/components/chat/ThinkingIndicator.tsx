@@ -39,9 +39,9 @@ export function ThinkingIndicator({
     >
       {/* Animated 3-dot pulse indicator */}
       <div data-testid="thinking-dots" className="flex items-center gap-1 shrink-0" aria-hidden="true">
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse [animation-delay:200ms]" />
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse [animation-delay:400ms]" />
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" />
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse [animation-delay:200ms]" />
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse [animation-delay:400ms]" />
       </div>
 
       {/* Dynamic status text */}

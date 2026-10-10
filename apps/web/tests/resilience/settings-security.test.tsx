@@ -34,7 +34,7 @@ import {
 import { ModelSelector } from '@/components/ModelSelector';
 import { SettingsModal } from '@/components/SettingsModal';
 
-describe('Adversarial Suite: Settings & Model Selection', () => {
+describe('Resilience Suite: Settings & Model Selection', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.restoreAllMocks();
@@ -48,7 +48,7 @@ describe('Adversarial Suite: Settings & Model Selection', () => {
   // =========================================================================
   // Section 1: Corrupted & Adversarial localStorage Handling
   // =========================================================================
-  describe('1. Corrupted & Adversarial localStorage JSON Handling', () => {
+  describe('1. Corrupted & Malformed localStorage JSON Handling', () => {
     it('recovers to DEFAULT_USER_SETTINGS when localStorage contains corrupted syntax', () => {
       const corruptPayloads = [
         '{bad json',

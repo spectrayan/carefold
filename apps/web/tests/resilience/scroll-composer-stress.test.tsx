@@ -68,7 +68,7 @@ function createControlledStream() {
   return { response, sendEvent, closeStream };
 }
 
-describe('Adversarial Stress Test: Scroll Tracking & Anti-Hijack Guarantee', () => {
+describe('Stress Test: Scroll Tracking & Anti-Hijack Guarantee', () => {
   let scrollIntoViewSpy: any;
 
   beforeEach(() => {
@@ -85,7 +85,7 @@ describe('Adversarial Stress Test: Scroll Tracking & Anti-Hijack Guarantee', () 
   it('anti-hijack: does NOT invoke scrollIntoView during active SSE streaming when user is scrolled up', async () => {
     const { response, sendEvent, closeStream } = createControlledStream();
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url) => {
-      if (url === '/api/chat') return Promise.resolve(response);
+      if ((url === '/api/chat' || url === '/api/v1/chat')) return Promise.resolve(response);
       return Promise.resolve(new Response('{}', { status: 200 }));
     }));
 
@@ -180,7 +180,7 @@ describe('Adversarial Stress Test: Scroll Tracking & Anti-Hijack Guarantee', () 
   it('clears unread badge automatically when user manually scrolls down to within 60px of bottom', async () => {
     const { response, sendEvent, closeStream } = createControlledStream();
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url) => {
-      if (url === '/api/chat') return Promise.resolve(response);
+      if ((url === '/api/chat' || url === '/api/v1/chat')) return Promise.resolve(response);
       return Promise.resolve(new Response('{}', { status: 200 }));
     }));
 
@@ -228,7 +228,7 @@ describe('Adversarial Stress Test: Scroll Tracking & Anti-Hijack Guarantee', () 
   });
 });
 
-describe('Adversarial Stress Test: Mobile Responsiveness, 100dvh & Double Scrollbars', () => {
+describe('Stress Test: Mobile Responsiveness, 100dvh & Double Scrollbars', () => {
   it('container uses dynamic viewport 100dvh with outer overflow-hidden to prevent nested window scrollbars', () => {
     const { container } = render(<ChatClient initialAgents={mockAgents} />);
     const outerContainer = container.querySelector('.flex.flex-col') as HTMLElement;
@@ -285,22 +285,22 @@ describe('Adversarial Stress Test: Mobile Responsiveness, 100dvh & Double Scroll
   });
 });
 
-describe('Adversarial Stress Test: Accessible Touch Targets (>= 32px)', () => {
-  it('ScrollToBottomButton has touch target >= 36px', () => {
+describe('Stress Test: Accessible Touch Targets (>= 44px)', () => {
+  it('ScrollToBottomButton has touch target >= 44px', () => {
     render(<ScrollToBottomButton visible={true} onClick={vi.fn()} />);
     const btn = screen.getByTestId('scroll-to-bottom-btn');
-    expect(btn.className).toContain('min-w-[36px]');
-    expect(btn.className).toContain('min-h-[36px]');
+    expect(btn.className).toContain('min-w-[44px]');
+    expect(btn.className).toContain('min-h-[44px]');
   });
 
-  it('Composer Send and Stop buttons have touch targets >= 42px', () => {
+  it('Composer Send and Stop buttons have touch targets >= 44px', () => {
     render(<ChatClient initialAgents={mockAgents} />);
     const sendBtn = screen.getByTitle('Send Prompt');
-    expect(sendBtn.className).toContain('min-w-[42px]');
-    expect(sendBtn.className).toContain('min-h-[42px]');
+    expect(sendBtn.className).toContain('min-w-[44px]');
+    expect(sendBtn.className).toContain('min-h-[44px]');
   });
 
-  it('Message toolbar buttons have touch targets >= 32px', () => {
+  it('Message toolbar buttons have touch targets >= 44px', () => {
     const mockMsg: ChatMessage = {
       id: 'msg-1',
       role: 'assistant',
@@ -312,14 +312,14 @@ describe('Adversarial Stress Test: Accessible Touch Targets (>= 32px)', () => {
     const copyBtn = screen.getByTestId('message-copy-btn');
     const regenBtn = screen.getByTestId('message-rerun-btn');
 
-    expect(copyBtn.className).toContain('min-w-[32px]');
-    expect(copyBtn.className).toContain('min-h-[32px]');
-    expect(regenBtn.className).toContain('min-w-[32px]');
-    expect(regenBtn.className).toContain('min-h-[32px]');
+    expect(copyBtn.className).toContain('min-w-[44px]');
+    expect(copyBtn.className).toContain('min-h-[44px]');
+    expect(regenBtn.className).toContain('min-w-[44px]');
+    expect(regenBtn.className).toContain('min-h-[44px]');
   });
 });
 
-describe('Adversarial Stress Test: ThinkingIndicator & ToolTrace Stability', () => {
+describe('Stress Test: ThinkingIndicator & ToolTrace Stability', () => {
   it('ThinkingIndicator displays planning status during initial latency and switches to executing status during active tool run', () => {
     const initialMsg: ChatMessage = {
       id: 'assistant-1',
@@ -371,7 +371,7 @@ describe('Adversarial Stress Test: ThinkingIndicator & ToolTrace Stability', () 
   });
 });
 
-describe('Adversarial Stress Test: Tailwind CSS v3 Hygiene Across Components', () => {
+describe('Stress Test: Tailwind CSS v3 Hygiene Across Components', () => {
   it('validates rendered DOM across components contains 0 Tailwind v4 invalid classes', () => {
     const { container: c1 } = render(<ThinkingIndicator />);
     const { container: c2 } = render(<ScrollToBottomButton visible={true} onClick={vi.fn()} unreadCount={3} />);
@@ -398,7 +398,7 @@ describe('Adversarial Stress Test: Tailwind CSS v3 Hygiene Across Components', (
   });
 });
 
-describe('Adversarial Stress Test: Resilience Under Edge Conditions', () => {
+describe('Stress Test: Resilience Under Edge Conditions', () => {
   it('handles iOS rubber-band overscroll gracefully without state corruption', () => {
     const { container } = render(<ChatClient initialAgents={mockAgents} />);
     const scrollContainer = container.querySelector('.overflow-y-auto') as HTMLElement;
@@ -423,7 +423,7 @@ describe('Adversarial Stress Test: Resilience Under Edge Conditions', () => {
   it('aborting stream via Stop button cleanly terminates stream and re-enables composer', async () => {
     let abortFired = false;
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url, options) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         const stream = new ReadableStream({
           start(controller) {
             options.signal?.addEventListener('abort', () => {

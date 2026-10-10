@@ -128,11 +128,11 @@ export function ChatMessageItem({
     return (
       <div data-testid="chat-message-user" className="relative group flex justify-end my-3">
         {/* User Message Bubble */}
-        <div className="max-w-[85%] md:max-w-[75%] min-w-[200px] rounded-2xl px-4 py-2.5 bg-blue-600 text-white shadow-sm">
+        <div className="max-w-[85%] md:max-w-[75%] min-w-[200px] rounded-2xl px-4 py-2.5 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-700 shadow-sm">
           {message.attachments && message.attachments.length > 0 && (
             <div className="mb-1.5 flex flex-wrap gap-1">
               {message.attachments.map((att) => (
-                <span key={att} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-700/60 font-mono">
+                <span key={att} className="text-xs px-2 py-0.5 rounded bg-slate-200 dark:bg-zinc-700 text-slate-800 dark:text-zinc-200 font-mono">
                   📎 {att}
                 </span>
               ))}
@@ -141,16 +141,16 @@ export function ChatMessageItem({
           <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
 
           {/* User Message Bottom Footer Row */}
-          <div className="flex items-center justify-between gap-3 mt-2 pt-1.5 border-t border-blue-500/40 text-[11px] text-blue-100 select-none">
+          <div className="flex items-center justify-between gap-3 mt-2 pt-1.5 border-t border-slate-200 dark:border-zinc-700 text-xs text-slate-500 dark:text-zinc-400 select-none">
             {/* Left: Role indicator & Timestamp */}
             <div className="flex items-center gap-1.5 opacity-90">
-              <span data-testid="message-role-user" className="font-semibold text-blue-50">
+              <span data-testid="message-role-user" className="font-semibold text-slate-900 dark:text-zinc-100">
                 You
               </span>
               {formattedTime && (
                 <>
                   <span className="opacity-60">•</span>
-                  <time data-testid="message-timestamp" dateTime={message.timestamp} suppressHydrationWarning className="text-blue-100 tabular-nums">
+                  <time data-testid="message-timestamp" dateTime={message.timestamp} suppressHydrationWarning className="text-slate-600 dark:text-zinc-400 tabular-nums">
                     {formattedTime}
                   </time>
                 </>
@@ -217,7 +217,7 @@ export function ChatMessageItem({
       )}
 
       {/* Message Content with Markdown Formatting */}
-      <div className="text-sm leading-relaxed space-y-2 markdown-body min-w-0 max-w-full overflow-hidden">
+      <div className="text-base sm:text-sm leading-relaxed space-y-2 markdown-body min-w-0 max-w-full overflow-hidden">
         {message.isStreaming && !displayContent.trim() ? (
           <ThinkingIndicator
             text={
@@ -233,7 +233,7 @@ export function ChatMessageItem({
               <span
                 data-testid="streaming-indicator"
                 aria-hidden="true"
-                className="inline-block w-2 h-4 ml-1 bg-blue-600 dark:bg-blue-400 animate-pulse align-middle"
+                className="inline-block w-2 h-4 ml-1 bg-emerald-600 dark:bg-emerald-400 animate-pulse align-middle"
               />
             )}
           </>
@@ -251,7 +251,7 @@ export function ChatMessageItem({
               </svg>
               <span>Clinical Boundary Notice</span>
               {message.boundaryReason && (
-                <span className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-200/70 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300">
+                <span className="ml-auto text-xs font-mono px-1.5 py-0.5 rounded bg-amber-200/70 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300">
                   {message.boundaryReason.replace('forbidden_intent:', '')}
                 </span>
               )}
@@ -287,8 +287,8 @@ export function ChatMessageItem({
         }`}
       >
         {/* Left: Role indicator & Timestamp */}
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-zinc-400 select-none">
-          <Bot className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" aria-hidden="true" />
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400 select-none">
+          <Bot className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" aria-hidden="true" />
           <span data-testid="message-role-assistant" className="font-semibold text-slate-700 dark:text-zinc-300">
             {agentTitle || 'Carefold Assistant'}
           </span>

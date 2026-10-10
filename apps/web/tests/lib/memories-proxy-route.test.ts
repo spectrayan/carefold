@@ -62,7 +62,7 @@ describe('Memories Proxy Routes', () => {
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const calledUrl = fetchSpy.mock.calls[0][0];
-      expect(calledUrl).toContain('/api/memory?');
+      expect(calledUrl).toContain('/api/v1/memory?');
       expect(calledUrl).toContain('limit=50');
       expect(calledUrl).toContain('namespace=default');
     });
@@ -121,7 +121,7 @@ describe('Memories Proxy Routes', () => {
       expect(body).toEqual(mockResponse);
 
       const calledUrl = fetchSpy.mock.calls[0][0];
-      expect(calledUrl).toContain('/api/memory?namespace=custom_ns');
+      expect(calledUrl).toContain('/api/v1/memory?namespace=custom_ns');
     });
   });
 

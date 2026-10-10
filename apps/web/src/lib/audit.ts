@@ -17,6 +17,18 @@
 
 import { AuditEvent, AuditListResponse, AuditFilterParams } from '@/types/api';
 
+export class AuditApiError extends Error {
+  status: number;
+  detail?: string;
+
+  constructor(message: string, status: number, detail?: string) {
+    super(message);
+    this.name = 'AuditApiError';
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
 /**
  * Fetches recent audit events from the Next.js /api/audit proxy route.
  */
@@ -36,7 +48,7 @@ export async function fetchAuditEvents(
   }
 
   const queryString = searchParams.toString();
-  const url = queryString ? `/api/audit?${queryString}` : '/api/audit';
+  const url = queryString ? `/api/v1/audit?${queryString}` : '/api/v1/audit';
 
   const res = await fetch(url, {
     method: 'GET',
@@ -47,8 +59,9 @@ export async function fetchAuditEvents(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     const message =
-      errorData?.error || `Failed to fetch audit events (HTTP ${res.status})`;
-    throw new Error(message);
+      errorData?.detail || errorData?.error || `Failed to fetch audit events (HTTP ${res.status})`;
+    const err = new AuditApiError(message, res.status, errorData?.detail);
+    throw err;
   }
 
   const data: AuditListResponse = await res.json();

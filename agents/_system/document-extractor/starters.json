@@ -1,6 +1,6 @@
 [
-  "Extract structured insurance benefits data from attachments/summary_of_benefits.txt.",
-  "Extract clinical visit notes and action items from attachments/visit_note.txt.",
-  "Sanitize PII and extract numerical values from attachments/medical_bill.txt.",
+  "Extract structured insurance benefits data from my uploaded summary of benefits.",
+  "Extract clinical visit notes and action items from my uploaded visit note.",
+  "Sanitize personal information and extract numerical values from my uploaded medical bill.",
   "Validate grounding for the extracted dossier against the original source attachment."
 ]

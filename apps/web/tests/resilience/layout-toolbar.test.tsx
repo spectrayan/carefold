@@ -25,7 +25,7 @@ import { MessageToolbar } from '@/components/chat/MessageToolbar';
 import { CodeBlock, normalizeLanguage, tokenizeCode } from '@/components/chat/CodeBlock';
 import { SAFE_REFUSAL_TEMPLATE } from '@/types/api';
 
-describe('Adversarial Challenge: Layout, Toolbars & Code Blocks', () => {
+describe('Resilience Challenge: Layout, Toolbars & Code Blocks', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -138,12 +138,12 @@ describe('Adversarial Challenge: Layout, Toolbars & Code Blocks', () => {
       );
 
       const copyBtn = screen.getByTestId('message-copy-btn');
-      expect(copyBtn.className).toContain('min-w-[32px]');
-      expect(copyBtn.className).toContain('min-h-[32px]');
+      expect(copyBtn.className).toContain('min-w-[44px]');
+      expect(copyBtn.className).toContain('min-h-[44px]');
 
       const regenBtn = screen.getByTestId('message-rerun-btn');
-      expect(regenBtn.className).toContain('min-w-[32px]');
-      expect(regenBtn.className).toContain('min-h-[32px]');
+      expect(regenBtn.className).toContain('min-w-[44px]');
+      expect(regenBtn.className).toContain('min-h-[44px]');
     });
 
     it('ensures user rerun button also meets >= 32px touch target', () => {
@@ -157,8 +157,8 @@ describe('Adversarial Challenge: Layout, Toolbars & Code Blocks', () => {
       );
 
       const rerunBtn = screen.getByTestId('message-rerun-btn');
-      expect(rerunBtn.className).toContain('min-w-[32px]');
-      expect(rerunBtn.className).toContain('min-h-[32px]');
+      expect(rerunBtn.className).toContain('min-w-[44px]');
+      expect(rerunBtn.className).toContain('min-h-[44px]');
     });
 
     it('ensures toolbars are unconditionally visible (opacity-100) on touchscreens (< 640px) without hover', () => {
@@ -193,7 +193,7 @@ describe('Adversarial Challenge: Layout, Toolbars & Code Blocks', () => {
       expect(userRole).toBeInTheDocument();
       expect(userRole).toHaveTextContent('You');
       expect(userRole?.className).toContain('font-semibold');
-      expect(userRole?.className).toContain('text-blue-50');
+      expect(userRole?.className).toContain('text-slate-900');
 
       const { container: aContainer } = render(<ChatMessageItem message={assistantMsg} />);
       const assistantRole = aContainer.querySelector('[data-testid="message-role-assistant"]');

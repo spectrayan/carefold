@@ -26,16 +26,15 @@ import {
   Shield,
   ShieldAlert,
   ShieldCheck,
-  CheckCircle,
   Copy,
   Check,
-  Cpu,
   Sparkles,
   CheckCircle2,
   XCircle,
   ExternalLink,
   Edit3,
   Trash2,
+  Code,
 } from 'lucide-react';
 import type { AgentDetail } from '@/lib/types';
 import type { SkillSummary } from '@/types/api';
@@ -75,7 +74,7 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/agents/${encodeURIComponent(previewAgent.id)}?allow_clinical=true`);
+        const res = await fetch(`/api/v1/agents/${encodeURIComponent(previewAgent.id)}?allow_clinical=true`);
         if (!res.ok) return;
         const data = await res.json();
         if (!cancelled) setFullDetail(toAgentDetail(data));
@@ -100,7 +99,7 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
     setIsEditOpen(true);
     if (availableSkills.length === 0) {
       try {
-        const res = await fetch('/api/skills');
+        const res = await fetch('/api/v1/skills');
         if (res.ok) {
           const data = await res.json();
           setAvailableSkills(Array.isArray(data) ? data : []);
@@ -117,7 +116,7 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
     }
 
     try {
-      const res = await fetch(`/api/agents/${encodeURIComponent(agent.id)}`, {
+      const res = await fetch(`/api/v1/agents/${encodeURIComponent(agent.id)}`, {
         method: 'DELETE',
       });
       if (!res.ok) {
@@ -168,7 +167,7 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
       case 'education':
         return 'Educational Guide: Explains physiological and scientific concepts in plain language. Never substitutes personalized medical counsel.';
       case 'clinical_assist':
-        return 'Clinical Assistant: Elevated risk classification. Subject to strict clinician oversight and local safety refusal controls.';
+        return 'Clinical Assistant: For visit preparation and questions. Subject to clinician oversight and safety guardrails.';
       default:
         return 'Local health assistant with strict local sandbox controls.';
     }
@@ -221,7 +220,7 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
               {consentRequired && consentRecord && (
                 <span
                   data-testid="clinical-consent-chip"
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
                 >
                   <ShieldCheck className="w-3 h-3" aria-hidden="true" />
                   <span>Clinical assist: consent given</span>
@@ -239,7 +238,7 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
                 type="button"
                 data-testid="agent-try-chat-gated"
                 onClick={() => requestConsent(chatHref)}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition active:scale-95 text-center cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] font-semibold text-sm shadow-sm transition active:scale-95 text-center cursor-pointer"
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>Try in chat</span>
@@ -247,21 +246,12 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
             ) : (
               <Link
                 href={chatHref}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition active:scale-95 text-center"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] font-semibold text-sm shadow-sm transition active:scale-95 text-center"
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>Try in chat</span>
               </Link>
             )}
-
-            <button
-              type="button"
-              onClick={handleCopyCli}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-xs font-mono transition"
-            >
-              {copiedCli ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />}
-              <span>{copiedCli ? 'Copied CLI Command!' : `carefold run --agent ${agent.id}`}</span>
-            </button>
           </div>
         </div>
       </div>
@@ -328,85 +318,66 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
 
       {/* Detailed Specifications Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Persona & Intended Behavior */}
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-4 transition-colors">
-          <h2 className="text-sm font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-slate-500 dark:text-zinc-400" />
-            <span>Persona & Operating Instructions</span>
-          </h2>
-          <div className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed max-h-60 overflow-y-auto bg-slate-50 dark:bg-zinc-800/60 p-4 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 font-sans whitespace-pre-wrap">
-            {isGated ? (
-              <span data-testid="agent-persona-withheld" className="italic text-slate-500 dark:text-zinc-400">
-                {agent.description ? `${agent.description}\n\n` : ''}
-                Full operating instructions are shown after you give consent.
-              </span>
-            ) : (
-              agent.persona
-            )}
+        {/* What this agent will and won't do panel */}
+        <div
+          data-testid="agent-boundaries-panel"
+          className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-4 transition-colors"
+        >
+          <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-1.5">
+            <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>What this agent will and won't do</span>
+          </h3>
+
+          {/* What this agent will help with */}
+          <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 rounded-xl p-3.5 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>What this agent will help with</span>
+            </div>
+            <ul className="text-xs text-slate-600 dark:text-zinc-300 space-y-1 pl-5 list-disc marker:text-emerald-500">
+              {agent.skills && agent.skills.length > 0 ? (
+                agent.skills.map((s) => (
+                  <li key={s.id}>
+                    <span className="font-medium text-slate-700 dark:text-zinc-200">{s.title || s.name}:</span>{' '}
+                    {s.description || 'Structured clinical navigation protocol.'}
+                  </li>
+                ))
+              ) : (
+                <li>Structured informational support and visit preparation.</li>
+              )}
+            </ul>
           </div>
 
-          {/* What this agent will and won't do panel */}
-          <div
-            data-testid="agent-boundaries-panel"
-            className="pt-2 border-t border-slate-100 dark:border-zinc-800/80 space-y-3"
-          >
-            <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>What this agent will and won't do</span>
-            </h3>
-
-            {/* What this agent will help with */}
-            <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 rounded-xl p-3.5 space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>What this agent will help with</span>
-              </div>
-              <ul className="text-xs text-slate-600 dark:text-zinc-300 space-y-1 pl-5 list-disc marker:text-emerald-500">
-                {agent.skills && agent.skills.length > 0 ? (
-                  agent.skills.map((s) => (
-                    <li key={s.id}>
-                      <span className="font-medium text-slate-700 dark:text-zinc-200">{s.title || s.name}:</span>{' '}
-                      {s.description || 'Structured clinical navigation protocol.'}
-                    </li>
-                  ))
-                ) : (
-                  <li>Structured informational support and visit preparation.</li>
-                )}
-              </ul>
+          {/* What this agent will NOT do (Safety Guardrails) */}
+          <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-xl p-3.5 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-800 dark:text-amber-300">
+              <XCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>What this agent will NOT do (Safety Guardrails)</span>
             </div>
-
-            {/* What this agent will NOT do (Safety Guardrails) */}
-            <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-xl p-3.5 space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-800 dark:text-amber-300">
-                <XCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>What this agent will NOT do (Safety Guardrails)</span>
-              </div>
-              <ul
-                data-testid="agent-forbidden-list"
-                className="text-xs text-slate-600 dark:text-zinc-300 space-y-1.5 pl-5 list-disc marker:text-amber-500"
-              >
-                {agent.forbidden && agent.forbidden.length > 0 ? (
-                  agent.forbidden.map((f) => (
-                    <li key={f}>
-                      <span className="text-slate-700 dark:text-zinc-200 font-medium">
-                        {formatForbiddenIntent(f)}
-                      </span>
-                    </li>
-                  ))
-                ) : (
-                  <li>Standard non-clinical safety boundaries and emergency triage refusal.</li>
-                )}
-              </ul>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400 italic pt-1 border-t border-amber-200/40 dark:border-amber-900/30">
-                Carefold agents operate strictly as non-clinical aids. Always consult your licensed healthcare team for medical care.
-              </p>
-            </div>
+            <ul
+              data-testid="agent-forbidden-list"
+              className="text-xs text-slate-600 dark:text-zinc-300 space-y-1.5 pl-5 list-disc marker:text-amber-500"
+            >
+              {agent.forbidden && agent.forbidden.length > 0 ? (
+                agent.forbidden.map((f) => (
+                  <li key={f}>
+                    <span className="text-slate-700 dark:text-zinc-200 font-medium">
+                      {formatForbiddenIntent(f)}
+                    </span>
+                  </li>
+                ))
+              ) : (
+                <li>Standard non-clinical safety boundaries and emergency triage refusal.</li>
+              )}
+            </ul>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 italic pt-1 border-t border-amber-200/40 dark:border-amber-900/30">
+              Carefold agents operate strictly as non-clinical aids. Always consult your licensed healthcare team for medical care.
+            </p>
           </div>
         </div>
 
-        {/* Declared Skills & Effective Tools Allowlist */}
+        {/* Declared Skills */}
         <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-6 transition-colors">
-          {/* Declared Skills */}
           <div>
             <h2 className="text-sm font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-2 mb-3">
               <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -426,7 +397,7 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
                       <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-emerald-600 transition" />
                     </span>
                     {skill.version && (
-                      <span className="font-mono text-[10px] text-slate-500 dark:text-zinc-400">
+                      <span className="font-mono text-xs text-slate-500 dark:text-zinc-400">
                         v{skill.version}
                       </span>
                     )}
@@ -438,30 +409,71 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
               ))}
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Effective Tools Union */}
+      {/* For Developers Collapsible Disclosure (#175) */}
+      <details
+        data-testid="agent-developer-disclosure"
+        className="group bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm transition-colors"
+      >
+        <summary className="cursor-pointer font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-zinc-300 flex items-center justify-between select-none">
+          <div className="flex items-center gap-2">
+            <Code className="w-4 h-4 text-slate-500 dark:text-zinc-400" />
+            <span>For Developers & Clinical Reviewers</span>
+          </div>
+          <span className="text-xs text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+        </summary>
+
+        <div className="mt-6 pt-6 border-t border-slate-100 dark:border-zinc-800 space-y-6">
+          {/* CLI Execution */}
           <div>
-            <h2 className="text-sm font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-2 mb-2">
-              <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Effective Tools Allowlist</span>
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-zinc-400 mb-3">
-              Union of agent and skill declarations restricted to Local Secure Sandbox:
-            </p>
+            <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider mb-2">CLI Execution</h3>
+            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 font-mono text-xs">
+              <code className="flex-1 text-slate-800 dark:text-zinc-200">{cliCommand}</code>
+              <button
+                type="button"
+                onClick={handleCopyCli}
+                className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-400 transition"
+                title="Copy command"
+              >
+                {copiedCli ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Persona & Operating Instructions */}
+          <div>
+            <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider mb-2">Persona & Operating Instructions</h3>
+            <div className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed max-h-60 overflow-y-auto bg-slate-50 dark:bg-zinc-800/60 p-4 rounded-xl border border-slate-200/60 dark:border-zinc-700/60 font-sans whitespace-pre-wrap">
+              {isGated ? (
+                <span data-testid="agent-persona-withheld" className="italic text-slate-500 dark:text-zinc-400">
+                  {agent.description ? `${agent.description}\n\n` : ''}
+                  Full operating instructions are shown after you give consent.
+                </span>
+              ) : (
+                agent.persona
+              )}
+            </div>
+          </div>
+
+          {/* Effective Tools Allowlist */}
+          <div>
+            <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider mb-2">Tools Allowlist</h3>
             <div className="space-y-2">
               {agent.effectiveTools.map((tool) => (
                 <div
                   key={tool}
-                  className="flex items-center justify-between p-2.5 bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-lg text-xs"
+                  className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs"
                 >
-                  <span className="font-mono font-bold text-emerald-900 dark:text-emerald-200">{tool}</span>
-                  <span className="text-[11px] text-emerald-700 dark:text-emerald-400">Sandbox Permitted</span>
+                  <span className="font-mono font-bold text-slate-800 dark:text-zinc-200">{tool}</span>
+                  <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Active</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      </div>
+      </details>
 
       {/* Knowledge Base Documents & Clinical Protocols */}
       {!isGated && (!consentRequired || Boolean(fullDetail)) && (

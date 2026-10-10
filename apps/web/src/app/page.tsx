@@ -15,48 +15,40 @@
  * limitations under the License.
  */
 
-import React from 'react';
-import { MarketplaceClient } from './MarketplaceClient';
-import type { AgentSummary } from '@/lib/types';
+import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
-async function getInstalledAgents(): Promise<AgentSummary[]> {
+export default async function RootPage() {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('carefold_session');
+
+  // 1. Unauthenticated -> immediate redirect to /login
+  if (!sessionCookie || !sessionCookie.value.trim()) {
+    redirect('/login');
+  }
+
+  // 2. Validate session against backend before routing to dashboard
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
   try {
-    const res = await fetch(`${backendUrl}/api/agents`, {
-      headers: { Accept: 'application/json' },
+    const res = await fetch(`${backendUrl}/api/v1/auth/me`, {
+      headers: {
+        cookie: `carefold_session=${sessionCookie.value}`,
+        accept: 'application/json'
+      },
       cache: 'no-store'
     });
-    if (res.ok) {
-      return await res.json();
+    if (!res.ok) {
+      redirect('/login');
     }
-  } catch (err) {
-    console.error('Failed to fetch agents from backend:', err);
+  } catch {
+    redirect('/login');
   }
-  return [];
-}
 
-async function getAgentCategories(): Promise<Record<string, any> | null> {
-  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
-  try {
-    const res = await fetch(`${backendUrl}/api/agents/categories`, {
-      headers: { Accept: 'application/json' },
-      cache: 'no-store'
-    });
-    if (res.ok) {
-      return await res.json();
-    }
-  } catch (err) {
-    console.error('Failed to fetch categories from backend:', err);
-  }
-  return null;
-}
+  // 3. Authenticated -> redirect to active profile (or /p/me)
+  const activeProfileCookie = cookieStore.get('carefold_active_profile');
+  const targetProfileId = activeProfileCookie?.value?.trim() || 'me';
 
-export default async function MarketplacePage() {
-  const [agents, categories] = await Promise.all([
-    getInstalledAgents(),
-    getAgentCategories()
-  ]);
-  return <MarketplaceClient initialAgents={agents} initialCategories={categories} />;
+  redirect(`/p/${targetProfileId}`);
 }

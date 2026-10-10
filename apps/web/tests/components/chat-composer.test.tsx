@@ -78,20 +78,20 @@ describe('ChatClient Composer (Auto-Expanding Textarea & Mobile Ergonomics)', ()
     expect(textarea.className).toContain('sm:text-sm');
 
     // Verify bounds and resize prevention
-    expect(textarea.className).toContain('min-h-[42px]');
+    expect(textarea.className).toContain('min-h-[44px]');
     expect(textarea.className).toContain('max-h-[160px]');
     expect(textarea.className).toContain('resize-none');
 
-    // Verify submit button touch target accessibility (min 42px x 42px >= 32px)
+    // Verify submit button touch target accessibility (min 44px x 44px)
     const submitBtn = screen.getByTitle('Send Prompt');
-    expect(submitBtn.className).toContain('min-w-[42px]');
-    expect(submitBtn.className).toContain('min-h-[42px]');
+    expect(submitBtn.className).toContain('min-w-[44px]');
+    expect(submitBtn.className).toContain('min-h-[44px]');
   });
 
   it('submits on Enter without Shift and calls API', async () => {
     let capturedBody: any = null;
     const mockFetch = vi.fn().mockImplementation((url, options) => {
-      if (url === '/api/chat') {
+      if (url === '/api/chat' || url === '/api/v1/chat') {
         capturedBody = JSON.parse(options.body);
         return Promise.resolve(
           createMockSSEResponse([

@@ -96,7 +96,7 @@ export function ClinicalConsentDialog({ isOpen, agent, onAccept, onDecline }: Cl
               <h2 id="clinical-consent-title" className="text-sm font-bold text-slate-900 dark:text-zinc-100">
                 Before you chat with {agent.title}
               </h2>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400">Clinical assist agent — your consent is required</p>
+              <p className="text-xs text-slate-500 dark:text-zinc-400">Clinical assist agent — your consent is required</p>
             </div>
           </div>
           <button
@@ -178,7 +178,7 @@ export function ClinicalConsentDialog({ isOpen, agent, onAccept, onDecline }: Cl
             </span>
           </label>
 
-          <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+          <p className="text-xs text-slate-500 dark:text-zinc-400">
             Your choice is saved only in this browser. You can withdraw it at any time in Settings.
           </p>
         </div>
@@ -198,7 +198,7 @@ export function ClinicalConsentDialog({ isOpen, agent, onAccept, onDecline }: Cl
             data-testid="clinical-consent-accept"
             disabled={!acknowledged}
             onClick={onAccept}
-            className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] rounded-xl shadow-sm transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             I understand, continue
           </button>

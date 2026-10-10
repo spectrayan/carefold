@@ -53,7 +53,7 @@ export async function GET(_req: Request | NextRequest): Promise<NextResponse<Hea
     let backendData: any = null;
     try {
       const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
-      const backendRes = await fetch(`${backendUrl}/api/health`, {
+      const backendRes = await fetch(`${backendUrl}/api/v1/health`, {
         signal: AbortSignal.timeout(1500)
       });
       if (backendRes.ok) {

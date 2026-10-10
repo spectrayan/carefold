@@ -81,7 +81,7 @@ function ResetPasswordForm() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/auth/reset-password', {
+      const res = await fetch('/api/v1/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -144,7 +144,7 @@ function ResetPasswordForm() {
             <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>Password Reset Complete</span>
           </div>
-          <p className="text-[11px] leading-relaxed">
+          <p className="text-xs leading-relaxed">
             Your password has been securely updated and active sessions have been invalidated. Redirecting to sign in...
           </p>
           <Link
@@ -179,7 +179,7 @@ function ResetPasswordForm() {
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 placeholder="Enter reset token"
-                className="w-full pl-9 pr-3 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                className="w-full pl-9 pr-3 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
               />
             </div>
           </div>
@@ -205,7 +205,7 @@ function ResetPasswordForm() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Min 10 characters, mixed case & numbers"
-                className="w-full pl-9 pr-9 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                className="w-full pl-9 pr-9 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
               />
               <button
                 type="button"
@@ -221,7 +221,7 @@ function ResetPasswordForm() {
             {/* Live Password Strength Meter */}
             {newPassword.length > 0 && (
               <div className="space-y-1.5 pt-1" data-testid="reset-password-strength-container">
-                <div className="flex items-center justify-between text-[11px]">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-500 dark:text-zinc-400">Strength:</span>
                   <span
                     data-testid="reset-password-strength-label"
@@ -254,7 +254,7 @@ function ResetPasswordForm() {
                   })}
                 </div>
 
-                <div className="grid grid-cols-2 gap-1 pt-1 text-[10px] text-slate-600 dark:text-zinc-400">
+                <div className="grid grid-cols-2 gap-1 pt-1 text-xs text-slate-600 dark:text-zinc-400">
                   <div className="flex items-center gap-1.5">
                     {strength.criteria.minLength ? (
                       <CheckCircle2 className="w-3 h-3 text-emerald-500" />
@@ -314,10 +314,10 @@ function ResetPasswordForm() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-enter new password"
                 className={cn(
-                  'w-full pl-9 pr-9 py-2 text-xs rounded-xl border bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 transition',
+                  'w-full pl-9 pr-9 py-2 text-xs rounded-xl border bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 transition',
                   confirmPassword.length > 0 && !passwordsMatch
-                    ? 'border-rose-500 dark:border-rose-400 focus:ring-rose-500/20 focus:border-rose-500'
-                    : 'border-[#7f8ea3] dark:border-[#657895] focus:ring-emerald-500/20 focus:border-emerald-500'
+                    ? 'border-rose-500 dark:border-rose-400 focus:border-rose-600'
+                    : 'border-[#7f8ea3] dark:border-[#657895] focus:border-emerald-700 dark:focus:border-emerald-400'
                 )}
               />
               <button
@@ -331,7 +331,7 @@ function ResetPasswordForm() {
               </button>
             </div>
             {confirmPassword.length > 0 && !passwordsMatch && (
-              <p className="text-[11px] text-rose-600 dark:text-rose-400">
+              <p className="text-xs text-rose-600 dark:text-rose-400">
                 Passwords do not match.
               </p>
             )}
@@ -342,7 +342,7 @@ function ResetPasswordForm() {
             type="submit"
             data-testid="reset-password-submit-btn"
             disabled={isSubmitting || !strength.isValid || !passwordsMatch || !token.trim()}
-            className="w-full py-2.5 px-4 text-xs font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 shadow-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2.5 px-4 text-xs font-semibold rounded-xl text-white bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] dark:active:bg-emerald-600 shadow-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <>
@@ -361,7 +361,7 @@ function ResetPasswordForm() {
         Remembered your password?{' '}
         <Link
           href="/login"
-          className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+          className="font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:underline"
         >
           Sign in
         </Link>

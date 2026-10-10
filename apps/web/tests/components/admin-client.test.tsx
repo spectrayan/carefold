@@ -78,13 +78,13 @@ describe('AdminClient Component', () => {
   it('renders 403 Forbidden Access Denied card when current user is not an admin', async () => {
     vi.mocked(fetch).mockImplementation(async (url: any) => {
       const urlStr = String(url);
-      if (urlStr.includes('/api/auth/providers')) {
+      if (urlStr.includes('/auth/providers')) {
         return {
           ok: true,
           json: async () => ({ active_provider: 'local', sso_providers: [], registration_enabled: true })
         } as any;
       }
-      if (urlStr.includes('/api/auth/me')) {
+      if (urlStr.includes('/auth/me')) {
         return {
           ok: true,
           json: async () => MOCK_MEMBER_USER
@@ -111,19 +111,19 @@ describe('AdminClient Component', () => {
   it('renders all 4 tabs and allows switching between them for admin users', async () => {
     vi.mocked(fetch).mockImplementation(async (url: any) => {
       const urlStr = String(url);
-      if (urlStr.includes('/api/auth/providers')) {
+      if (urlStr.includes('/auth/providers')) {
         return {
           ok: true,
           json: async () => ({ active_provider: 'local', sso_providers: [], registration_enabled: true })
         } as any;
       }
-      if (urlStr.includes('/api/auth/me')) {
+      if (urlStr.includes('/auth/me')) {
         return {
           ok: true,
           json: async () => MOCK_ADMIN_USER
         } as any;
       }
-      if (urlStr.includes('/api/admin/settings')) {
+      if (urlStr.includes('/admin/settings')) {
         return {
           ok: true,
           json: async () => ({
@@ -136,13 +136,13 @@ describe('AdminClient Component', () => {
           })
         } as any;
       }
-      if (urlStr.includes('/api/admin/users')) {
+      if (urlStr.includes('/admin/users')) {
         return {
           ok: true,
           json: async () => ({ users: MOCK_USERS_LIST, total: MOCK_USERS_LIST.length })
         } as any;
       }
-      if (urlStr.includes('/api/admin/diagnostics')) {
+      if (urlStr.includes('/admin/diagnostics')) {
         return {
           ok: true,
           json: async () => ({
@@ -155,7 +155,7 @@ describe('AdminClient Component', () => {
           })
         } as any;
       }
-      if (urlStr.includes('/api/health')) {
+      if (urlStr.includes('/health')) {
         return {
           ok: true,
           json: async () => ({
@@ -218,25 +218,25 @@ describe('AdminClient Component', () => {
   it('renders user directory and disables self-deletion button for current logged-in admin', async () => {
     vi.mocked(fetch).mockImplementation(async (url: any) => {
       const urlStr = String(url);
-      if (urlStr.includes('/api/auth/providers')) {
+      if (urlStr.includes('/auth/providers')) {
         return {
           ok: true,
           json: async () => ({ active_provider: 'local', sso_providers: [], registration_enabled: true })
         } as any;
       }
-      if (urlStr.includes('/api/auth/me')) {
+      if (urlStr.includes('/auth/me')) {
         return {
           ok: true,
           json: async () => MOCK_ADMIN_USER
         } as any;
       }
-      if (urlStr.includes('/api/admin/settings')) {
+      if (urlStr.includes('/admin/settings')) {
         return {
           ok: true,
           json: async () => ({ settings: {} })
         } as any;
       }
-      if (urlStr.includes('/api/admin/users')) {
+      if (urlStr.includes('/admin/users')) {
         return {
           ok: true,
           json: async () => ({ users: MOCK_USERS_LIST, total: MOCK_USERS_LIST.length })

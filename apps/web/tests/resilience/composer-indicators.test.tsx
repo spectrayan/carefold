@@ -55,7 +55,7 @@ function createMockSSEResponse(events: Array<{ event?: string; data: Record<stri
   });
 }
 
-describe('Adversarial Stress Suite: Composer & Textarea Edge Cases', () => {
+describe('Stress Suite: Composer & Textarea Edge Cases', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.stubGlobal('fetch', vi.fn());
@@ -300,7 +300,7 @@ describe('Adversarial Stress Suite: Composer & Textarea Edge Cases', () => {
   it('completes CJK composition lifecycle: candidate confirm does not submit, subsequent Enter submits', async () => {
     let capturedBody: any = null;
     const mockFetch = vi.fn().mockImplementation((url, options) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         capturedBody = JSON.parse(options.body);
         return Promise.resolve(
           createMockSSEResponse([
@@ -353,7 +353,7 @@ describe('Adversarial Stress Suite: Composer & Textarea Edge Cases', () => {
   it('allows submission when textarea is empty but a file is attached', async () => {
     let capturedBody: any = null;
     const mockFetch = vi.fn().mockImplementation((url, options) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         capturedBody = JSON.parse(options.body);
         return Promise.resolve(
           createMockSSEResponse([
@@ -399,7 +399,7 @@ describe('Adversarial Stress Suite: Composer & Textarea Edge Cases', () => {
   });
 });
 
-describe('Adversarial Stress Suite: ThinkingIndicator & Streaming State Transitions', () => {
+describe('Stress Suite: ThinkingIndicator & Streaming State Transitions', () => {
   // ---------------------------------------------------------------------------
   // 1. STATE TRANSITIONS: LATENCY -> STREAMING -> FINISHED
   // ---------------------------------------------------------------------------
@@ -438,8 +438,8 @@ describe('Adversarial Stress Suite: ThinkingIndicator & Streaming State Transiti
     const streamingCursor = screen.getByTestId('streaming-indicator');
     expect(streamingCursor).toBeInTheDocument();
     expect(streamingCursor.className).toContain('animate-pulse');
-    expect(streamingCursor.className).toContain('bg-blue-600');
-    expect(streamingCursor.className).toContain('dark:bg-blue-400');
+    expect(streamingCursor.className).toContain('bg-emerald-600');
+    expect(streamingCursor.className).toContain('dark:bg-emerald-400');
     expect(screen.queryByTestId('message-copy-btn')).not.toBeInTheDocument();
     expect(screen.queryByTestId('message-rerun-btn')).not.toBeInTheDocument();
 
@@ -574,7 +574,7 @@ describe('Adversarial Stress Suite: ThinkingIndicator & Streaming State Transiti
   });
 });
 
-describe('Adversarial Stress Suite: ToolTraceCard Accordion & Layout Shift Bounds', () => {
+describe('Stress Suite: ToolTraceCard Accordion & Layout Shift Bounds', () => {
   it('bounds parameters and output pre tags to max-h-40 (160px) with overflow-auto preventing layout shifts', () => {
     const hugeTrace: ToolTraceItem = {
       id: 'trace-huge',
@@ -654,7 +654,7 @@ describe('Adversarial Stress Suite: ToolTraceCard Accordion & Layout Shift Bound
   });
 });
 
-describe('Adversarial Stress Suite: ScrollToBottomButton Edge Cases & Accessibility', () => {
+describe('Stress Suite: ScrollToBottomButton Edge Cases & Accessibility', () => {
   it('correctly manages aria-label, tabIndex, and entrance/exit classes across visible toggle', () => {
     const { rerender } = render(<ScrollToBottomButton visible={false} onClick={vi.fn()} unreadCount={0} />);
 
@@ -683,15 +683,15 @@ describe('Adversarial Stress Suite: ScrollToBottomButton Edge Cases & Accessibil
     }
   });
 
-  it('verifies touch target dimensions are at least 36px (meeting >=32px minimum requirement)', () => {
+  it('verifies touch target dimensions are at least 44px (meeting >=44px touch target requirement)', () => {
     render(<ScrollToBottomButton visible={true} onClick={vi.fn()} />);
     const btn = screen.getByTestId('scroll-to-bottom-btn');
-    expect(btn.className).toContain('min-w-[36px]');
-    expect(btn.className).toContain('min-h-[36px]');
+    expect(btn.className).toContain('min-w-[44px]');
+    expect(btn.className).toContain('min-h-[44px]');
   });
 });
 
-describe('Adversarial Stress Suite: Full Chat Flow, Abort, Regenerate & Rerun', () => {
+describe('Stress Suite: Full Chat Flow, Abort, Regenerate & Rerun', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.stubGlobal('fetch', vi.fn());
@@ -708,7 +708,7 @@ describe('Adversarial Stress Suite: Full Chat Flow, Abort, Regenerate & Rerun', 
   it('stops active streaming via Stop button, re-enables textarea, and preserves partial tokens', async () => {
     let abortListenerTriggered = false;
     const mockFetch = vi.fn().mockImplementation((url, options) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         const signal = options.signal as AbortSignal;
         signal.addEventListener('abort', () => {
           abortListenerTriggered = true;
@@ -757,7 +757,7 @@ describe('Adversarial Stress Suite: Full Chat Flow, Abort, Regenerate & Rerun', 
   it('triggers regenerate on assistant message, rolling back previous response and restarting stream', async () => {
     let callCount = 0;
     const mockFetch = vi.fn().mockImplementation((url) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         callCount++;
         const text = callCount === 1 ? 'First draft response' : 'Regenerated refined response';
         return Promise.resolve(
@@ -798,7 +798,7 @@ describe('Adversarial Stress Suite: Full Chat Flow, Abort, Regenerate & Rerun', 
   it('reruns prompt on user message toolbar click', async () => {
     let lastPrompt = '';
     const mockFetch = vi.fn().mockImplementation((url, options) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         const body = JSON.parse(options.body);
         lastPrompt = body.prompt;
         return Promise.resolve(
@@ -836,7 +836,7 @@ describe('Adversarial Stress Suite: Full Chat Flow, Abort, Regenerate & Rerun', 
   it('sends starter prompt on click from empty state', async () => {
     let capturedPrompt = '';
     const mockFetch = vi.fn().mockImplementation((url, options) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         const body = JSON.parse(options.body);
         capturedPrompt = body.prompt;
         return Promise.resolve(

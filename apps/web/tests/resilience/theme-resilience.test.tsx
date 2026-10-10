@@ -61,7 +61,7 @@ function calculateContrastRatio(hex1: string, hex2: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-describe('Adversarial Stress-Testing for Multi-Theme & Contrast System', () => {
+describe('Stress-Testing for Multi-Theme & Contrast System', () => {
   let mockMatchMediaListeners: Array<(e: any) => void> = [];
   let isOsDark = false;
 
@@ -100,7 +100,7 @@ describe('Adversarial Stress-Testing for Multi-Theme & Contrast System', () => {
   // =========================================================================
   // 1. CORRUPTED & ADVERSARIAL LOCALSTORAGE HANDLING
   // =========================================================================
-  describe('Adversarial Challenge 1: Corrupted, Injected & Unexpected localStorage Values', () => {
+  describe('Resilience Challenge 1: Corrupted, Injected & Unexpected localStorage Values', () => {
     it('safely recovers to system default when localStorage contains unexpected strings', () => {
       const corruptedValues = [
         '',
@@ -228,7 +228,7 @@ describe('Adversarial Stress-Testing for Multi-Theme & Contrast System', () => {
   // =========================================================================
   // 2. SSR HYDRATION & SCRIPT EXECUTION HARNESS
   // =========================================================================
-  describe('Adversarial Challenge 2: SSR Flash Prevention & Hydration Script Execution', () => {
+  describe('Resilience Challenge 2: SSR Flash Prevention & Hydration Script Execution', () => {
     function executeThemeScriptLogic(storedValue: string | null, osDark: boolean) {
       // Direct reproduction of ThemeScript logic in ThemeProvider.tsx lines 150-163
       try {
@@ -272,7 +272,7 @@ describe('Adversarial Stress-Testing for Multi-Theme & Contrast System', () => {
       expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     });
 
-    it('empirically evaluates ThemeScript with unrecognized corrupted string', () => {
+    it('evaluates ThemeScript with unrecognized corrupted string', () => {
       // When stored is "corrupted_theme" and OS is dark
       executeThemeScriptLogic('corrupted_theme', true);
       // ThemeScript defaults to light because stored is neither 'dark' nor ('system' or falsy)
@@ -306,7 +306,7 @@ describe('Adversarial Stress-Testing for Multi-Theme & Contrast System', () => {
   // =========================================================================
   // 3. RAPID THEME TOGGLING STRESS HARNESS
   // =========================================================================
-  describe('Adversarial Challenge 3: Rapid Theme Toggling Stress Harness', () => {
+  describe('Resilience Challenge 3: Rapid Theme Toggling Stress Harness', () => {
     it('maintains state consistency under rapid 50x sequential toggle cycles', async () => {
       render(
         <ThemeProvider defaultTheme="light">
@@ -402,7 +402,7 @@ describe('Adversarial Stress-Testing for Multi-Theme & Contrast System', () => {
   // =========================================================================
   // 4. MATHEMATICAL COLOR CONTRAST & CHIP STYLING VERIFICATION
   // =========================================================================
-  describe('Adversarial Challenge 4: Mathematical Color Contrast & Chip Verification', () => {
+  describe('Resilience Challenge 4: Mathematical Color Contrast & Chip Verification', () => {
     // Exact Tailwind palette values used in apps/web
     const colors = {
       white: '#ffffff',
@@ -548,18 +548,18 @@ describe('Adversarial Stress-Testing for Multi-Theme & Contrast System', () => {
       const suggestedChip = screen.getByTestId('suggested-question-chip');
       const starterChip = screen.getByTestId('starter-chip');
 
-      // Check min-h-[32px] accessible touch target
-      expect(suggestedChip.className).toContain('min-h-[32px]');
-      expect(starterChip.className).toContain('min-h-[32px]');
+      // Check min-h-[44px] accessible touch target
+      expect(suggestedChip.className).toContain('min-h-[44px]');
+      expect(starterChip.className).toContain('min-h-[44px]');
 
       // Check focus ring accessibility classes
       expect(suggestedChip.className).toContain('focus:outline-none');
       expect(suggestedChip.className).toContain('focus:ring-2');
-      expect(suggestedChip.className).toContain('focus:ring-blue-500');
+      expect(suggestedChip.className).toContain('focus:ring-emerald-500');
 
       expect(starterChip.className).toContain('focus:outline-none');
       expect(starterChip.className).toContain('focus:ring-2');
-      expect(starterChip.className).toContain('focus:ring-blue-500');
+      expect(starterChip.className).toContain('focus:ring-emerald-500');
 
       // Check that invalid Tailwind v3 classes are NOT present
       expect(suggestedChip.className).not.toContain('focus:outline-hidden');

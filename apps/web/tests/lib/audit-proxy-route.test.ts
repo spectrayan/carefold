@@ -61,7 +61,7 @@ describe('Audit Proxy Route (apps/web/src/app/api/audit/route.ts)', () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const calledUrl = fetchSpy.mock.calls[0][0];
-    expect(calledUrl).toContain('/api/audit?');
+    expect(calledUrl).toContain('/api/v1/audit?');
     expect(calledUrl).toContain('limit=50');
     expect(calledUrl).toContain('full=false');
   });

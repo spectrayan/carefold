@@ -140,7 +140,7 @@ export function MermaidDiagram({ chart, className = '' }: MermaidDiagramProps) {
           <Network className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
           <span className="font-semibold text-zinc-700 dark:text-zinc-300">Mermaid Diagram</span>
           {error && (
-            <span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+            <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
               <AlertCircle className="w-3 h-3" />
               <span>Previewing source</span>
             </span>
@@ -155,7 +155,7 @@ export function MermaidDiagram({ chart, className = '' }: MermaidDiagramProps) {
                 type="button"
                 onClick={() => setViewMode('diagram')}
                 aria-pressed={viewMode === 'diagram'}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition cursor-pointer ${
+                className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition cursor-pointer ${
                   viewMode === 'diagram'
                     ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
                     : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
@@ -168,7 +168,7 @@ export function MermaidDiagram({ chart, className = '' }: MermaidDiagramProps) {
                 type="button"
                 onClick={() => setViewMode('source')}
                 aria-pressed={viewMode === 'source'}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition cursor-pointer ${
+                className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition cursor-pointer ${
                   viewMode === 'source'
                     ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
                     : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
@@ -185,7 +185,7 @@ export function MermaidDiagram({ chart, className = '' }: MermaidDiagramProps) {
             type="button"
             onClick={handleCopy}
             title={copied ? 'Copied chart source!' : 'Copy chart source'}
-            className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800 transition cursor-pointer"
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800 transition cursor-pointer"
           >
             {copied ? (
               <>
@@ -207,7 +207,7 @@ export function MermaidDiagram({ chart, className = '' }: MermaidDiagramProps) {
         {viewMode === 'source' || error ? (
           <div className="space-y-2">
             {error && (
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 italic">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 italic">
                 Diagram is compiling or contains incomplete streaming tokens. Showing source:
               </p>
             )}

@@ -27,7 +27,7 @@ const mockAgents: AgentSummary[] = [
     title: 'Visit Steward',
     version: '0.1.0',
     description: 'Prepare for appointments and organize medical questions.',
-    risk_class: 'wellness',
+    risk_class: 'clinical_assist',
     domain: 'navigation',
     category: 'navigation.appointments',
     tags: ['appointments', 'visit-prep'],
@@ -82,15 +82,15 @@ const mockAgents: AgentSummary[] = [
 ];
 
 describe('Marketplace Home Screen', () => {
-  it('renders grid of installed agents with Bundled badges', () => {
+  it('renders grid of installed agents with safety badges', () => {
     render(<MarketplaceClient initialAgents={mockAgents} />);
 
     expect(screen.getByText('Visit Steward')).toBeInTheDocument();
     expect(screen.getByText('Benefits Guide')).toBeInTheDocument();
     expect(screen.getByText('Habit Companion')).toBeInTheDocument();
 
-    const bundledBadges = screen.getAllByTestId('bundled-badge');
-    expect(bundledBadges.length).toBeGreaterThanOrEqual(2);
+    const safetyBadges = screen.getAllByTestId('card-safety-badge');
+    expect(safetyBadges.length).toBeGreaterThanOrEqual(2);
   });
 
   it('renders "Try in chat" actions linking to /chat?agent=[id]', () => {
@@ -110,19 +110,13 @@ describe('Marketplace Home Screen', () => {
     expect(screen.queryByText('Visit Steward')).not.toBeInTheDocument();
   });
 
-  it('displays domain and category badges on agent cards', () => {
+  it('displays streamlined badges on agent cards', () => {
     render(<MarketplaceClient initialAgents={mockAgents} />);
 
-    const domainBadges = screen.getAllByTestId('domain-badge');
-    expect(domainBadges.length).toBe(3);
-    expect(domainBadges.some((b) => b.textContent?.toLowerCase() === 'navigation')).toBe(true);
-    expect(domainBadges.some((b) => b.textContent?.toLowerCase() === 'wellness')).toBe(true);
-
-    const categoryBadges = screen.getAllByTestId('category-badge');
-    expect(categoryBadges.length).toBe(3);
-    expect(categoryBadges.some((b) => b.textContent === 'Appointments')).toBe(true);
-    expect(categoryBadges.some((b) => b.textContent === 'Insurance')).toBe(true);
-    expect(categoryBadges.some((b) => b.textContent === 'Habits')).toBe(true);
+    const safetyBadges = screen.getAllByTestId('card-safety-badge');
+    expect(safetyBadges.length).toBe(3);
+    expect(safetyBadges.some((b) => b.textContent?.toLowerCase().includes('clinical assist'))).toBe(true);
+    expect(safetyBadges.some((b) => b.textContent?.toLowerCase().includes('wellness'))).toBe(true);
   });
 
   it('renders domain filter tabs and filters agents by domain', () => {

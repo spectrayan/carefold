@@ -38,12 +38,12 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
       if (!/^[a-zA-Z0-9_-]+$/.test(singleId)) {
         return NextResponse.json({ error: 'Invalid agent ID format' }, { status: 400 });
       }
-      targetUrl = new URL(`/api/agents/${singleId}`, parsedBackend);
+      targetUrl = new URL(`/api/v1/agents/${singleId}`, parsedBackend);
       url.searchParams.forEach((val, key) => {
         if (key !== 'id') targetUrl.searchParams.set(key, val);
       });
     } else {
-      targetUrl = new URL('/api/agents', parsedBackend);
+      targetUrl = new URL('/api/v1/agents', parsedBackend);
       url.searchParams.forEach((val, key) => {
         targetUrl.searchParams.set(key, val);
       });
@@ -56,9 +56,15 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
       url.searchParams.get('allow_clinical') === 'true' ? 'true' : 'false'
     );
 
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    const incomingCookie = req.headers.get('cookie');
+    if (incomingCookie) headers['cookie'] = incomingCookie;
+    const authHeader = req.headers.get('authorization');
+    if (authHeader) headers['authorization'] = authHeader;
+
     const res = await fetch(targetUrl.toString(), {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers,
       cache: 'no-store'
     });
 
@@ -84,6 +90,7 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const url = new URL(req.url);
 
   const forwardHeaders = new Headers();
   const incomingCookie = req.headers.get('cookie');
@@ -101,7 +108,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const targetUrl = `${backendUrl}/api/agents`;
+    const targetUrl = `${backendUrl}/api/v1/agents${url.search}`;
     const res = await fetch(targetUrl, {
       method: 'POST',
       headers: forwardHeaders,

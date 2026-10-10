@@ -25,6 +25,8 @@ export async function POST(
   req: Request | NextRequest
 ): Promise<NextResponse<AttachmentUploadResponse | { error: string; code?: string }>> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const url = new URL(req.url);
+  const search = url.search;
 
   try {
     const formData = await req.formData();
@@ -46,10 +48,10 @@ export async function POST(
     if (incomingCookie) headers['cookie'] = incomingCookie;
     if (authHeader) headers['authorization'] = authHeader;
 
-    const res = await fetch(`${backendUrl}/api/attachments`, {
+    const res = await fetch(`${backendUrl}/api/v1/attachments${search}`, {
       method: 'POST',
       headers,
-      body: forwardData
+      body: forwardData,
     });
 
     if (!res.ok) {
@@ -71,8 +73,10 @@ export async function POST(
   }
 }
 
-export async function GET(req?: Request | NextRequest): Promise<NextResponse> {
+export async function GET(req: Request | NextRequest): Promise<NextResponse> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const url = new URL(req.url);
+  const search = url.search;
 
   const incomingCookie = req?.headers.get('cookie');
   const authHeader = req?.headers.get('authorization');
@@ -81,16 +85,16 @@ export async function GET(req?: Request | NextRequest): Promise<NextResponse> {
   if (authHeader) headers['authorization'] = authHeader;
 
   try {
-    const res = await fetch(`${backendUrl}/api/attachments`, {
+    const res = await fetch(`${backendUrl}/api/v1/attachments${search}`, {
       method: 'GET',
       headers,
-      cache: 'no-store'
+      cache: 'no-store',
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       return NextResponse.json(err || { error: `Backend responded with HTTP ${res.status}` }, {
-        status: res.status
+        status: res.status,
       });
     }
 
@@ -100,7 +104,7 @@ export async function GET(req?: Request | NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       {
         error: `Carefold Python backend is unreachable at ${backendUrl}: ${err.message}`,
-        code: 'BACKEND_UNREACHABLE'
+        code: 'BACKEND_UNREACHABLE',
       },
       { status: 503 }
     );

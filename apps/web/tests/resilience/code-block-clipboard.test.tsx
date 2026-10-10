@@ -22,7 +22,7 @@ import { CodeBlock, normalizeLanguage, tokenizeCode } from '@/components/chat/Co
 import { MessageToolbar } from '@/components/chat/MessageToolbar';
 import { ChatMessageItem, formatMessageTimestamp, type ChatMessage } from '@/components/ChatMessageItem';
 
-describe('Adversarial Stress Suite: Code Blocks, Streaming & Clipboard Edge Cases', () => {
+describe('Stress Suite: Code Blocks, Streaming & Clipboard Edge Cases', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -489,7 +489,7 @@ describe('Adversarial Stress Suite: Code Blocks, Streaming & Clipboard Edge Case
       expect(assistantToolbar.className).not.toContain('-top-');
     });
 
-    it('renders accessible min 32px hitboxes for all toolbar action buttons', () => {
+    it('renders accessible min 44px hitboxes for all toolbar action buttons', () => {
       const onRerun = vi.fn();
       const onRegenerate = vi.fn();
 
@@ -498,8 +498,8 @@ describe('Adversarial Stress Suite: Code Blocks, Streaming & Clipboard Edge Case
 
       const userButtons = screen.getAllByRole('button');
       userButtons.forEach((btn) => {
-        expect(btn.className).toContain('min-w-[32px]');
-        expect(btn.className).toContain('min-h-[32px]');
+        expect(btn.className).toContain('min-w-[44px]');
+        expect(btn.className).toContain('min-h-[44px]');
       });
       unmount();
 
@@ -507,8 +507,8 @@ describe('Adversarial Stress Suite: Code Blocks, Streaming & Clipboard Edge Case
       render(<ChatMessageItem message={assistantMsg} onRegenerate={onRegenerate} />);
       const assistantButtons = screen.getAllByRole('button');
       assistantButtons.forEach((btn) => {
-        expect(btn.className).toContain('min-w-[32px]');
-        expect(btn.className).toContain('min-h-[32px]');
+        expect(btn.className).toContain('min-w-[44px]');
+        expect(btn.className).toContain('min-h-[44px]');
       });
     });
 

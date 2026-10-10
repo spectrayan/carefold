@@ -21,22 +21,30 @@ import { useEffect, useState } from 'react';
 import {
   CLINICAL_CONSENT_CHANGED_EVENT,
   CLINICAL_CONSENT_STORAGE_KEY,
+  CLINICAL_CONSENT_STORAGE_KEY_PREFIX,
   type ClinicalConsentMap,
   loadClinicalConsents
 } from '@/lib/clinicalConsent';
 
 /**
- * Subscribes to the clinical consent store. `loaded` stays false during SSR and
- * the first client render so gated UI never flashes an incorrect state.
+ * Subscribes to the clinical consent store for a specific profile (defaults to 'me').
+ * `loaded` stays false during SSR and the first client render so gated UI never flashes
+ * an incorrect state.
  */
-export function useClinicalConsents(): { consents: ClinicalConsentMap; loaded: boolean } {
+export function useClinicalConsents(profileId: string = 'me'): { consents: ClinicalConsentMap; loaded: boolean } {
   const [consents, setConsents] = useState<ClinicalConsentMap>({});
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const refresh = () => setConsents(loadClinicalConsents());
+    const refresh = () => setConsents(loadClinicalConsents(profileId));
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === null || e.key === CLINICAL_CONSENT_STORAGE_KEY) refresh();
+      if (
+        e.key === null ||
+        e.key === CLINICAL_CONSENT_STORAGE_KEY ||
+        e.key.includes(CLINICAL_CONSENT_STORAGE_KEY_PREFIX)
+      ) {
+        refresh();
+      }
     };
 
     refresh();
@@ -47,7 +55,7 @@ export function useClinicalConsents(): { consents: ClinicalConsentMap; loaded: b
       window.removeEventListener(CLINICAL_CONSENT_CHANGED_EVENT, refresh);
       window.removeEventListener('storage', handleStorage);
     };
-  }, []);
+  }, [profileId]);
 
   return { consents, loaded };
 }

@@ -22,6 +22,8 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req?: Request | NextRequest): Promise<NextResponse> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const url = req ? new URL(req.url) : null;
+  const search = url ? url.search : '';
 
   const incomingCookie = req?.headers.get('cookie');
   const authHeader = req?.headers.get('authorization');
@@ -30,7 +32,7 @@ export async function GET(req?: Request | NextRequest): Promise<NextResponse> {
   if (authHeader) headers['authorization'] = authHeader;
 
   try {
-    const res = await fetch(`${backendUrl}/api/notes`, {
+    const res = await fetch(`${backendUrl}/api/v1/notes${search}`, {
       method: 'GET',
       headers,
       cache: 'no-store'
@@ -58,6 +60,7 @@ export async function GET(req?: Request | NextRequest): Promise<NextResponse> {
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const url = new URL(req.url);
 
   const forwardHeaders = new Headers();
   const incomingCookie = req.headers.get('cookie');
@@ -75,7 +78,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const targetUrl = `${backendUrl}/api/notes`;
+    const targetUrl = `${backendUrl}/api/v1/notes${url.search}`;
     const res = await fetch(targetUrl, {
       method: 'POST',
       headers: forwardHeaders,

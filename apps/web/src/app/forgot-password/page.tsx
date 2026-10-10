@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/auth/forgot-password', {
+      const res = await fetch('/api/v1/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() })
@@ -123,14 +123,14 @@ export default function ForgotPasswordPage() {
               <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Reset Request Processed</span>
             </div>
-            <p className="text-[11px] leading-relaxed text-slate-600 dark:text-zinc-300">
+            <p className="text-xs leading-relaxed text-slate-600 dark:text-zinc-300">
               {result.message}
             </p>
 
             {/* Offline Token Display (when returned by local runner) */}
             {result.token && (
               <div className="p-3 rounded-lg bg-white dark:bg-zinc-800/80 border border-emerald-200 dark:border-emerald-800 space-y-2">
-                <div className="text-[11px] font-semibold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                   <KeyRound className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>Local Reset Token (Offline Mode)</span>
                 </div>
@@ -155,7 +155,7 @@ export default function ForgotPasswordPage() {
                 <Link
                   href={`/reset-password?token=${encodeURIComponent(result.token)}`}
                   data-testid="use-token-link"
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline pt-1"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:underline pt-1"
                 >
                   <span>Proceed to reset password with this token</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -188,7 +188,7 @@ export default function ForgotPasswordPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
                 />
               </div>
             </div>
@@ -197,7 +197,7 @@ export default function ForgotPasswordPage() {
               type="submit"
               data-testid="forgot-submit-btn"
               disabled={isSubmitting}
-              className="w-full py-2.5 px-4 text-xs font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 shadow-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 px-4 text-xs font-semibold rounded-xl text-white bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] dark:active:bg-emerald-600 shadow-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
@@ -215,13 +215,13 @@ export default function ForgotPasswordPage() {
         <div className="pt-2 text-center text-xs text-slate-500 dark:text-zinc-400 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between">
           <Link
             href="/login"
-            className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+            className="font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:underline"
           >
             ← Back to Sign In
           </Link>
           <Link
             href="/reset-password"
-            className="text-slate-600 dark:text-zinc-400 hover:underline text-[11px]"
+            className="text-slate-600 dark:text-zinc-400 hover:underline text-xs"
           >
             Already have a token?
           </Link>

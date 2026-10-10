@@ -146,7 +146,7 @@ describe('ChatMessageItem Component', () => {
   // -------------------------------------------------------------------------
   // M9 Enhancements: Theme-Aware Timestamps
   // -------------------------------------------------------------------------
-  it('renders formatted timestamp with theme-aware text-blue-100 on user message', () => {
+  it('renders formatted timestamp with theme-aware classes on user message', () => {
     const message: ChatMessage = {
       id: 'm-u-time',
       role: 'user',
@@ -157,7 +157,7 @@ describe('ChatMessageItem Component', () => {
     render(<ChatMessageItem message={message} />);
     const timestampEl = screen.getByTestId('message-timestamp');
     expect(timestampEl).toBeInTheDocument();
-    expect(timestampEl.className).toContain('text-blue-100');
+    expect(timestampEl.className).toContain('text-slate-600');
   });
 
   it('renders formatted timestamp with theme-aware slate/zinc classes on assistant message', () => {

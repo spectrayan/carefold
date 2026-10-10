@@ -23,7 +23,7 @@ export const dynamic = 'force-dynamic';
 async function proxyAuthRequest(req: NextRequest, subpath: string): Promise<NextResponse> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
   const url = new URL(req.url);
-  const targetUrl = `${backendUrl}/api/auth/${subpath}${url.search}`;
+  const targetUrl = `${backendUrl}/api/v1/auth/${subpath}${url.search}`;
 
   const forwardHeaders = new Headers();
   const incomingCookie = req.headers.get('cookie');
@@ -82,10 +82,16 @@ async function proxyAuthRequest(req: NextRequest, subpath: string): Promise<Next
       }
     }
 
-    return new NextResponse(resData, {
+    const nextRes = new NextResponse(resData, {
       status: backendRes.status,
       headers: responseHeaders
     });
+
+    if (backendRes.status === 401 && subpath === 'me') {
+      nextRes.cookies.delete('carefold_session');
+    }
+
+    return nextRes;
   } catch (err: any) {
     return NextResponse.json(
       { error: `Auth backend unreachable: ${err.message}`, code: 'BACKEND_UNREACHABLE' },

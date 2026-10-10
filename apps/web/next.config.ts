@@ -22,6 +22,43 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: false
+  },
+  async redirects() {
+    return [
+      {
+        source: '/skills',
+        destination: '/helpers?tab=skills',
+        permanent: false
+      },
+      {
+        source: '/skills/:id',
+        destination: '/helpers/skills/:id',
+        permanent: false
+      },
+      {
+        source: '/agents/:id',
+        destination: '/helpers/:id',
+        permanent: false
+      },
+      {
+        source: '/settings',
+        destination: '/settings/model',
+        permanent: false
+      },
+      {
+        source: '/library',
+        destination: '/p/me/library',
+        permanent: false
+      }
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: '/api/:path*',
+      },
+    ];
   }
 };
 

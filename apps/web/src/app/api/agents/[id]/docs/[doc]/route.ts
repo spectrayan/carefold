@@ -33,8 +33,9 @@ export async function GET(
   if (incomingCookie) headers['cookie'] = incomingCookie;
   if (authHeader) headers['authorization'] = authHeader;
 
+  const url = new URL(req.url);
   try {
-    const targetUrl = `${backendUrl}/api/agents/${encodeURIComponent(agentId)}/docs/${encodeURIComponent(doc)}`;
+    const targetUrl = `${backendUrl}/api/v1/agents/${encodeURIComponent(agentId)}/docs/${encodeURIComponent(doc)}${url.search}`;
     const res = await fetch(targetUrl, {
       method: 'GET',
       headers,
@@ -76,8 +77,9 @@ export async function PUT(
     body = '{}';
   }
 
+  const url = new URL(req.url);
   try {
-    const targetUrl = `${backendUrl}/api/agents/${encodeURIComponent(agentId)}/docs/${encodeURIComponent(doc)}`;
+    const targetUrl = `${backendUrl}/api/v1/agents/${encodeURIComponent(agentId)}/docs/${encodeURIComponent(doc)}${url.search}`;
     const res = await fetch(targetUrl, {
       method: 'PUT',
       headers: forwardHeaders,
@@ -112,8 +114,9 @@ export async function DELETE(
   if (authHeader) forwardHeaders.set('authorization', authHeader);
   forwardHeaders.set('accept', 'application/json');
 
+  const url = new URL(req.url);
   try {
-    const targetUrl = `${backendUrl}/api/agents/${encodeURIComponent(agentId)}/docs/${encodeURIComponent(doc)}`;
+    const targetUrl = `${backendUrl}/api/v1/agents/${encodeURIComponent(agentId)}/docs/${encodeURIComponent(doc)}${url.search}`;
     const res = await fetch(targetUrl, {
       method: 'DELETE',
       headers: forwardHeaders,

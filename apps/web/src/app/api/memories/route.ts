@@ -64,7 +64,7 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
   if (authHeader) headers['authorization'] = authHeader;
 
   try {
-    const targetUrl = `${backendUrl}/api/memory?${query.toString()}`;
+    const targetUrl = `${backendUrl}/api/v1/memory?${query.toString()}`;
     const res = await fetch(targetUrl, {
       method: 'GET',
       headers,
@@ -103,7 +103,7 @@ export async function DELETE(req: Request | NextRequest): Promise<NextResponse> 
   if (authHeader) headers['authorization'] = authHeader;
 
   try {
-    const targetUrl = `${backendUrl}/api/memory?namespace=${encodeURIComponent(namespace)}`;
+    const targetUrl = `${backendUrl}/api/v1/memory?namespace=${encodeURIComponent(namespace)}`;
     const res = await fetch(targetUrl, {
       method: 'DELETE',
       headers,

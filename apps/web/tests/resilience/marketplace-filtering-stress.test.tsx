@@ -21,12 +21,12 @@ import React from 'react';
 import { MarketplaceClient } from '@/app/MarketplaceClient';
 import type { AgentSummary } from '@/lib/types';
 
-describe('Adversarial Stress Suite: Marketplace UI & Icon Resolution', () => {
+describe('Stress Suite: Marketplace UI & Icon Resolution', () => {
   const baseAgent: AgentSummary = {
     id: 'test-agent',
     title: 'Test Agent',
     version: '1.0.0',
-    description: 'A test agent for adversarial validation.',
+    description: 'A test agent for validation.',
     risk_class: 'wellness',
     domain: 'wellness',
     category: 'wellness.habits',
@@ -360,7 +360,7 @@ describe('Adversarial Stress Suite: Marketplace UI & Icon Resolution', () => {
       expect(screen.getByText('Unverified')).toBeInTheDocument();
     });
 
-    it('renders agent without skills or tools showing fallback "None" labels', () => {
+    it('renders agent without skills or tools safely with streamlined card layout', () => {
       const bareAgent: AgentSummary = {
         id: 'bare-agent',
         title: 'Bare Agent',
@@ -375,8 +375,7 @@ describe('Adversarial Stress Suite: Marketplace UI & Icon Resolution', () => {
       render(<MarketplaceClient initialAgents={[bareAgent]} />);
 
       expect(screen.getByText('Bare Agent')).toBeInTheDocument();
-      const noneLabels = screen.getAllByText('None');
-      expect(noneLabels.length).toBe(2); // One for Skills, one for Tools
+      expect(screen.getByTestId('card-safety-badge')).toBeInTheDocument();
     });
   });
 });

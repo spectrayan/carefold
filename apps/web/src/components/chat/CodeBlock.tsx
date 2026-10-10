@@ -278,12 +278,12 @@ export function CodeBlock({ code, language = 'text', className = '' }: CodeBlock
           {copied ? (
             <>
               <Check data-testid="copy-code-success" className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">Copied!</span>
+              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Copied!</span>
             </>
           ) : (
             <>
               <Copy className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
-              <span className="text-[11px] font-medium">Copy</span>
+              <span className="text-xs font-medium">Copy</span>
             </>
           )}
         </button>

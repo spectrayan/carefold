@@ -107,11 +107,11 @@ describe('ScrollToBottomButton Component', () => {
     expect(badge).toHaveTextContent('99+');
   });
 
-  it('adheres to accessible minimum touch target of >=32px', () => {
+  it('adheres to accessible minimum touch target of >=44px', () => {
     render(<ScrollToBottomButton visible={true} onClick={vi.fn()} />);
     const btn = screen.getByTestId('scroll-to-bottom-btn');
-    expect(btn.className).toContain('min-w-[36px]');
-    expect(btn.className).toContain('min-h-[36px]');
+    expect(btn.className).toContain('min-w-[44px]');
+    expect(btn.className).toContain('min-h-[44px]');
   });
 
   it('includes ChevronDown icon and theme styling classes', () => {
@@ -180,7 +180,7 @@ describe('ChatClient Scroll Tracking & Viewport Integration', () => {
 
   it('increments unread counter when new tokens arrive while scrolled up and resets on click', async () => {
     const mockFetch = vi.fn().mockImplementation((url) => {
-      if (url === '/api/chat') {
+      if (url === '/api/chat' || url === '/api/v1/chat') {
         return Promise.resolve(
           createMockSSEResponse([
             { event: 'token', data: { type: 'token', delta: 'Chunk 1. ' } },

@@ -50,14 +50,25 @@ export interface ThemeProviderProps {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
+// Suppress false-positive React 19 script warning in development if encountered
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  const orig = console.error;
+  console.error = (...args: unknown[]) => {
+    if (typeof args[0] === 'string' && args[0].includes('Encountered a script tag')) {
+      return;
+    }
+    orig.apply(console, args);
+  };
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
   storageKey = THEME_STORAGE_KEY
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(() => getStoredTheme(defaultTheme));
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() =>
-    resolveTheme(getStoredTheme(defaultTheme))
+  const [theme, setThemeState] = useState<Theme>(defaultTheme);
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(
+    defaultTheme === 'dark' ? 'dark' : 'light'
   );
 
   const setTheme = useCallback(
@@ -75,6 +86,15 @@ export function ThemeProvider({
     const nextTheme: Theme = resolvedTheme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
   }, [resolvedTheme, setTheme]);
+
+  // Synchronize with stored theme on mount after hydration completes
+  useEffect(() => {
+    const stored = getStoredTheme(defaultTheme);
+    setThemeState(stored);
+    const resolved = resolveTheme(stored);
+    setResolvedTheme(resolved);
+    applyThemeToDOM(resolved);
+  }, [defaultTheme]);
 
   // Synchronize on mount and whenever theme changes
   useEffect(() => {

@@ -70,7 +70,7 @@ const mockAgents: AgentSummary[] = [
   }
 ];
 
-describe('Adversarial Challenge: Message Actions, Suggestions & Session Continuity', () => {
+describe('Resilience Challenge: Message Actions, Suggestions & Session Continuity', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.restoreAllMocks();
@@ -84,7 +84,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
   // =========================================================================
   // 1. CLIPBOARD FAILURE RECOVERY & ADVERSARIAL CASES
   // =========================================================================
-  describe('Adversarial Challenge 1: Clipboard Failures & Edge Cases', () => {
+  describe('Resilience Challenge 1: Clipboard Failures & Edge Cases', () => {
     it('handles navigator.clipboard.writeText rejection (e.g. NotAllowedError) gracefully', async () => {
       vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(
         new DOMException('Document is not focused', 'NotAllowedError')
@@ -249,7 +249,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
   // =========================================================================
   // 2. RAPID DOUBLE CLICKS ON RERUN & REGENERATE WHILE STREAMING
   // =========================================================================
-  describe('Adversarial Challenge 2: Rapid Double Clicks on Rerun and Regenerate', () => {
+  describe('Resilience Challenge 2: Rapid Double Clicks on Rerun and Regenerate', () => {
     it('prevents duplicate concurrent fetch calls on rapid double-clicks to Rerun', async () => {
       let callCount = 0;
       let resolveStreamPromise: (val: any) => void;
@@ -258,7 +258,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
       });
 
       const mockFetch = vi.fn().mockImplementation((url) => {
-        if (url === '/api/chat') {
+        if ((url === '/api/chat' || url === '/api/v1/chat')) {
           callCount++;
           return streamPromise;
         }
@@ -294,7 +294,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
       });
 
       mockFetch.mockImplementation((url) => {
-        if (url === '/api/chat') {
+        if ((url === '/api/chat' || url === '/api/v1/chat')) {
           callCount++;
           return rerunStreamPromise;
         }
@@ -341,7 +341,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
       });
 
       const mockFetch = vi.fn().mockImplementation((url) => {
-        if (url === '/api/chat') {
+        if ((url === '/api/chat' || url === '/api/v1/chat')) {
           callCount++;
           return streamPromise;
         }
@@ -377,7 +377,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
       });
 
       mockFetch.mockImplementation((url) => {
-        if (url === '/api/chat') {
+        if ((url === '/api/chat' || url === '/api/v1/chat')) {
           callCount++;
           return regenStreamPromise;
         }
@@ -414,7 +414,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
       let capturedPayloads: any[] = [];
 
       const mockFetch = vi.fn().mockImplementation((url, options) => {
-        if (url === '/api/chat') {
+        if ((url === '/api/chat' || url === '/api/v1/chat')) {
           callCount++;
           capturedPayloads.push(JSON.parse(options.body));
           const responseText = `Answer for turn ${callCount}`;
@@ -469,7 +469,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
   // =========================================================================
   // 3. SUGGESTED QUESTIONS CHIPS: RENDERING, LONG STRINGS & SPECIAL CHARS
   // =========================================================================
-  describe('Adversarial Challenge 3: Suggested Questions Chips Edge Cases', () => {
+  describe('Resilience Challenge 3: Suggested Questions Chips Edge Cases', () => {
     it('handles long suggestion strings without crashing or overflowing layout', () => {
       const veryLongSuggestion = 'What are all the detailed considerations and documentation required '.repeat(20);
       const onSelect = vi.fn();
@@ -604,7 +604,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
       });
 
       const mockFetch = vi.fn().mockImplementation((url, options) => {
-        if (url === '/api/chat') {
+        if ((url === '/api/chat' || url === '/api/v1/chat')) {
           callCount++;
           if (callCount === 1) {
             return Promise.resolve(
@@ -667,13 +667,13 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
   // =========================================================================
   // 4. THREAD CONTINUITY IN LOCALSTORAGE ACROSS PAGE RELOADS
   // =========================================================================
-  describe('Adversarial Challenge 4: Thread Continuity & Persistence Across Reloads', () => {
+  describe('Resilience Challenge 4: Thread Continuity & Persistence Across Reloads', () => {
     it('restores conversation history and maintains active threadId across simulated reload', async () => {
       let callCount = 0;
       let capturedThreadId: string | null = null;
 
       const mockFetch = vi.fn().mockImplementation((url, options) => {
-        if (url === '/api/chat') {
+        if ((url === '/api/chat' || url === '/api/v1/chat')) {
           callCount++;
           const body = JSON.parse(options.body);
           capturedThreadId = body.threadId;
@@ -715,7 +715,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
 
       let postReloadThreadId: string | null = null;
       mockFetch.mockImplementation((url, options) => {
-        if (url === '/api/chat') {
+        if ((url === '/api/chat' || url === '/api/v1/chat')) {
           const body = JSON.parse(options.body);
           postReloadThreadId = body.threadId;
           return Promise.resolve(
@@ -750,7 +750,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
 
     it('isolates threads and conversation history between different agents', async () => {
       const mockFetch = vi.fn().mockImplementation((url, options) => {
-        if (url === '/api/chat') {
+        if ((url === '/api/chat' || url === '/api/v1/chat')) {
           const body = JSON.parse(options.body);
           return Promise.resolve(
             createMockSSEResponse([
@@ -817,7 +817,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
 
       // Sending a message should function normally and overwrite cleanly
       const mockFetch = vi.fn().mockImplementation((url) => {
-        if (url === '/api/chat') {
+        if ((url === '/api/chat' || url === '/api/v1/chat')) {
           return Promise.resolve(
             createMockSSEResponse([
               { event: 'token', data: { type: 'token', delta: 'Recovered response' } },
@@ -848,7 +848,7 @@ describe('Adversarial Challenge: Message Actions, Suggestions & Session Continui
       });
 
       const mockFetch = vi.fn().mockImplementation((url) => {
-        if (url === '/api/chat') {
+        if ((url === '/api/chat' || url === '/api/v1/chat')) {
           return Promise.resolve(
             createMockSSEResponse([
               { event: 'token', data: { type: 'token', delta: 'Quota test response' } },

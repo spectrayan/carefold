@@ -65,7 +65,7 @@ function createControlledStream() {
   return { response, sendEvent, closeStream };
 }
 
-describe('Adversarial Stress Suite: Composer Keyboard & Height Boundaries', () => {
+describe('Stress Suite: Composer Keyboard & Height Boundaries', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response('{}', { status: 200 }))));
@@ -85,7 +85,7 @@ describe('Adversarial Stress Suite: Composer Keyboard & Height Boundaries', () =
   it('submits on Enter keydown when valid prompt text is present', async () => {
     let capturedBody: any = null;
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url, options) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         capturedBody = JSON.parse(options.body);
         return Promise.resolve(new Response('event: done\ndata: {"type":"done","fullText":"ok"}\n\n', {
           headers: { 'Content-Type': 'text/event-stream' }
@@ -219,7 +219,7 @@ describe('Adversarial Stress Suite: Composer Keyboard & Height Boundaries', () =
   it('handles full IME lifecycle: candidate conversion Enter does not send, final Enter sends', async () => {
     let capturedBody: any = null;
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url, options) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         capturedBody = JSON.parse(options.body);
         return Promise.resolve(new Response('event: done\ndata: {"type":"done","fullText":"ok"}\n\n', {
           headers: { 'Content-Type': 'text/event-stream' }
@@ -314,7 +314,7 @@ describe('Adversarial Stress Suite: Composer Keyboard & Height Boundaries', () =
 
   it('resets height to 42px and overflow to hidden across all clearing triggers (backspace, Enter submit, New Session)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         return Promise.resolve(new Response('event: done\ndata: {"type":"done","fullText":"ok"}\n\n', {
           headers: { 'Content-Type': 'text/event-stream' }
         }));
@@ -415,7 +415,7 @@ describe('Adversarial Stress Suite: Composer Keyboard & Height Boundaries', () =
   });
 });
 
-describe('Adversarial Stress Suite: Scroll Anti-Hijacking & Unread Counter', () => {
+describe('Stress Suite: Scroll Anti-Hijacking & Unread Counter', () => {
   let scrollIntoViewSpy: any;
 
   beforeEach(() => {
@@ -472,7 +472,7 @@ describe('Adversarial Stress Suite: Scroll Anti-Hijacking & Unread Counter', () 
   it('strictly guarantees zero scroll hijacking across a high-frequency burst of 150 SSE tokens when scrolled up', async () => {
     const { response, sendEvent, closeStream } = createControlledStream();
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url) => {
-      if (url === '/api/chat') return Promise.resolve(response);
+      if ((url === '/api/chat' || url === '/api/v1/chat')) return Promise.resolve(response);
       return Promise.resolve(new Response('{}', { status: 200 }));
     }));
 
@@ -555,7 +555,7 @@ describe('Adversarial Stress Suite: Scroll Anti-Hijacking & Unread Counter', () 
   it('resets unread counter and hides button when user clicks ScrollToBottomButton, and resumes auto-scroll on subsequent tokens', async () => {
     const { response, sendEvent, closeStream } = createControlledStream();
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url) => {
-      if (url === '/api/chat') return Promise.resolve(response);
+      if ((url === '/api/chat' || url === '/api/v1/chat')) return Promise.resolve(response);
       return Promise.resolve(new Response('{}', { status: 200 }));
     }));
 
@@ -609,7 +609,7 @@ describe('Adversarial Stress Suite: Scroll Anti-Hijacking & Unread Counter', () 
   it('resets unread counter instantly when user manually scrolls back within 60px of the bottom', async () => {
     const { response, sendEvent, closeStream } = createControlledStream();
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url) => {
-      if (url === '/api/chat') return Promise.resolve(response);
+      if ((url === '/api/chat' || url === '/api/v1/chat')) return Promise.resolve(response);
       return Promise.resolve(new Response('{}', { status: 200 }));
     }));
 

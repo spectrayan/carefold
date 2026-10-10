@@ -61,11 +61,11 @@ export function StartersChips({
           data-testid="starter-chip"
           disabled={disabled}
           onClick={() => onSelectStarter(prompt, autoSend)}
-          className="inline-flex items-center text-left text-xs min-h-[32px] px-3.5 py-1.5 rounded-full border border-slate-500 dark:border-zinc-500 bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 hover:bg-blue-100 dark:hover:bg-zinc-700 hover:border-blue-600 dark:hover:border-blue-400 hover:text-blue-950 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 shadow-sm hover:shadow group cursor-pointer"
+          className="inline-flex items-center text-left text-xs min-h-[44px] max-w-full px-3.5 py-2 rounded-2xl border border-[#7f8ea3] dark:border-[#657895] bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 hover:bg-emerald-50 dark:hover:bg-zinc-700 hover:border-emerald-700 dark:hover:border-emerald-400 hover:text-emerald-950 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 shadow-sm hover:shadow group cursor-pointer"
         >
-          <span className="truncate max-w-sm sm:max-w-md">{prompt}</span>
+          <span className="break-words whitespace-normal max-w-full leading-snug">{prompt}</span>
           <svg
-            className="w-3 h-3 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-blue-600 dark:text-blue-400 shrink-0"
+            className="w-3 h-3 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-emerald-700 dark:text-emerald-400 shrink-0"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

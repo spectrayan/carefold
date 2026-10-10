@@ -60,6 +60,7 @@ export async function GET(
   const cleanSlug = validation.cleanSlug;
 
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const url = new URL(req.url);
 
   const incomingCookie = req.headers.get('cookie');
   const authHeader = req.headers.get('authorization');
@@ -68,7 +69,7 @@ export async function GET(
   if (authHeader) headers['authorization'] = authHeader;
 
   try {
-    const targetUrl = `${backendUrl}/api/notes/${encodeURIComponent(cleanSlug)}`;
+    const targetUrl = `${backendUrl}/api/v1/notes/${encodeURIComponent(cleanSlug)}${url.search}`;
     const res = await fetch(targetUrl, {
       method: 'GET',
       headers,
@@ -108,6 +109,7 @@ export async function PUT(
   const cleanSlug = validation.cleanSlug;
 
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const url = new URL(req.url);
 
   const forwardHeaders = new Headers();
   const incomingCookie = req.headers.get('cookie');
@@ -125,7 +127,7 @@ export async function PUT(
   }
 
   try {
-    const targetUrl = `${backendUrl}/api/notes/${encodeURIComponent(cleanSlug)}`;
+    const targetUrl = `${backendUrl}/api/v1/notes/${encodeURIComponent(cleanSlug)}${url.search}`;
     const res = await fetch(targetUrl, {
       method: 'PUT',
       headers: forwardHeaders,
@@ -158,6 +160,7 @@ export async function DELETE(
   const cleanSlug = validation.cleanSlug;
 
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const url = new URL(req.url);
 
   const forwardHeaders = new Headers();
   const incomingCookie = req.headers.get('cookie');
@@ -167,7 +170,7 @@ export async function DELETE(
   forwardHeaders.set('accept', 'application/json');
 
   try {
-    const targetUrl = `${backendUrl}/api/notes/${encodeURIComponent(cleanSlug)}`;
+    const targetUrl = `${backendUrl}/api/v1/notes/${encodeURIComponent(cleanSlug)}${url.search}`;
     const res = await fetch(targetUrl, {
       method: 'DELETE',
       headers: forwardHeaders,

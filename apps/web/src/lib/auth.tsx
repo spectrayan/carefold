@@ -19,12 +19,14 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import type { UserProfile, AuthProvidersInfo } from '@/types/api';
+import { setStorageUserId, detachUserSession } from '@/lib/storageNamespace';
+import { fetchHouseholdProfiles } from '@/lib/familyProfiles';
 
 export const DEFAULT_STEWARD_USER: UserProfile = {
   id: '00000000-0000-0000-0000-000000000000',
   email: 'steward@local.carefold',
   username: 'steward',
-  full_name: 'Local Steward',
+  full_name: 'Care Steward',
   role: 'admin',
   status: 'active',
   auth_provider: 'disabled',
@@ -88,29 +90,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [providersInfo, setProvidersInfo] = useState<AuthProvidersInfo>({
-    active_provider: 'disabled',
+    active_provider: 'local',
     sso_providers: [],
     registration_enabled: true
   });
 
   const refreshUser = useCallback(async (): Promise<UserProfile | null> => {
     try {
-      let activeMode: string = 'disabled';
+      let activeMode: string = 'local';
 
       // 1. Fetch provider status
       try {
-        const provRes = await fetch('/api/auth/providers', { cache: 'no-store' });
+        const provRes = await fetch('/api/v1/auth/providers', { cache: 'no-store' });
         if (provRes.ok) {
           const provData: AuthProvidersInfo = await provRes.json();
           setProvidersInfo(provData);
-          activeMode = provData.active_provider || 'disabled';
+          activeMode = provData.active_provider || 'local';
         }
       } catch {
         // Network/proxy fallback
       }
 
       // 2. Fetch current user
-      const meRes = await fetch('/api/auth/me', {
+      const meRes = await fetch('/api/v1/auth/me', {
         headers: { Accept: 'application/json' },
         cache: 'no-store'
       });
@@ -119,6 +121,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await meRes.json();
         const loadedUser: UserProfile = data.user || data;
         setUser(loadedUser);
+        try {
+          await fetchHouseholdProfiles();
+        } catch {}
         return loadedUser;
       } else {
         // If unauthenticated and in disabled mode, assign default steward user
@@ -127,6 +132,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return DEFAULT_STEWARD_USER;
         } else {
           setUser(null);
+          if (typeof document !== 'undefined') {
+            document.cookie = 'carefold_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            document.cookie = 'carefold_active_profile=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            const currentPath = window.location.pathname;
+            const isAuthRoute =
+              currentPath.startsWith('/login') ||
+              currentPath.startsWith('/register') ||
+              currentPath.startsWith('/forgot-password') ||
+              currentPath.startsWith('/reset-password');
+            if (!isAuthRoute && meRes.status === 401) {
+              window.location.href = `/login?redirect=${encodeURIComponent(currentPath + window.location.search)}`;
+            }
+          }
           return null;
         }
       }
@@ -160,7 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -174,6 +192,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       const authenticatedUser: UserProfile = data.user || data;
       setUser(authenticatedUser);
+      try {
+        await fetchHouseholdProfiles();
+      } catch {}
       return authenticatedUser;
     },
     []
@@ -204,7 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch('/api/v1/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -222,6 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(newUser);
         try {
           await refreshUser();
+          await fetchHouseholdProfiles();
         } catch {
           // Best effort refresh
         }
@@ -231,20 +253,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [refreshUser]
   );
 
+  useEffect(() => {
+    if (user?.id) {
+      setStorageUserId(user.id);
+    } else {
+      setStorageUserId(null);
+    }
+  }, [user?.id]);
+
   // Logout handler
   const logout = useCallback(async (): Promise<void> => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      // 1. Revoke session on backend via v1 API with credentials and json header
+      await fetch('/api/v1/auth/logout', {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        credentials: 'include'
+      });
     } catch {
-      // Best effort
+      // Best-effort network revocation: offline or network partition must never trap the user
     } finally {
-      if (providersInfo.active_provider === 'disabled') {
-        setUser(DEFAULT_STEWARD_USER);
-      } else {
-        setUser(null);
+      // 2. Detach and purge user-scoped browser storage (localStorage & sessionStorage)
+      detachUserSession(user?.id);
+
+      // 3. Explicitly expire client-accessible cookies
+      if (typeof document !== 'undefined') {
+        document.cookie = 'carefold_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        document.cookie = 'carefold_active_profile=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      }
+
+      // 4. Unconditionally reset React authentication state to null (no fallback to default persona)
+      setUser(null);
+
+      // 5. Hard browser navigation to flush in-memory React state, singleton stores, and route caches
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
       }
     }
-  }, [providersInfo.active_provider]);
+  }, [user?.id]);
 
   // Change password handler
   const changePassword = useCallback(
@@ -262,7 +308,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      const res = await fetch('/api/auth/change-password', {
+      const res = await fetch('/api/v1/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

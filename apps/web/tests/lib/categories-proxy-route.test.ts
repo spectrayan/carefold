@@ -59,7 +59,7 @@ describe('GET /api/agents/categories proxy route', () => {
     expect(data.total).toBe(22);
     expect(data.domains.clinical.count).toBe(15);
     expect(backendCalls.length).toBe(1);
-    expect(backendCalls[0].url).toContain('/api/agents/categories');
+    expect(backendCalls[0].url).toContain('/api/v1/agents/categories');
   });
 
   it('returns 503 BACKEND_UNREACHABLE on backend connection failure', async () => {

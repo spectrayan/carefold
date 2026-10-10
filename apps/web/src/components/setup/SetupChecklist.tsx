@@ -67,7 +67,7 @@ function CopyButton({ text, testId }: { text: string; testId?: string }) {
       data-testid={testId || 'copy-command-btn'}
       aria-label={`Copy command ${text}`}
       onClick={handleCopy}
-      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded-md bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-600 transition cursor-pointer"
+      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-600 transition cursor-pointer"
     >
       {copied ? (
         <>
@@ -116,7 +116,7 @@ function StepBadge({ badge }: { badge: SetupCheckItem['badge'] }) {
     <span
       data-testid="status-badge"
       className={cn(
-        'text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full border uppercase',
+        'text-xs font-bold tracking-wider px-2 py-0.5 rounded-full border uppercase',
         badgeStyles
       )}
     >
@@ -133,6 +133,7 @@ export function SetupChecklist({
   const [diagnostics, setDiagnostics] = useState<SetupDiagnosticsResult | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   const [statusAnnouncement, setStatusAnnouncement] = useState('');
+  const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
 
   const checkConnectivity = useCallback(async () => {
     setIsChecking(true);
@@ -165,6 +166,48 @@ export function SetupChecklist({
     }
   };
 
+  const isCollapsed = Boolean(diagnostics?.allPassed && !isManuallyExpanded && !isSettingsView);
+
+  if (isCollapsed) {
+    return (
+      <div
+        data-testid="setup-collapsed-row"
+        className={cn(
+          'flex items-center justify-between gap-3 text-xs bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-xl px-4 py-3',
+          className
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span className="font-semibold text-slate-800 dark:text-zinc-200">All systems ready</span>
+          <span className="text-slate-400 dark:text-zinc-600">•</span>
+          <span className="text-slate-600 dark:text-zinc-400">Ollama and backend connected</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            data-testid="setup-expand-btn"
+            onClick={() => setIsManuallyExpanded(true)}
+            className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
+          >
+            View details
+          </button>
+          <button
+            type="button"
+            data-testid="setup-collapsed-recheck-btn"
+            onClick={checkConnectivity}
+            disabled={isChecking}
+            className="p-1 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+            title="Re-check connectivity"
+          >
+            <RotateCcw className={cn('w-3.5 h-3.5', isChecking && 'animate-spin text-emerald-600 dark:text-emerald-400')} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       data-testid="setup-checklist"
@@ -194,22 +237,34 @@ export function SetupChecklist({
           </p>
         </div>
 
-        <button
-          type="button"
-          data-testid="setup-recheck-btn"
-          aria-label="Re-check connectivity status"
-          disabled={isChecking}
-          onClick={checkConnectivity}
-          className={cn(
-            'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition cursor-pointer',
-            isChecking
-              ? 'bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border-slate-200 dark:border-zinc-700 cursor-not-allowed'
-              : 'bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700'
+        <div className="flex items-center gap-2">
+          {diagnostics?.allPassed && !isSettingsView && (
+            <button
+              type="button"
+              data-testid="setup-collapse-btn"
+              onClick={() => setIsManuallyExpanded(false)}
+              className="text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:underline cursor-pointer mr-1"
+            >
+              Hide details
+            </button>
           )}
-        >
-          <RotateCcw className={cn('w-3.5 h-3.5', isChecking && 'animate-spin text-emerald-600 dark:text-emerald-400')} />
-          <span>{isChecking ? 'Checking...' : 'Re-check'}</span>
-        </button>
+          <button
+            type="button"
+            data-testid="setup-recheck-btn"
+            aria-label="Re-check connectivity status"
+            disabled={isChecking}
+            onClick={checkConnectivity}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition cursor-pointer',
+              isChecking
+                ? 'bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border-slate-200 dark:border-zinc-700 cursor-not-allowed'
+                : 'bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700'
+            )}
+          >
+            <RotateCcw className={cn('w-3.5 h-3.5', isChecking && 'animate-spin text-emerald-600 dark:text-emerald-400')} />
+            <span>{isChecking ? 'Checking...' : 'Re-check'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Step 1: Backend API Status */}
@@ -239,7 +294,7 @@ export function SetupChecklist({
               </p>
 
               {diagnostics?.backend.details && (
-                <div className="mt-1 text-[11px] text-slate-500 dark:text-zinc-400">
+                <div className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
                   {diagnostics.backend.details.map((d, idx) => (
                     <span key={idx} className="block">{d}</span>
                   ))}
@@ -252,7 +307,7 @@ export function SetupChecklist({
         {/* Remediation code box if backend is failing */}
         {diagnostics?.backend.status === 'fail' && diagnostics.backend.fixCommand && (
           <div className="mt-3 pt-2.5 border-t border-rose-200/60 dark:border-rose-800/40 space-y-2">
-            <span className="text-[11px] font-semibold text-rose-900 dark:text-rose-300 block">
+            <span className="text-xs font-semibold text-rose-900 dark:text-rose-300 block">
               Actionable Fix:
             </span>
             <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-900/60 font-mono text-xs text-slate-800 dark:text-zinc-200">
@@ -260,7 +315,7 @@ export function SetupChecklist({
               <CopyButton text={diagnostics.backend.fixCommand} testId="copy-backend-command" />
             </div>
             {diagnostics.backend.secondaryCommand && (
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+              <p className="text-xs text-slate-500 dark:text-zinc-400">
                 Or launch coordinator: <code className="font-mono text-xs text-slate-700 dark:text-zinc-300">{diagnostics.backend.secondaryCommand}</code>
               </p>
             )}
@@ -269,7 +324,7 @@ export function SetupChecklist({
                 href={diagnostics.backend.docsLink}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:underline"
               >
                 <span>{diagnostics.backend.docsLabel || 'View Setup Documentation'}</span>
                 <ExternalLink className="w-3 h-3" />
@@ -313,7 +368,7 @@ export function SetupChecklist({
               </p>
 
               {diagnostics?.model.details && (
-                <div className="mt-1.5 space-y-0.5 text-[11px] text-slate-500 dark:text-zinc-400">
+                <div className="mt-1.5 space-y-0.5 text-xs text-slate-500 dark:text-zinc-400">
                   {diagnostics.model.details.map((d, idx) => (
                     <span key={idx} className="block leading-relaxed">{d}</span>
                   ))}
@@ -335,7 +390,7 @@ export function SetupChecklist({
           >
             <span
               className={cn(
-                'text-[11px] font-semibold block',
+                'text-xs font-semibold block',
                 diagnostics.model.status === 'fail'
                   ? 'text-rose-900 dark:text-rose-300'
                   : 'text-amber-900 dark:text-amber-300'
@@ -352,7 +407,7 @@ export function SetupChecklist({
                 href={diagnostics.model.docsLink}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:underline"
               >
                 <span>{diagnostics.model.docsLabel || 'View Setup Documentation'}</span>
                 <ExternalLink className="w-3 h-3" />
@@ -386,7 +441,7 @@ export function SetupChecklist({
           href="/chat?agent=visit-steward"
           data-testid="setup-starter-btn"
           onClick={handleStarterClick}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition whitespace-nowrap cursor-pointer shrink-0"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm transition whitespace-nowrap cursor-pointer shrink-0"
         >
           <Stethoscope className="w-3.5 h-3.5" />
           <span>Try a starter</span>

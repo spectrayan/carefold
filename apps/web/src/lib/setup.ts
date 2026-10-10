@@ -112,7 +112,7 @@ export async function runSetupDiagnostics(
   let backendHealthData: HealthResponse | null = null;
 
   try {
-    const res = await fetch('/api/health', {
+    const res = await fetch('/api/v1/health', {
       headers: { Accept: 'application/json' },
       cache: 'no-store',
       signal: AbortSignal.timeout(3500)
@@ -172,7 +172,7 @@ export async function runSetupDiagnostics(
     let modelsList: Array<{ id: string; name: string }> = [];
 
     try {
-      const modelsUrl = `/api/models?provider=ollama&endpoint=${encodeURIComponent(endpoint)}`;
+      const modelsUrl = `/api/v1/models?provider=ollama&endpoint=${encodeURIComponent(endpoint)}`;
       const res = await fetch(modelsUrl, {
         headers: { Accept: 'application/json' },
         cache: 'no-store',

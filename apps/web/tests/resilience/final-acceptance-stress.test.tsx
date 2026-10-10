@@ -44,7 +44,7 @@ function ThemeStressConsumer() {
   );
 }
 
-describe('Final E2E Acceptance & Adversarial Stress Test Suite', () => {
+describe('Final E2E Acceptance & Robustness Stress Test Suite', () => {
   let isOsDark = false;
   let matchMediaListeners: Array<(e: any) => void> = [];
 
@@ -279,7 +279,7 @@ describe('Final E2E Acceptance & Adversarial Stress Test Suite', () => {
   // =========================================================================
   // 2. CODE BLOCK TOKENIZER & EDGE CASES
   // =========================================================================
-  describe('2. Code Block Tokenizer & Adversarial Edge Cases', () => {
+  describe('2. Code Block Tokenizer & Syntax Edge Cases', () => {
     it('handles empty, whitespace-only, and massive single-line inputs without ReDoS', () => {
       expect(tokenizeCode('', 'python')).toEqual([]);
       expect(tokenizeCode('   \n\t  ', 'text')).toEqual([{ type: 'plain', text: '   \n\t  ' }]);

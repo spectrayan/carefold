@@ -80,7 +80,7 @@ const MOCK_USERS_LIST = [
   }
 ];
 
-describe('Milestone 5 Empirical Challenger Suite', () => {
+describe('Auth Session Resilience Suite', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.stubGlobal('fetch', vi.fn());
@@ -98,13 +98,13 @@ describe('Milestone 5 Empirical Challenger Suite', () => {
     it('blocks unauthenticated visitors and renders 403 Forbidden card', async () => {
       vi.mocked(fetch).mockImplementation(async (url: any) => {
         const urlStr = String(url);
-        if (urlStr.includes('/api/auth/providers')) {
+        if (urlStr.includes('/auth/providers')) {
           return {
             ok: true,
             json: async () => ({ active_provider: 'local', sso_providers: [], registration_enabled: true })
           } as any;
         }
-        if (urlStr.includes('/api/auth/me')) {
+        if (urlStr.includes('/auth/me')) {
           return {
             ok: false,
             status: 401,
@@ -135,13 +135,13 @@ describe('Milestone 5 Empirical Challenger Suite', () => {
     it('blocks member users and renders 403 Forbidden card', async () => {
       vi.mocked(fetch).mockImplementation(async (url: any) => {
         const urlStr = String(url);
-        if (urlStr.includes('/api/auth/providers')) {
+        if (urlStr.includes('/auth/providers')) {
           return {
             ok: true,
             json: async () => ({ active_provider: 'local', sso_providers: [], registration_enabled: true })
           } as any;
         }
-        if (urlStr.includes('/api/auth/me')) {
+        if (urlStr.includes('/auth/me')) {
           return { ok: true, json: async () => MOCK_MEMBER_USER } as any;
         }
         return { ok: true, json: async () => ({}) } as any;
@@ -162,13 +162,13 @@ describe('Milestone 5 Empirical Challenger Suite', () => {
     it('blocks steward users and renders 403 Forbidden card', async () => {
       vi.mocked(fetch).mockImplementation(async (url: any) => {
         const urlStr = String(url);
-        if (urlStr.includes('/api/auth/providers')) {
+        if (urlStr.includes('/auth/providers')) {
           return {
             ok: true,
             json: async () => ({ active_provider: 'local', sso_providers: [], registration_enabled: true })
           } as any;
         }
-        if (urlStr.includes('/api/auth/me')) {
+        if (urlStr.includes('/auth/me')) {
           return { ok: true, json: async () => MOCK_STEWARD_USER } as any;
         }
         return { ok: true, json: async () => ({}) } as any;
@@ -189,13 +189,13 @@ describe('Milestone 5 Empirical Challenger Suite', () => {
     it('blocks unexpected/malformed roles (fail-closed behavior)', async () => {
       vi.mocked(fetch).mockImplementation(async (url: any) => {
         const urlStr = String(url);
-        if (urlStr.includes('/api/auth/providers')) {
+        if (urlStr.includes('/auth/providers')) {
           return {
             ok: true,
             json: async () => ({ active_provider: 'local', sso_providers: [], registration_enabled: true })
           } as any;
         }
-        if (urlStr.includes('/api/auth/me')) {
+        if (urlStr.includes('/auth/me')) {
           return {
             ok: true,
             json: async () => ({ ...MOCK_MEMBER_USER, role: 'unknown_role' })
@@ -219,28 +219,28 @@ describe('Milestone 5 Empirical Challenger Suite', () => {
     it('renders all 4 tabs and allows complete tab navigation cycle for admin user', async () => {
       vi.mocked(fetch).mockImplementation(async (url: any) => {
         const urlStr = String(url);
-        if (urlStr.includes('/api/auth/providers')) {
+        if (urlStr.includes('/auth/providers')) {
           return {
             ok: true,
             json: async () => ({ active_provider: 'local', sso_providers: [], registration_enabled: true })
           } as any;
         }
-        if (urlStr.includes('/api/auth/me')) {
+        if (urlStr.includes('/auth/me')) {
           return { ok: true, json: async () => MOCK_ADMIN_USER } as any;
         }
-        if (urlStr.includes('/api/admin/settings')) {
+        if (urlStr.includes('/admin/settings')) {
           return {
             ok: true,
             json: async () => ({ settings: { 'auth.active_provider': 'local' } })
           } as any;
         }
-        if (urlStr.includes('/api/admin/users')) {
+        if (urlStr.includes('/admin/users')) {
           return {
             ok: true,
             json: async () => ({ users: MOCK_USERS_LIST, total: MOCK_USERS_LIST.length })
           } as any;
         }
-        if (urlStr.includes('/api/admin/diagnostics')) {
+        if (urlStr.includes('/admin/diagnostics')) {
           return {
             ok: true,
             json: async () => ({
@@ -253,7 +253,7 @@ describe('Milestone 5 Empirical Challenger Suite', () => {
             })
           } as any;
         }
-        if (urlStr.includes('/api/health')) {
+        if (urlStr.includes('/health')) {
           return {
             ok: true,
             json: async () => ({ status: 'ok', version: '0.4.0-beta.1' })
@@ -316,19 +316,19 @@ describe('Milestone 5 Empirical Challenger Suite', () => {
     it('disables delete button and status toggle for current logged-in admin (by id and username)', async () => {
       vi.mocked(fetch).mockImplementation(async (url: any) => {
         const urlStr = String(url);
-        if (urlStr.includes('/api/auth/providers')) {
+        if (urlStr.includes('/auth/providers')) {
           return {
             ok: true,
             json: async () => ({ active_provider: 'local', sso_providers: [], registration_enabled: true })
           } as any;
         }
-        if (urlStr.includes('/api/auth/me')) {
+        if (urlStr.includes('/auth/me')) {
           return { ok: true, json: async () => MOCK_ADMIN_USER } as any;
         }
-        if (urlStr.includes('/api/admin/settings')) {
+        if (urlStr.includes('/admin/settings')) {
           return { ok: true, json: async () => ({ settings: {} }) } as any;
         }
-        if (urlStr.includes('/api/admin/users')) {
+        if (urlStr.includes('/admin/users')) {
           return {
             ok: true,
             json: async () => ({ users: MOCK_USERS_LIST, total: MOCK_USERS_LIST.length })
