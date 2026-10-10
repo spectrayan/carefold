@@ -581,7 +581,7 @@ export function clearStoredApiKeys(userId?: string | null): CarefoldUserSettings
       // Storage access protection
     }
   }
-  return cleared;
+  return loadSettings(userId);
 }
 
 
