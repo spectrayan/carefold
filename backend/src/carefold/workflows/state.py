@@ -92,6 +92,7 @@ class AgentState(TypedDict, total=False):
     # Session and user identifiers
     thread_id: str
     user_id: str
+    profile_id: Optional[str]
 
     # Routing and orchestration state
     current_agent: str

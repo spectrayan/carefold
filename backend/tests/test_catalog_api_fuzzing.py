@@ -223,7 +223,7 @@ async def test_catalog_indexing_and_category_tree_parity(repo_root: Path, tmp_pa
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_adversarial_fts_query_sanitization_and_sql_injection(tmp_path: Path):
+async def test_fts_query_sanitization_and_sql_injection(tmp_path: Path):
     """Adversarially challenge FTS5 query parser with injection payloads and hostile text."""
     catalog = SqliteCatalogAdapter(db_path=tmp_path / "adversarial_fts.db")
 
@@ -397,7 +397,7 @@ async def test_two_hop_routing_across_all_five_domains(tmp_path: Path):
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_adversarial_two_hop_fallback_chain(tmp_path: Path):
+async def test_two_hop_fallback_chain(tmp_path: Path):
     """Stress-test the full 4-step fallback chain under degraded/hostile conditions."""
     catalog = SqliteCatalogAdapter(db_path=tmp_path / "fallback_chain.db")
 
@@ -568,7 +568,7 @@ def test_fastapi_endpoints_schemas_and_filters(client: TestClient):
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_adversarial_candidate_limit_and_concurrency(tmp_path: Path):
+async def test_candidate_limit_and_concurrency(tmp_path: Path):
     """Verify candidate list is strictly capped at <= 8 and concurrent routing does not lock/corrupt catalog."""
     import asyncio
     catalog = SqliteCatalogAdapter(db_path=tmp_path / "candidate_limit.db")
@@ -626,7 +626,7 @@ async def test_adversarial_candidate_limit_and_concurrency(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_adversarial_malformed_llm_markdown_and_hallucinations(tmp_path: Path):
+async def test_malformed_llm_markdown_and_hallucinations(tmp_path: Path):
     """Stress-test markdown json extraction, unparseable LLM output, and hallucinated candidate IDs."""
     catalog = SqliteCatalogAdapter(db_path=tmp_path / "markdown_test.db")
 
@@ -659,7 +659,7 @@ async def test_adversarial_malformed_llm_markdown_and_hallucinations(tmp_path: P
         await catalog.close()
 
 
-def test_adversarial_api_fuzzing_and_malicious_query_params(client: TestClient):
+def test_api_fuzzing_and_malicious_query_params(client: TestClient):
     """Fuzz API query parameters to ensure schema safety, injection resistance, and proper error codes."""
     # 1. Negative or 0 page / per_page must return 422 Unprocessable Entity
     assert client.get("/api/agents?page=0").status_code == 422

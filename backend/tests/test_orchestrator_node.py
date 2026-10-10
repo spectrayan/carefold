@@ -244,3 +244,57 @@ async def test_orchestrator_preflight_proactively_provisions_reference_doc(temp_
     content = doc_file.read_text(encoding="utf-8")
     assert "Clinical Timeline Tracker" in content
 
+
+@pytest.mark.asyncio
+async def test_agent_execution_unsupported_tools_fallback(temp_workspace: Path):
+    """Verifies that AgentExecutionNode gracefully falls back to raw model invocation when tools are not supported (e.g. medgemma)."""
+    from langchain_core.language_models.chat_models import BaseChatModel
+    from langchain_core.outputs import ChatGeneration, ChatResult
+
+    class UnsupportedToolsChatModel(BaseChatModel):
+        """Model simulating Ollama medgemma tool rejection."""
+
+        def _generate(self, messages, stop=None, run_manager=None, **kwargs):
+            raise NotImplementedError
+
+        async def _agenerate(self, messages, stop=None, run_manager=None, **kwargs):
+            return ChatResult(
+                generations=[
+                    ChatGeneration(
+                        message=AIMessage(content="I am medgemma successfully responding without native tools.")
+                    )
+                ]
+            )
+
+        def bind_tools(self, tools, **kwargs):
+            class BoundUnsupportedToolsModel(UnsupportedToolsChatModel):
+                async def _agenerate(self, messages, stop=None, run_manager=None, **kwargs):
+                    raise Exception(
+                        "registry.ollama.ai/library/medgemma:latest does not support tools (status code: 400)"
+                    )
+
+            bound = BoundUnsupportedToolsModel()
+            bound.bound = self
+            return bound
+
+        @property
+        def _llm_type(self) -> str:
+            return "unsupported-tools-model"
+
+    registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
+    raw_model = UnsupportedToolsChatModel()
+    node = AgentExecutionNode(model=raw_model, registry=registry)
+
+    state = {
+        "current_agent": "cardiology-guide",
+        "messages": [HumanMessage(content="What should I ask my cardiologist during my consultation?")],
+    }
+
+    result = await node.execute(state)
+
+    assert result["next_step"] == "output_guardrail"
+    assert "medgemma successfully responding without native tools" in result["output"]
+    assert result["current_agent"] == "cardiology-guide"
+    assert "error" not in result
+
+

@@ -103,6 +103,7 @@ async def get_recent_audit_events(
     agent_id: Optional[str] = None,
     event: Optional[str] = None,
     full: bool = False,
+    profile_id: Optional[str] = None,
 ) -> Tuple[int, List[AuditEvent]]:
     """Reads recent audit events, newest first, with optional filtering."""
     target_path = Path(log_path) if log_path else settings.get_audit_log_path()
@@ -126,6 +127,8 @@ async def get_recent_audit_events(
             if agent_id and data.get("agent_id") != agent_id:
                 continue
             if event and data.get("event") != event:
+                continue
+            if profile_id and data.get("profile_id") != profile_id:
                 continue
 
             total_matching += 1

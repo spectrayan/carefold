@@ -74,7 +74,7 @@ async def get_current_user(
     auth_port = auth if isinstance(auth, AuthPort) else get_auth_port()
 
     # If active auth port is DisabledAuthAdapter (or config.auth_provider == "disabled"), return DEFAULT_STEWARD_USER
-    if isinstance(auth_port, DisabledAuthAdapter) or getattr(settings, "auth_provider", "disabled") == "disabled":
+    if isinstance(auth_port, DisabledAuthAdapter) or getattr(settings, "auth_provider", "local") == "disabled":
         return DEFAULT_STEWARD_USER
 
     # In local/oidc auth mode:
@@ -130,7 +130,7 @@ def resolve_owner_user_id(user: Optional[UserProfile]) -> Optional[str]:
     """Returns foreign key user_id for DB entities, or None if in disabled/offline single-user mode."""
     if not user:
         return None
-    if user.id == DEFAULT_STEWARD_USER.id or getattr(settings, "auth_provider", "disabled") == "disabled":
+    if user.id == DEFAULT_STEWARD_USER.id or getattr(settings, "auth_provider", "local") == "disabled":
         return None
     return user.id
 

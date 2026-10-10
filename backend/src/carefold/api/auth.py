@@ -317,6 +317,7 @@ async def providers(
     }
 
 
+@router.get("/status")
 @router.get("/setup-status")
 async def setup_status(
     auth_port: AuthPort = Depends(get_auth),

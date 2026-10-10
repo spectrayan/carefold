@@ -51,7 +51,7 @@ Returns system health status, runtime uptime, workspace agent/skill counts, and 
   "timestamp": "2026-10-02T05:00:00.000000+00:00",
   "modelReachable": true,
   "workspace": {
-    "root": "/Users/bharatjoshi/git/carefold",
+    "root": "/home/user/.carefold",
     "agentsCount": 22,
     "skillsCount": 24
   },

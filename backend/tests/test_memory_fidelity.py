@@ -565,7 +565,7 @@ class TestAdvancedAdversarialEdgeCases:
         assert item_after is None
 
     @pytest.mark.asyncio
-    async def test_adversarial_fts_query_syntax_no_crash(self, adapter: SqliteMemoryAdapter):
+    async def test_fts_query_syntax_no_crash(self, adapter: SqliteMemoryAdapter):
         """Challenge FTS5 parser with malformed, unbalanced, and syntax-breaking queries."""
         await adapter.remember("doc1", "clinical cardiology examination", MemoryTier.SEMANTIC, namespace="fts_ns")
 

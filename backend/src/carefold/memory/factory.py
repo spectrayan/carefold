@@ -254,3 +254,6 @@ def set_catalog_port(port: Optional[CatalogPort]) -> None:
     """Explicitly sets or overrides the cached CatalogPort singleton."""
     global _CACHED_CATALOG_PORT
     _CACHED_CATALOG_PORT = port
+
+
+reset_memory_port = reset_memory_ports

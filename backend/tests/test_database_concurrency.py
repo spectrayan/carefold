@@ -581,7 +581,7 @@ async def test_concurrent_catalog_delete_and_index_resilience(tmp_path: Path) ->
 # ==============================================================================
 
 @pytest.mark.asyncio
-async def test_adversarial_queries_and_payloads_under_concurrency(tmp_path: Path) -> None:
+async def test_queries_and_payloads_under_concurrency(tmp_path: Path) -> None:
     """Execute adversarial FTS queries, injection strings, and large payloads under concurrency.
     
     Verifies:

@@ -430,14 +430,14 @@ class TestAdversarialErrorNode:
     @pytest.mark.asyncio
     async def test_error_node_sanitizes_macos_user_paths(self):
         node = ErrorNode()
-        leak_msg = "Error reading /Users/bharatjoshi/git/carefold/backend/.env file"
+        leak_msg = "Error reading /Users/developer/git/carefold/backend/.env file"
         res = await node.execute({"error_exception": RuntimeError(leak_msg)})
 
         assert res["next_step"] == "done"
-        assert "/Users/bharatjoshi" not in res["error"]
-        assert "/Users/bharatjoshi" not in res["error_message"]
-        assert "/Users/bharatjoshi" not in res["output"]
-        assert "/Users/bharatjoshi" not in res["messages"][0]["content"]
+        assert "/Users/developer" not in res["error"]
+        assert "/Users/developer" not in res["error_message"]
+        assert "/Users/developer" not in res["output"]
+        assert "/Users/developer" not in res["messages"][0]["content"]
         assert "[REDACTED_PATH]" in res["error"]
 
     @pytest.mark.asyncio
@@ -455,14 +455,14 @@ class TestAdversarialErrorNode:
         node = ErrorNode()
         trace = (
             'Traceback (most recent call last):\n'
-            '  File "/Users/bharatjoshi/git/carefold/app.py", line 42, in execute\n'
+            '  File "/Users/developer/git/carefold/app.py", line 42, in execute\n'
             '    result = evaluate()\n'
             'ValueError: invalid model configuration'
         )
         res = await node.execute({"error_exception": RuntimeError(trace)})
 
-        assert 'File "/Users/bharatjoshi' not in res["error"]
-        assert "/Users/bharatjoshi" not in res["error"]
+        assert 'File "/Users/developer' not in res["error"]
+        assert "/Users/developer" not in res["error"]
         assert "[REDACTED_TRACE]" in res["error"] or "[REDACTED_PATH]" in res["error"]
         assert res["next_step"] == "done"
 

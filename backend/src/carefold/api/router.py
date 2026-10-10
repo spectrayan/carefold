@@ -27,6 +27,7 @@ from carefold.api.health import router as health_router
 from carefold.api.memory import router as memory_router
 from carefold.api.models import router as models_router
 from carefold.api.notes import router as notes_router
+from carefold.api.profiles import router as profiles_router
 from carefold.api.skills import router as skills_router
 
 api_router = APIRouter()
@@ -38,6 +39,7 @@ api_router.include_router(chat_router)
 api_router.include_router(models_router)
 api_router.include_router(attachments_router)
 api_router.include_router(notes_router)
+api_router.include_router(profiles_router, prefix="/profiles", tags=["profiles"])
 api_router.include_router(memory_router, prefix="/memory", tags=["memory"])
 api_router.include_router(memory_router, prefix="/memories", tags=["memory"], include_in_schema=False)
 api_router.include_router(auth_router, prefix="/auth", tags=["auth"])

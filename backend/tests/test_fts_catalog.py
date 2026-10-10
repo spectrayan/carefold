@@ -281,7 +281,7 @@ class TestAdversarialAndMalformedQueries:
         await adapter.close()
 
     @pytest.mark.asyncio
-    async def test_adversarial_queries_do_not_crash(
+    async def test_queries_do_not_crash(
         self,
         memory_adapter: SqliteMemoryAdapter,
         catalog_adapter: SqliteCatalogAdapter,

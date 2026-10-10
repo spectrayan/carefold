@@ -272,7 +272,7 @@ class TestTwoHopSearchQueriesRouting:
             )
 
     @pytest.mark.asyncio
-    async def test_adversarial_queries_syntax_safety_and_retrieval(self, full_marketplace_catalog: SqliteCatalogAdapter):
+    async def test_queries_syntax_safety_and_retrieval(self, full_marketplace_catalog: SqliteCatalogAdapter):
         """Stress-tests search queries with punctuation, boolean operators, and injection attempts."""
         adversarial_tests = [
             ("asthma OR 'hypertension'", "pulmonology-guide"),

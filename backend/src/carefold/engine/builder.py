@@ -284,7 +284,7 @@ class GraphBuilder:
         if supervisor_node is None:
             if self.use_dynamic_orchestrator:
                 supervisor_node = OrchestratorNode(
-                    model=bound_model or self.model,
+                    model=self.model,
                     registry=self.registry,
                 )
             else:
@@ -294,7 +294,7 @@ class GraphBuilder:
         if agent_node is None:
             if self.use_dynamic_orchestrator:
                 agent_node = AgentExecutionNode(
-                    model=bound_model or self.model,
+                    model=self.model,
                     registry=self.registry,
                     tool_registry=self.tool_registry,
                     default_tools=self.tools,

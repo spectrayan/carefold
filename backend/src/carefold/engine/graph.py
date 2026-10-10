@@ -191,7 +191,32 @@ def create_agent_node(bound_model: BaseChatModel) -> Callable[[AgentState], Any]
         if system_prompt and not (messages and isinstance(messages[0], SystemMessage)):
             messages = [SystemMessage(content=system_prompt)] + messages
 
-        response = await bound_model.ainvoke(messages)
+        raw_model = bound_model
+        while hasattr(raw_model, "bound") and getattr(raw_model, "bound", None) is not None:
+            raw_model = raw_model.bound
+
+        try:
+            response = await bound_model.ainvoke(messages)
+        except Exception as exc:
+            exc_str = str(exc).lower()
+            if bound_model is not raw_model and any(
+                p in exc_str
+                for p in (
+                    "does not support tools",
+                    "does not support tool",
+                    "tools not supported",
+                    "tools are not supported",
+                    "tool calling not supported",
+                    "tool calling is not supported",
+                    "function calling not supported",
+                    "function calling is not supported",
+                )
+            ):
+                logger.warning("Model does not support tools (%s); invoking without tools", exc)
+                response = await raw_model.ainvoke(messages)
+            else:
+                raise
+
         return {"messages": [response]}
 
     return agent_node
@@ -596,18 +621,27 @@ def create_agent_graph(
 def resolve_checkpointer_path(
     workspace_root: Optional[Union[str, Path]] = None,
 ) -> Path:
-    """Resolves and ensures the chats directory exists for the SQLite checkpointer."""
+    """Resolves and ensures the parent directory exists for the SQLite checkpointer.
+
+    Precedence:
+    1. settings.db_path if explicitly set
+    2. CAREFOLD_DB_PATH environment variable
+    3. Explicit non-repository workspace_root parameter or existing workspace checkpoints file
+    4. Canonical home directory: settings.get_checkpointer_path() (~/.carefold/checkpoints.db)
+    """
     if settings.db_path is not None:
         db_path = settings.db_path.resolve()
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        return db_path
-    env_db = os.getenv(ENV_DB_PATH)
-    if env_db and env_db.strip():
-        db_path = Path(env_db).resolve()
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        return db_path
-    ws = Path(workspace_root) if workspace_root else settings.workspace_root
-    db_path = ws / CHATS_DIR / DEFAULT_CHECKPOINTS_DB
+    elif os.getenv(ENV_DB_PATH) and os.getenv(ENV_DB_PATH).strip():
+        db_path = Path(os.getenv(ENV_DB_PATH).strip()).resolve()
+    elif workspace_root is not None and (
+        (Path(workspace_root) / CHATS_DIR / DEFAULT_CHECKPOINTS_DB).is_file()
+        or not (Path(workspace_root) / "backend").is_dir()
+    ):
+        ws = Path(workspace_root)
+        db_path = ws / CHATS_DIR / DEFAULT_CHECKPOINTS_DB
+    else:
+        db_path = settings.get_checkpointer_path()
+
     db_path.parent.mkdir(parents=True, exist_ok=True)
     return db_path
 

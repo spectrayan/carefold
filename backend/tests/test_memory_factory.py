@@ -41,7 +41,7 @@ class TestSettingsMemoryAdditions:
         assert settings.memory_backend == "sqlite"
         assert settings.spector_url == "http://localhost:7070"
         assert settings.catalog_db_path is None
-        assert settings.get_catalog_db_path() == settings.workspace_root / DEFAULT_CATALOG_DB
+        assert settings.get_catalog_db_path() == settings.home_dir / DEFAULT_CATALOG_DB
 
     def test_settings_custom_catalog_db_path(self, tmp_path: Path) -> None:
         custom_file = tmp_path / "custom_catalog.db"

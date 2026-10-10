@@ -353,7 +353,7 @@ class TestSqliteCatalogAdapter:
             assert tree["domains"][canonical]["categories"] == {}
 
     @pytest.mark.asyncio
-    async def test_fts5_query_sanitization_adversarial_queries(
+    async def test_fts5_query_sanitization_queries(
         self,
         catalog_adapter: SqliteCatalogAdapter,
         sample_agents: Dict[str, AgentManifest],

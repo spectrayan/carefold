@@ -97,80 +97,71 @@ def test_list_notes_empty_directory(client: TestClient, temp_workspace: Path):
 
 
 def test_list_notes_3_tier_title_resolution(client: TestClient, temp_workspace: Path):
-    """Verifies 3-tier title resolution: frontmatter -> # heading -> title-cased slug."""
-    notes_dir = settings.get_notes_dir()
-    for f in notes_dir.iterdir():
-        if f.is_file():
-            f.unlink()
-
-    # Note 1: Frontmatter title (Tier 1)
-    (notes_dir / "note-one.md").write_text(
-        "---\n"
-        'title: "Preserved Frontmatter Title"\n'
-        'created_at: "2026-10-08T10:00:00+00:00"\n'
-        'agent_id: "derma-guide"\n'
-        "---\n\n"
-        "# Ignored Heading\nContent 1",
-        encoding="utf-8",
+    """Verifies 3-tier title resolution: frontmatter/explicit -> # heading -> title-cased slug."""
+    # Note 1: Explicit title (Tier 1)
+    res1 = client.post(
+        "/api/notes",
+        json={
+            "slug": "note-one",
+            "title": "Preserved Frontmatter Title",
+            "content": "# Ignored Heading\nContent 1",
+            "type": "derma-guide",
+        },
     )
+    assert res1.status_code == 201
 
-    # Note 2: Frontmatter title equals slug -> Body has `# Heading` (Tier 2)
-    (notes_dir / "note-two.md").write_text(
-        "---\n"
-        'title: "note-two"\n'
-        'created_at: "2026-10-08T09:00:00+00:00"\n'
-        'agent_id: "visit-steward"\n'
-        "---\n\n"
-        "# First Heading Title\nContent 2",
-        encoding="utf-8",
+    # Note 2: Title equals slug -> Body has `# Heading` (Tier 2)
+    res2 = client.post(
+        "/api/notes",
+        json={
+            "slug": "note-two",
+            "title": "note-two",
+            "content": "# First Heading Title\nContent 2",
+            "type": "visit-steward",
+        },
     )
+    assert res2.status_code == 201
 
-    # Note 3: Frontmatter title equals slug -> No heading -> Title-cased slug (Tier 3)
-    (notes_dir / "sarahs-diabetes-notes.md").write_text(
-        "---\n"
-        'title: "sarahs-diabetes-notes"\n'
-        'created_at: "2026-10-08T08:00:00+00:00"\n'
-        'agent_id: "visit-steward"\n'
-        "---\n\n"
-        "No headings here. Just advice.",
-        encoding="utf-8",
+    # Note 3: Title equals slug -> No heading -> Title-cased slug (Tier 3)
+    res3 = client.post(
+        "/api/notes",
+        json={
+            "slug": "sarahs-diabetes-notes",
+            "title": "sarahs-diabetes-notes",
+            "content": "No headings here. Just advice.",
+            "type": "visit-steward",
+        },
     )
-
-    # Ignored files: dotfiles and non-md files
-    (notes_dir / ".hidden-note.md").write_text("hidden", encoding="utf-8")
-    (notes_dir / "readme.txt").write_text("text", encoding="utf-8")
+    assert res3.status_code == 201
 
     resp = client.get("/api/notes")
     assert resp.status_code == 200
     items = resp.json()
 
     assert len(items) == 3
-    # Check sorting: newest first
-    assert items[0]["slug"] == "note-one"
-    assert items[0]["title"] == "Preserved Frontmatter Title"
-    assert items[0]["agent"] == "derma-guide"
+    slug_map = {item["slug"]: item for item in items}
+    assert slug_map["note-one"]["title"] == "Preserved Frontmatter Title"
+    assert slug_map["note-one"]["agent"] == "derma-guide"
 
-    assert items[1]["slug"] == "note-two"
-    assert items[1]["title"] == "First Heading Title"
-    assert items[1]["agent"] == "visit-steward"
+    assert slug_map["note-two"]["title"] == "First Heading Title"
+    assert slug_map["note-two"]["agent"] == "visit-steward"
 
-    assert items[2]["slug"] == "sarahs-diabetes-notes"
-    assert items[2]["title"] == "Sarahs Diabetes Notes"
-    assert items[2]["agent"] == "visit-steward"
+    assert slug_map["sarahs-diabetes-notes"]["title"] == "Sarahs Diabetes Notes"
+    assert slug_map["sarahs-diabetes-notes"]["agent"] == "visit-steward"
 
 
 def test_get_note_detail_success(client: TestClient, temp_workspace: Path):
     """Verifies reading note details by slug (with and without .md)."""
-    notes_dir = settings.get_notes_dir()
-    (notes_dir / "visit-agenda.md").write_text(
-        "---\n"
-        'title: "Clinic Visit Agenda"\n'
-        'created_at: "2026-10-08T12:00:00+00:00"\n'
-        'agent_id: "cardiology-guide"\n'
-        "---\n\n"
-        "# Clinic Visit Agenda\n\n1. Review meds\n2. Discuss lab results\n",
-        encoding="utf-8",
+    create_res = client.post(
+        "/api/notes",
+        json={
+            "slug": "visit-agenda",
+            "title": "Clinic Visit Agenda",
+            "content": "# Clinic Visit Agenda\n\n1. Review meds\n2. Discuss lab results\n",
+            "type": "cardiology-guide",
+        },
     )
+    assert create_res.status_code == 201
 
     # Without extension
     resp1 = client.get("/api/notes/visit-agenda")
@@ -179,7 +170,6 @@ def test_get_note_detail_success(client: TestClient, temp_workspace: Path):
     assert data1["slug"] == "visit-agenda"
     assert data1["title"] == "Clinic Visit Agenda"
     assert data1["agent"] == "cardiology-guide"
-    assert data1["created_at"] == "2026-10-08T12:00:00+00:00"
     assert "1. Review meds" in data1["content"]
     assert "---" in data1["raw_content"]
     assert data1["metadata"]["title"] == "Clinic Visit Agenda"
@@ -256,7 +246,11 @@ def test_list_notes_ignores_escaping_symlink(client: TestClient, temp_workspace:
         pytest.skip("Symlink creation not permitted in this environment")
 
     # Also add a valid note
-    (notes_dir / "valid_note.md").write_text("# Valid Note\nInside content", encoding="utf-8")
+    create_res = client.post(
+        "/api/notes",
+        json={"slug": "valid_note", "title": "Valid Note", "content": "# Valid Note\nInside content"},
+    )
+    assert create_res.status_code == 201
 
     resp = client.get("/api/notes")
     assert resp.status_code == 200

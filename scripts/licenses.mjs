@@ -78,6 +78,10 @@ const IGNORED_DIRS = new Set([
   'build'
 ]);
 
+const IGNORED_FILES = new Set([
+  'next-env.d.ts'
+]);
+
 function isPython(filePath) {
   return filePath.endsWith('.py');
 }
@@ -146,6 +150,9 @@ function walkDirectory(dir, rootDir = dir) {
       }
       results.push(...walkDirectory(fullPath, rootDir));
     } else if (entry.isFile()) {
+      if (IGNORED_FILES.has(entry.name)) {
+        continue;
+      }
       const ext = path.extname(entry.name);
       if (TARGET_EXTENSIONS.has(ext)) {
         results.push(fullPath);
@@ -164,6 +171,9 @@ export function getSourceFiles(rootDir = REPO_ROOT) {
       .map(line => line.trim())
       .filter(Boolean)
       .filter(relPath => {
+        if (IGNORED_FILES.has(path.basename(relPath))) {
+          return false;
+        }
         const ext = path.extname(relPath);
         return TARGET_EXTENSIONS.has(ext);
       })

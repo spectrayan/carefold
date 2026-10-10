@@ -118,12 +118,17 @@ class AgentNode(BaseNode):
 
         # Bind tools if provided and supported
         effective_tools = self.tools or state.get("tools") or []
-        bound_model = model
-        if effective_tools and hasattr(model, "bind_tools"):
+        raw_model = model
+        while hasattr(raw_model, "bound") and getattr(raw_model, "bound", None) is not None:
+            raw_model = raw_model.bound
+
+        bound_model = raw_model
+        if effective_tools and hasattr(raw_model, "bind_tools"):
             try:
-                bound_model = model.bind_tools(effective_tools)
+                bound_model = raw_model.bind_tools(effective_tools)
             except (NotImplementedError, Exception) as err:
                 logger.debug("Model bind_tools not supported or skipped: %s", err)
+                bound_model = raw_model
 
         try:
             if hasattr(bound_model, "ainvoke"):
@@ -131,12 +136,49 @@ class AgentNode(BaseNode):
             else:
                 response = bound_model.invoke(lc_messages)
         except Exception as exc:
-            logger.error("AgentNode model invocation failed: %s", exc)
-            return {
-                "error": str(exc),
-                "error_exception": exc,
-                "next_step": "error",
-            }
+            exc_str = str(exc).lower()
+            is_unsupported_tools = (
+                bound_model is not raw_model
+                and any(
+                    phrase in exc_str
+                    for phrase in (
+                        "does not support tools",
+                        "does not support tool",
+                        "tools not supported",
+                        "tools are not supported",
+                        "tool calling not supported",
+                        "tool calling is not supported",
+                        "function calling not supported",
+                        "function calling is not supported",
+                        "does not support function",
+                        "does not support functions",
+                    )
+                )
+            )
+            if is_unsupported_tools:
+                logger.warning(
+                    "Model does not support tools (%s); falling back to unbound model invocation",
+                    exc,
+                )
+                try:
+                    if hasattr(raw_model, "ainvoke"):
+                        response = await raw_model.ainvoke(lc_messages)
+                    else:
+                        response = raw_model.invoke(lc_messages)
+                except Exception as fallback_exc:
+                    logger.error("AgentNode fallback invocation failed: %s", fallback_exc)
+                    return {
+                        "error": str(fallback_exc),
+                        "error_exception": fallback_exc,
+                        "next_step": "error",
+                    }
+            else:
+                logger.error("AgentNode model invocation failed: %s", exc)
+                return {
+                    "error": str(exc),
+                    "error_exception": exc,
+                    "next_step": "error",
+                }
 
         tool_calls = getattr(response, "tool_calls", []) or []
         next_step = "tools" if tool_calls else "output_guardrail"

@@ -385,7 +385,7 @@ class TestCombinedFilters:
     """Tests combinations of domain, risk_class, category, search, and pagination."""
 
     def test_combined_domain_navigation_risk_class_administrative(self, client: TestClient):
-        """Adversarial Challenge:
+        """Resilience Challenge:
         The prompt tests: `domain=navigation&risk_class=administrative&page=1&per_page=10`.
         In the Carefold taxonomy, the risk class is 'admin', NOT 'administrative'.
         Verify that passing risk_class='administrative' returns 200 OK with empty list []
@@ -505,7 +505,7 @@ class TestAdversarialInputs:
             "!@#$%^&*()_+",
         ],
     )
-    def test_adversarial_domain_and_category_params(self, client: TestClient, malicious_payload: str):
+    def test_domain_and_category_params(self, client: TestClient, malicious_payload: str):
         """Adversarial query parameters should not cause 500 error; return 200 with [] safe list."""
         res_agents = client.get(f"/api/agents?domain={malicious_payload}")
         assert res_agents.status_code == 200
