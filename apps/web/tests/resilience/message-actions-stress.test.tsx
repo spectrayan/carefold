@@ -703,6 +703,9 @@ describe('Resilience Challenge: Message Actions, Suggestions & Session Continuit
 
       // Verify localStorage was written
       expect(localStorage.getItem('carefold_thread_visit-steward')).toBe(originalThreadId);
+      await waitFor(() => {
+        expect(localStorage.getItem(`carefold_msgs_${originalThreadId}`)).not.toBeNull();
+      });
       const savedMsgs = localStorage.getItem(`carefold_msgs_${originalThreadId}`);
       expect(savedMsgs).not.toBeNull();
       const parsedMsgs = JSON.parse(savedMsgs!);
