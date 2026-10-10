@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -421,6 +421,96 @@ async def accept_viewer_invite(
     )
 
 
+@router.get("/invites", response_model=List[ViewerInviteResponse])
+async def list_all_viewer_invites(
+    include_expired: bool = False,
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> List[ViewerInviteResponse]:
+    """Lists all active viewer invitations for all profiles managed or issued by the authenticated user."""
+    owner_id = resolve_owner_user_id(user)
+    effective_user_id = owner_id or user.id
+
+    # 1. Collect all profiles owned by user
+    stmt_profiles = select(Profile.id, Profile.name)
+    if owner_id:
+        stmt_profiles = stmt_profiles.where(Profile.user_id == owner_id)
+    else:
+        stmt_profiles = stmt_profiles.where(Profile.user_id.is_(None))
+
+    res_profiles = await db.execute(stmt_profiles)
+    managed_profile_map: Dict[str, str] = {row[0]: row[1] for row in res_profiles.all()}
+
+    # 2. Collect profiles shared with user with 'manage' access
+    if effective_user_id:
+        stmt_access = (
+            select(Profile.id, Profile.name)
+            .join(ProfileAccess, Profile.id == ProfileAccess.profile_id)
+            .where(
+                ProfileAccess.user_id == effective_user_id,
+                ProfileAccess.access_level == "manage",
+            )
+        )
+        res_access = await db.execute(stmt_access)
+        for row in res_access.all():
+            managed_profile_map[row[0]] = row[1]
+
+    # If admin, allow seeing all profiles
+    if getattr(user, "role", "member") == "admin":
+        stmt_all = select(Profile.id, Profile.name)
+        res_all = await db.execute(stmt_all)
+        for row in res_all.all():
+            managed_profile_map[row[0]] = row[1]
+
+    conditions = []
+    if managed_profile_map:
+        conditions.append(ViewerInvite.profile_id.in_(list(managed_profile_map.keys())))
+    if effective_user_id:
+        conditions.append(ViewerInvite.invited_by == effective_user_id)
+
+    if not conditions:
+        return []
+
+    stmt_invites = select(ViewerInvite).where(or_(*conditions))
+    if not include_expired:
+        now = datetime.now(timezone.utc)
+        stmt_invites = stmt_invites.where(
+            ViewerInvite.accepted_at.is_(None),
+            ViewerInvite.expires_at > now,
+        )
+    stmt_invites = stmt_invites.order_by(ViewerInvite.created_at.desc())
+
+    res_invites = await db.execute(stmt_invites)
+    invites = res_invites.scalars().all()
+
+    # Pre-populate any missing profile names in map
+    missing_ids = [inv.profile_id for inv in invites if inv.profile_id not in managed_profile_map]
+    if missing_ids:
+        stmt_missing = select(Profile.id, Profile.name).where(Profile.id.in_(missing_ids))
+        res_missing = await db.execute(stmt_missing)
+        for row in res_missing.all():
+            managed_profile_map[row[0]] = row[1]
+
+    return [
+        ViewerInviteResponse(
+            id=inv.id,
+            invite_code=inv.invite_code,
+            profile_id=inv.profile_id,
+            target_profile_name=managed_profile_map.get(inv.profile_id, inv.profile_id),
+            invited_by=inv.invited_by,
+            invitee_name=inv.invitee_name,
+            role=inv.role,
+            view_clinical=inv.view_clinical,
+            view_paperwork=inv.view_paperwork,
+            expires_at=inv.expires_at.isoformat(),
+            accepted_at=inv.accepted_at.isoformat() if inv.accepted_at else None,
+            accepted_by=inv.accepted_by,
+            created_at=inv.created_at.isoformat(),
+        )
+        for inv in invites
+    ]
+
+
 @router.get("/{profile_id}/invites", response_model=List[ViewerInviteResponse])
 async def list_viewer_invites(
     profile_id: str,
@@ -466,6 +556,7 @@ async def list_viewer_invites(
             id=inv.id,
             invite_code=inv.invite_code,
             profile_id=inv.profile_id,
+            target_profile_name=profile.name,
             invited_by=inv.invited_by,
             invitee_name=inv.invitee_name,
             role=inv.role,
@@ -544,6 +635,7 @@ async def create_viewer_invite(
         id=new_invite.id,
         invite_code=new_invite.invite_code,
         profile_id=new_invite.profile_id,
+        target_profile_name=profile.name,
         invited_by=new_invite.invited_by,
         invitee_name=new_invite.invitee_name,
         role=new_invite.role,

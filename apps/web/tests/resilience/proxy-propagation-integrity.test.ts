@@ -172,6 +172,25 @@ describe('Resilience Challenge: Next.js Proxy Routes Propagation & Streaming', (
       expect(getHeader(call.headers, 'cookie')).toBe(TEST_COOKIE);
       expect(getHeader(call.headers, 'authorization')).toBe(TEST_AUTH);
     });
+
+    it('forwards global invitations on /api/profiles/invites to /api/v1/profiles/invites', async () => {
+      setupMockFetch();
+      const req = new NextRequest(
+        'http://localhost:3000/api/profiles/invites?include_expired=false',
+        { headers: { cookie: TEST_COOKIE, authorization: TEST_AUTH } }
+      );
+      const res = await getProfilesCatchAll(req, {
+        params: Promise.resolve({ path: ['invites'] }),
+      });
+      expect(res.status).toBe(200);
+
+      expect(capturedFetches.length).toBe(1);
+      const call = capturedFetches[0];
+      expect(call.url).toContain('/api/v1/profiles/invites');
+      expect(call.url).toContain('include_expired=false');
+      expect(getHeader(call.headers, 'cookie')).toBe(TEST_COOKIE);
+      expect(getHeader(call.headers, 'authorization')).toBe(TEST_AUTH);
+    });
   });
 
   describe('2. Notes Proxy Routes Query & Header Forwarding', () => {

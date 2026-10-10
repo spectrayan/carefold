@@ -135,6 +135,7 @@ class ViewerInviteResponse(BaseModel):
     accepted_at: Optional[str] = Field(default=None)
     accepted_by: Optional[str] = Field(default=None)
     created_at: str = Field(...)
+    target_profile_name: Optional[str] = Field(default=None, description="Name of the target profile")
 
 
 class ViewerInviteAcceptRequest(BaseModel):
