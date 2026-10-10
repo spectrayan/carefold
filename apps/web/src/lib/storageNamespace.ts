@@ -265,7 +265,7 @@ export function migrateUserStorage(
  * and notifies active components to clear in-memory cache.
  */
 export function detachUserSession(userId?: string | null): void {
-  const targetId = userId !== undefined ? userId : activeStorageUserId;
+  const targetId = (userId !== undefined && userId !== null) ? userId : activeStorageUserId;
   const store = new ScopedStorage({ userId: targetId });
   store.clearUserData();
   activeStorageUserId = null;

@@ -27,6 +27,7 @@ import {
 
 function AuthStateProbe({ onExpose }: { onExpose: (auth: ReturnType<typeof useAuth>) => void }) {
   const auth = useAuth();
+  onExpose(auth);
   React.useEffect(() => {
     onExpose(auth);
   }, [auth, onExpose]);
@@ -110,6 +111,7 @@ describe('Frontend Logout & Invalidation Stress Suite', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('probe-auth').textContent).toBe('authenticated');
+      expect(authProbe?.user?.id).toBe('usr-error-500');
     });
 
     // Seed multiple storage keys across namespaces
@@ -182,6 +184,7 @@ describe('Frontend Logout & Invalidation Stress Suite', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('probe-auth').textContent).toBe('authenticated');
+      expect(authProbe?.user?.id).toBe('usr-offline-drop');
     });
 
     localStorage.setItem('carefold_usr-offline-drop_data', 'patient confidential');
@@ -255,6 +258,7 @@ describe('Frontend Logout & Invalidation Stress Suite', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('probe-auth').textContent).toBe('authenticated');
+      expect(authProbe?.user?.id).toBe('00000000-0000-0000-0000-000000000000');
     });
 
     await act(async () => {
