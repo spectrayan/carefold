@@ -135,7 +135,7 @@ RUN apt-get update && apt-get upgrade -y \
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /usr/local/lib/node_modules/npm /usr/bin/npm /usr/bin/npx
+    && rm -rf /usr/lib/node_modules /usr/local/lib/node_modules /usr/bin/npm /usr/bin/npx /root/.npm
 
 COPY backend/ ./backend/
 RUN pip install --no-cache-dir ./backend \
