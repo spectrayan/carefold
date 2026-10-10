@@ -3,31 +3,31 @@
 # See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Default catch-all: Project Lead, Core Maintainers, and AI Engineering Team
-* @spectrayan/carefold-maintainers @spectrayan/ai-engineering @sbharatjoshi
+* @spectrayan/carefold-maintainers @spectrayan/ai-engineering
 
 # Backend FastAPI runtime, LangGraph nodes, memory ports & adapters
-/backend/ @spectrayan/carefold-maintainers-backend @spectrayan/ai-engineering @sbharatjoshi
+/backend/ @spectrayan/carefold-maintainers-backend @spectrayan/ai-engineering
 
 # Frontend Next.js web application and consultation UI
-/apps/web/ @spectrayan/carefold-maintainers-frontend @spectrayan/ai-engineering @sbharatjoshi
+/apps/web/ @spectrayan/carefold-maintainers-frontend @spectrayan/ai-engineering
 
 # Core packages & CLI tooling
-/packages/ @spectrayan/carefold-maintainers-packages @spectrayan/ai-engineering @sbharatjoshi
+/packages/ @spectrayan/carefold-maintainers-packages @spectrayan/ai-engineering
 
 # Specialist agents and manifest definitions
-/agents/ @spectrayan/carefold-clinical-ai @spectrayan/ai-engineering @sbharatjoshi
+/agents/ @spectrayan/carefold-clinical-ai @spectrayan/ai-engineering
 
 # Clinical skill packs and reference guidelines
-/skills/ @spectrayan/carefold-clinical-ai @spectrayan/ai-engineering @sbharatjoshi
+/skills/ @spectrayan/carefold-clinical-ai @spectrayan/ai-engineering
 
 # Documentation and Living Architecture Decision Records (ADRs)
-/docs/ @spectrayan/carefold-docs @spectrayan/ai-engineering @sbharatjoshi
+/docs/ @spectrayan/carefold-docs @spectrayan/ai-engineering
 
 # Governance & Security
-/GOVERNANCE.md @spectrayan/carefold-maintainers @sbharatjoshi
-/SECURITY.md @spectrayan/carefold-security @spectrayan/carefold-maintainers @sbharatjoshi
+/GOVERNANCE.md @spectrayan/carefold-maintainers
+/SECURITY.md @spectrayan/carefold-security @spectrayan/carefold-maintainers
 
 # CI/CD Workflows, GitHub actions, Docker, and automation scripts
-/.github/ @spectrayan/carefold-infra @spectrayan/ai-engineering @sbharatjoshi
-/docker/ @spectrayan/carefold-infra @spectrayan/ai-engineering @sbharatjoshi
-/scripts/ @spectrayan/carefold-infra @spectrayan/ai-engineering @sbharatjoshi
+/.github/ @spectrayan/carefold-infra @spectrayan/ai-engineering
+/docker/ @spectrayan/carefold-infra @spectrayan/ai-engineering
+/scripts/ @spectrayan/carefold-infra @spectrayan/ai-engineering

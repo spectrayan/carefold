@@ -221,7 +221,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Carefold Governance Teams & CODEOWNERS Alignment**:
   - Provisioned 10 official Carefold governance teams in the `@spectrayan` GitHub organization (`carefold`, `carefold-maintainers`, `carefold-maintainers-backend`, `carefold-maintainers-frontend`, `carefold-maintainers-packages`, `carefold-clinical-ai`, `carefold-infra`, `carefold-docs`, `carefold-committers`, `carefold-security`) per `GOVERNANCE.md` (`#109`).
   - Added automated idempotent team provisioning script (`scripts/provision-carefold-teams.sh`).
-  - Bound all repository paths in `.github/CODEOWNERS` directly to `@spectrayan/ai-engineering`, `@sbharatjoshi`, and specialized subsystem maintainer teams.
+  - Bound all repository paths in `.github/CODEOWNERS` directly to `@spectrayan/ai-engineering`, `@spectrayan/carefold-maintainers`, and specialized subsystem maintainer teams.
 - **Vascular Specialist Agent (`vascular-guide`) & Skill Pack (`vascular-prep`)**:
   - Added specialist clinical agent for vascular health visit preparation, arterial/venous screening checklists, and peripheral artery disease context (`#105`).
 - **CSV & TSV Structured Attachment Ingestion**:
