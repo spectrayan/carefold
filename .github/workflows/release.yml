@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -122,7 +122,7 @@ jobs:
             description: FastAPI & LangGraph multi-agent execution runtime for Carefold
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -186,7 +186,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Extract Release Notes & Metadata
         id: release_info
