@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, MessageSquare, Sparkles, Users, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { profilePath } from '@/lib/routes';
 
 export interface MobileTabBarProps extends React.HTMLAttributes<HTMLElement> {
   activeProfileId?: string;
@@ -54,14 +55,14 @@ export function MobileTabBar({
     {
       id: 'home',
       label: 'Home',
-      href: `/p/${profileId}`,
+      href: profilePath(profileId),
       icon: Home,
       exact: true
     },
     {
       id: 'chat',
       label: 'Chat',
-      href: `/p/${profileId}/chat`,
+      href: profilePath(profileId, '/chat'),
       icon: MessageSquare,
       badge: badgeCounts?.chat
     },

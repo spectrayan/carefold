@@ -43,6 +43,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { getHouseholdProfile, fetchHouseholdProfiles } from '@/lib/familyProfiles';
 import { useAuth } from '@/lib/auth';
+import { profilePath } from '@/lib/routes';
 import { ProfileEditModal } from '@/components/family/ProfileEditModal';
 
 export interface CareProfile {
@@ -251,7 +252,7 @@ export function HomeDashboardClient({
   const handleAskSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!askDraft.trim()) return;
-    router.push(`/p/${profile.id}/chat?prompt=${encodeURIComponent(askDraft.trim())}`);
+    router.push(profilePath(profile.id, `chat?prompt=${encodeURIComponent(askDraft.trim())}`));
   };
 
   const handleStarterClick = (prompt: string) => {
@@ -357,7 +358,7 @@ export function HomeDashboardClient({
               </h2>
             </div>
             <Link
-              href={`/p/${profile.id}/chat?agent=visit-steward`}
+              href={profilePath(profile.id, 'chat?agent=visit-steward')}
               className="text-xs font-semibold text-[var(--cf-primary-hover)] hover:underline"
             >
               All visits
@@ -469,7 +470,7 @@ export function HomeDashboardClient({
                     variant="primary"
                     size="sm"
                     leftIcon={<MessageSquare className="w-4 h-4" />}
-                    onClick={() => router.push(`/p/${profile.id}/chat?agent=${appointment.specialistId || 'visit-steward'}`)}
+                    onClick={() => router.push(profilePath(profile.id, `chat?agent=${encodeURIComponent(appointment.specialistId || 'visit-steward')}`))}
                   >
                     Continue prep
                   </Button>
@@ -497,7 +498,7 @@ export function HomeDashboardClient({
               description="Add an appointment or ask Visit Steward to help prepare questions and documents for an upcoming doctor visit."
               action={{
                 label: 'Prepare with Visit Steward',
-                onClick: () => router.push(`/p/${profile.id}/chat?agent=visit-steward`)
+                onClick: () => router.push(profilePath(profile.id, 'chat?agent=visit-steward'))
               }}
             />
           )}
@@ -629,7 +630,7 @@ export function HomeDashboardClient({
                 description="Drop medical bills, explanation of benefits, or prior authorization letters into chat to extract structured summaries."
                 action={{
                   label: 'Upload paperwork',
-                  onClick: () => router.push(`/p/${profile.id}/chat`)
+                  onClick: () => router.push(profilePath(profile.id, 'chat'))
                 }}
               />
             )}
@@ -638,7 +639,7 @@ export function HomeDashboardClient({
           {paperwork && (
             <div className="pt-4 border-t border-[var(--cf-border)] mt-4">
               <Link
-                href={`/p/${profile.id}/chat?prompt=${encodeURIComponent(`Review paperwork: ${paperwork.title}`)}`}
+                href={profilePath(profile.id, `chat?prompt=${encodeURIComponent(`Review paperwork: ${paperwork.title}`)}`)}
                 className="text-xs font-semibold text-[var(--cf-primary-hover)] hover:underline inline-flex items-center gap-1 min-h-[36px]"
               >
                 Review statement →
@@ -661,7 +662,7 @@ export function HomeDashboardClient({
                 </h2>
               </div>
               <Link
-                href={`/p/${profile.id}/chat?agent=habit-companion`}
+                href={profilePath(profile.id, 'chat?agent=habit-companion')}
                 className="text-xs font-semibold text-[var(--cf-primary-hover)] hover:underline"
               >
                 Log
@@ -708,7 +709,7 @@ export function HomeDashboardClient({
                 description="Ask Habit Companion to set up gentle daily habit check-ins and routine tracking."
                 action={{
                   label: 'Set up routines',
-                  onClick: () => router.push(`/p/${profile.id}/chat?agent=habit-companion`)
+                  onClick: () => router.push(profilePath(profile.id, 'chat?agent=habit-companion'))
                 }}
               />
             )}
@@ -729,7 +730,7 @@ export function HomeDashboardClient({
                 </h2>
               </div>
               <Link
-                href={`/p/${profile.id}/library`}
+                href={profilePath(profile.id, 'library')}
                 className="text-xs font-semibold text-[var(--cf-primary-hover)] hover:underline"
               >
                 Library
@@ -741,7 +742,7 @@ export function HomeDashboardClient({
                 {notes.map((note) => (
                   <Link
                     key={note.id}
-                    href={`/p/${profile.id}/library`}
+                    href={profilePath(profile.id, 'library')}
                     className="block p-2.5 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)] hover:bg-[var(--cf-surface-3)] transition text-xs"
                   >
                     <div className="font-semibold text-[var(--cf-fg)] truncate">
@@ -760,7 +761,7 @@ export function HomeDashboardClient({
                 description="Notes generated during consultations with clinical guides and stewards will appear here."
                 action={{
                   label: 'Start a consultation',
-                  onClick: () => router.push(`/p/${profile.id}/chat`)
+                  onClick: () => router.push(profilePath(profile.id, 'chat'))
                 }}
               />
             )}
@@ -769,7 +770,7 @@ export function HomeDashboardClient({
           {notes && notes.length > 0 && (
             <div className="pt-4 border-t border-[var(--cf-border)] mt-4">
               <Link
-                href={`/p/${profile.id}/library`}
+                href={profilePath(profile.id, 'library')}
                 className="text-xs font-semibold text-[var(--cf-primary-hover)] hover:underline inline-flex items-center gap-1 min-h-[36px]"
               >
                 View all notes in Library →

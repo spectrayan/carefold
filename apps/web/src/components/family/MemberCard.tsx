@@ -26,6 +26,7 @@ import {
   type CareProfile,
   checkTeenHandoverStatus
 } from '@/lib/familyProfiles';
+import { profilePath } from '@/lib/routes';
 import { TeenHandoverBanner } from './TeenHandoverBanner';
 
 export interface MemberCardProps {
@@ -153,7 +154,7 @@ export function MemberCard({ profile, className, onEdit }: MemberCardProps) {
           <span className="text-xs text-[var(--cf-fg-subtle)]">On this computer</span>
         )}
         <Link
-          href={`/p/${profile.id}`}
+          href={profilePath(profile.id)}
           className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 min-h-[36px]"
         >
           Open dashboard &rarr;

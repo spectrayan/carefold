@@ -39,6 +39,7 @@ import {
   formatRiskClass,
   formatCareStage
 } from '@/lib/utils';
+import { profilePath } from '@/lib/routes';
 import { Segmented } from '@/components/ui/Segmented';
 import { Button } from '@/components/ui/Button';
 import { AgentFormModal } from '@/components/agents/AgentFormModal';
@@ -458,7 +459,7 @@ export function HelpersClient({
                       Skills: {agent.skills?.slice(0, 2).join(', ') || 'base'}
                     </span>
                     <Link
-                      href={`/p/${activeProfileId}/chat?agent=${agent.id}`}
+                      href={profilePath(activeProfileId, `chat?agent=${encodeURIComponent(agent.id)}`)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--cf-surface-2)] text-[var(--cf-fg)] hover:bg-[var(--cf-primary-soft)] hover:text-[var(--cf-primary-soft-fg)] transition-all min-h-[36px]"
                     >
                       <MessageSquare className="w-3.5 h-3.5" />

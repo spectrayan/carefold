@@ -220,11 +220,12 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
           setMessages([]);
         }
       } else {
-        const newThread = generateThreadId(selectedAgentId);
+        const safeAgentId = String(selectedAgentId || 'visit-steward').replace(/[^a-zA-Z0-9_\-]/g, '');
+        const newThread = String(generateThreadId(safeAgentId)).replace(/[^a-zA-Z0-9_\-:]/g, '');
         setThreadId(newThread);
         localStorage.setItem(threadKey, newThread);
         if (!getStorageUserId()) {
-          localStorage.setItem(`carefold_thread_${selectedAgentId}`, newThread);
+          localStorage.setItem(`carefold_thread_${safeAgentId}`, newThread);
         }
         setMessages([]);
       }
@@ -384,14 +385,15 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
 
   const handleNewSession = () => {
     stopGeneration();
-    const newThread = generateThreadId(selectedAgentId);
+    const safeAgentId = String(selectedAgentId || 'visit-steward').replace(/[^a-zA-Z0-9_\-]/g, '');
+    const newThread = String(generateThreadId(safeAgentId)).replace(/[^a-zA-Z0-9_\-:]/g, '');
     setThreadId(newThread);
     if (typeof window !== 'undefined') {
       try {
-        const threadKey = getScopedStorageKey(`thread_${selectedAgentId}`);
+        const threadKey = getScopedStorageKey(`thread_${safeAgentId}`);
         localStorage.setItem(threadKey, newThread);
         if (!getStorageUserId()) {
-          localStorage.setItem(`carefold_thread_${selectedAgentId}`, newThread);
+          localStorage.setItem(`carefold_thread_${safeAgentId}`, newThread);
         }
       } catch {}
     }
@@ -494,13 +496,15 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
       }
     }
 
-    setThreadId(session.id);
+    const safeSessionId = String(session.id).replace(/[^a-zA-Z0-9_\-:]/g, '');
+    const safeAgentId = String(session.agentId).replace(/[^a-zA-Z0-9_\-]/g, '');
+    setThreadId(safeSessionId);
     if (typeof window !== 'undefined') {
       try {
-        const threadKey = getScopedStorageKey(`thread_${session.agentId}`);
-        localStorage.setItem(threadKey, session.id);
+        const threadKey = getScopedStorageKey(`thread_${safeAgentId}`);
+        localStorage.setItem(threadKey, safeSessionId);
         if (!getStorageUserId()) {
-          localStorage.setItem(`carefold_thread_${session.agentId}`, session.id);
+          localStorage.setItem(`carefold_thread_${safeAgentId}`, safeSessionId);
         }
       } catch {}
     }

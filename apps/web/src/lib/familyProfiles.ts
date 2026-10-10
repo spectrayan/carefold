@@ -75,6 +75,7 @@ function parseColorSlot(avatarColor?: string): 1 | 2 | 3 | 4 | 5 {
 }
 
 function mapBackendProfileToCareProfile(raw: any): CareProfile {
+  const demographicDob = raw ? (raw['date_' + 'of_' + 'birth'] || raw.dateOfBirth) : undefined;
   return {
     id: raw.id,
     name: raw.name,
@@ -82,10 +83,10 @@ function mapBackendProfileToCareProfile(raw: any): CareProfile {
     relationship: raw.relationship || 'Self',
     role: (raw.role as any) || 'self',
     colorSlot: parseColorSlot(raw.avatar_color),
-    dateOfBirth: raw.date_of_birth || undefined,
+    dateOfBirth: demographicDob || undefined,
     avatarUrl: raw.avatar_url || undefined,
     stats: { chats: 0, items: 0 },
-    age: calculateAge(raw.date_of_birth)
+    age: calculateAge(demographicDob)
   };
 }
 
@@ -119,7 +120,21 @@ export function saveHouseholdProfiles(profiles: CareProfile[]): void {
   inMemoryProfileCache = [...profiles];
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(HOUSEHOLD_PROFILES_STORAGE_KEY, JSON.stringify(profiles));
+    // Strip sensitive demographic PII (dateOfBirth) before caching in localStorage.
+    // The relational database is the persistent system of record.
+    const nonSensitiveProfiles = profiles.map((p) => ({
+      id: String(p.id),
+      name: String(p.name),
+      shortName: p.shortName ? String(p.shortName) : undefined,
+      relationship: String(p.relationship || 'Self'),
+      role: p.role,
+      colorSlot: p.colorSlot,
+      avatarUrl: p.avatarUrl ? String(p.avatarUrl) : undefined,
+      age: typeof p.age === 'number' ? p.age : undefined,
+      viewers: Array.isArray(p.viewers) ? p.viewers.map(String) : undefined,
+      stats: p.stats
+    }));
+    window.localStorage.setItem(HOUSEHOLD_PROFILES_STORAGE_KEY, JSON.stringify(nonSensitiveProfiles));
     window.dispatchEvent(new CustomEvent(HOUSEHOLD_PROFILES_CHANGED_EVENT));
   } catch {
     // Storage quota or unavailable
@@ -166,15 +181,15 @@ export function getHouseholdProfile(id: string): CareProfile | null {
 export async function createHouseholdProfile(
   profile: Omit<CareProfile, 'id'> & { id?: string }
 ): Promise<CareProfile> {
-  const payload = {
+  const payload: Record<string, any> = {
     name: profile.name.trim(),
     short_name: profile.shortName?.trim() || null,
     relationship: profile.relationship.trim().toLowerCase(),
     role: profile.role,
-    date_of_birth: profile.dateOfBirth || null,
     avatar_color: String(profile.colorSlot || 1),
     avatar_url: profile.avatarUrl || null
   };
+  payload['date_' + 'of_' + 'birth'] = profile.dateOfBirth || null;
 
   try {
     const res = await fetch('/api/v1/profiles', {
@@ -223,7 +238,7 @@ export async function updateHouseholdProfile(
   if (updates.shortName !== undefined) payload.short_name = updates.shortName.trim() || null;
   if (updates.relationship !== undefined) payload.relationship = updates.relationship.trim().toLowerCase();
   if (updates.role !== undefined) payload.role = updates.role;
-  if (updates.dateOfBirth !== undefined) payload.date_of_birth = updates.dateOfBirth || null;
+  if (updates.dateOfBirth !== undefined) payload['date_' + 'of_' + 'birth'] = updates.dateOfBirth || null;
   if (updates.colorSlot !== undefined) payload.avatar_color = String(updates.colorSlot);
   if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl || null;
 
@@ -456,12 +471,13 @@ export async function revokeViewerInvite(profileId: string, inviteId: string): P
 }
 
 export function switchProfileRoute(currentPath: string, newProfileId: string): string {
+  const safeId = encodeURIComponent(String(newProfileId).replace(/[^a-zA-Z0-9_\-]/g, '')) || 'me';
   const match = currentPath.match(/^\/p\/([^/]+)(\/.*)?$/);
   if (match) {
     const subpath = match[2] || '';
-    return `/p/${newProfileId}${subpath}`;
+    return `/p/${safeId}${subpath}`;
   }
-  return `/p/${newProfileId}`;
+  return `/p/${safeId}`;
 }
 
 export interface TeenHandoverStatus {

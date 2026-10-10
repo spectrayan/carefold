@@ -54,6 +54,7 @@ import {
   getProviderPrivacyState,
   type CarefoldUserSettings
 } from '@/lib/settings';
+import { profilePath, sanitizeHref } from '@/lib/routes';
 
 export interface CareProfileRailInfo {
   id: string;
@@ -180,25 +181,25 @@ export function AppRail({
   // Build sectioned navigation items
   const caringNavItems = [
     {
-      href: `/p/${derivedProfile.id}`,
+      href: profilePath(derivedProfile.id),
       label: 'Home',
       icon: Home,
       exact: true
     },
     {
-      href: `/p/${derivedProfile.id}/chat`,
+      href: profilePath(derivedProfile.id, '/chat'),
       label: 'Chats',
       icon: MessageSquare,
       badge: counts?.chat
     },
     {
-      href: `/p/${derivedProfile.id}/library`,
+      href: profilePath(derivedProfile.id, '/library'),
       label: 'Library',
       icon: BookOpen,
       badge: counts?.library
     },
     {
-      href: `/p/${derivedProfile.id}/activity`,
+      href: profilePath(derivedProfile.id, '/activity'),
       label: 'Activity',
       icon: Activity
     }
@@ -386,7 +387,7 @@ export function AppRail({
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={sanitizeHref(item.href)}
               aria-current={active ? 'page' : undefined}
               title={item.label}
               className={cn(

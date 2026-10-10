@@ -78,7 +78,17 @@ function setRawIndex(sessions: ChatSessionMeta[], userId?: string | null): void 
   try {
     const effectiveUserId = userId !== undefined ? userId : getStorageUserId();
     const key = getScopedStorageKey(effectiveUserId, CAREFOLD_THREADS_INDEX_KEY);
-    const serialized = JSON.stringify(sessions);
+    const safeSessions = sessions.map((s) => ({
+      id: String(s.id).replace(/[^a-zA-Z0-9_\-:]/g, ''),
+      agentId: String(s.agentId).replace(/[^a-zA-Z0-9_\-]/g, ''),
+      agentTitle: s.agentTitle ? String(s.agentTitle).slice(0, 80) : undefined,
+      title: String(s.title || 'New Consultation').slice(0, 100),
+      createdAt: String(s.createdAt),
+      updatedAt: String(s.updatedAt),
+      messageCount: Number(s.messageCount) || 0,
+      ...(s.isCustomTitle !== undefined ? { isCustomTitle: Boolean(s.isCustomTitle) } : {})
+    }));
+    const serialized = JSON.stringify(safeSessions);
     window.localStorage.setItem(key, serialized);
     if (!effectiveUserId) {
       window.localStorage.setItem(CAREFOLD_THREADS_INDEX_KEY, serialized);

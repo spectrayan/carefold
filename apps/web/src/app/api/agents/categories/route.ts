@@ -31,8 +31,17 @@ export async function GET(_req: Request | NextRequest): Promise<NextResponse> {
     parsedBackend.username = '';
     parsedBackend.password = '';
 
-    const url = new URL(_req.url);
-    const targetUrl = new URL(`/api/v1/agents/categories${url.search}`, parsedBackend);
+    const targetUrl = new URL('/api/v1/agents/categories', parsedBackend);
+
+    const clientUrl = new URL(_req.url);
+    const domain = clientUrl.searchParams.get('domain');
+    if (domain) {
+      targetUrl.searchParams.set('domain', domain.replace(/[^a-zA-Z0-9_\-]/g, ''));
+    }
+    const depth = clientUrl.searchParams.get('depth');
+    if (depth) {
+      targetUrl.searchParams.set('depth', depth.replace(/[^0-9]/g, ''));
+    }
 
     const headers: Record<string, string> = { Accept: 'application/json' };
     const incomingCookie = _req.headers.get('cookie');
