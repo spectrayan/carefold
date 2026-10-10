@@ -192,11 +192,12 @@ export function SettingsModal({
       setStorageSummary(getBrowserStorageSummary(formData));
       setFeedbackMessage('Current conversation deleted from browser');
     } else if (confirmModalAction === 'clearKeys') {
-      const cleared = clearStoredApiKeys();
-      setFormData(cleared);
-      setStorageSummary(getBrowserStorageSummary(cleared));
+      clearStoredApiKeys();
+      const refreshed = loadSettings();
+      setFormData(refreshed);
+      setStorageSummary(getBrowserStorageSummary(refreshed));
       if (onSave) {
-        onSave(cleared);
+        onSave(refreshed);
       }
       setFeedbackMessage('Saved API keys removed from browser');
     }

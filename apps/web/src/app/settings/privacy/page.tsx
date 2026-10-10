@@ -73,9 +73,10 @@ export default function PrivacySettingsPage() {
       setStorageSummary(getBrowserStorageSummary(settings));
       setFeedbackMessage('Current conversation deleted from browser');
     } else if (confirmModalAction === 'clearKeys') {
-      const cleared = clearStoredApiKeys();
-      setSettings(cleared);
-      setStorageSummary(getBrowserStorageSummary(cleared));
+      clearStoredApiKeys();
+      const refreshed = loadSettings();
+      setSettings(refreshed);
+      setStorageSummary(getBrowserStorageSummary(refreshed));
       setFeedbackMessage('Saved API keys removed from browser');
     }
     setConfirmModalAction(null);
