@@ -17,9 +17,9 @@
 
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import type { UserProfile, AuthProvidersInfo } from '@/types/api';
-import { setStorageUserId, detachUserSession } from '@/lib/storageNamespace';
+import { setStorageUserId, getStorageUserId, detachUserSession } from '@/lib/storageNamespace';
 import { fetchHouseholdProfiles } from '@/lib/familyProfiles';
 
 export const DEFAULT_STEWARD_USER: UserProfile = {
@@ -88,6 +88,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const userRef = useRef<UserProfile | null>(null);
+  userRef.current = user;
   const [isLoading, setIsLoading] = useState(true);
   const [providersInfo, setProvidersInfo] = useState<AuthProvidersInfo>({
     active_provider: 'local',
@@ -274,7 +276,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Best-effort network revocation: offline or network partition must never trap the user
     } finally {
       // 2. Detach and purge user-scoped browser storage (localStorage & sessionStorage)
-      detachUserSession(user?.id);
+      const activeId = userRef.current?.id || user?.id || getStorageUserId();
+      detachUserSession(activeId);
+      setStorageUserId(null);
 
       // 3. Explicitly expire client-accessible cookies
       if (typeof document !== 'undefined') {
