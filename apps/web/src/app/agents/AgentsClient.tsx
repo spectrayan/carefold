@@ -38,6 +38,7 @@ import {
   sanitizeAgentDescription,
   formatRiskClass
 } from '@/lib/utils';
+import { profilePath } from '@/lib/routes';
 import { Segmented } from '@/components/ui/Segmented';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
@@ -390,7 +391,7 @@ export function AgentsClient({
                   </Link>
 
                   <Link
-                    href={`/p/${activeProfileId}/chat?agent=${agent.id}`}
+                    href={profilePath(activeProfileId, `chat?agent=${encodeURIComponent(agent.id)}`)}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:text-[#04201a] shadow-sm transition min-h-[36px]"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />

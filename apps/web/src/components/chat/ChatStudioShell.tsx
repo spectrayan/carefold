@@ -64,6 +64,7 @@ import { getScopedStorageKey, getStorageUserId } from '@/lib/storageNamespace';
 import { stripReferencePreamble, stripSuggestionLeakage } from '@/components/ChatMessageItem';
 import { detectProfileAmbiguity } from '@/lib/profileMentions';
 import { loadHouseholdProfiles, getHouseholdProfile } from '@/lib/familyProfiles';
+import { profilePath } from '@/lib/routes';
 import type { AgentSummary, ChatMessage } from '@/lib/types';
 import type { CareProfile } from '@/app/p/[profileId]/HomeDashboardClient';
 
@@ -299,13 +300,14 @@ export function ChatStudioShell({
   const persistMessages = useCallback(
     (newMessages: ChatMessage[], threadIdToSave = activeThreadId) => {
       try {
-        const msgsKey = getScopedStorageKey(`msgs_${threadIdToSave}`);
+        const safeThreadId = String(threadIdToSave || 'thread-default').replace(/[^a-zA-Z0-9_\-:]/g, '');
+        const msgsKey = getScopedStorageKey(`msgs_${safeThreadId}`);
         localStorage.setItem(msgsKey, JSON.stringify(newMessages));
         if (!getStorageUserId()) {
-          localStorage.setItem(`carefold_msgs_${threadIdToSave}`, JSON.stringify(newMessages));
+          localStorage.setItem(`carefold_msgs_${safeThreadId}`, JSON.stringify(newMessages));
         }
         upsertSessionFromMessages(
-          threadIdToSave,
+          safeThreadId,
           selectedAgent.id,
           newMessages,
           selectedAgent.title
@@ -595,7 +597,7 @@ export function ChatStudioShell({
 
     if (routeToTarget) {
       setHeldAmbiguity(null);
-      router.push(`/p/${targetId}/chat?prompt=${encodeURIComponent(text)}`);
+      router.push(profilePath(targetId, `chat?prompt=${encodeURIComponent(text)}`));
     } else {
       // Keep in current profile's chat
       setHeldAmbiguity(null);

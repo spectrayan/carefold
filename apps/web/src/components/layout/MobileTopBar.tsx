@@ -27,6 +27,7 @@ import { ProfileSwitcher } from '@/components/layout/ProfileSwitcher';
 import { useOptionalTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/lib/auth';
 import { getHouseholdProfile } from '@/lib/familyProfiles';
+import { profilePath } from '@/lib/routes';
 
 export interface MobileTopBarProps extends React.HTMLAttributes<HTMLElement> {
   activeProfile?: {
@@ -88,7 +89,7 @@ export function MobileTopBar({
     >
       {/* Brand Logo Mark */}
       <Link
-        href={`/p/${derivedProfile.id}`}
+        href={profilePath(derivedProfile.id)}
         aria-label="Carefold Home"
         className="min-h-[44px] flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-[var(--cf-focus)]"
       >

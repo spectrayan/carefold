@@ -557,15 +557,31 @@ export function deleteAllConversations(): { deletedCount: number } {
  * Removes all stored API keys from settings while preserving provider, model, and endpoints.
  * Dispatches 'carefold:settings-changed'.
  */
-export function clearStoredApiKeys(): CarefoldUserSettings {
-  return saveSettings({
+export function clearStoredApiKeys(userId?: string | null): CarefoldUserSettings {
+  const current = loadSettings(userId);
+  const cleared: CarefoldUserSettings = {
+    ...current,
     keys: {
       google: '',
       anthropic: '',
       openai: '',
       custom: ''
     }
-  });
+  };
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const effectiveUserId = userId !== undefined ? userId : getStorageUserId();
+      const key = getScopedStorageKey(effectiveUserId, CAREFOLD_SETTINGS_STORAGE_KEY);
+      window.localStorage.setItem(key, JSON.stringify(cleared));
+      if (!effectiveUserId) {
+        window.localStorage.setItem(CAREFOLD_SETTINGS_STORAGE_KEY, JSON.stringify(cleared));
+      }
+      window.dispatchEvent(new CustomEvent('carefold:settings-changed', { detail: cleared }));
+    } catch {
+      // Storage access protection
+    }
+  }
+  return cleared;
 }
 
 

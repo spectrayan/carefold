@@ -7,3 +7,4 @@ overrides:
   lodash-es: ^4.18.1
   happy-dom: ^20.9.0
   vitest: ^4.1.11
+  katex: '>=0.18.2'

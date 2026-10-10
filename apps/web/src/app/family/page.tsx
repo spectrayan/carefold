@@ -102,7 +102,20 @@ export default function FamilyPage() {
     setInvitations((prev) => {
       const next = [newInvite, ...prev.filter((i) => i.id !== newInvite.id)];
       try {
-        localStorage.setItem('carefold_viewer_invitations', JSON.stringify(next));
+        const safeInvites = next.map((inv) => ({
+          id: String(inv.id),
+          inviteeName: String(inv.inviteeName),
+          targetProfileId: String(inv.targetProfileId),
+          targetProfileName: String(inv.targetProfileName),
+          permissions: {
+            view_clinical: Boolean(inv.permissions?.view_clinical),
+            view_paperwork: Boolean(inv.permissions?.view_paperwork)
+          },
+          expiresInDays: Number(inv.expiresInDays) || 30,
+          inviteCode: String(inv.inviteCode),
+          createdAt: String(inv.createdAt)
+        }));
+        localStorage.setItem('carefold_viewer_invitations', JSON.stringify(safeInvites));
       } catch {}
       return next;
     });
@@ -113,7 +126,20 @@ export default function FamilyPage() {
     setInvitations((prev) => {
       const next = prev.filter((i) => i.id !== id);
       try {
-        localStorage.setItem('carefold_viewer_invitations', JSON.stringify(next));
+        const safeInvites = next.map((inv) => ({
+          id: String(inv.id),
+          inviteeName: String(inv.inviteeName),
+          targetProfileId: String(inv.targetProfileId),
+          targetProfileName: String(inv.targetProfileName),
+          permissions: {
+            view_clinical: Boolean(inv.permissions?.view_clinical),
+            view_paperwork: Boolean(inv.permissions?.view_paperwork)
+          },
+          expiresInDays: Number(inv.expiresInDays) || 30,
+          inviteCode: String(inv.inviteCode),
+          createdAt: String(inv.createdAt)
+        }));
+        localStorage.setItem('carefold_viewer_invitations', JSON.stringify(safeInvites));
       } catch {}
       return next;
     });
@@ -126,7 +152,14 @@ export default function FamilyPage() {
     setShareBundles((prev) => {
       const next = [newBundle, ...prev];
       try {
-        localStorage.setItem('carefold_share_bundles', JSON.stringify(next));
+        const safeBundles = next.map((b) => ({
+          id: String(b.id),
+          profileId: String(b.profileId),
+          profileName: String(b.profileName),
+          title: String(b.title),
+          exportedAt: String(b.exportedAt)
+        }));
+        localStorage.setItem('carefold_share_bundles', JSON.stringify(safeBundles));
       } catch {}
       return next;
     });

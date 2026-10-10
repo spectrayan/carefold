@@ -299,9 +299,16 @@ async def create_note(
 
     # 3-tier title resolution: if title matches slug or is empty, resolve from # heading or title-case slug
     if title == slug:
-        heading_match = re.search(r"^\s*#\s+(.+)$", payload.content, re.MULTILINE)
-        if heading_match:
-            title = heading_match.group(1).strip()
+        resolved_heading: Optional[str] = None
+        for line in payload.content.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                heading_text = stripped.lstrip("#").strip()
+                if heading_text:
+                    resolved_heading = heading_text
+                    break
+        if resolved_heading:
+            title = resolved_heading
         else:
             title = slug.replace("-", " ").replace("_", " ").title()
 
