@@ -273,3 +273,79 @@ async def test_profile_short_name_and_avatar_url_persistence(invites_test_env):
         leo_entry = next(p for p in list_resp.json() if p["id"] == prof_id)
         assert leo_entry["short_name"] == "Little Leo"
         assert leo_entry["avatar_url"] == "/uploads/avatars/leo_v2.png"
+
+
+@pytest.mark.asyncio
+async def test_list_all_viewer_invites_global_endpoint(invites_test_env):
+    """Verifies that GET /api/v1/profiles/invites lists all user invites across profiles without 404."""
+    with TestClient(app) as client:
+        owner = _register_user(client, "alice_invites@test.local", "Alice")
+        other = _register_user(client, "other_user@test.local", "Other")
+
+        # 1. Initially owner has zero invites
+        empty_resp = client.get("/api/v1/profiles/invites", headers=owner["headers"])
+        assert empty_resp.status_code == 200
+        assert empty_resp.json() == []
+
+        # 2. Also works via legacy unversioned alias /api/profiles/invites
+        alias_resp = client.get("/api/profiles/invites", headers=owner["headers"])
+        assert alias_resp.status_code == 200
+        assert alias_resp.json() == []
+
+        # 3. Get primary "Me" profile (Alice)
+        me_resp = client.get("/api/v1/profiles", headers=owner["headers"])
+        assert me_resp.status_code == 200
+        me_id = me_resp.json()[0]["id"]
+
+        # 4. Create secondary profile "Dad"
+        create_p = client.post(
+            "/api/v1/profiles",
+            headers=owner["headers"],
+            json={"name": "Dad", "relationship": "parent", "role": "guardian"},
+        )
+        assert create_p.status_code == 201
+        dad_id = create_p.json()["id"]
+
+        # 5. Create invite under Dad
+        inv1_resp = client.post(
+            f"/api/v1/profiles/{dad_id}/invites",
+            headers=owner["headers"],
+            json={
+                "invitee_name": "Uncle Bob",
+                "role": "viewer",
+                "view_clinical": True,
+                "view_paperwork": False,
+            },
+        )
+        assert inv1_resp.status_code == 201
+        assert inv1_resp.json()["target_profile_name"] == "Dad"
+
+        # 6. Create invite under Me
+        inv2_resp = client.post(
+            f"/api/v1/profiles/{me_id}/invites",
+            headers=owner["headers"],
+            json={
+                "invitee_name": "Nurse Sarah",
+                "role": "viewer",
+                "view_clinical": False,
+                "view_paperwork": True,
+            },
+        )
+        assert inv2_resp.status_code == 201
+        assert inv2_resp.json()["target_profile_name"] == "Alice"
+
+        # 7. Query global /api/v1/profiles/invites
+        list_resp = client.get("/api/v1/profiles/invites", headers=owner["headers"])
+        assert list_resp.status_code == 200
+        invites = list_resp.json()
+        assert len(invites) == 2
+        invitee_names = {inv["invitee_name"] for inv in invites}
+        assert "Uncle Bob" in invitee_names
+        assert "Nurse Sarah" in invitee_names
+        bob_inv = next(i for i in invites if i["invitee_name"] == "Uncle Bob")
+        assert bob_inv["target_profile_name"] == "Dad"
+
+        # 8. Verify isolation: other user sees zero invites
+        other_resp = client.get("/api/v1/profiles/invites", headers=other["headers"])
+        assert other_resp.status_code == 200
+        assert other_resp.json() == []
