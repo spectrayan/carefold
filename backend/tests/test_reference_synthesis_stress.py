@@ -214,7 +214,7 @@ async def test_orchestrator_dynamic_provisioning_under_readonly_disk():
 
 
 @pytest.mark.asyncio
-async def test_adversarial_doc_names_and_path_safety():
+async def test_doc_names_and_path_safety():
     """Verify that unusual or adversarial doc names are handled safely without crashing."""
     node = SkillGeneratorNode(model=None)
 

@@ -13,9 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Challenge Test Harness for Milestone 2 (AuthPort & SqlAuthAdapter).
+"""Test Harness for (AuthPort & SqlAuthAdapter).
 
-Challenger: challenger_m2_1
 Target: Hexagonal AuthPort & SqlAuthAdapter
 
 Probes:
@@ -186,7 +185,7 @@ async def test_probe_3_timing_attack_protection_dummy_verify(sql_session_factory
 
 
 @pytest.mark.asyncio
-async def test_probe_3b_timing_attack_protection_empirical_measurements(sql_auth_adapter: SqlAuthAdapter):
+async def test_probe_3b_timing_attack_protection_measurements(sql_auth_adapter: SqlAuthAdapter):
     """Empirical probe: measure real execution duration of non-existent user vs wrong password.
     
     Both paths must execute OWASP Argon2id password verification, resulting in comparable

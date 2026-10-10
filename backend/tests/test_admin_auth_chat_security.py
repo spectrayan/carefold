@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Challenge Test Harness for Milestone 3 (Challenger M3-2).
+"""Test Harness for (Challenger M3-2).
 
 Target:
 - R3: Backend Authentication & Admin REST Endpoints & Endpoint Protection
@@ -22,7 +22,6 @@ Target:
 - Settings Secret Masking in GET/PUT /api/admin/settings
 - Protected Endpoints & Unbuffered SSE Streaming in /api/chat
 
-Author: challenger_m3_2
 """
 
 from __future__ import annotations

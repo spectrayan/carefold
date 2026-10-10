@@ -79,7 +79,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
     "stub",
     "STUB",
 ])
-def test_adversarial_mock_provider_rejected(mock_variant: str):
+def test_mock_provider_rejected(mock_variant: str):
     """Verify provider='mock' and variants raise UnsupportedProviderError / ValueError."""
     # 1. Via create_chat_model top-level function
     with pytest.raises((UnsupportedProviderError, ValueError)) as exc1:
@@ -391,13 +391,15 @@ def test_all_registered_providers_conform_to_strategy_interface():
 
 def test_production_mock_file_deleted():
     """Verify backend/src/carefold/model/mock.py does not exist."""
-    mock_file = Path("/Users/bharatjoshi/git/carefold/backend/src/carefold/model/mock.py")
+    repo_root = Path(__file__).resolve().parents[2]
+    mock_file = repo_root / "backend" / "src" / "carefold" / "model" / "mock.py"
     assert not mock_file.exists(), f"Production mock file still exists: {mock_file}"
 
 
 def test_zero_mock_references_in_production_src():
     """Verify no MockChatModel or MockModelClient references exist in backend/src/carefold/."""
-    src_dir = Path("/Users/bharatjoshi/git/carefold/backend/src/carefold")
+    repo_root = Path(__file__).resolve().parents[2]
+    src_dir = repo_root / "backend" / "src" / "carefold"
     violations: List[str] = []
 
     for py_file in src_dir.rglob("*.py"):

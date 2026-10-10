@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Challenger 1 Suite for Milestone 5: Admin REST Endpoints & RBAC.
+"""Admin REST Endpoints & RBAC Security Suite.
 
 Actively stress-tests:
 1. Complete RBAC enforcement across all /api/admin/* endpoints (401 unauthenticated, 403 member/steward/disabled).

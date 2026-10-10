@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tier 5 White-Box Adversarial Hardening Test Suite (Milestone 7 Phase 2).
+"""Engine Security Hardening Test Suite.
 
 Adversarial stress verification covering:
 1. Rapid Concurrent Requests & Turn Interruptions in AgentExecutionService
@@ -425,7 +425,7 @@ class TestCyclicDelegationAndCircuitBreaking:
         assert result.get("iteration_count") is None or result.get("iteration_count") == 0
         assert loop_model.call_count == 1
 
-    def test_delegate_to_agent_tool_adversarial_inputs(self):
+    def test_delegate_to_agent_tool_inputs(self):
         """Adversarially fuzzes DelegateToAgentTool with SQL injections, null bytes, and boundary payloads."""
         tool = DelegateToAgentTool()
 

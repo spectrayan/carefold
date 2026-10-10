@@ -194,7 +194,7 @@ def test_whitespace_api_key_resolution():
     "stub",
     "offline",
 ])
-def test_adversarial_invalid_providers(invalid_provider: str):
+def test_invalid_providers(invalid_provider: str):
     """Verify that all unsupported, adversarial, injection, and homoglyph provider names
     are cleanly rejected with UnsupportedProviderError."""
     with pytest.raises(UnsupportedProviderError) as exc:

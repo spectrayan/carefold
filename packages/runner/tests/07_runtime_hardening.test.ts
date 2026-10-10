@@ -49,7 +49,7 @@ async function collectRun(
   return { chunks, result: item.value };
 }
 
-describe('07: Adversarial Hardening & Regression Suite', () => {
+describe('07: Runtime Hardening & Regression Suite', () => {
   let ws: string;
 
   beforeEach(async () => {
@@ -307,9 +307,9 @@ describe('07: Adversarial Hardening & Regression Suite', () => {
   });
 
   // =========================================================================
-  // 5. Safety Refusal Gate Adversarial Hardening
+  // 5. Safety Refusal Gate Hardening
   // =========================================================================
-  describe('Safety Refusal Gate Adversarial Hardening', () => {
+  describe('Safety Refusal Gate Hardening', () => {
     it('refuses all clinical diagnostic assertions (canonical & variants)', () => {
       const diagnosticVectors = [
         // Canonical

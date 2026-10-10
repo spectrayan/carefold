@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Test Suite for Emergency Guardrails & Red Flags.
+"""Test Suite for Emergency Guardrails & Red Flags.
 
 Stress-tests:
 1. `check_emergency_red_flags`:

@@ -108,7 +108,7 @@ def parse_sse_events(raw_text: str) -> List[Dict[str, Any]]:
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_adversarial_server_restart_multi_turn_persistence(temp_workspace: Path):
+async def test_server_restart_multi_turn_persistence(temp_workspace: Path):
     """Adversarially tests multi-turn conversation persistence across simulated server restarts.
     
     Executes 4 distinct turns, tearing down all execution graphs and in-memory context between turns:
@@ -235,7 +235,7 @@ async def test_adversarial_server_restart_multi_turn_persistence(temp_workspace:
     assert "entire preparation plan" in user_prompts[3]
 
 
-def test_adversarial_fastapi_server_reboot_simulation(temp_workspace: Path):
+def test_fastapi_server_reboot_simulation(temp_workspace: Path):
     """Simulates realistic server reboot by dropping TestClient, restarting app client, and querying checkpoints."""
     thread_id = "reboot-simulation-thread-777"
 
@@ -284,7 +284,7 @@ def test_adversarial_fastapi_server_reboot_simulation(temp_workspace: Path):
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_adversarial_concurrent_thread_isolation(temp_workspace: Path):
+async def test_concurrent_thread_isolation(temp_workspace: Path):
     """Adversarially stresses SQLite checkpointer with 10 concurrent threads executing simultaneously.
     
     Verifies:
@@ -359,7 +359,7 @@ async def test_adversarial_concurrent_thread_isolation(temp_workspace: Path):
     ],
 )
 @pytest.mark.asyncio
-async def test_adversarial_thread_id_special_characters(temp_workspace: Path, adversarial_thread_id: str):
+async def test_thread_id_special_characters(temp_workspace: Path, adversarial_thread_id: str):
     """Verifies that special characters, SQL injection patterns, and prefix collisions isolate cleanly."""
     mock = MockModelClient()
     mock.queue_response(f"Confirmed thread {adversarial_thread_id}")
@@ -383,7 +383,7 @@ async def test_adversarial_thread_id_special_characters(temp_workspace: Path, ad
 # 3. SSE Streaming Event Sequencing & Payload Integrity
 # ============================================================================
 
-def test_adversarial_sse_event_sequencing_without_tools(client: TestClient):
+def test_sse_event_sequencing_without_tools(client: TestClient):
     """Verifies exact event sequencing for conversational runs without tools:
     Sequence: [token, token, ..., token] -> suggestions -> done
     """
@@ -432,7 +432,7 @@ def test_adversarial_sse_event_sequencing_without_tools(client: TestClient):
         assert "threadId" in done_data
 
 
-def test_adversarial_sse_event_sequencing_with_tools(client: TestClient, temp_workspace: Path):
+def test_sse_event_sequencing_with_tools(client: TestClient, temp_workspace: Path):
     """Verifies exact event sequencing for tool-executing turns:
     Sequence: tool_start -> tool_end -> [token*] -> suggestions -> done
     """
@@ -484,7 +484,7 @@ def test_adversarial_sse_event_sequencing_with_tools(client: TestClient, temp_wo
         assert any("results" in c.lower() or "document" in c.lower() or "symptoms" in c.lower() for c in sug_chips)
 
 
-def test_adversarial_sse_safety_refusal_sequencing(client: TestClient):
+def test_sse_safety_refusal_sequencing(client: TestClient):
     """Verifies that refusal events sequence properly:
     Sequence: refusal -> done
     Zero tokens, zero tools, zero suggestions.
@@ -517,7 +517,7 @@ def test_adversarial_sse_safety_refusal_sequencing(client: TestClient):
         assert done_ev["data"]["followUpSuggestions"] == []
 
 
-def test_adversarial_sse_raw_wire_formatting(client: TestClient):
+def test_sse_raw_wire_formatting(client: TestClient):
     """Verifies raw wire-level SSE compliance:
     - Content-Type is text/event-stream
     - Every event block starts with 'event: <name>\\n'
@@ -575,7 +575,7 @@ def test_adversarial_sse_raw_wire_formatting(client: TestClient):
         ("visit-steward", "Read docs", "Docs read.", ["skill-docs"], "checklist"),
     ],
 )
-def test_adversarial_contextual_suggestions_matrix(
+def test_contextual_suggestions_matrix(
     agent_id: str,
     prompt: str,
     completion: str,
@@ -603,7 +603,7 @@ def test_adversarial_contextual_suggestions_matrix(
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_adversarial_tool_loop_bound_limit(temp_workspace: Path):
+async def test_tool_loop_bound_limit(temp_workspace: Path):
     """Verifies that runaway tool cycles are bounded by MAX_TOOL_ITERATIONS = 5 without infinite looping."""
     mock = MockModelClient()
     # Queue 10 repeated tool calls to simulate runaway model loop
@@ -632,7 +632,7 @@ async def test_adversarial_tool_loop_bound_limit(temp_workspace: Path):
     )
 
 
-def test_adversarial_get_non_existent_thread_404(client: TestClient):
+def test_get_non_existent_thread_404(client: TestClient):
     """Verifies that requesting an unknown thread_id returns clean HTTP 404 without crashing."""
     res = client.get("/api/chat/threads/completely-non-existent-thread-id-404")
     assert res.status_code == 404
@@ -641,7 +641,7 @@ def test_adversarial_get_non_existent_thread_404(client: TestClient):
 
 
 @pytest.mark.asyncio
-async def test_adversarial_multi_turn_distinct_tools_pipeline(temp_workspace: Path):
+async def test_multi_turn_distinct_tools_pipeline(temp_workspace: Path):
     """Adversarially tests a 3-turn chain executing 3 different Phase 0 tools in sequence under one thread.
     
     Turn 1: attach-read on lab results
@@ -736,7 +736,7 @@ async def test_adversarial_multi_turn_distinct_tools_pipeline(temp_workspace: Pa
 
 
 @pytest.mark.asyncio
-async def test_adversarial_stream_cancellation_database_integrity(temp_workspace: Path):
+async def test_stream_cancellation_database_integrity(temp_workspace: Path):
     """Verifies that an early generator exit (simulating client network abort) does not lock SQLite."""
     thread_id = "abort-simulation-thread-123"
 
@@ -844,7 +844,7 @@ async def test_stream_never_leaks_internal_suggestion_or_orchestrator_tokens(tem
     assert any("deductible" in s.lower() for s in suggestions)
 
 
-def test_strip_internal_suggestion_leakage_adversarial():
+def test_strip_internal_suggestion_leakage_stress():
     """Validates that strip_internal_suggestion_leakage sanitizes glued assistant prompts and JSON question blocks."""
     from carefold.engine.service import strip_internal_suggestion_leakage
 
@@ -865,7 +865,7 @@ def test_strip_internal_suggestion_leakage_adversarial():
     assert strip_internal_suggestion_leakage(normal_text) == normal_text
 
 
-def test_strip_reference_doc_preamble_adversarial():
+def test_strip_reference_doc_preamble_stress():
     """Validates that strip_reference_doc_preamble strips robotic 'Based on the provided reference...' preambles."""
     from carefold.engine.service import strip_reference_doc_preamble
 

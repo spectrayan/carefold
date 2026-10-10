@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical stress tests for concurrent SQLite async writes under WAL mode & 10s busy timeout,
+"""Stress tests for concurrent SQLite async writes under WAL modeusy timeout,
 URL normalization, and password masking in sanitize_db_url.
 """
 

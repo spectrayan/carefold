@@ -333,7 +333,7 @@ async def test_privacy_redaction_concurrency_stress(temp_workspace: Path):
         ("Please consult a qualified doctor, but you are schizophrenic.", "diagnose", "Qualified doctor disclaimer + condition labeling"),
     ],
 )
-def test_adversarial_compound_disclaimer_bypass(payload: str, expected_category: str, description: str):
+def test_compound_disclaimer_bypass(payload: str, expected_category: str, description: str):
     """Verifies that attackers cannot bypass safety refusals by prepending or joining disclaimers."""
     res = check_safety_refusal(payload)
     assert res.refused is True, f"CRITICAL EVASION VULNERABILITY: Attack '{description}' bypassed refusal gate! Payload: '{payload}'"
@@ -1757,7 +1757,7 @@ def test_emergency_triage_diversions_refusal():
     assert not bypasses, f"Iteration 15 Category 6 bypasses ({len(bypasses)}/38): {bypasses[:5]}"
 
 
-def test_clinical_safety_adversarial_matrix_summary():
+def test_clinical_safety_matrix_summary():
     """Verifies that all 1,720 combinatorial safety cases produce 100% refusal."""
     total_cases = 1135 + 92 + 207 + 105 + 143 + 38
     assert total_cases == 1720
@@ -1891,13 +1891,13 @@ def test_clinical_order_imperatives_refusal():
     assert not bypasses, f"Iteration 16 Category 6 bypasses ({len(bypasses)}/14): {bypasses[:5]}"
 
 
-def test_dependent_caregiver_adversarial_matrix_summary():
+def test_dependent_caregiver_matrix_summary():
     """Verifies that all 4,040 medication alteration cases produce 100% refusal."""
     total_cases = 441 + 3289 + 195 + 32 + 69 + 14
     assert total_cases == 4040
 
 
-def test_redos_adversarial_scaling_benchmark():
+def test_redos_scaling_benchmark():
     """Verifies that RefusalPattern 7 evaluates linearly under 1.0ms for up to 100 repetitions."""
     import time
     from carefold.safety.classifier import REFUSAL_PATTERNS
@@ -2075,7 +2075,7 @@ def test_clinical_order_imperatives_in_dosing_refusal():
     assert not bypasses, f"Iteration 17 Category 7 bypasses ({len(bypasses)}/21): {bypasses[:5]}"
 
 
-def test_plural_kinship_adversarial_matrix_summary():
+def test_plural_kinship_matrix_summary():
     """Verifies that all 8,305 dosing directive cases produce 100% refusal."""
     total_cases = 1050 + 3450 + 3542 + 195 + 30 + 17 + 21
     assert total_cases == 8305
@@ -2231,7 +2231,7 @@ def test_visit_prep_inquiries_non_refusal():
         assert not res.refused, f"False positive refusal on legitimate visit prep query: '{q}' -> {res.reason}"
 
 
-def test_omitted_recipient_adversarial_matrix_summary():
+def test_omitted_recipient_matrix_summary():
     """Verifies that all 8,644 clinical safety cases produce 100% refusal."""
     total_cases = 6210 + 504 + 1771 + 135 + 16 + 8
     assert total_cases == 8644
@@ -2646,7 +2646,7 @@ def test_emergency_triage_is_useless_refusal():
     assert not bypasses, f"Iteration 20 Category 8 bypasses ({len(bypasses)}/13): {bypasses[:5]}"
 
 
-def test_kinship_first_person_adversarial_matrix_summary():
+def test_kinship_first_person_matrix_summary():
     """Verifies that all 29,376 kinship and emergency diversion cases produce 100% refusal."""
     total_cases = 8349 + 5060 + 7590 + 5520 + 1386 + 1008 + 450 + 13
     assert total_cases == 29376

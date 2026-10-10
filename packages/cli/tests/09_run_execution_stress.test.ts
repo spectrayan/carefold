@@ -30,7 +30,7 @@ import {
 } from '@carefold/runner';
 import path from 'node:path';
 
-describe('09: Adversarial Test Suite for CLI Run Execution', () => {
+describe('09: Test Suite for CLI Run Execution', () => {
   let ws: CliTestWorkspace;
 
   beforeEach(async () => {
@@ -473,9 +473,9 @@ describe('09: Adversarial Test Suite for CLI Run Execution', () => {
   });
 
   // =========================================================================
-  // Battery 5: Advanced Adversarial Penetration
+  // Battery 5: Advanced Penetration Tests
   // =========================================================================
-  describe('Battery 5: Advanced Adversarial Penetration', () => {
+  describe('Battery 5: Advanced Penetration Tests', () => {
     beforeEach(async () => {
       await runCli(['init'], { cwd: ws.workspaceDir });
       const cfg = JSON.parse(await ws.readFile('carefold.config.json'));

@@ -21,7 +21,7 @@ import fs from 'node:fs/promises';
 import { runCli } from './helpers/cli-runner.js';
 import { createCliTestWorkspace, type CliTestWorkspace } from './helpers/test-workspace.js';
 
-describe('10: CLI Adversarial — Skills Manifest & Tool Hardening Suite', () => {
+describe('10: CLI Skills Manifest & Tool Hardening Suite', () => {
   let ws: CliTestWorkspace;
 
   beforeEach(async () => {

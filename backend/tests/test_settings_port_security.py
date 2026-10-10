@@ -13,9 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Empirical Adversarial Challenge Test Harness for Milestone 2 (SettingsPort & DisabledAuthAdapter).
+"""Test Harness for (SettingsPort & DisabledAuthAdapter).
 
-Challenger: challenger_m2_2
 Target: Hexagonal SettingsPort, SqlSettingsAdapter, and DisabledAuthAdapter
 
 Probes:

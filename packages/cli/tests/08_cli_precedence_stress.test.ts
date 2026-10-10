@@ -25,7 +25,7 @@ import { SAFE_REFUSAL_TEMPLATE } from '@carefold/runner';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../../..');
 
-describe('08: Adversarial Challenge - CLI Arguments, Aliases & Precedence', () => {
+describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
   let ws: CliTestWorkspace;
 
   beforeEach(async () => {

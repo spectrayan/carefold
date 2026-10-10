@@ -312,7 +312,7 @@ class TestThreadStatePersistence:
         assert state_after is not None, "Documenting that clear_thread_state is a non-destructive probe"
 
     @pytest.mark.asyncio
-    async def test_adversarial_thread_id_and_large_payload(self, temp_workspace: Path):
+    async def test_thread_id_and_large_payload(self, temp_workspace: Path):
         """Verifies special characters in thread_id and large prompts (20KB) are handled safely."""
         mock = MockModelClient()
         mock.queue_response("Processed large prompt.")
