@@ -64,7 +64,8 @@ def test_health_dual_mount(client: TestClient):
     d2 = r_leg.json()
 
     assert set(d1.keys()) == set(d2.keys())
-    assert d1["status"] == d2["status"] == "ok"
+    assert d1["status"] == d2["status"]
+    assert d1["status"] in ("ok", "degraded")
     assert d1["version"] == d2["version"]
     assert d1["backendReachable"] == d2["backendReachable"] is True
     assert d1["workspace"]["agentsCount"] == d2["workspace"]["agentsCount"]

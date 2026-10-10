@@ -120,10 +120,6 @@ jobs:
             image_suffix: /backend
             title: Carefold Backend
             description: FastAPI & LangGraph multi-agent execution runtime for Carefold
-          - target: web
-            image_suffix: /web
-            title: Carefold Web
-            description: Next.js consultation UI & healthcare agent marketplace for Carefold
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

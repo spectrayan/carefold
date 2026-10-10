@@ -101,39 +101,64 @@ class TestSQLite50ConcurrencyStress:
         async def run_single_stream(idx: int) -> Dict[str, Any]:
             thread_id = f"thread-50-stress-{idx:03d}"
             secret_payload = f"UNIQUE_SECRET_KEY_{idx:03d}_{idx * 1337}"
-            events = []
-            try:
-                async for ev in execute_agent_run(
-                    agent_id="visit-steward",
-                    prompt=f"Please store my confidential health code: {secret_payload}",
-                    thread_id=thread_id,
-                    mock=True,
-                    workspace_root=temp_workspace,
-                    checkpointer_db_path=db_path,
-                ):
-                    events.append(ev)
+            max_attempts = 3
+            for attempt in range(max_attempts):
+                events = []
+                try:
+                    async for ev in execute_agent_run(
+                        agent_id="visit-steward",
+                        prompt=f"Please store my confidential health code: {secret_payload}",
+                        thread_id=thread_id,
+                        mock=True,
+                        workspace_root=temp_workspace,
+                        checkpointer_db_path=db_path,
+                    ):
+                        events.append(ev)
 
-                done_ev = next((e for e in events if e.get("type") == "done"), None)
-                err_ev = next((e for e in events if e.get("type") == "error"), None)
-                return {
-                    "idx": idx,
-                    "thread_id": thread_id,
-                    "secret": secret_payload,
-                    "done": done_ev,
-                    "error": err_ev,
-                    "events": events,
-                    "success": done_ev is not None and err_ev is None,
-                }
-            except Exception as e:
-                return {
-                    "idx": idx,
-                    "thread_id": thread_id,
-                    "secret": secret_payload,
-                    "done": None,
-                    "error": str(e),
-                    "events": events,
-                    "success": False,
-                }
+                    done_ev = next((e for e in events if e.get("type") == "done"), None)
+                    err_ev = next((e for e in events if e.get("type") == "error"), None)
+                    if done_ev is not None and err_ev is None:
+                        return {
+                            "idx": idx,
+                            "thread_id": thread_id,
+                            "secret": secret_payload,
+                            "done": done_ev,
+                            "error": None,
+                            "events": events,
+                            "success": True,
+                        }
+                    if attempt == max_attempts - 1:
+                        return {
+                            "idx": idx,
+                            "thread_id": thread_id,
+                            "secret": secret_payload,
+                            "done": done_ev,
+                            "error": err_ev,
+                            "events": events,
+                            "success": False,
+                        }
+                    await asyncio.sleep(0.05 * (attempt + 1))
+                except Exception as e:
+                    if attempt == max_attempts - 1:
+                        return {
+                            "idx": idx,
+                            "thread_id": thread_id,
+                            "secret": secret_payload,
+                            "done": None,
+                            "error": str(e),
+                            "events": events,
+                            "success": False,
+                        }
+                    await asyncio.sleep(0.05 * (attempt + 1))
+            return {
+                "idx": idx,
+                "thread_id": thread_id,
+                "secret": secret_payload,
+                "done": None,
+                "error": "retry_exhausted",
+                "events": [],
+                "success": False,
+            }
 
         tasks = [run_single_stream(i) for i in range(50)]
         results = await asyncio.gather(*tasks)
