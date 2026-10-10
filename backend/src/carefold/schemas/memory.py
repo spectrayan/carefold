@@ -101,6 +101,10 @@ class MemoryUpdateRequest(BaseModel):
         default="default",
         description="Memory isolation namespace",
     )
+    profile_id: Optional[str] = Field(
+        default=None,
+        description="Optional care profile ID for memory scoping",
+    )
     metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Optional metadata dictionary, tags, and provenance",

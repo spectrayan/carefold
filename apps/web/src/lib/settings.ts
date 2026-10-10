@@ -128,6 +128,8 @@ export interface CarefoldUserSettings {
   };
 }
 
+import { getScopedStorageKey, getStorageUserId } from '@/lib/storageNamespace';
+
 export const CAREFOLD_SETTINGS_STORAGE_KEY = 'carefold_user_settings_v1';
 
 export const DEFAULT_USER_SETTINGS: CarefoldUserSettings = {
@@ -147,16 +149,18 @@ export const DEFAULT_USER_SETTINGS: CarefoldUserSettings = {
 };
 
 /**
- * Safely loads user settings from browser localStorage.
+ * Safely loads user settings from browser localStorage scoped to user.
  * Returns default settings if running on server or if stored data is invalid.
  */
-export function loadSettings(): CarefoldUserSettings {
+export function loadSettings(userId?: string | null): CarefoldUserSettings {
   if (typeof window === 'undefined' || !window.localStorage) {
     return { ...DEFAULT_USER_SETTINGS };
   }
 
   try {
-    const raw = window.localStorage.getItem(CAREFOLD_SETTINGS_STORAGE_KEY);
+    const effectiveUserId = userId !== undefined ? userId : getStorageUserId();
+    const key = getScopedStorageKey(effectiveUserId, CAREFOLD_SETTINGS_STORAGE_KEY);
+    const raw = window.localStorage.getItem(key) || (!effectiveUserId ? window.localStorage.getItem(CAREFOLD_SETTINGS_STORAGE_KEY) : null);
     if (!raw) {
       return { ...DEFAULT_USER_SETTINGS };
     }
@@ -185,8 +189,11 @@ export function loadSettings(): CarefoldUserSettings {
 /**
  * Saves updated user settings to browser localStorage and dispatches a change event.
  */
-export function saveSettings(partialSettings: Partial<CarefoldUserSettings>): CarefoldUserSettings {
-  const current = loadSettings();
+export function saveSettings(
+  partialSettings: Partial<CarefoldUserSettings>,
+  userId?: string | null
+): CarefoldUserSettings {
+  const current = loadSettings(userId);
   const updated: CarefoldUserSettings = {
     ...current,
     ...partialSettings,
@@ -202,7 +209,12 @@ export function saveSettings(partialSettings: Partial<CarefoldUserSettings>): Ca
 
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
-      window.localStorage.setItem(CAREFOLD_SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+      const effectiveUserId = userId !== undefined ? userId : getStorageUserId();
+      const key = getScopedStorageKey(effectiveUserId, CAREFOLD_SETTINGS_STORAGE_KEY);
+      window.localStorage.setItem(key, JSON.stringify(updated));
+      if (!effectiveUserId) {
+        window.localStorage.setItem(CAREFOLD_SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+      }
       window.dispatchEvent(new CustomEvent('carefold:settings-changed', { detail: updated }));
     } catch (err) {
       console.error('Failed to save Carefold settings to localStorage:', err);

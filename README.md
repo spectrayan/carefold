@@ -120,48 +120,6 @@ pnpm --filter web dev
 
 ---
 
-## 🤖 5-Phase Multi-Agent LangGraph Lifecycle
-
-Carefold executes multi-agent workflows across a deterministic 5-phase lifecycle:
-
-```mermaid
-flowchart TD
-    UserQuery(["👤 Patient / User Input"]) --> Phase1["Phase 1: Context Load & Memory Recall\n(Working, Episodic, Semantic Tiers)"]
-    Phase1 --> Phase2{"Phase 2: Input Guardrail & Safety Gating"}
-    
-    Phase2 -- "🚨 Acute Red Flag (Chest Pain, Stroke, Anaphylaxis)" --> Emergency["Refusal Protocol\n(Immediate 911/988 Referral)"]
-    Phase2 -- "✅ Safe Clinical Scope" --> Phase3["Phase 3: Intent Planning & Provisioning\n(Two-Hop Domain & BM25 Specialist Matching)"]
-    
-    Phase3 --> Phase4{"Phase 4: Multi-Agent Dispatch"}
-    Phase4 -- "Single Specialist" --> S1["Specialist Agent Execution\n(Sandboxed Tools & Clinical Refs)"]
-    Phase4 -- "Multimorbid Concurrent" --> S2["Parallel Execution Loop\n(Cardiology + Nephrology + Endo)"]
-    Phase4 -- "Chained Dependency" --> S3["Sequential Pipeline\n(Clinical Guide ➔ Prior Auth ➔ Appeals)"]
-    
-    S1 --> Phase5["Phase 5: Response Synthesis & Streaming\n(Grounding Audit, Suggestion Chips, SSE)"]
-    S2 --> Phase5
-    S3 --> Phase5
-    
-    Phase5 --> Output(["💻 Streaming Web Marketplace UI"])
-```
-
-1. **Phase 1: Context Load & Memory Recall (`InputGuardrailNode`)**:
-   - Ingests user query, conversation history, user notes, and document attachments.
-   - Recalls semantic and episodic memories via `MemoryPort`.
-2. **Phase 2: Input Guardrail & Validation (`InputGuardrailNode`, `RefusalNode`)**:
-   - Intercepts acute life-threatening emergencies with immediate emergency directives.
-   - Gently steers users on non-clinical boundaries without hard rejection.
-3. **Phase 3: Plan & Provision (`OrchestratorNode`)**:
-   - **Two-Hop Routing**: Hop 1 classifies clinical domain; Hop 2 performs BM25 full-text matching against specialist manifests.
-   - Dynamically provisions authorized clinical skill checklists and reference documentation.
-4. **Phase 4: Specialist Agent Execution (`AgentExecutionNode`, `ToolNode`)**:
-   - Invokes domain specialist personas with strictly sandboxed tools (`attach-read`, `workspace-note`, `skill-docs`).
-   - Supports single agents, parallel fan-out for multimorbid queries, and chained sequential pipelines.
-5. **Phase 5: Response Synthesis & Guardrails (`ResponseSynthesizerNode`, `SuggestionNode`)**:
-   - Verifies grounding and persona purity.
-   - Emits Server-Sent Events (SSE) streaming tokens, tool call traces, and dynamic follow-up chips.
-
----
-
 ## 🏥 Specialist Agent Topology
 
 Carefold features a modular, growing catalog of specialist clinical and administrative agents, organized into three core domains:
@@ -245,6 +203,18 @@ pnpm --filter web build
 Carefold uses a living ADR framework to document architectural decisions:
 * [ADR 0001: Orchestrator-Driven Agent Architecture](docs/adr/0001-orchestrator-driven-agent-architecture.md)
 * [ADR 0002: Hexagonal Memory and Catalog Ports](docs/adr/0002-hexagonal-memory-and-catalog-ports.md)
+
+---
+
+## 👥 Contributors
+
+Thank you to all the contributors who help build and improve Carefold!
+
+<p align="left">
+  <a href="https://github.com/spectrayan/carefold/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=spectrayan/carefold" alt="Carefold Contributors" />
+  </a>
+</p>
 
 ---
 

@@ -27,8 +27,11 @@ class WorkspaceNoteSummary(BaseModel):
     slug: str = Field(description="Unique note slug (filename stem without .md extension)")
     title: str = Field(description="Human-readable title parsed from frontmatter, # heading, or slug")
     agent: Optional[str] = Field(default=None, description="Agent ID that created the note")
+    profile_id: Optional[str] = Field(default=None, description="Associated care profile ID")
     created_at: str = Field(description="ISO-8601 UTC creation timestamp")
     size_bytes: int = Field(description="File size in bytes")
+    tags: list[str] = Field(default_factory=list, description="List of note tags")
+    tags_json: str = Field(default="[]", description="Serialized JSON array of note tags")
 
 
 class WorkspaceNoteDetail(BaseModel):
@@ -37,12 +40,15 @@ class WorkspaceNoteDetail(BaseModel):
     slug: str = Field(description="Unique note slug")
     title: str = Field(description="Human-readable title")
     agent: Optional[str] = Field(default=None, description="Agent ID that created the note")
+    profile_id: Optional[str] = Field(default=None, description="Associated care profile ID")
     created_at: str = Field(description="ISO-8601 UTC creation timestamp")
     size_bytes: int = Field(description="File size in bytes")
     content: str = Field(description="Markdown body content with frontmatter stripped")
     raw_content: str = Field(description="Raw file content including YAML frontmatter")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Parsed YAML frontmatter metadata")
     path: str = Field(description="Relative workspace path to note")
+    tags: list[str] = Field(default_factory=list, description="List of note tags")
+    tags_json: str = Field(default="[]", description="Serialized JSON array of note tags")
 
 
 class NoteCreateRequest(BaseModel):
@@ -50,6 +56,7 @@ class NoteCreateRequest(BaseModel):
     content: str
     slug: Optional[str] = None
     type: str = "scratchpad"
+    profile_id: Optional[str] = None
     tags: list[str] = Field(default_factory=list)
 
 
@@ -57,6 +64,7 @@ class NoteUpdateRequest(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     type: Optional[str] = None
+    profile_id: Optional[str] = None
     tags: Optional[list[str]] = None
 
 

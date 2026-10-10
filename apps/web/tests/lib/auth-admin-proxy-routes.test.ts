@@ -34,7 +34,7 @@ import {
   DELETE as deleteAdmin
 } from '@/app/api/admin/[...path]/route';
 
-describe('Catch-All Auth & Admin Proxy Routes (Milestone 4 Challenger)', () => {
+describe('Catch-All Auth & Admin Proxy Routes', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
@@ -75,7 +75,7 @@ describe('Catch-All Auth & Admin Proxy Routes (Milestone 4 Challenger)', () => {
       const res = await getAuth(req, { params: Promise.resolve({ path: ['me'] }) });
 
       expect(res.status).toBe(200);
-      expect(capturedUrl).toContain('/api/auth/me');
+      expect(capturedUrl).toContain('/api/v1/auth/me');
       expect(capturedHeaders).toBeDefined();
       expect(capturedHeaders?.get('cookie')).toBe(incomingCookie);
       expect(capturedHeaders?.get('authorization')).toBe('Bearer token-789');
@@ -247,7 +247,7 @@ describe('Catch-All Auth & Admin Proxy Routes (Milestone 4 Challenger)', () => {
       const res = await getAuth(req, { params: Promise.resolve({ path: ['providers'] }) });
 
       expect(res.status).toBe(200);
-      expect(capturedUrl).toContain('/api/auth/providers?redirect=%2Fchat&mode=test');
+      expect(capturedUrl).toContain('/api/v1/auth/providers?redirect=%2Fchat&mode=test');
     });
 
     it('supports multi-segment path hierarchy (e.g. /oauth/callback/google)', async () => {
@@ -264,7 +264,7 @@ describe('Catch-All Auth & Admin Proxy Routes (Milestone 4 Challenger)', () => {
       const res = await getAuth(req, { params: Promise.resolve({ path: ['oauth', 'callback', 'google'] }) });
 
       expect(res.status).toBe(200);
-      expect(capturedUrl).toContain('/api/auth/oauth/callback/google');
+      expect(capturedUrl).toContain('/api/v1/auth/oauth/callback/google');
     });
 
     it('handles PUT, PATCH, and DELETE requests forwarding bodies', async () => {

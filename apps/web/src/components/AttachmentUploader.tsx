@@ -71,7 +71,7 @@ export function AttachmentUploader({
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('/api/attachments', {
+      const res = await fetch('/api/v1/attachments', {
         method: 'POST',
         body: formData
       });
@@ -126,13 +126,13 @@ export function AttachmentUploader({
               data-testid="attached-file-chip"
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200"
             >
-              <span className={`px-1 rounded text-[10px] font-semibold uppercase ${file.format === 'pdf' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'}`}>
+              <span className={`px-1 rounded text-xs font-semibold uppercase ${file.format === 'pdf' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'}`}>
                 {file.format.toUpperCase()}
               </span>
               <span className="font-medium max-w-[150px] truncate" title={file.filename}>
                 {file.filename}
               </span>
-              <span className="text-zinc-600 dark:text-zinc-400 text-[10px]">
+              <span className="text-zinc-600 dark:text-zinc-400 text-xs">
                 ({(file.size_bytes / 1024).toFixed(1)} KB)
               </span>
               <button
@@ -140,7 +140,7 @@ export function AttachmentUploader({
                 data-testid={`remove-attachment-${file.filename}`}
                 onClick={() => onRemove(file.filename)}
                 disabled={disabled}
-                className="ml-1 text-zinc-600 hover:text-rose-600 dark:hover:text-rose-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-0.5"
+                className="min-w-[44px] min-h-[44px] -my-2.5 -mr-1.5 p-2 inline-flex items-center justify-center text-sm font-semibold text-zinc-600 hover:text-rose-600 dark:hover:text-rose-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-pointer"
                 aria-label={`Remove ${file.filename}`}
               >
                 ×
@@ -173,7 +173,7 @@ export function AttachmentUploader({
           data-testid="attach-file-button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isUploading}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
+          className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
         >
           {isUploading ? (
             <>
@@ -193,7 +193,7 @@ export function AttachmentUploader({
           )}
         </button>
 
-        <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+        <span className="text-xs text-zinc-600 dark:text-zinc-400">
           PDF or Text (max 10MB, saved locally to attachments/)
         </span>
       </div>

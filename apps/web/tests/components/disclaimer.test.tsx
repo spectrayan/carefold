@@ -18,7 +18,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
-import { DisclaimerHeader } from '@/components/DisclaimerHeader';
+import { DisclaimerHeader } from '@/components/SafetyDisclaimerBanner';
 
 describe('DisclaimerHeader Component (CF-S05)', () => {
   beforeEach(() => {

@@ -80,7 +80,7 @@ export function ModelSelector({
     async function fetchInstalledModels() {
       try {
         const endpoint = settings.endpoints?.ollamaUrl || 'http://127.0.0.1:11434';
-        const res = await fetch(`/api/models?provider=ollama&endpoint=${encodeURIComponent(endpoint)}`);
+        const res = await fetch(`/api/v1/models?provider=ollama&endpoint=${encodeURIComponent(endpoint)}`);
         if (res.ok) {
           const data = await res.json();
           if (mounted && Array.isArray(data.models) && data.models.length > 0) {
@@ -170,7 +170,7 @@ export function ModelSelector({
           value={currentProvider}
           onChange={handleProviderSelect}
           disabled={disabled}
-          className="appearance-none bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl pl-2.5 pr-7 py-1.5 text-xs font-semibold text-slate-800 dark:text-zinc-100 hover:border-slate-400 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer shadow-sm disabled:opacity-50 transition"
+          className="appearance-none bg-white dark:bg-zinc-800 border border-[#7f8ea3] dark:border-[#657895] rounded-xl pl-2.5 pr-7 py-1.5 text-xs font-semibold text-slate-800 dark:text-zinc-100 hover:border-slate-500 dark:hover:border-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 cursor-pointer shadow-sm disabled:opacity-50 transition"
         >
           <option value="ollama">💻 Ollama (Local)</option>
           <option value="google">✨ Gemini (Cloud)</option>
@@ -183,7 +183,7 @@ export function ModelSelector({
 
       {/* Model Selector Dropdown (Hidden when custom provider) */}
       {currentProvider !== 'custom' && (
-        <div className="relative">
+        <div className="relative hidden sm:block">
           <label htmlFor="model-selector" className="sr-only">
             Select Model
           </label>
@@ -194,7 +194,7 @@ export function ModelSelector({
             value={selectedDropdownValue}
             onChange={handleModelSelect}
             disabled={disabled}
-            className="appearance-none bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl pl-2.5 pr-7 py-1.5 text-xs font-medium text-slate-800 dark:text-zinc-100 hover:border-slate-400 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer shadow-sm disabled:opacity-50 transition max-w-[170px] truncate"
+            className="appearance-none bg-white dark:bg-zinc-800 border border-[#7f8ea3] dark:border-[#657895] rounded-xl pl-2.5 pr-7 py-1.5 text-xs font-medium text-slate-800 dark:text-zinc-100 hover:border-slate-500 dark:hover:border-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 cursor-pointer shadow-sm disabled:opacity-50 transition max-w-[170px] truncate"
           >
             {availableModels.map((opt) => (
               <option key={opt.id} value={opt.id} title={opt.description}>
@@ -225,7 +225,7 @@ export function ModelSelector({
               value={currentCustomModel}
               onChange={handleCustomModelNameChange}
               disabled={disabled}
-              className="bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 text-xs font-mono text-slate-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm w-44 transition disabled:opacity-50 placeholder:font-sans placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+              className="bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 text-xs font-mono text-slate-800 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400 shadow-sm w-44 transition disabled:opacity-50 placeholder:font-sans placeholder:text-slate-400 dark:placeholder:text-zinc-500"
             />
           </div>
         </div>

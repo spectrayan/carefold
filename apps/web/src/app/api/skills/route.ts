@@ -25,10 +25,16 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
   const url = new URL(req.url);
 
   try {
-    const targetUrl = `${backendUrl}/api/skills${url.search}`;
+    const targetUrl = `${backendUrl}/api/v1/skills${url.search}`;
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    const incomingCookie = req.headers.get('cookie');
+    if (incomingCookie) headers['cookie'] = incomingCookie;
+    const authHeader = req.headers.get('authorization');
+    if (authHeader) headers['authorization'] = authHeader;
+
     const res = await fetch(targetUrl, {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers,
       cache: 'no-store'
     });
 
@@ -54,6 +60,7 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const url = new URL(req.url);
 
   const forwardHeaders = new Headers();
   const incomingCookie = req.headers.get('cookie');
@@ -71,7 +78,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const targetUrl = `${backendUrl}/api/skills`;
+    const targetUrl = `${backendUrl}/api/v1/skills${url.search}`;
     const res = await fetch(targetUrl, {
       method: 'POST',
       headers: forwardHeaders,

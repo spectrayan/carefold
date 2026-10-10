@@ -62,7 +62,7 @@ export function KnowledgeBasePanel({
     setLoading(true);
     setError(null);
     try {
-      const endpoint = `/api/${targetType}s/${encodeURIComponent(targetId)}/docs`;
+      const endpoint = `/api/v1/${targetType}s/${encodeURIComponent(targetId)}/docs`;
       const res = await fetch(endpoint, { cache: 'no-store' });
       if (!res.ok) {
         throw new Error(`Failed to load knowledge base: HTTP ${res.status}`);
@@ -83,7 +83,7 @@ export function KnowledgeBasePanel({
   const handleOpenDoc = async (docName: string) => {
     setFormError(null);
     try {
-      const endpoint = `/api/${targetType}s/${encodeURIComponent(targetId)}/docs/${encodeURIComponent(docName)}`;
+      const endpoint = `/api/v1/${targetType}s/${encodeURIComponent(targetId)}/docs/${encodeURIComponent(docName)}`;
       const res = await fetch(endpoint, { cache: 'no-store' });
       if (!res.ok) {
         throw new Error(`Failed to load doc detail: HTTP ${res.status}`);
@@ -109,7 +109,7 @@ export function KnowledgeBasePanel({
     setSubmitting(true);
     setFormError(null);
     try {
-      const endpoint = `/api/${targetType}s/${encodeURIComponent(targetId)}/docs`;
+      const endpoint = `/api/v1/${targetType}s/${encodeURIComponent(targetId)}/docs`;
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -144,7 +144,7 @@ export function KnowledgeBasePanel({
     setSubmitting(true);
     setFormError(null);
     try {
-      const endpoint = `/api/${targetType}s/${encodeURIComponent(targetId)}/docs/${encodeURIComponent(activeDoc.name)}`;
+      const endpoint = `/api/v1/${targetType}s/${encodeURIComponent(targetId)}/docs/${encodeURIComponent(activeDoc.name)}`;
       const res = await fetch(endpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -176,7 +176,7 @@ export function KnowledgeBasePanel({
     }
 
     try {
-      const endpoint = `/api/${targetType}s/${encodeURIComponent(targetId)}/docs/${encodeURIComponent(docName)}`;
+      const endpoint = `/api/v1/${targetType}s/${encodeURIComponent(targetId)}/docs/${encodeURIComponent(docName)}`;
       const res = await fetch(endpoint, { method: 'DELETE' });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -196,7 +196,7 @@ export function KnowledgeBasePanel({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-zinc-800 pb-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-200/60 dark:border-indigo-800/40">
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center border border-emerald-200/60 dark:border-emerald-800/40">
             <BookOpen className="w-4 h-4" />
           </div>
           <div>
@@ -205,7 +205,7 @@ export function KnowledgeBasePanel({
                 Knowledge Base & Clinical Guidelines
               </h3>
               {isBundled && (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700">
                   Bundled
                 </span>
               )}
@@ -225,7 +225,7 @@ export function KnowledgeBasePanel({
             setFormContent('');
             setFormError(null);
           }}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm transition"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Add Document</span>
@@ -269,18 +269,18 @@ export function KnowledgeBasePanel({
                   onClick={() => handleOpenDoc(d.name)}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <FileText className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                    <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition truncate">
+                    <FileText className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
+                    <span className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition truncate">
                       {d.title || d.name}
                     </span>
                     {isInherited && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
                         <Layers className="w-2.5 h-2.5" />
                         <span>skill:{d.source_id}</span>
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-[11px] text-slate-400 dark:text-zinc-500 font-mono">
+                  <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-zinc-500 font-mono">
                     <span>{d.name}</span>
                     <span>•</span>
                     <span>{(d.size_bytes / 1024).toFixed(1)} KB</span>
@@ -290,7 +290,7 @@ export function KnowledgeBasePanel({
                 <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
                   <button
                     onClick={() => handleOpenDoc(d.name)}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-zinc-700 transition"
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-700 dark:text-zinc-400 dark:hover:text-emerald-400 hover:bg-white dark:hover:bg-zinc-700 transition"
                     title="View Document"
                   >
                     <Eye className="w-3.5 h-3.5" />
@@ -315,10 +315,10 @@ export function KnowledgeBasePanel({
       {/* Create Document Modal */}
       {isCreating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-xl overflow-hidden">
             <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-zinc-800">
               <div className="flex items-center gap-2.5">
-                <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <BookOpen className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                 <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
                   Add Knowledge Base Document
                 </h4>
@@ -349,7 +349,7 @@ export function KnowledgeBasePanel({
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="clinical-reference.md"
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:border-emerald-700 dark:focus:border-emerald-400"
                   />
                 </div>
 
@@ -362,7 +362,7 @@ export function KnowledgeBasePanel({
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
                     placeholder="Clinical Reference Guidelines"
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
                   />
                 </div>
               </div>
@@ -377,7 +377,7 @@ export function KnowledgeBasePanel({
                   value={formContent}
                   onChange={(e) => setFormContent(e.target.value)}
                   placeholder="# Clinical Guidelines&#10;&#10;Reference clinical knowledge here..."
-                  className="w-full p-3 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none leading-relaxed"
+                  className="w-full p-3 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:border-emerald-700 dark:focus:border-emerald-400 leading-relaxed"
                 />
               </div>
 
@@ -392,7 +392,7 @@ export function KnowledgeBasePanel({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm transition disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : 'Add Document'}
                 </button>
@@ -405,15 +405,15 @@ export function KnowledgeBasePanel({
       {/* View / Edit Document Modal */}
       {activeDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="w-full max-w-3xl max-h-[85vh] flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="w-full max-w-3xl max-h-[85vh] flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-xl overflow-hidden">
             <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-zinc-800">
               <div className="flex items-center gap-3">
-                <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <FileText className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                 <div>
                   <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
                     {activeDoc.title || activeDoc.name}
                   </h4>
-                  <p className="text-[11px] text-slate-400 font-mono">
+                  <p className="text-xs text-slate-400 font-mono">
                     {activeDoc.name} • {(activeDoc.size_bytes / 1024).toFixed(1)} KB
                   </p>
                 </div>
@@ -463,7 +463,7 @@ export function KnowledgeBasePanel({
                       type="text"
                       value={formTitle}
                       onChange={(e) => setFormTitle(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
                     />
                   </div>
 
@@ -475,7 +475,7 @@ export function KnowledgeBasePanel({
                       rows={14}
                       value={formContent}
                       onChange={(e) => setFormContent(e.target.value)}
-                      className="w-full p-3 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none leading-relaxed"
+                      className="w-full p-3 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:border-emerald-700 dark:focus:border-emerald-400 leading-relaxed"
                     />
                   </div>
 
@@ -490,7 +490,7 @@ export function KnowledgeBasePanel({
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition disabled:opacity-50"
+                      className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm transition disabled:opacity-50"
                     >
                       {submitting ? 'Saving...' : 'Save Changes'}
                     </button>

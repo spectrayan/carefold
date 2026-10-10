@@ -69,7 +69,7 @@ function setupFetch() {
   const urls: string[] = [];
   const mockFetch = vi.fn().mockImplementation((url: string, options?: RequestInit) => {
     urls.push(String(url));
-    if (url === '/api/chat') {
+    if (url === '/api/chat' || url === '/api/v1/chat') {
       chatBodies.push(JSON.parse(String(options?.body)));
       return Promise.resolve(sseResponse('Here is your checklist.'));
     }
@@ -165,7 +165,7 @@ describe('Clinical consent gate (#87)', () => {
       // Starter chips must not bypass the gate; they re-open the dialog instead
       fireEvent.click(screen.getByText('Help me prepare for my cardiology visit'));
       expect(await screen.findByTestId('clinical-consent-dialog')).toBeInTheDocument();
-      expect(mockFetch.mock.calls.some(([url]) => url === '/api/chat')).toBe(false);
+      expect(mockFetch.mock.calls.some(([url]) => url === '/api/chat' || url === '/api/v1/chat')).toBe(false);
     });
 
     it('Escape declines instead of granting consent', async () => {
@@ -221,7 +221,7 @@ describe('Clinical consent gate (#87)', () => {
       expect(await screen.findByTestId('clinical-consent-dialog')).toBeInTheDocument();
       expect(screen.getByTestId('chat-composer-textarea')).toBeDisabled();
 
-      const chatCalls = mockFetch.mock.calls.filter(([url]) => url === '/api/chat').length;
+      const chatCalls = mockFetch.mock.calls.filter(([url]) => url === '/api/chat' || url === '/api/v1/chat').length;
       expect(chatCalls).toBe(1);
     });
 

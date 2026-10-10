@@ -81,7 +81,7 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
     let capturedBody: any = null;
 
     const mockFetch = vi.fn().mockImplementation((url, options) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         capturedBody = JSON.parse(options.body);
         return Promise.resolve(
           createMockSSEResponse([
@@ -119,7 +119,7 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
     const capturedBodies: any[] = [];
 
     const mockFetch = vi.fn().mockImplementation((url, options) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         fetchCount++;
         capturedBodies.push(JSON.parse(options.body));
 
@@ -188,7 +188,7 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
     let capturedThreadIds: string[] = [];
 
     const mockFetch = vi.fn().mockImplementation((url, options) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         const body = JSON.parse(options.body);
         capturedThreadIds.push(body.threadId);
         return Promise.resolve(
@@ -235,7 +235,7 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
 
   it('renders EmergencyEscalationCard upon emergency refusal event and keeps composer usable', async () => {
     const mockFetch = vi.fn().mockImplementation((url, _options) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         return Promise.resolve(
           createMockSSEResponse([
             {
@@ -446,7 +446,7 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
 
   it('announces generation start status politely when stream begins', async () => {
     const mockFetch = vi.fn().mockImplementation((url) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         return Promise.resolve(
           createMockSSEResponse([
             { event: 'token', data: { type: 'token', delta: 'Hello' } },
@@ -478,7 +478,7 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
     });
 
     const mockFetch = vi.fn().mockImplementation((url) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         return Promise.resolve(
           new Response(stream, {
             status: 200,
@@ -521,7 +521,7 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
 
   it('announces completed assistant response once upon done event with agent attribution', async () => {
     const mockFetch = vi.fn().mockImplementation((url) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         return Promise.resolve(
           createMockSSEResponse([
             { event: 'token', data: { type: 'token', delta: 'Your visit notes are ready.' } },
@@ -548,7 +548,7 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
 
   it('announces emergency refusal assertively in alert live region', async () => {
     const mockFetch = vi.fn().mockImplementation((url) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         return Promise.resolve(
           createMockSSEResponse([
             {
@@ -591,7 +591,7 @@ describe('ChatClient Integration (Suggestions, ThreadId, Model & Settings)', () 
 
   it('announces runtime errors assertively with role="alert"', async () => {
     const mockFetch = vi.fn().mockImplementation((url) => {
-      if (url === '/api/chat') {
+      if ((url === '/api/chat' || url === '/api/v1/chat')) {
         return Promise.resolve(
           createMockSSEResponse([
             { event: 'error', data: { type: 'error', message: 'Ollama is unreachable.' } }

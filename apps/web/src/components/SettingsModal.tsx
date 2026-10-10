@@ -241,7 +241,7 @@ export function SettingsModal({
               <h2 id="settings-dialog-title" className="text-sm font-bold text-slate-900 dark:text-zinc-100">
                 Model & Provider Settings
               </h2>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+              <p className="text-xs text-slate-500 dark:text-zinc-400">
                 Configure local endpoints and optional cloud AI credentials
               </p>
             </div>
@@ -362,7 +362,7 @@ export function SettingsModal({
                 <Cpu className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
                 <span>Ollama Base URL (Default Local)</span>
               </label>
-              <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md">
+              <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md">
                 Zero Keys Required
               </span>
             </div>
@@ -378,7 +378,7 @@ export function SettingsModal({
                 })
               }
               placeholder="http://127.0.0.1:11434"
-              className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+              className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
             />
           </div>
 
@@ -399,7 +399,7 @@ export function SettingsModal({
                   href="https://aistudio.google.com/app/apikey"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-0.5 hover:underline"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-0.5 hover:underline"
                 >
                   <span>Get API Key</span>
                   <ExternalLink className="w-3 h-3" />
@@ -418,7 +418,7 @@ export function SettingsModal({
                     })
                   }
                   placeholder="AIzaSy..."
-                  className="w-full pl-3 pr-9 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full pl-3 pr-9 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
                 />
                 <button
                   type="button"
@@ -442,7 +442,7 @@ export function SettingsModal({
                   href="https://console.anthropic.com/"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-0.5 hover:underline"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-0.5 hover:underline"
                 >
                   <span>Get API Key</span>
                   <ExternalLink className="w-3 h-3" />
@@ -461,7 +461,7 @@ export function SettingsModal({
                     })
                   }
                   placeholder="sk-ant-..."
-                  className="w-full pl-3 pr-9 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full pl-3 pr-9 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
                 />
                 <button
                   type="button"
@@ -485,7 +485,7 @@ export function SettingsModal({
                   href="https://platform.openai.com/api-keys"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-0.5 hover:underline"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-0.5 hover:underline"
                 >
                   <span>Get API Key</span>
                   <ExternalLink className="w-3 h-3" />
@@ -504,7 +504,7 @@ export function SettingsModal({
                     })
                   }
                   placeholder="sk-proj-..."
-                  className="w-full pl-3 pr-9 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full pl-3 pr-9 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
                 />
                 <button
                   type="button"
@@ -525,7 +525,7 @@ export function SettingsModal({
               <Server className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
               <span>Custom OpenAI-Compatible Endpoint</span>
             </h3>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+            <p className="text-xs text-slate-500 dark:text-zinc-400">
               Compatible with LM Studio, vLLM, LocalAI, or custom OpenAI proxies.
             </p>
 
@@ -545,7 +545,7 @@ export function SettingsModal({
                   })
                 }
                 placeholder="http://127.0.0.1:8000/v1"
-                className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
               />
             </div>
 
@@ -566,7 +566,7 @@ export function SettingsModal({
                     })
                   }
                   placeholder="Optional (defaults to 'custom')"
-                  className="w-full pl-3 pr-9 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full pl-3 pr-9 py-2 text-xs font-mono rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
                 />
                 <button
                   type="button"
@@ -593,13 +593,13 @@ export function SettingsModal({
                   type="button"
                   data-testid="withdraw-all-clinical-consent"
                   onClick={() => withdrawAllClinicalConsents()}
-                  className="text-[11px] font-semibold text-rose-700 dark:text-rose-400 hover:underline cursor-pointer"
+                  className="text-xs font-semibold text-rose-700 dark:text-rose-400 hover:underline cursor-pointer"
                 >
                   Withdraw all
                 </button>
               )}
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+            <p className="text-xs text-slate-500 dark:text-zinc-400">
               Clinical assist agents only run after you give consent. Withdrawing takes effect on your next message.
             </p>
             {consentEntries.length === 0 ? (
@@ -616,7 +616,7 @@ export function SettingsModal({
                   >
                     <div className="min-w-0">
                       <div className="font-semibold text-slate-800 dark:text-zinc-200 truncate">{agentTitle(agentId)}</div>
-                      <div className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      <div className="text-xs text-slate-500 dark:text-zinc-400">
                         Consent given {new Date(record.grantedAt).toLocaleString()}
                       </div>
                     </div>
@@ -642,7 +642,7 @@ export function SettingsModal({
                 <Sun className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
                 <span>Appearance & Theme</span>
               </label>
-              <span className="text-[11px] text-slate-500 dark:text-zinc-400 capitalize">
+              <span className="text-xs text-slate-500 dark:text-zinc-400 capitalize">
                 Current: {theme}
               </span>
             </div>
@@ -687,7 +687,7 @@ export function SettingsModal({
               </h3>
             </div>
 
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
+            <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
               Carefold stores conversations and API keys locally in your browser. Clearing this data removes it from this browser only; server-side checkpoints (if any) are not affected. This clears browser data only.
             </p>
 
@@ -793,7 +793,7 @@ export function SettingsModal({
               <button
                 type="submit"
                 data-testid="save-settings-btn"
-                className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] rounded-xl shadow-sm transition cursor-pointer"
               >
                 Save Settings
               </button>
@@ -835,7 +835,7 @@ export function SettingsModal({
                       ? 'This will permanently remove the message history for this conversation from this browser. This action cannot be undone.'
                       : 'This will remove all stored API keys (Google Gemini, Anthropic Claude, OpenAI, Custom) from this browser. Your provider selection and endpoints will be preserved.'}
                   </p>
-                  <p className="text-[11px] text-slate-500 dark:text-zinc-500 mt-1.5 italic">
+                  <p className="text-xs text-slate-500 dark:text-zinc-500 mt-1.5 italic">
                     This clears browser data only.
                   </p>
                 </div>

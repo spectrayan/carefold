@@ -617,7 +617,7 @@ class TestSerializationAndRoundTrip:
 class TestLoaderIntegrationStress:
     """Stress tests load_agent and load_skill under adversarial filesystem scenarios."""
 
-    def test_load_agent_adversarial_yaml_inputs(self, tmp_path: Path):
+    def test_load_agent_yaml_inputs(self, tmp_path: Path):
         """Test agent loading with missing, partial, extra, and invalid YAML attributes."""
         # 1. Missing all taxonomy fields -> loads defaults
         dir1 = tmp_path / "agent-defaults"
@@ -698,7 +698,7 @@ domain: null
         with pytest.raises(ManifestValidationError, match="domain"):
             load_agent(dir5)
 
-    def test_load_skill_adversarial_frontmatter_and_carefold_yaml(self, tmp_path: Path):
+    def test_load_skill_frontmatter_and_carefold_yaml(self, tmp_path: Path):
         """Test skill loading with various combinations of SKILL.md and carefold.yaml."""
         # 1. Frontmatter without carefold.yaml -> loads defaults
         s1_dir = tmp_path / "skill-fm-only"

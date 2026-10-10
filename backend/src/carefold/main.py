@@ -30,7 +30,7 @@ from carefold.api.router import api_router
 from carefold.config import settings
 from carefold.db import close_db, init_db
 from carefold.db.seeding import sync_bundled_assets_to_db
-from carefold.constants.api import API_PREFIX, ROUTE_ROOT_HEALTH
+from carefold.constants.api import API_PREFIX, API_V1_PREFIX, ROUTE_ROOT_HEALTH
 from carefold.constants.defaults import (
     APP_DESCRIPTION,
     APP_TITLE,
@@ -39,6 +39,7 @@ from carefold.constants.defaults import (
 )
 
 from carefold.logging import configure_logging, get_logger
+from carefold.migration import run_first_launch_migration
 
 configure_logging()
 logger = get_logger("carefold.main")
@@ -47,8 +48,31 @@ logger = get_logger("carefold.main")
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("starting_carefold_backend", version=__version__, log_level=settings.log_level)
-    logger.info("workspace_configuration", root=str(settings.workspace_root), ollama=settings.ollama_url)
-    logger.info("audit_configuration", path=str(settings.get_audit_log_path()), store_bodies=settings.audit_store_bodies)
+    logger.info(
+        "workspace_configuration",
+        root=str(settings.workspace_root),
+        home=str(settings.home_dir),
+        ollama=settings.ollama_url,
+    )
+    logger.info(
+        "audit_configuration",
+        path=str(settings.get_audit_log_path()),
+        store_bodies=settings.audit_store_bodies,
+    )
+    try:
+        migrated = run_first_launch_migration(
+            home_dir=settings.home_dir,
+            workspace_root=settings.workspace_root,
+        )
+        if migrated:
+            logger.info("first_launch_migration_completed_successfully")
+    except Exception as migration_err:
+        logger.error(
+            "first_launch_migration_failed",
+            error=str(migration_err),
+            exc_info=True,
+        )
+
     await init_db()
     try:
         await sync_bundled_assets_to_db()
@@ -77,8 +101,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Mount API routes under /api
-    app.include_router(api_router, prefix=API_PREFIX)
+    # Mount canonical versioned API routes under /api/v1
+    app.include_router(api_router, prefix=API_V1_PREFIX)
+
+    # Mount transparent legacy unversioned alias under /api for backward compatibility
+    app.include_router(api_router, prefix=API_PREFIX, include_in_schema=False)
 
     # Root redirect / alias for health check
     @app.get(ROUTE_ROOT_HEALTH, include_in_schema=False)

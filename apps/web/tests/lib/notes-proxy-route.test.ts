@@ -127,7 +127,7 @@ describe('Workspace Notes API Proxy Routes (Issue #95)', () => {
       const data = await res.json();
       expect(data).toEqual(mockDetail);
       expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/api/notes/cardiac-notes'),
+        expect.stringContaining('/api/v1/notes/cardiac-notes'),
         expect.anything()
       );
     });
@@ -152,7 +152,7 @@ describe('Workspace Notes API Proxy Routes (Issue #95)', () => {
 
       expect(res.status).toBe(200);
       expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/api/notes/cardiac-notes'),
+        expect.stringContaining('/api/v1/notes/cardiac-notes'),
         expect.anything()
       );
     });

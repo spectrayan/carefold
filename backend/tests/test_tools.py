@@ -69,7 +69,7 @@ async def test_attach_read_pdf_success(temp_workspace: Path):
 
 
 @pytest.mark.asyncio
-async def test_attach_read_adversarial_traversal(temp_workspace: Path):
+async def test_attach_read_traversal(temp_workspace: Path):
     ctx = MockContext(temp_workspace, AgentManifest(id="test-agent", title="Test", persona="Role"))
 
     # Traversal via ../
@@ -94,7 +94,7 @@ async def test_attach_read_adversarial_traversal(temp_workspace: Path):
 
 
 @pytest.mark.asyncio
-async def test_attach_read_adversarial_symlink_escape(temp_workspace: Path, tmp_path: Path):
+async def test_attach_read_symlink_escape(temp_workspace: Path, tmp_path: Path):
     # Create external target file outside sandbox
     external_secret = tmp_path / "secret.txt"
     external_secret.write_text("TOP SECRET CLASSIFIED", encoding="utf-8")
@@ -451,7 +451,7 @@ async def test_skill_docs_fail_closed_unauthorized_skill(temp_workspace: Path):
 
 
 @pytest.mark.asyncio
-async def test_skill_docs_adversarial_traversal(temp_workspace: Path):
+async def test_skill_docs_traversal(temp_workspace: Path):
     ctx = MockContext(
         temp_workspace,
         AgentManifest(id="visit-steward", title="Visit Steward", skills=["visit-prep"], persona="Role"),

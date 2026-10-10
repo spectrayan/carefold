@@ -44,7 +44,7 @@ export default async function SkillDetailPage({ params }: PageProps) {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
 
   try {
-    const res = await fetch(`${backendUrl}/api/skills/${encodeURIComponent(cleanId)}`, {
+    const res = await fetch(`${backendUrl}/api/v1/skills/${encodeURIComponent(cleanId)}`, {
       headers: { Accept: 'application/json' },
       cache: 'no-store'
     });

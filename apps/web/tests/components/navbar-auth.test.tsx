@@ -49,10 +49,10 @@ describe('Navbar Auth & Profile Integration', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders Local Steward badge in default disabled auth mode', async () => {
+  it('renders Local Mode badge in default disabled auth mode', async () => {
     vi.mocked(fetch).mockImplementation(async (url: any) => {
       const urlStr = String(url);
-      if (urlStr.includes('/api/auth/providers')) {
+      if (urlStr.includes('/auth/providers')) {
         return {
           ok: true,
           json: async () => ({ active_provider: 'disabled', sso_providers: [], registration_enabled: true })
@@ -66,19 +66,19 @@ describe('Navbar Auth & Profile Integration', () => {
     await waitFor(() => {
       expect(screen.getByTestId('local-steward-badge')).toBeInTheDocument();
     });
-    expect(screen.getByTestId('local-steward-badge')).toHaveTextContent(/Local Steward/i);
+    expect(screen.getByTestId('local-steward-badge')).toHaveTextContent(/Local Mode/i);
   });
 
   it('renders user button and dropdown menu when user is logged in', async () => {
     vi.mocked(fetch).mockImplementation(async (url: any) => {
       const urlStr = String(url);
-      if (urlStr.includes('/api/auth/providers')) {
+      if (urlStr.includes('/auth/providers')) {
         return {
           ok: true,
           json: async () => ({ active_provider: 'local', sso_providers: [], registration_enabled: true })
         } as any;
       }
-      if (urlStr.includes('/api/auth/me')) {
+      if (urlStr.includes('/auth/me')) {
         return {
           ok: true,
           json: async () => ({
@@ -116,13 +116,13 @@ describe('Navbar Auth & Profile Integration', () => {
   it('renders Sign In and Register links when in local mode and unauthenticated', async () => {
     vi.mocked(fetch).mockImplementation(async (url: any) => {
       const urlStr = String(url);
-      if (urlStr.includes('/api/auth/providers')) {
+      if (urlStr.includes('/auth/providers')) {
         return {
           ok: true,
           json: async () => ({ active_provider: 'local', sso_providers: [], registration_enabled: true })
         } as any;
       }
-      if (urlStr.includes('/api/auth/me')) {
+      if (urlStr.includes('/auth/me')) {
         return { ok: false, status: 401, json: async () => ({}) } as any;
       }
       return { ok: true, json: async () => ({}) } as any;

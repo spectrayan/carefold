@@ -23,7 +23,7 @@ export const dynamic = 'force-dynamic';
 async function proxyAdminRequest(req: NextRequest, subpath: string): Promise<NextResponse> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
   const url = new URL(req.url);
-  const targetUrl = `${backendUrl}/api/admin/${subpath}${url.search}`;
+  const targetUrl = `${backendUrl}/api/v1/admin/${subpath}${url.search}`;
 
   const forwardHeaders = new Headers();
   const incomingCookie = req.headers.get('cookie');

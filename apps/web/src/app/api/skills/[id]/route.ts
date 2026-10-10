@@ -59,10 +59,17 @@ export async function GET(
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
 
   try {
-    const targetUrl = `${backendUrl}/api/skills/${encodeURIComponent(skillId)}`;
+    const url = new URL(_req.url);
+    const targetUrl = `${backendUrl}/api/v1/skills/${encodeURIComponent(skillId)}${url.search}`;
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    const incomingCookie = _req.headers.get('cookie');
+    if (incomingCookie) headers['cookie'] = incomingCookie;
+    const authHeader = _req.headers.get('authorization');
+    if (authHeader) headers['authorization'] = authHeader;
+
     const res = await fetch(targetUrl, {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers,
       cache: 'no-store'
     });
 
@@ -110,6 +117,8 @@ export async function PUT(
   forwardHeaders.set('content-type', 'application/json');
   forwardHeaders.set('accept', 'application/json');
 
+  const url = new URL(req.url);
+
   let body = '';
   try {
     body = await req.text();
@@ -118,7 +127,7 @@ export async function PUT(
   }
 
   try {
-    const targetUrl = `${backendUrl}/api/skills/${encodeURIComponent(skillId)}`;
+    const targetUrl = `${backendUrl}/api/v1/skills/${encodeURIComponent(skillId)}${url.search}`;
     const res = await fetch(targetUrl, {
       method: 'PUT',
       headers: forwardHeaders,
@@ -153,6 +162,7 @@ export async function DELETE(
   }
 
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const url = new URL(req.url);
 
   const forwardHeaders = new Headers();
   const incomingCookie = req.headers.get('cookie');
@@ -162,7 +172,7 @@ export async function DELETE(
   forwardHeaders.set('accept', 'application/json');
 
   try {
-    const targetUrl = `${backendUrl}/api/skills/${encodeURIComponent(skillId)}`;
+    const targetUrl = `${backendUrl}/api/v1/skills/${encodeURIComponent(skillId)}${url.search}`;
     const res = await fetch(targetUrl, {
       method: 'DELETE',
       headers: forwardHeaders,

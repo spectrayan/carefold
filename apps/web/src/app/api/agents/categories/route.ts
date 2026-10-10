@@ -31,11 +31,18 @@ export async function GET(_req: Request | NextRequest): Promise<NextResponse> {
     parsedBackend.username = '';
     parsedBackend.password = '';
 
-    const targetUrl = new URL('/api/agents/categories', parsedBackend);
+    const url = new URL(_req.url);
+    const targetUrl = new URL(`/api/v1/agents/categories${url.search}`, parsedBackend);
+
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    const incomingCookie = _req.headers.get('cookie');
+    if (incomingCookie) headers['cookie'] = incomingCookie;
+    const authHeader = _req.headers.get('authorization');
+    if (authHeader) headers['authorization'] = authHeader;
 
     const res = await fetch(targetUrl.toString(), {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers,
       cache: 'no-store'
     });
 

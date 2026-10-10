@@ -618,7 +618,7 @@ class TestPrecedenceCollisionsInRoutingPatterns:
             ),
         ],
     )
-    def test_precedence_inversion_adversarial_queries(
+    def test_precedence_inversion_queries(
         self,
         query: str,
         expected_agent: str,
@@ -929,7 +929,7 @@ class TestAdversarialFTSInjectionAndSanitization:
     """Verifies that malicious or malformed FTS queries never crash the SQLite catalog."""
 
     @pytest.mark.asyncio
-    async def test_adversarial_queries_execute_safely_without_sqlite_syntax_errors(
+    async def test_queries_execute_safely_without_sqlite_syntax_errors(
         self,
         catalog: SqliteCatalogAdapter,
     ):

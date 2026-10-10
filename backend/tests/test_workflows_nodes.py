@@ -151,11 +151,11 @@ async def test_base_node_subclass_execution_and_validation():
 def test_base_node_format_error_response():
     class TestNode(BaseNode):
         async def execute(self, state):
-            return self.format_error_response("Failed on /Users/bharatjoshi/secret.txt")
+            return self.format_error_response("Failed on /Users/developer/secret.txt")
 
     node = TestNode()
-    res = node.format_error_response("Failed on /Users/bharatjoshi/secret.txt", next_step="error")
-    assert "/Users/bharatjoshi" not in res["error"]
+    res = node.format_error_response("Failed on /Users/developer/secret.txt", next_step="error")
+    assert "/Users/developer" not in res["error"]
     assert res["next_step"] == "error"
 
 

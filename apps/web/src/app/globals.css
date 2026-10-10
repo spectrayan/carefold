@@ -20,39 +20,205 @@
 @tailwind utilities;
 
 :root {
-  /* Light Theme Semantic Tokens */
-  --background: #f8fafc;        /* slate-50 */
-  --foreground: #0f172a;        /* slate-900 */
-  --card: #ffffff;              /* pure white */
-  --card-foreground: #0f172a;   /* slate-900 */
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --muted: #f1f5f9;             /* slate-100 */
-  --muted-foreground: #475569;  /* slate-600 */
-  --border: #cbd5e1;            /* slate-300: passes 3.05:1 boundary contrast against white */
-  --input: #cbd5e1;             /* slate-300 */
-  --ring: #3b82f6;              /* blue-500 */
+  color-scheme: light;
+
+  /* ---------- Brand ramp (raw; do not use directly in components) ---------- */
+  --cf-emerald-50:  #ecfdf5;
+  --cf-emerald-100: #d1fae5;
+  --cf-emerald-200: #a7f3d0;
+  --cf-emerald-300: #6ee7b7;
+  --cf-emerald-400: #34d399;
+  --cf-emerald-500: #10b981; /* brand mint */
+  --cf-emerald-600: #059669; /* brand emerald */
+  --cf-emerald-700: #047857;
+  --cf-emerald-800: #065f46;
+  --cf-emerald-900: #064e3b;
+
+  /* ---------- Surfaces ---------- */
+  --cf-canvas:        #f7faf8;  /* page background: slate-50 nudged toward mint */
+  --cf-surface:       #ffffff;  /* cards, panels */
+  --cf-surface-2:     #f1f5f4;  /* inset areas, table headers, composer tray */
+  --cf-surface-3:     #e7eeeb;  /* hover on surface-2, selected rows */
+  --cf-rail:          #f2f7f4;  /* left navigation rail */
+  --cf-overlay:       rgb(15 23 42 / 0.40);
+
+  /* ---------- Text ---------- */
+  --cf-fg:            #0f172a;  /* 16.99:1 on canvas */
+  --cf-fg-muted:      #475569;  /* 7.58:1 on surface — secondary text */
+  --cf-fg-subtle:     #5b6b7f;  /* 5.45:1 on surface — metadata; never lighter than this */
+  --cf-fg-on-primary: #ffffff;
+  --cf-fg-link:       #047857;  /* 5.48:1 */
+
+  /* ---------- Lines ---------- */
+  --cf-border:        #e2e8e5;  /* decorative hairlines (cards, dividers) — not relied on for meaning */
+  --cf-border-strong: #7f8ea3;  /* 3.33:1 — inputs, checkboxes, anything that must be perceived */
+
+  /* ---------- Primary / accent ---------- */
+  --cf-primary:        #047857; /* filled buttons: white text 5.48:1 */
+  --cf-primary-hover:  #065f46; /* 7.68:1 */
+  --cf-primary-soft:   #ecfdf5; /* selected nav, chips */
+  --cf-primary-soft-fg:#065f46; /* 7.29:1 on soft */
+  --cf-brand:          #059669; /* icons, large display text (3.77:1 ok for >=24px / non-text) */
+  --cf-brand-mint:     #10b981; /* illustration, progress, focus halo fill */
+
+  /* ---------- Status (calm, not alarm-red by default) ---------- */
+  --cf-info-bg:   #eef2ff; --cf-info-fg:   #3730a3; --cf-info-border:   #c7d2fe;
+  --cf-warn-bg:   #fffbeb; --cf-warn-fg:   #92400e; --cf-warn-border:   #fcd34d;
+  --cf-danger-bg: #fef2f2; --cf-danger-fg: #b91c1c; --cf-danger-border: #fca5a5;
+  --cf-success-bg:#ecfdf5; --cf-success-fg:#065f46; --cf-success-border:#a7f3d0;
+  /* Emergency is the ONLY place solid red is used (EmergencyEscalationCard). */
+  --cf-emergency: #b91c1c; --cf-emergency-fg: #ffffff; /* 6.47:1 */
+
+  /* ---------- Data residency (privacy badge, composer chip) ---------- */
+  --cf-local-bg: var(--cf-success-bg); --cf-local-fg: var(--cf-success-fg);
+  --cf-cloud-bg: var(--cf-warn-bg);    --cf-cloud-fg: var(--cf-warn-fg);
+
+  /* ---------- Family member identity colours (avatar tint / ink) ---------- */
+  --cf-member-1-bg: #d1fae5; --cf-member-1-fg: #065f46; /* emerald */
+  --cf-member-2-bg: #ede9fe; --cf-member-2-fg: #5b21b6; /* violet */
+  --cf-member-3-bg: #fef3c7; --cf-member-3-fg: #92400e; /* amber */
+  --cf-member-4-bg: #e0f2fe; --cf-member-4-fg: #075985; /* sky */
+  --cf-member-5-bg: #ffe4e6; --cf-member-5-fg: #9f1239; /* rose */
+
+  /* ---------- Focus ---------- */
+  --cf-focus: #047857;          /* 5.48:1 on white; 2px ring + 2px offset */
+  --cf-focus-offset: var(--cf-surface);
+
+  /* ---------- Typography ---------- */
+  --cf-font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --cf-font-display: var(--font-fraunces), "Fraunces", "Iowan Old Style", Georgia, serif; /* page titles + greetings only */
+  --cf-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* size / line-height pairs. Body is 16px. 12px is the floor (metadata only). */
+  --cf-text-xs:   0.75rem;  --cf-leading-xs:   1rem;     /* 12/16 caption, timestamps */
+  --cf-text-sm:   0.875rem; --cf-leading-sm:   1.25rem;  /* 14/20 secondary, buttons, labels */
+  --cf-text-md:   1rem;     --cf-leading-md:   1.5rem;   /* 16/24 body, chat messages, inputs */
+  --cf-text-lg:   1.125rem; --cf-leading-lg:   1.75rem;  /* 18/28 lead, card titles */
+  --cf-text-xl:   1.25rem;  --cf-leading-xl:   1.75rem;  /* 20/28 section heading (h3) */
+  --cf-text-2xl:  1.5rem;   --cf-leading-2xl:  2rem;     /* 24/32 h2 */
+  --cf-text-3xl:  1.875rem; --cf-leading-3xl:  2.25rem;  /* 30/36 page title h1 */
+  --cf-text-4xl:  2.25rem;  --cf-leading-4xl:  2.5rem;   /* 36/40 home greeting (display) */
+  --cf-weight-regular: 400; --cf-weight-medium: 500; --cf-weight-semibold: 600; --cf-weight-bold: 700;
+
+  /* ---------- Spacing (4px base) ---------- */
+  --cf-space-0: 0;     --cf-space-1: 4px;  --cf-space-2: 8px;  --cf-space-3: 12px;
+  --cf-space-4: 16px;  --cf-space-5: 20px; --cf-space-6: 24px; --cf-space-8: 32px;
+  --cf-space-10: 40px; --cf-space-12: 48px; --cf-space-16: 64px;
+
+  /* ---------- Layout ---------- */
+  --cf-rail-w: 256px;
+  --cf-content-max: 1120px;   /* reading pages */
+  --cf-content-wide: 1280px;  /* catalog grids */
+  --cf-topbar-h: 56px;
+  --cf-tabbar-h: 64px;        /* mobile bottom tabs (+ safe-area inset) */
+  --cf-tap: 44px;             /* minimum touch target */
+
+  /* ---------- Radius ---------- */
+  --cf-radius-sm: 6px;   /* chips, badges, inputs inner */
+  --cf-radius-md: 10px;  /* buttons, inputs */
+  --cf-radius-lg: 14px;  /* cards */
+  --cf-radius-xl: 20px;  /* sheets, modals, hero panels */
+  --cf-radius-full: 9999px;
+
+  /* ---------- Elevation (soft, low-contrast; borders do most of the work) ---------- */
+  --cf-shadow-0: none;
+  --cf-shadow-1: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 1px rgb(15 23 42 / 0.03);           /* cards */
+  --cf-shadow-2: 0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.05); /* popovers, menus */
+  --cf-shadow-3: 0 20px 40px -12px rgb(15 23 42 / 0.20);                                     /* modals, sheets */
+
+  /* ---------- Motion ---------- */
+  --cf-ease: cubic-bezier(0.2, 0, 0, 1);
+  --cf-duration-fast: 120ms;
+  --cf-duration-base: 200ms;
+  --cf-duration-slow: 320ms;
+
+  /* ---------- Z-index ---------- */
+  --cf-z-rail: 20; --cf-z-sticky: 30; --cf-z-popover: 40; --cf-z-modal: 50; --cf-z-toast: 60; --cf-z-skip: 70;
+
+  /* ---------- Legacy / shadcn compatibility bridge ---------- */
+  --background: var(--cf-canvas);
+  --foreground: var(--cf-fg);
+  --card: var(--cf-surface);
+  --card-foreground: var(--cf-fg);
+  --popover: var(--cf-surface);
+  --popover-foreground: var(--cf-fg);
+  --muted: var(--cf-surface-2);
+  --muted-foreground: var(--cf-fg-muted);
+  --border: var(--cf-border);
+  --input: var(--cf-border-strong);
+  --ring: var(--cf-focus);
 }
 
 .dark {
-  /* Dark Theme Semantic Tokens */
-  --background: #09090b;        /* zinc-950 */
-  --foreground: #f4f4f5;        /* zinc-100 */
-  --card: #18181b;              /* zinc-900 */
-  --card-foreground: #f4f4f5;   /* zinc-100 */
-  --popover: #18181b;
-  --popover-foreground: #f4f4f5;
-  --muted: #27272a;             /* zinc-800 */
-  --muted-foreground: #a1a1aa;  /* zinc-400 */
-  --border: #3f3f46;            /* zinc-700: passes 3.1:1 boundary contrast against zinc-900 */
-  --input: #3f3f46;             /* zinc-700 */
-  --ring: #60a5fa;              /* blue-400 */
+  color-scheme: dark;
+
+  --cf-canvas:        #0b1220;
+  --cf-surface:       #111a2b;
+  --cf-surface-2:     #16213a;
+  --cf-surface-3:     #1d2a45;
+  --cf-rail:          #0e1726;
+  --cf-overlay:       rgb(2 6 23 / 0.60);
+
+  --cf-fg:            #e2e8f0;  /* 14.12:1 on surface */
+  --cf-fg-muted:      #94a3b8;  /* 6.79:1 */
+  --cf-fg-subtle:     #8291a7;  /* 5.44:1 */
+  --cf-fg-on-primary: #04201a;  /* dark ink on mint: 6.75:1 */
+  --cf-fg-link:       #34d399;  /* 9.05:1 */
+
+  --cf-border:        #1f2c44;
+  --cf-border-strong: #5b6e8a;  /* 3.35:1 */
+
+  --cf-primary:        #10b981;
+  --cf-primary-hover:  #34d399;
+  --cf-primary-soft:   rgb(16 185 129 / 0.12);
+  --cf-primary-soft-fg:#6ee7b7;
+  --cf-brand:          #34d399;
+  --cf-brand-mint:     #10b981;
+
+  --cf-info-bg:   rgb(99 102 241 / 0.14); --cf-info-fg:   #c7d2fe; --cf-info-border:   rgb(129 140 248 / 0.35);
+  --cf-warn-bg:   rgb(245 158 11 / 0.12); --cf-warn-fg:   #fcd34d; --cf-warn-border:   rgb(245 158 11 / 0.35);
+  --cf-danger-bg: rgb(239 68 68 / 0.12);  --cf-danger-fg: #fca5a5; --cf-danger-border: rgb(239 68 68 / 0.35);
+  --cf-success-bg:rgb(16 185 129 / 0.12); --cf-success-fg:#6ee7b7; --cf-success-border:rgb(16 185 129 / 0.35);
+  --cf-emergency: #b91c1c; --cf-emergency-fg: #ffffff;
+
+  --cf-member-1-bg: #064e3b; --cf-member-1-fg: #a7f3d0;
+  --cf-member-2-bg: #3b2a6e; --cf-member-2-fg: #ddd6fe;
+  --cf-member-3-bg: #5a3410; --cf-member-3-fg: #fde68a;
+  --cf-member-4-bg: #0c3a55; --cf-member-4-fg: #bae6fd;
+  --cf-member-5-bg: #5b1426; --cf-member-5-fg: #fecdd3;
+
+  --cf-focus: #34d399;          /* 9.74:1 on canvas */
+  --cf-focus-offset: var(--cf-canvas);
+
+  --cf-shadow-1: 0 1px 2px rgb(0 0 0 / 0.30);
+  --cf-shadow-2: 0 8px 20px -4px rgb(0 0 0 / 0.50);
+  --cf-shadow-3: 0 24px 48px -12px rgb(0 0 0 / 0.60);
+
+  /* ---------- Legacy / shadcn compatibility bridge ---------- */
+  --background: var(--cf-canvas);
+  --foreground: var(--cf-fg);
+  --card: var(--cf-surface);
+  --card-foreground: var(--cf-fg);
+  --popover: var(--cf-surface);
+  --popover-foreground: var(--cf-fg);
+  --muted: var(--cf-surface-2);
+  --muted-foreground: var(--cf-fg-muted);
+  --border: var(--cf-border);
+  --input: var(--cf-border-strong);
+  --ring: var(--cf-focus);
+}
+
+html {
+  font-family: var(--cf-font-sans);
+  font-size: 100%;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--cf-fg);
+  background: var(--cf-canvas);
+  font-family: var(--cf-font-sans);
+  font-size: var(--cf-text-md);
+  line-height: var(--cf-leading-md);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -61,11 +227,11 @@ body {
 /* Custom scrollbars that adapt smoothly across light and dark modes */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: var(--cf-border-strong) transparent;
 }
 
 .dark * {
-  scrollbar-color: #3f3f46 transparent;
+  scrollbar-color: var(--cf-border-strong) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -78,29 +244,95 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--cf-border-strong);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--cf-fg-subtle);
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: var(--cf-border-strong);
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  background: var(--cf-fg-muted);
 }
 
 /* Text Selection Styling */
 ::selection {
-  background-color: #dbeafe;
-  color: #1e3a8a;
+  background-color: var(--cf-emerald-100);
+  color: var(--cf-emerald-900);
 }
 
 .dark ::selection {
-  background-color: rgba(30, 58, 138, 0.6);
-  color: #eff6ff;
+  background-color: rgb(16 185 129 / 0.35);
+  color: #ecfdf5;
+}
+
+/* Full-viewport Chat Studio Layout (#171) */
+body:has([data-chat-page]) {
+  overflow: hidden;
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
+body:has([data-chat-page]) main {
+  padding: 0 !important;
+  max-width: 100% !important;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+body:has([data-chat-page]) footer {
+  display: none !important;
+}
+
+/* =============================================================================
+ * ACCESSIBILITY & MOTION SAFETY NORMALIZATION (#183, #185)
+ * ============================================================================= */
+
+/* Global Keyboard Focus-Visible Normalization (#185, #173) */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible,
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--cf-focus);
+  outline-offset: 2px;
+  border-radius: var(--cf-radius-sm);
+}
+
+/* High Contrast / Forced Colors Mode Support */
+@media (forced-colors: active) {
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible,
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+
+/* Vestibular Motion Safety (#183) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -24,7 +24,7 @@ export const dynamic = 'force-dynamic';
 async function getInstalledSkills(): Promise<SkillSummary[]> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
   try {
-    const res = await fetch(`${backendUrl}/api/skills`, {
+    const res = await fetch(`${backendUrl}/api/v1/skills`, {
       headers: { Accept: 'application/json' },
       cache: 'no-store'
     });

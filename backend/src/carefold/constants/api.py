@@ -24,47 +24,96 @@ from __future__ import annotations
 # 1. API Route Prefixes & Paths
 # ============================================================================
 
+API_V1_PREFIX: str = "/api/v1"
 API_PREFIX: str = "/api"
 
-# Canonical full endpoint paths (used in tests, clients, and API documentation)
-API_HEALTH: str = "/api/health"
-HEALTH_ENDPOINT: str = "/api/health"
+# Canonical Version 1 endpoint paths
+API_V1_HEALTH: str = f"{API_V1_PREFIX}/health"
+API_V1_CHAT: str = f"{API_V1_PREFIX}/chat"
+API_V1_CHAT_THREADS: str = f"{API_V1_PREFIX}/chat/threads/{{thread_id}}"
+API_V1_AGENTS: str = f"{API_V1_PREFIX}/agents"
+API_V1_AGENTS_CATEGORIES: str = f"{API_V1_PREFIX}/agents/categories"
+API_V1_AGENT_DETAIL: str = f"{API_V1_PREFIX}/agents/{{agent_id}}"
+API_V1_SKILLS: str = f"{API_V1_PREFIX}/skills"
+API_V1_SKILL_DETAIL: str = f"{API_V1_PREFIX}/skills/{{skill_id}}"
+API_V1_AUDIT: str = f"{API_V1_PREFIX}/audit"
+API_V1_MODELS: str = f"{API_V1_PREFIX}/models"
+API_V1_ATTACHMENTS: str = f"{API_V1_PREFIX}/attachments"
+API_V1_NOTES: str = f"{API_V1_PREFIX}/notes"
+API_V1_NOTE_DETAIL: str = f"{API_V1_PREFIX}/notes/{{slug}}"
+API_V1_PROFILES: str = f"{API_V1_PREFIX}/profiles"
+API_V1_MEMORY: str = f"{API_V1_PREFIX}/memory"
+API_V1_MEMORY_STATUS: str = f"{API_V1_PREFIX}/memory/status"
+API_V1_AUTH: str = f"{API_V1_PREFIX}/auth"
+API_V1_AUTH_PROVIDERS: str = f"{API_V1_PREFIX}/auth/providers"
+API_V1_AUTH_SETUP_STATUS: str = f"{API_V1_PREFIX}/auth/setup-status"
+API_V1_AUTH_STATUS: str = f"{API_V1_PREFIX}/auth/status"
+API_V1_AUTH_REGISTER: str = f"{API_V1_PREFIX}/auth/register"
+API_V1_AUTH_LOGIN: str = f"{API_V1_PREFIX}/auth/login"
+API_V1_AUTH_LOGOUT: str = f"{API_V1_PREFIX}/auth/logout"
+API_V1_AUTH_ME: str = f"{API_V1_PREFIX}/auth/me"
+API_V1_ADMIN: str = f"{API_V1_PREFIX}/admin"
+API_V1_ADMIN_SETTINGS: str = f"{API_V1_PREFIX}/admin/settings"
+API_V1_ADMIN_USERS: str = f"{API_V1_PREFIX}/admin/users"
+API_V1_ADMIN_DIAGNOSTICS: str = f"{API_V1_PREFIX}/admin/diagnostics"
 
-API_CHAT: str = "/api/chat"
-CHAT_ENDPOINT: str = "/api/chat"
+# Legacy unversioned endpoint paths (maintained for backward compatibility)
+API_HEALTH: str = f"{API_PREFIX}/health"
+HEALTH_ENDPOINT: str = API_HEALTH
 
-API_AGENTS: str = "/api/agents"
-AGENTS_ENDPOINT: str = "/api/agents"
+API_CHAT: str = f"{API_PREFIX}/chat"
+CHAT_ENDPOINT: str = API_CHAT
 
-API_AGENTS_CATEGORIES: str = "/api/agents/categories"
-AGENTS_CATEGORIES_ENDPOINT: str = "/api/agents/categories"
+API_CHAT_THREADS: str = f"{API_PREFIX}/chat/threads/{{thread_id}}"
+CHAT_THREADS_ENDPOINT: str = API_CHAT_THREADS
 
-API_SKILLS: str = "/api/skills"
-SKILLS_ENDPOINT: str = "/api/skills"
+API_AGENTS: str = f"{API_PREFIX}/agents"
+AGENTS_ENDPOINT: str = API_AGENTS
 
-API_AUDIT: str = "/api/audit"
-AUDIT_ENDPOINT: str = "/api/audit"
+API_AGENTS_CATEGORIES: str = f"{API_PREFIX}/agents/categories"
+AGENTS_CATEGORIES_ENDPOINT: str = API_AGENTS_CATEGORIES
 
-API_CHAT_THREADS: str = "/api/chat/threads/{thread_id}"
-CHAT_THREADS_ENDPOINT: str = "/api/chat/threads/{thread_id}"
+API_AGENT_DETAIL: str = f"{API_PREFIX}/agents/{{agent_id}}"
+AGENT_DETAIL_ENDPOINT: str = API_AGENT_DETAIL
 
-API_AGENT_DETAIL: str = "/api/agents/{agent_id}"
-AGENT_DETAIL_ENDPOINT: str = "/api/agents/{agent_id}"
+API_SKILLS: str = f"{API_PREFIX}/skills"
+SKILLS_ENDPOINT: str = API_SKILLS
 
-API_SKILL_DETAIL: str = "/api/skills/{skill_id}"
-SKILL_DETAIL_ENDPOINT: str = "/api/skills/{skill_id}"
+API_SKILL_DETAIL: str = f"{API_PREFIX}/skills/{{skill_id}}"
+SKILL_DETAIL_ENDPOINT: str = API_SKILL_DETAIL
 
-API_MODELS: str = "/api/models"
-MODELS_ENDPOINT: str = "/api/models"
+API_AUDIT: str = f"{API_PREFIX}/audit"
+AUDIT_ENDPOINT: str = API_AUDIT
 
-API_ATTACHMENTS: str = "/api/attachments"
-ATTACHMENTS_ENDPOINT: str = "/api/attachments"
+API_MODELS: str = f"{API_PREFIX}/models"
+MODELS_ENDPOINT: str = API_MODELS
 
-API_NOTES: str = "/api/notes"
-NOTES_ENDPOINT: str = "/api/notes"
+API_ATTACHMENTS: str = f"{API_PREFIX}/attachments"
+ATTACHMENTS_ENDPOINT: str = API_ATTACHMENTS
 
-API_NOTE_DETAIL: str = "/api/notes/{slug}"
-NOTE_DETAIL_ENDPOINT: str = "/api/notes/{slug}"
+API_NOTES: str = f"{API_PREFIX}/notes"
+NOTES_ENDPOINT: str = API_NOTES
+
+API_NOTE_DETAIL: str = f"{API_PREFIX}/notes/{{slug}}"
+NOTE_DETAIL_ENDPOINT: str = API_NOTE_DETAIL
+
+API_PROFILES: str = f"{API_PREFIX}/profiles"
+PROFILES_ENDPOINT: str = API_PROFILES
+
+API_MEMORY: str = f"{API_PREFIX}/memory"
+MEMORY_ENDPOINT: str = API_MEMORY
+
+API_MEMORY_STATUS: str = f"{API_PREFIX}/memory/status"
+
+API_AUTH: str = f"{API_PREFIX}/auth"
+AUTH_ENDPOINT: str = API_AUTH
+
+API_AUTH_PROVIDERS: str = f"{API_PREFIX}/auth/providers"
+API_AUTH_SETUP_STATUS: str = f"{API_PREFIX}/auth/setup-status"
+API_AUTH_STATUS: str = f"{API_PREFIX}/auth/status"
+
+API_ADMIN: str = f"{API_PREFIX}/admin"
+ADMIN_ENDPOINT: str = API_ADMIN
 
 # Sub-router relative paths (used in APIRouter decorators)
 ROUTE_HEALTH: str = "/health"
@@ -85,6 +134,7 @@ ROUTE_MODELS: str = "/models"
 ROUTE_ATTACHMENTS: str = "/attachments"
 ROUTE_NOTES: str = "/notes"
 ROUTE_NOTE_DETAIL: str = "/notes/{slug}"
+ROUTE_PROFILES: str = "/profiles"
 
 
 # ============================================================================

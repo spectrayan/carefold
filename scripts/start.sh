@@ -238,12 +238,12 @@ start_web() {
             nohup env NEXT_TELEMETRY_DISABLED=1 \
                 BACKEND_URL="${backend_url}" \
                 PORT="${CAREFOLD_WEB_PORT}" \
-                "${next_bin}" dev --port "${CAREFOLD_WEB_PORT}" >"${log_out}" 2>"${log_err}" &
+                "${next_bin}" dev --port "${CAREFOLD_WEB_PORT}" </dev/null >"${log_out}" 2>"${log_err}" &
         else
             nohup env NEXT_TELEMETRY_DISABLED=1 \
                 BACKEND_URL="${backend_url}" \
                 PORT="${CAREFOLD_WEB_PORT}" \
-                pnpm dev --port "${CAREFOLD_WEB_PORT}" >"${log_out}" 2>"${log_err}" &
+                pnpm dev --port "${CAREFOLD_WEB_PORT}" </dev/null >"${log_out}" 2>"${log_err}" &
         fi
         local pid=$!
         CHILD_PIDS+=("${pid}")

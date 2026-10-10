@@ -18,13 +18,19 @@
 from carefold.db.base import Base
 from carefold.db.models import (
     Agent,
+    Attachment,
+    ChatThread,
     KnowledgeBase,
     Note,
     PasswordReset,
+    Profile,
+    ProfileAccess,
+    ProfileConsent,
     Session,
     Skill,
     SystemSetting,
     User,
+    ViewerInvite,
 )
 from carefold.db.session import (
     close_db,
@@ -49,6 +55,12 @@ __all__ = [
     "Skill",
     "KnowledgeBase",
     "Note",
+    "Attachment",
+    "ChatThread",
+    "Profile",
+    "ProfileAccess",
+    "ProfileConsent",
+    "ViewerInvite",
     "create_db_engine",
     "get_engine",
     "get_session_factory",

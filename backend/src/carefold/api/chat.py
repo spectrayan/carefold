@@ -24,9 +24,15 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from carefold.api.deps import get_current_user
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from carefold.api.deps import get_current_user, resolve_owner_user_id
+from carefold.api.profiles import get_user_profile_access
 from carefold.auth.ports import UserProfile
 from carefold.config import settings
+from carefold.db.models import ChatThread, Profile
+from carefold.db.session import get_db
 from carefold.constants.api import (
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
@@ -39,7 +45,7 @@ from carefold.constants.api import (
     SSE_MEDIA_TYPE,
 )
 from carefold.constants.paths import CHATS_DIR, DEFAULT_CHECKPOINTS_DB, SYSTEM_AGENTS_DIR
-from carefold.engine.graph import create_async_sqlite_saver
+from carefold.engine.graph import create_async_sqlite_saver, resolve_checkpointer_path
 from carefold.engine.runner import execute_agent_run
 from carefold.schemas.chat import ChatRequestBody
 
@@ -54,6 +60,7 @@ router = APIRouter(tags=["Chat"])
 async def chat_stream(
     request: ChatRequestBody,
     user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
     """Streams token chunks, tool traces, refusals, suggestions, and completion records via SSE.
     
@@ -79,8 +86,49 @@ async def chat_stream(
         else:
             raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Agent '{agent_id}' not found.")
 
+    profile_id = request.get_profile_id()
+    if profile_id:
+        p_stmt = select(Profile).where(Profile.id == profile_id)
+        p_res = await db.execute(p_stmt)
+        profile_record = p_res.scalar_one_or_none()
+        if profile_record is None:
+            raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Profile '{profile_id}' not found.")
+        access = await get_user_profile_access(profile_record, user, db)
+        if access is None:
+            raise HTTPException(status_code=403, detail=f"Access denied to profile '{profile_id}'.")
+
     # Resolve thread ID for session persistence
     thread_id = request.get_thread_id() or f"thread_{agent_id}_{uuid.uuid4().hex[:12]}"
+
+    owner_id = resolve_owner_user_id(user)
+    stmt = select(ChatThread).where(ChatThread.id == thread_id)
+    res = await db.execute(stmt)
+    existing_thread = res.scalar_one_or_none()
+    if existing_thread is not None:
+        if owner_id and getattr(user, "role", "member") != "admin":
+            if existing_thread.user_id is not None and existing_thread.user_id != owner_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Access denied: conversation thread belongs to another user.",
+                )
+        if existing_thread.profile_id:
+            p_stmt = select(Profile).where(Profile.id == existing_thread.profile_id)
+            p_res = await db.execute(p_stmt)
+            p_obj = p_res.scalar_one_or_none()
+            if p_obj:
+                p_acc = await get_user_profile_access(p_obj, user, db)
+                if p_acc is None:
+                    raise HTTPException(status_code=403, detail="Access denied to conversation thread profile.")
+    else:
+        new_thread = ChatThread(
+            id=thread_id,
+            user_id=owner_id,
+            profile_id=profile_id,
+            agent_id=agent_id,
+            title=request.prompt.strip()[:50] or "New Consultation",
+        )
+        db.add(new_thread)
+        await db.commit()
 
     # Resolve provider and custom endpoint parameters
     provider = request.get_provider()
@@ -116,6 +164,8 @@ async def chat_stream(
                 model=model,
                 api_key=api_key,
                 base_url=custom_endpoint,
+                user_id=owner_id,
+                profile_id=profile_id,
             ):
                 event_type = event.get("type", SSE_EVENT_MESSAGE)
                 data_str = json.dumps(event)
@@ -135,25 +185,60 @@ async def chat_stream(
     )
 
 
+@router.get("/chat/threads")
 @router.get(ROUTE_CHAT_THREADS)
 async def get_thread_history(
-    thread_id: str,
+    thread_id: Optional[str] = None,
     user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Retrieves conversation history and checkpoints for a given thread ID."""
-    chats_dir = settings.workspace_root / CHATS_DIR
-    db_path = chats_dir / DEFAULT_CHECKPOINTS_DB
+    if not thread_id or not thread_id.strip():
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="Parameter 'thread_id' is required.")
+
+    clean_thread_id = thread_id.strip()
+    owner_id = resolve_owner_user_id(user)
+
+    stmt = select(ChatThread).where(ChatThread.id == clean_thread_id)
+    res = await db.execute(stmt)
+    thread_record = res.scalar_one_or_none()
+    if thread_record is not None:
+        if owner_id and getattr(user, "role", "member") != "admin":
+            if thread_record.user_id is not None and thread_record.user_id != owner_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Access denied: conversation thread belongs to another user.",
+                )
+        if thread_record.profile_id:
+            p_stmt = select(Profile).where(Profile.id == thread_record.profile_id)
+            p_res = await db.execute(p_stmt)
+            p_obj = p_res.scalar_one_or_none()
+            if p_obj:
+                p_acc = await get_user_profile_access(p_obj, user, db)
+                if p_acc is None:
+                    raise HTTPException(status_code=403, detail="Access denied to conversation thread profile.")
+    elif owner_id and getattr(user, "role", "member") != "admin":
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail=f"Thread '{clean_thread_id}' not found.",
+        )
+
+    db_path = resolve_checkpointer_path()
+    if not db_path.is_file() and settings.workspace_root:
+        ws_db = resolve_checkpointer_path(settings.workspace_root)
+        if ws_db.is_file():
+            db_path = ws_db
 
     if not db_path.is_file():
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"No checkpoints found for thread '{thread_id}'.")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"No checkpoints found for thread '{clean_thread_id}'.")
 
     try:
         async with create_async_sqlite_saver(db_path) as saver:
-            config = {"configurable": {"thread_id": thread_id}}
+            config = {"configurable": {"thread_id": clean_thread_id}}
             checkpoint_tuple = await saver.aget_tuple(config)
 
             if not checkpoint_tuple or not checkpoint_tuple.checkpoint:
-                raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Thread '{thread_id}' not found.")
+                raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Thread '{clean_thread_id}' not found.")
 
             channel_values = checkpoint_tuple.checkpoint.get("channel_values", {})
             raw_messages = channel_values.get("messages", [])
@@ -178,7 +263,8 @@ async def get_thread_history(
                 })
 
             return {
-                "threadId": thread_id,
+                "threadId": clean_thread_id,
+                "profileId": thread_record.profile_id if thread_record else None,
                 "messages": serialized_messages,
                 "followUpSuggestions": channel_values.get("follow_up_suggestions", []),
                 "count": len(serialized_messages),

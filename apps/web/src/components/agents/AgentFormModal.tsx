@@ -130,7 +130,7 @@ export function AgentFormModal({
     };
 
     try {
-      const endpoint = isEditing ? `/api/agents/${encodeURIComponent(initialAgent!.id)}` : '/api/agents';
+      const endpoint = isEditing ? `/api/v1/agents/${encodeURIComponent(initialAgent!.id)}` : '/api/v1/agents';
       const method = isEditing ? 'PUT' : 'POST';
       const body = isEditing ? JSON.stringify(payload) : JSON.stringify({ id: id.trim(), ...payload });
 
@@ -197,7 +197,7 @@ export function AgentFormModal({
                     setId(slug);
                   }}
                   placeholder="e.g. endocrinology-guide"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:border-emerald-700 dark:focus:border-emerald-400"
                 />
               </div>
             )}
@@ -212,7 +212,7 @@ export function AgentFormModal({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Endocrinology Guide"
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
               />
             </div>
 
@@ -223,7 +223,7 @@ export function AgentFormModal({
               <select
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
               >
                 <option value="clinical">Clinical</option>
                 <option value="navigation">Navigation</option>
@@ -239,7 +239,7 @@ export function AgentFormModal({
               <select
                 value={riskClass}
                 onChange={(e) => setRiskClass(e.target.value as RiskClass)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
               >
                 <option value="clinical_assist">Clinical Assist (requires consent)</option>
                 <option value="admin">Admin (Formulary / Insurance)</option>
@@ -257,7 +257,7 @@ export function AgentFormModal({
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="e.g. endocrinology or insurance"
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
               />
             </div>
           </div>
@@ -272,7 +272,7 @@ export function AgentFormModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g. Assists patients with thyroid, diabetes, and metabolic visit prep."
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
             />
           </div>
 
@@ -324,7 +324,7 @@ export function AgentFormModal({
                       <span className="font-mono font-bold">{t.label}</span>
                       {checked && <Check className="w-3.5 h-3.5 text-emerald-600" />}
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">{t.desc}</p>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">{t.desc}</p>
                   </div>
                 );
               })}
@@ -341,7 +341,7 @@ export function AgentFormModal({
               required
               value={personaInstructions}
               onChange={(e) => setPersonaInstructions(e.target.value)}
-              className="w-full p-3 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none leading-relaxed"
+              className="w-full p-3 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:border-emerald-700 dark:focus:border-emerald-400 leading-relaxed"
             />
           </div>
 
@@ -355,7 +355,7 @@ export function AgentFormModal({
               value={startersText}
               onChange={(e) => setStartersText(e.target.value)}
               placeholder="What questions should I ask?&#10;Help me organize my lab records."
-              className="w-full p-3 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+              className="w-full p-3 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
             />
           </div>
 
@@ -371,7 +371,7 @@ export function AgentFormModal({
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition disabled:opacity-50"
+              className="px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm transition disabled:opacity-50"
             >
               {submitting ? 'Saving...' : isEditing ? 'Update Agent' : 'Create Agent'}
             </button>

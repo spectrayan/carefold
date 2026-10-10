@@ -241,16 +241,16 @@ describe('MarketplaceClient Data-Driven Filters', () => {
     expect(screen.getByText('Oncology Navigator')).toBeInTheDocument();
   });
 
-  it('renders caregiver badge and care stage labels on agent cards', () => {
+  it('renders care stage labels and safety badges on agent cards', () => {
     render(<MarketplaceClient initialAgents={testAgents} />);
-
-    const caregiverBadges = screen.getAllByTestId('caregiver-badge');
-    expect(caregiverBadges.length).toBe(3); // visit-steward, benefits-guide, oncology-navigator
 
     // Care stage badges on cards
     const careStageBadges = screen.getAllByTestId('care-stage-badge');
     expect(careStageBadges.length).toBeGreaterThan(0);
     expect(careStageBadges.some((b) => b.textContent === 'Before visit')).toBe(true);
+
+    const safetyBadges = screen.getAllByTestId('card-safety-badge');
+    expect(safetyBadges.length).toBe(4);
   });
 
   it('gracefully falls back to deriving active domains from initialAgents when categories is null', () => {

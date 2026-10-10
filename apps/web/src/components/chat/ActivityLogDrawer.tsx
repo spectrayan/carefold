@@ -18,6 +18,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import {
   ShieldAlert,
   AlertTriangle,
@@ -61,6 +62,7 @@ export function ActivityLogDrawer({
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unauthenticated, setUnauthenticated] = useState<boolean>(false);
 
   // Filters
   const [agentFilter, setAgentFilter] = useState<string>(activeAgentId || 'all');
@@ -86,7 +88,11 @@ export function ActivityLogDrawer({
     try {
       const response = await fetchAuditEvents({ limit: 100 });
       setEvents(response.events || []);
+      setUnauthenticated(false);
     } catch (err: any) {
+      if (err?.status === 401 || err?.message?.includes('401') || err?.message?.toLowerCase().includes('unauthorized')) {
+        setUnauthenticated(true);
+      }
       setError(err?.message || 'Failed to load activity events');
     } finally {
       setLoading(false);
@@ -219,7 +225,7 @@ export function ActivityLogDrawer({
                 </h2>
                 <span
                   data-testid="audit-count-badge"
-                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300"
+                  className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300"
                 >
                   {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'}
                 </span>
@@ -227,11 +233,11 @@ export function ActivityLogDrawer({
               <div className="flex items-center gap-2 mt-0.5">
                 <span
                   data-testid="redacted-mode-badge"
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400"
-                  title="Prompts and completion bodies are never recorded or displayed"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400"
+                  title="Your messages and notes stay on this device and are never recorded."
                 >
                   <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                  Redacted Mode
+                  Private Mode · Not Stored
                 </span>
               </div>
             </div>
@@ -365,7 +371,31 @@ export function ActivityLogDrawer({
           className="flex-1 overflow-y-auto p-4 space-y-3"
           data-testid="audit-event-list"
         >
-          {error && (
+          {unauthenticated && (
+            <div
+              data-testid="audit-drawer-unauthenticated-banner"
+              className="p-4 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs space-y-2"
+            >
+              <div className="font-semibold flex items-center gap-1.5 text-amber-900 dark:text-amber-100">
+                <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                Authentication Required
+              </div>
+              <p className="text-amber-700 dark:text-amber-300">
+                Activity logs require an active user session. Please sign in to view your activity history.
+              </p>
+              <div className="pt-1">
+                <Link
+                  href="/login"
+                  onClick={onClose}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-sm transition"
+                >
+                  Sign In
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {error && !unauthenticated && (
             <div className="p-3 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 text-xs">
               <div className="font-semibold mb-1 flex items-center gap-1.5">
                 <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
@@ -400,7 +430,7 @@ export function ActivityLogDrawer({
                     setOnlyBlocked(false);
                     setSearchQuery('');
                   }}
-                  className="mt-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                  className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:underline cursor-pointer"
                 >
                   Reset all filters
                 </button>
@@ -469,7 +499,7 @@ export function ActivityLogDrawer({
                     <span
                       data-testid="audit-status-badge"
                       className={cn(
-                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border',
+                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border',
                         badgeStyle
                       )}
                     >
@@ -480,14 +510,14 @@ export function ActivityLogDrawer({
                     {/* Agent badge */}
                     <span
                       data-testid="audit-agent-badge"
-                      className="px-2 py-0.5 rounded-md text-[11px] font-mono font-medium bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-zinc-300"
+                      className="px-2 py-0.5 rounded-md text-xs font-mono font-medium bg-slate-100 dark:bg-zinc-700 text-slate-700 dark:text-zinc-300"
                     >
                       {ev.agent_id}
                     </span>
                   </div>
 
                   {/* Timestamp & Duration */}
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-zinc-500 font-mono shrink-0">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-zinc-500 font-mono shrink-0">
                     {ev.duration_ms !== undefined && ev.duration_ms !== null && (
                       <span
                         data-testid="audit-duration-badge"
@@ -523,7 +553,7 @@ export function ActivityLogDrawer({
                 </div>
 
                 {/* Collapsible raw metadata toggle */}
-                <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-zinc-700/60 flex items-center justify-between text-[11px]">
+                <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-zinc-700/60 flex items-center justify-between text-xs">
                   <button
                     type="button"
                     onClick={() => toggleExpand(index)}
@@ -546,7 +576,7 @@ export function ActivityLogDrawer({
                     <button
                       type="button"
                       onClick={() => copyAuditEventsToClipboard([ev])}
-                      className="text-slate-500 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1 transition cursor-pointer"
+                      className="text-slate-500 dark:text-zinc-400 hover:text-emerald-700 dark:hover:text-emerald-400 flex items-center gap-1 transition cursor-pointer"
                     >
                       <Copy className="w-3 h-3" />
                       Copy Event JSON
@@ -557,7 +587,7 @@ export function ActivityLogDrawer({
                 {isExpanded && (
                   <pre
                     data-testid="audit-raw-json"
-                    className="mt-2 p-2.5 rounded-lg bg-slate-900 dark:bg-black text-slate-100 text-[10px] font-mono overflow-x-auto"
+                    className="mt-2 p-2.5 rounded-lg bg-slate-900 dark:bg-black text-slate-100 text-xs font-mono overflow-x-auto"
                   >
                     {JSON.stringify(ev, null, 2)}
                   </pre>
@@ -569,7 +599,7 @@ export function ActivityLogDrawer({
 
         {/* Footer */}
         <div className="px-4 py-2.5 border-t border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/90 text-center shrink-0">
-          <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+          <p className="text-xs text-slate-500 dark:text-zinc-400">
             Carefold runtime audit logs are stored locally in your workspace with zero prompt retention.
           </p>
         </div>

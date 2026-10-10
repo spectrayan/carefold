@@ -39,7 +39,6 @@ import type { SkillSummary } from '@/types/api';
 import {
   cn,
   sanitizeAgentDescription,
-  formatCategoryLabel,
   formatRiskClass,
   formatCareStage,
 } from '@/lib/utils';
@@ -85,7 +84,7 @@ export function MarketplaceClient({
     setIsCreateOpen(true);
     if (availableSkills.length === 0) {
       try {
-        const res = await fetch('/api/skills');
+        const res = await fetch('/api/v1/skills');
         if (res.ok) {
           const data = await res.json();
           setAvailableSkills(Array.isArray(data) ? data : []);
@@ -100,7 +99,6 @@ export function MarketplaceClient({
     { id: 'all', label: 'All Agents' },
     { id: 'wellness', label: 'Wellness' },
     { id: 'admin', label: 'Admin' },
-    { id: 'education', label: 'Education' },
     { id: 'clinical_assist', label: 'Clinical Assist' },
   ];
 
@@ -263,7 +261,7 @@ export function MarketplaceClient({
             <button
               type="button"
               onClick={handleOpenCreate}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition active:scale-95 whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm transition whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>Create Agent</span>
@@ -282,12 +280,12 @@ export function MarketplaceClient({
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search agents by name, skill, or keyword..."
                 aria-label="Search agents by name, skill, or keyword"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-slate-50 dark:bg-zinc-800/70 focus:bg-white dark:focus:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-slate-50 dark:bg-zinc-800/70 focus:bg-white dark:focus:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 text-sm transition"
               />
             </div>
 
             <div
-              className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0"
+              className="-mx-4 px-4 sm:mx-0 sm:px-0 flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1 md:pb-0"
               data-testid="risk-filters"
               role="group"
               aria-label="Filter by risk class"
@@ -313,7 +311,7 @@ export function MarketplaceClient({
 
           {/* Domain Filter Pills */}
           <div
-            className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1"
+            className="-mx-4 px-4 sm:mx-0 sm:px-0 flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-1 pb-1"
             data-testid="domain-filters"
             role="group"
             aria-label="Filter by domain"
@@ -328,7 +326,7 @@ export function MarketplaceClient({
                 className={cn(
                   'px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition',
                   selectedDomain === df.id
-                    ? 'bg-emerald-600 dark:bg-emerald-500 text-white shadow-sm'
+                    ? 'bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:text-[#04201a] shadow-sm'
                     : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 hover:text-slate-900 dark:hover:text-zinc-100'
                 )}
               >
@@ -340,7 +338,7 @@ export function MarketplaceClient({
           {/* Care Stage ("When") & Caregiver Filters */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
             <div
-              className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0"
+              className="-mx-4 px-4 sm:mx-0 sm:px-0 flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1 sm:pb-0"
               data-testid="care-stage-filters"
               role="group"
               aria-label="Filter by care stage"
@@ -355,7 +353,7 @@ export function MarketplaceClient({
                   className={cn(
                     'px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition',
                     selectedCareStage === cs.id
-                      ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+                      ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
                       : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 hover:text-slate-900 dark:hover:text-zinc-100'
                   )}
                 >
@@ -375,7 +373,7 @@ export function MarketplaceClient({
                 className={cn(
                   'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition select-none',
                   forCaregivers
-                    ? 'bg-purple-600 dark:bg-purple-500 text-white shadow-sm ring-1 ring-purple-500/50'
+                    ? 'bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm'
                     : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 hover:text-slate-900 dark:hover:text-zinc-100'
                 )}
               >
@@ -417,11 +415,7 @@ export function MarketplaceClient({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAgents.map((agent) => {
             const Icon = resolveAgentIcon(agent.icon, agent.id);
-            const isBundled = Boolean(agent.isBundled ?? agent.is_bundled);
             const isVerified = agent.verified !== false;
-            const effectiveTools = agent.effectiveTools || agent.tools || [];
-            const skills = agent.skills || [];
-            const categoryLabel = formatCategoryLabel(agent.category, agent.domain);
             const isCaregiver = Boolean(
               agent.target_audience &&
                 agent.target_audience.some((ta) => ta.toLowerCase() === 'caregiver')
@@ -445,52 +439,43 @@ export function MarketplaceClient({
                       <Icon className="w-6 h-6" />
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-1.5">
-                      {agent.domain && (
-                        <span
-                          data-testid="domain-badge"
-                          className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 capitalize"
-                        >
-                          {agent.domain}
-                        </span>
-                      )}
-                      {categoryLabel && (
-                        <span
-                          data-testid="category-badge"
-                          className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700"
-                        >
-                          {categoryLabel}
-                        </span>
-                      )}
-                      {isCaregiver && (
-                        <span
-                          data-testid="caregiver-badge"
-                          className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
-                        >
-                          Caregiver
-                        </span>
-                      )}
-                      {isBundled && (
-                        <span
-                          data-testid="bundled-badge"
-                          className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700"
-                        >
-                          Bundled
-                        </span>
-                      )}
                       {!isVerified && (
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 flex items-center gap-1">
+                        <span
+                          data-testid="unverified-badge"
+                          className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 flex items-center gap-1"
+                        >
                           <AlertCircle className="w-3 h-3" />
                           Unverified
                         </span>
                       )}
+                      {/* Badge 1: Safety Level in Plain Words */}
                       <span
+                        data-testid="card-safety-badge"
                         className={cn(
-                          'text-[11px] font-semibold px-2.5 py-0.5 rounded-full border capitalize',
+                          'text-xs font-semibold px-2.5 py-0.5 rounded-full border capitalize',
                           getRiskBadgeStyle(agent.risk_class)
                         )}
                       >
                         {formatRiskClass(agent.risk_class)}
                       </span>
+
+                      {/* Badge 2: When / Primary Care Stage or Caregiver */}
+                      {careStages.length > 0 ? (
+                        <span
+                          key={careStages[0]}
+                          data-testid="care-stage-badge"
+                          className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700"
+                        >
+                          {formatCareStage(careStages[0])}
+                        </span>
+                      ) : isCaregiver ? (
+                        <span
+                          data-testid="caregiver-badge"
+                          className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700"
+                        >
+                          Caregiver
+                        </span>
+                      ) : null}
                     </div>
                   </div>
 
@@ -498,59 +483,9 @@ export function MarketplaceClient({
                   <h2 className="text-lg font-bold text-slate-900 dark:text-zinc-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition">
                     <Link href={`/agents/${agent.id}`}>{agent.title}</Link>
                   </h2>
-                  <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-zinc-400 line-clamp-3 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
                     {sanitizeAgentDescription(agent.description)}
                   </p>
-
-                  {/* Skills, Tools, and Care Stage Pills */}
-                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-zinc-800 space-y-2">
-                    {careStages.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-600 dark:text-zinc-400">
-                        <span className="font-semibold text-slate-700 dark:text-zinc-300">When:</span>
-                        {careStages.map((stage) => (
-                          <span
-                            key={stage}
-                            data-testid="care-stage-badge"
-                            className="bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded text-[11px] border border-blue-200 dark:border-blue-800/60"
-                          >
-                            {formatCareStage(stage)}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-zinc-400">
-                      <span className="font-semibold text-slate-700 dark:text-zinc-300">Skills:</span>
-                      {skills.length > 0 ? (
-                        skills.map((skill) => (
-                          <span
-                            key={skill}
-                            className="bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 px-2 py-0.5 rounded text-[11px] font-mono border border-transparent dark:border-zinc-700/60"
-                          >
-                            {skill}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-slate-400 dark:text-zinc-500 italic">None</span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-zinc-400">
-                      <span className="font-semibold text-slate-700 dark:text-zinc-300">Tools:</span>
-                      {effectiveTools.length > 0 ? (
-                        effectiveTools.map((t) => (
-                          <span
-                            key={t}
-                            className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded text-[11px] font-mono border border-emerald-200 dark:border-emerald-800/60"
-                          >
-                            {t}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-slate-400 dark:text-zinc-500 italic">None</span>
-                      )}
-                    </div>
-                  </div>
                 </div>
 
                 {/* Actions */}
@@ -564,7 +499,7 @@ export function MarketplaceClient({
 
                   <Link
                     href={`/chat?agent=${agent.id}`}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition active:scale-95"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm transition active:scale-95"
                   >
                     <span>Try in chat</span>
                     <ArrowRight className="w-3.5 h-3.5" />

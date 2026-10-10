@@ -77,16 +77,16 @@ export function MessageToolbar({
   const isUser = role === 'user';
 
   const containerClasses = isUser
-    ? 'flex items-center gap-0.5 bg-blue-700/60 dark:bg-blue-800/60 rounded-lg p-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity'
+    ? 'flex items-center gap-0.5 bg-slate-200/80 dark:bg-zinc-700/80 rounded-lg p-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity'
     : 'flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity';
 
   const buttonClasses = isUser
-    ? 'min-w-[32px] min-h-[32px] p-1.5 rounded hover:bg-blue-600/70 text-blue-100 hover:text-white transition flex items-center justify-center cursor-pointer'
-    : 'min-w-[32px] min-h-[32px] p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition flex items-center justify-center cursor-pointer';
+    ? 'min-w-[44px] min-h-[44px] p-2.5 rounded hover:bg-slate-300 dark:hover:bg-zinc-600 text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white transition flex items-center justify-center cursor-pointer'
+    : 'min-w-[44px] min-h-[44px] p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 transition flex items-center justify-center cursor-pointer';
 
   const rerunButtonClasses = isUser
-    ? 'min-w-[32px] min-h-[32px] p-1.5 rounded hover:bg-blue-600/70 text-blue-100 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer'
-    : 'min-w-[32px] min-h-[32px] p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer';
+    ? 'min-w-[44px] min-h-[44px] p-2.5 rounded hover:bg-slate-300 dark:hover:bg-zinc-600 text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer'
+    : 'min-w-[44px] min-h-[44px] p-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer';
 
   return (
     <div

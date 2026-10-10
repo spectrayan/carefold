@@ -24,7 +24,7 @@ export const dynamic = 'force-dynamic';
 async function getInstalledAgents(): Promise<AgentSummary[]> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
   try {
-    const res = await fetch(`${backendUrl}/api/agents`, {
+    const res = await fetch(`${backendUrl}/api/v1/agents`, {
       headers: { Accept: 'application/json' },
       cache: 'no-store'
     });

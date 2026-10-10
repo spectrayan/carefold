@@ -144,7 +144,7 @@ class TestPersonaWordCountAndStructureStress:
         # Confirm all 8 agents were measured
         assert len(word_counts) == 8
 
-    def test_adversarial_word_count_truncation_detection(self):
+    def test_word_count_truncation_detection(self):
         """Adversarial oracle: a persona truncated to 39 words MUST be detected and rejected."""
         dummy_words = ["word"] * 39
         truncated_persona = " ".join(dummy_words)
@@ -255,7 +255,7 @@ class TestClosedToolRegistryAndDelegationLockdown:
         with pytest.raises(ToolValidationError):
             validate_tools_in_phase0(["execute_code", "attach-read"], "adversarial_test")
 
-    def test_specialist_delegation_tool_adversarial_oracle(self):
+    def test_specialist_delegation_tool_oracle(self):
         """Adversarial oracle: a specialist navigator declaring delegation tools must be caught by policy."""
         specialist_declared = ["attach-read", "delegate_to_agent"]
         forbidden_for_navigators = {"delegate_to_agent", "list_agents"}
@@ -291,7 +291,7 @@ class TestMandatoryIntendedUseStatements:
                     f"Skill '{skill_id}' missing intended use statement: '{stmt}'"
                 )
 
-    def test_check_mandatory_intended_use_adversarial_oracle(self):
+    def test_check_mandatory_intended_use_oracle(self):
         """Adversarial oracle: omission of any of the 3 statements causes validation failure."""
         base_text = (
             "Not a clinician and not emergency care.\n"

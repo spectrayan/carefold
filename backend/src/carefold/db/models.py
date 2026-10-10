@@ -23,7 +23,7 @@ from typing import Any, List, Optional
 import uuid
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
+from sqlalchemy.orm import Mapped, mapped_column, relationship as sa_relationship, relationship, validates
 
 from carefold.db.base import Base
 
@@ -118,6 +118,38 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,
+    )
+    attachments: Mapped[List[Attachment]] = relationship(
+        "Attachment",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    chat_threads: Mapped[List[ChatThread]] = relationship(
+        "ChatThread",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    profiles: Mapped[List[Profile]] = relationship(
+        "Profile",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    sent_invites: Mapped[List[ViewerInvite]] = relationship(
+        "ViewerInvite",
+        foreign_keys="ViewerInvite.invited_by",
+        back_populates="inviter",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="selectin",
+    )
+    accepted_invites: Mapped[List[ViewerInvite]] = relationship(
+        "ViewerInvite",
+        foreign_keys="ViewerInvite.accepted_by",
+        back_populates="acceptor",
+        lazy="selectin",
     )
 
     @validates("email")
@@ -717,10 +749,377 @@ class KnowledgeBase(Base):
         return f"<KnowledgeBase id={self.id!r} target={self.target_type}:{self.target_id} name={self.name!r}>"
 
 
+class Profile(Base):
+    """Family / care profile entity representing an individual receiving care."""
+
+    __tablename__ = "profiles"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique profile identifier (UUID v4 string)",
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=True,
+        doc="Account owner user identifier (nullable for single-user offline mode)",
+    )
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Profile display name (e.g. Leo, Mom, Me)",
+    )
+    relationship: Mapped[str] = mapped_column(
+        String(64),
+        default="self",
+        nullable=False,
+        doc="Relationship to account owner: self, child, parent, partner, spouse, other",
+    )
+    role: Mapped[str] = mapped_column(
+        String(32),
+        default="self",
+        nullable=False,
+        doc="Profile role: self, guardian, viewer",
+    )
+    date_of_birth: Mapped[Optional[str]] = mapped_column(
+        String(10),
+        nullable=True,
+        doc="Date of birth formatted as YYYY-MM-DD",
+    )
+    avatar_color: Mapped[str] = mapped_column(
+        String(32),
+        default="1",
+        nullable=False,
+        doc="Avatar color slot: 1, 2, 3, 4, 5, or auto",
+    )
+    short_name: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        doc="Short display name / nickname for the profile (e.g. Leo, Mom)",
+    )
+    avatar_url: Mapped[Optional[str]] = mapped_column(
+        String(512),
+        nullable=True,
+        doc="Uploaded avatar image URL or asset storage key",
+    )
+    is_primary: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="Whether this is the primary self/steward profile",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    # Relationships
+    owner: Mapped[User] = sa_relationship("User", back_populates="profiles")
+    access_grants: Mapped[List[ProfileAccess]] = sa_relationship(
+        "ProfileAccess",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    viewer_invites: Mapped[List[ViewerInvite]] = sa_relationship(
+        "ViewerInvite",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="selectin",
+    )
+    consent: Mapped[Optional[ProfileConsent]] = sa_relationship(
+        "ProfileConsent",
+        back_populates="profile",
+        uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    notes: Mapped[List[Note]] = sa_relationship(
+        "Note",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    attachments: Mapped[List[Attachment]] = sa_relationship(
+        "Attachment",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    chat_threads: Mapped[List[ChatThread]] = sa_relationship(
+        "ChatThread",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    def __repr__(self) -> str:
+        return f"<Profile id={self.id!r} name={self.name!r} relationship={self.relationship!r} role={self.role!r}>"
+
+
+class ProfileAccess(Base):
+    """Access grant authorizing a user to interact with a specific profile."""
+
+    __tablename__ = "profile_access"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique access grant identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+        doc="Referenced profile identifier",
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=True,
+        doc="Authorized user identifier",
+    )
+    granted_by: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        doc="User ID of account owner or steward who issued the grant",
+    )
+    role: Mapped[str] = mapped_column(
+        String(32),
+        default="viewer",
+        nullable=False,
+        doc="Access role: viewer, guardian, self",
+    )
+    access_level: Mapped[str] = mapped_column(
+        String(32),
+        default="manage",
+        nullable=False,
+        doc="Access level: manage, view_clinical, view_paperwork",
+    )
+    granted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Access grant timestamp (UTC)",
+    )
+
+    __table_args__ = (
+        UniqueConstraint("profile_id", "user_id", name="uq_profile_access_user"),
+    )
+
+    # Relationships
+    profile: Mapped[Profile] = relationship("Profile", back_populates="access_grants")
+    user: Mapped[User] = relationship("User", foreign_keys=[user_id])
+    grantor: Mapped[Optional[User]] = relationship("User", foreign_keys=[granted_by])
+
+    def __repr__(self) -> str:
+        return f"<ProfileAccess profile_id={self.profile_id!r} user_id={self.user_id!r} level={self.access_level!r}>"
+
+
+class ProfileConsent(Base):
+    """Clinical consent tracking and teen handover reminder state for a profile."""
+
+    __tablename__ = "profile_consents"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique consent record identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        unique=True,
+        index=True,
+        nullable=False,
+        doc="Referenced profile identifier",
+    )
+    consented_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Timestamp when clinical consent was explicitly acknowledged (UTC)",
+    )
+    terms_version: Mapped[str] = mapped_column(
+        String(32),
+        default="v1.0",
+        nullable=False,
+        doc="Clinical consent terms version string",
+    )
+    allow_clinical: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="Whether clinical-assist agents and skills are authorized for this profile",
+    )
+    teen_handover_notified: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="Whether 90-day teen handover reminder notification has been dispatched",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    # Relationships
+    profile: Mapped[Profile] = relationship("Profile", back_populates="consent")
+
+    def __repr__(self) -> str:
+        return f"<ProfileConsent profile_id={self.profile_id!r} allow_clinical={self.allow_clinical}>"
+
+
+class ViewerInvite(Base):
+    """Pending or accepted read-only invitation for household viewer access."""
+
+    __tablename__ = "viewer_invites"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique invitation identifier (UUID v4 string)",
+    )
+    invite_code: Mapped[str] = mapped_column(
+        String(64),
+        unique=True,
+        index=True,
+        nullable=False,
+        doc="Unique redemption code (e.g. cf-inv-XXXXXX)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+        doc="Referenced care profile identifier",
+    )
+    invited_by: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=True,
+        doc="User ID of account steward who issued the invite (nullable for offline mode)",
+    )
+    invitee_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Display name of the invited individual (e.g. Grandma, Caregiver John)",
+    )
+    role: Mapped[str] = mapped_column(
+        String(32),
+        default="viewer",
+        nullable=False,
+        doc="Access role to grant upon acceptance: viewer",
+    )
+    view_clinical: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+        doc="Whether viewer is authorized to view clinical notes and prep guides",
+    )
+    view_paperwork: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="Whether viewer is authorized to view administrative paperwork and insurance documents",
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        doc="Timestamp when the invitation expires (UTC)",
+    )
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Timestamp when the invitation was accepted (UTC)",
+    )
+    accepted_by: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+        doc="User ID of the member who accepted the invite",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    # Relationships
+    profile: Mapped[Profile] = relationship("Profile", back_populates="viewer_invites", lazy="selectin")
+    inviter: Mapped[Optional[User]] = relationship(
+        "User",
+        foreign_keys=[invited_by],
+        back_populates="sent_invites",
+        lazy="selectin",
+    )
+    acceptor: Mapped[Optional[User]] = relationship(
+        "User",
+        foreign_keys=[accepted_by],
+        back_populates="accepted_invites",
+        lazy="selectin",
+    )
+
+    def is_expired(self) -> bool:
+        """Determines if the invitation has passed its expiration time."""
+        now = datetime.now(timezone.utc)
+        exp = self.expires_at
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        return now > exp
+
+    def is_accepted(self) -> bool:
+        """Determines if the invitation has been redeemed."""
+        return self.accepted_at is not None
+
+    def __repr__(self) -> str:
+        return (
+            f"<ViewerInvite id={self.id!r} code={self.invite_code!r} "
+            f"profile_id={self.profile_id!r} invitee={self.invitee_name!r}>"
+        )
+
+
 class Note(Base):
     """Note entity for user clinical visit notes, prep items, and summaries."""
 
-    __tablename__ = "note"
+    __tablename__ = "notes"
 
     id: Mapped[str] = mapped_column(
         String(36),
@@ -741,6 +1140,13 @@ class Note(Base):
         nullable=True,
         index=True,
         doc="Referenced User identifier (nullable for single-user offline mode)",
+    )
+    profile_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+        doc="Referenced Profile identifier (nullable for unassigned/legacy notes)",
     )
     slug: Mapped[str] = mapped_column(
         String(128),
@@ -780,6 +1186,17 @@ class Note(Base):
     )
 
     user: Mapped[Optional[User]] = relationship("User", back_populates="notes")
+    profile: Mapped[Optional[Profile]] = relationship("Profile", back_populates="notes")
+
+    @property
+    def tags(self) -> List[str]:
+        """List of tags deserialized from tags_json."""
+        return self.get_tags()
+
+    @tags.setter
+    def tags(self, value: Optional[List[str]]) -> None:
+        """Serializes list of tags into tags_json."""
+        self.set_tags(value if value is not None else [])
 
     def get_tags(self) -> List[str]:
         return json.loads(self.tags_json) if self.tags_json else []
@@ -789,4 +1206,217 @@ class Note(Base):
 
     def __repr__(self) -> str:
         return f"<Note id={self.id!r} slug={self.slug!r} title={self.title!r}>"
+
+
+class Attachment(Base):
+    """Attachment document entity uploaded by users."""
+
+    __tablename__ = "attachments"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique attachment identifier (UUID)",
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+        doc="Owner user identifier; None for offline single-user mode",
+    )
+    profile_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+        doc="Owner profile identifier; None for unassigned/legacy attachments",
+    )
+    storage_key: Mapped[Optional[str]] = mapped_column(
+        String(512),
+        nullable=True,
+        index=True,
+        doc="Canonical storage key used by StoragePort (e.g. user_id/profile_id/filename)",
+    )
+    filename: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        index=True,
+        doc="Sanitized unique filename on disk/storage",
+    )
+    original_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Original uploaded filename from client",
+    )
+    content_type: Mapped[str] = mapped_column(
+        String(128),
+        default="application/octet-stream",
+        nullable=False,
+        doc="MIME content type of attachment (alias: mime_type)",
+    )
+    size_bytes: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+        doc="File size in bytes (alias: size, byte_size, file_size)",
+    )
+    sha256_hash: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        doc="SHA-256 hex digest for cryptographic integrity and deduplication",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Upload timestamp (UTC)",
+    )
+
+    # Relationships
+    user: Mapped[Optional[User]] = relationship("User", back_populates="attachments")
+    profile: Mapped[Optional[Profile]] = relationship("Profile", back_populates="attachments")
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initializes Attachment, mapping backward-compatible aliases to canonical columns."""
+        # Normalize legacy field aliases
+        if "file_name" in kwargs and "filename" not in kwargs:
+            kwargs["filename"] = kwargs.pop("file_name")
+        if "file_size" in kwargs and "size_bytes" not in kwargs:
+            kwargs["size_bytes"] = kwargs.pop("file_size")
+        if "byte_size" in kwargs and "size_bytes" not in kwargs:
+            kwargs["size_bytes"] = kwargs.pop("byte_size")
+        if "mime_type" in kwargs and "content_type" not in kwargs:
+            kwargs["content_type"] = kwargs.pop("mime_type")
+        if "file_path" in kwargs and "storage_key" not in kwargs:
+            kwargs["storage_key"] = kwargs.pop("file_path")
+        super().__init__(**kwargs)
+
+    # -------------------------------------------------------------------------
+    # Backward Compatibility Properties & Aliases
+    # -------------------------------------------------------------------------
+
+    @property
+    def file_path(self) -> str:
+        """Backward compatibility alias returning storage_key or synthesizing path from scoping."""
+        return self.get_storage_key()
+
+    @file_path.setter
+    def file_path(self, value: Optional[str]) -> None:
+        """Updates storage_key when legacy file_path is modified."""
+        self.storage_key = value
+
+    @property
+    def file_name(self) -> str:
+        """Backward compatibility alias for filename."""
+        return self.filename
+
+    @file_name.setter
+    def file_name(self, value: str) -> None:
+        self.filename = value
+
+    @property
+    def file_size(self) -> int:
+        """Backward compatibility alias for size_bytes."""
+        return self.size_bytes
+
+    @file_size.setter
+    def file_size(self, value: int) -> None:
+        self.size_bytes = value
+
+    @property
+    def byte_size(self) -> int:
+        """Standard R3 alias for size_bytes."""
+        return self.size_bytes
+
+    @byte_size.setter
+    def byte_size(self, value: int) -> None:
+        self.size_bytes = value
+
+    @property
+    def mime_type(self) -> str:
+        """Standard R3 alias for content_type."""
+        return self.content_type
+
+    @mime_type.setter
+    def mime_type(self, value: str) -> None:
+        self.content_type = value
+
+    def get_storage_key(self) -> str:
+        """Returns storage_key if present, or synthesizes a partitioned key based on tenant scoping."""
+        if self.storage_key:
+            return self.storage_key
+        if self.user_id and self.profile_id:
+            return f"{self.user_id}/{self.profile_id}/{self.filename}"
+        elif self.user_id:
+            return f"{self.user_id}/{self.filename}"
+        elif self.profile_id:
+            return f"{self.profile_id}/{self.filename}"
+        return self.filename
+
+    def __repr__(self) -> str:
+        return (
+            f"<Attachment id={self.id!r} filename={self.filename!r} "
+            f"storage_key={self.storage_key!r} user_id={self.user_id!r} "
+            f"sha256={self.sha256_hash!r}>"
+        )
+
+
+class ChatThread(Base):
+    """Conversation thread tracking entity for session persistence and access control."""
+
+    __tablename__ = "chat_threads"
+
+    id: Mapped[str] = mapped_column(
+        String(64),
+        primary_key=True,
+        doc="Unique thread identifier (thread_id matching SQLite checkpointer)",
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+        doc="Owner user identifier; None for offline single-user mode",
+    )
+    profile_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+        doc="Owner profile identifier; None for unassigned/legacy threads",
+    )
+    agent_id: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        index=True,
+        doc="Specialist agent identifier (e.g. visit-steward, cardiology-guide)",
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        default="New Consultation",
+        nullable=False,
+        doc="Conversation session display title",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    user: Mapped[Optional[User]] = relationship("User", back_populates="chat_threads")
+    profile: Mapped[Optional[Profile]] = relationship("Profile", back_populates="chat_threads")
+
+    def __repr__(self) -> str:
+        return f"<ChatThread id={self.id!r} agent_id={self.agent_id!r} user_id={self.user_id!r}>"
 

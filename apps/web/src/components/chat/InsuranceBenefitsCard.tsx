@@ -111,12 +111,12 @@ export function InsuranceBenefitsCard({
   return (
     <div
       data-testid="insurance-benefits-card"
-      className="rounded-2xl border border-slate-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900/90 p-4 shadow-sm space-y-3.5 my-2 text-zinc-900 dark:text-zinc-100"
+      className="rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-800/40 p-3.5 space-y-3 my-2 text-zinc-900 dark:text-zinc-100"
     >
       {/* Top Header Row with Icon, Title, & Action Buttons */}
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-zinc-800">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
+          <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
             <ShieldCheck className="w-4 h-4" aria-hidden="true" />
           </div>
           <div>
@@ -127,7 +127,7 @@ export function InsuranceBenefitsCard({
               {isGrounded !== undefined && (
                 <span
                   data-testid="dossier-grounded-badge"
-                  className={`inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-md border ${
+                  className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-md border ${
                     isGrounded
                       ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/50'
                       : 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50'
@@ -138,7 +138,7 @@ export function InsuranceBenefitsCard({
               )}
             </div>
             {agentTitle && (
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+              <p className="text-xs text-slate-500 dark:text-zinc-400">
                 Prepared with {agentTitle}
               </p>
             )}
@@ -155,13 +155,13 @@ export function InsuranceBenefitsCard({
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">Copied!</span>
+                <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+                <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Copied!</span>
               </>
             ) : (
               <>
                 <Copy className="w-3.5 h-3.5" />
-                <span className="text-[11px]">Copy</span>
+                <span className="text-xs">Copy</span>
               </>
             )}
           </button>
@@ -174,7 +174,7 @@ export function InsuranceBenefitsCard({
             className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
-            <span className="text-[11px]">Export</span>
+            <span className="text-xs">Export</span>
           </button>
         </div>
       </div>
@@ -182,9 +182,9 @@ export function InsuranceBenefitsCard({
       {/* Mandatory Patient-Friendly Safety Disclaimer Banner */}
       <div
         data-testid="dossier-disclaimer-banner"
-        className="flex items-center gap-2 p-2.5 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/70 dark:bg-blue-950/30 text-blue-900 dark:text-blue-200 text-xs"
+        className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-100/70 dark:bg-zinc-800/50 text-slate-800 dark:text-zinc-200 text-xs"
       >
-        <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" aria-hidden="true" />
+        <Info className="w-4 h-4 text-slate-600 dark:text-zinc-400 shrink-0" aria-hidden="true" />
         <p className="leading-snug">{DOSSIER_PATIENT_DISCLAIMER}</p>
       </div>
 
@@ -194,8 +194,8 @@ export function InsuranceBenefitsCard({
           data-testid="metric-deductible"
           className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/70 dark:border-zinc-700/50 space-y-1"
         >
-          <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-            <DollarSign className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+            <DollarSign className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
             <span>Deductible</span>
           </div>
           <p className="text-base font-bold text-slate-900 dark:text-zinc-100">
@@ -207,8 +207,8 @@ export function InsuranceBenefitsCard({
           data-testid="metric-oop-max"
           className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/70 dark:border-zinc-700/50 space-y-1"
         >
-          <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-            <FileCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+          <div className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+            <FileCheck className="w-3.5 h-3.5 text-slate-700 dark:text-zinc-300" />
             <span>Out-of-Pocket Max</span>
           </div>
           <p className="text-base font-bold text-slate-900 dark:text-zinc-100">
@@ -220,8 +220,8 @@ export function InsuranceBenefitsCard({
           data-testid="metric-coinsurance"
           className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/70 dark:border-zinc-700/50 space-y-1"
         >
-          <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-            <Percent className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <div className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+            <Percent className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
             <span>Coinsurance</span>
           </div>
           <p className="text-base font-bold text-slate-900 dark:text-zinc-100">
@@ -232,7 +232,7 @@ export function InsuranceBenefitsCard({
 
       {/* Copays Breakdown Table */}
       <div data-testid="insurance-copays-section" className="space-y-1.5">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
           Copayments Breakdown
         </span>
         {copayEntries.length === 0 ? (
@@ -242,7 +242,7 @@ export function InsuranceBenefitsCard({
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-200/70 dark:border-zinc-700/50">
             <table data-testid="copays-table" className="w-full text-xs text-left">
-              <thead className="bg-slate-100/80 dark:bg-zinc-800/80 text-[11px] font-semibold text-slate-600 dark:text-zinc-300 uppercase tracking-wider">
+              <thead className="bg-slate-100/80 dark:bg-zinc-800/80 text-xs font-semibold text-slate-600 dark:text-zinc-300 uppercase tracking-wider">
                 <tr>
                   <th scope="col" className="px-3 py-2">Service Category</th>
                   <th scope="col" className="px-3 py-2 text-right">Copay Amount</th>
@@ -268,7 +268,7 @@ export function InsuranceBenefitsCard({
       {/* In-Network vs Out-of-Network Rules */}
       {data.in_out_network_rules && (
         <div data-testid="network-rules" className="space-y-1">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
             Network Rules & Coverage
           </span>
           <p className="text-xs text-slate-700 dark:text-zinc-300 bg-slate-50 dark:bg-zinc-800/50 p-2.5 rounded-xl border border-slate-200/70 dark:border-zinc-700/50 leading-relaxed">
@@ -282,7 +282,7 @@ export function InsuranceBenefitsCard({
         <div data-testid="prior-auth-flags" className="space-y-1.5">
           <div className="flex items-center gap-1.5">
             <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
               Prior Authorization Required
             </span>
           </div>

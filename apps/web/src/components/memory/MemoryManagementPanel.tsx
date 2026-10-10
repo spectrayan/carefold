@@ -230,7 +230,7 @@ export function MemoryManagementPanel() {
               <span
                 data-testid="memory-status-badge"
                 className={cn(
-                  'px-2 py-0.5 rounded-full text-[10px] font-bold border',
+                  'px-2 py-0.5 rounded-full text-xs font-bold border',
                   status?.healthy !== false
                     ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
                     : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
@@ -242,7 +242,7 @@ export function MemoryManagementPanel() {
                 • {status?.healthy !== false ? 'Healthy' : 'Degraded'}
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+            <p className="text-xs text-slate-500 dark:text-zinc-400">
               {memories.length} item{memories.length === 1 ? '' : 's'} remembered across clinical consultations
             </p>
           </div>
@@ -292,12 +292,12 @@ export function MemoryManagementPanel() {
                 Pause memory for this session
               </span>
               {isPaused && (
-                <span className="px-1.5 py-0.2 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-[10px] font-bold">
+                <span className="px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-xs font-bold">
                   ACTIVE
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+            <p className="text-xs text-slate-500 dark:text-zinc-400">
               When enabled, new turns and clinical facts will not be committed to long-term memory for active consultations.
             </p>
           </div>
@@ -366,7 +366,7 @@ export function MemoryManagementPanel() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search remembered facts, keys, or agents..."
-            className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400"
           />
           {searchQuery && (
             <button
@@ -400,7 +400,7 @@ export function MemoryManagementPanel() {
             )}
           >
             <span>All Tiers</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 dark:bg-black/10">
+            <span className="px-1.5 py-0.5 rounded-full text-xs bg-white/20 dark:bg-black/10">
               {tierCounts.all}
             </span>
           </button>
@@ -420,7 +420,7 @@ export function MemoryManagementPanel() {
           >
             <Clock className="w-3.5 h-3.5" />
             <span>[EPISODIC]</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 dark:bg-black/10">
+            <span className="px-1.5 py-0.5 rounded-full text-xs bg-white/20 dark:bg-black/10">
               {tierCounts.episodic}
             </span>
           </button>
@@ -434,13 +434,13 @@ export function MemoryManagementPanel() {
             className={cn(
               'px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer',
               selectedTier === 'semantic'
-                ? 'bg-emerald-600 text-white shadow-sm'
+                ? 'bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-500 text-white dark:text-[#04201a] shadow-sm'
                 : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700'
             )}
           >
             <BookOpen className="w-3.5 h-3.5" />
             <span>[SEMANTIC]</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 dark:bg-black/10">
+            <span className="px-1.5 py-0.5 rounded-full text-xs bg-white/20 dark:bg-black/10">
               {tierCounts.semantic}
             </span>
           </button>
@@ -460,7 +460,7 @@ export function MemoryManagementPanel() {
           >
             <Activity className="w-3.5 h-3.5" />
             <span>[WORKING]</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 dark:bg-black/10">
+            <span className="px-1.5 py-0.5 rounded-full text-xs bg-white/20 dark:bg-black/10">
               {tierCounts.working}
             </span>
           </button>
@@ -480,7 +480,7 @@ export function MemoryManagementPanel() {
           >
             <Layers className="w-3.5 h-3.5" />
             <span>[PROCEDURAL]</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 dark:bg-black/10">
+            <span className="px-1.5 py-0.5 rounded-full text-xs bg-white/20 dark:bg-black/10">
               {tierCounts.procedural}
             </span>
           </button>

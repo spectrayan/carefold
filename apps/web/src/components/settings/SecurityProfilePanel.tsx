@@ -18,6 +18,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   ShieldCheck,
   User,
@@ -36,6 +37,7 @@ import { cn } from '@/lib/utils';
 
 export function SecurityProfilePanel() {
   const { user, authProvider, changePassword, logout } = useAuth();
+  const isRealUserSignedIn = Boolean(user && user.auth_provider !== 'disabled');
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -97,7 +99,7 @@ export function SecurityProfilePanel() {
       <div className="p-4 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/60 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">
+            <div className="w-10 h-10 rounded-full bg-emerald-700 text-white dark:bg-emerald-500 dark:text-[#04201a] font-bold flex items-center justify-center text-sm shadow-sm">
               {user?.full_name ? (
                 user.full_name
                   .split(' ')
@@ -113,12 +115,12 @@ export function SecurityProfilePanel() {
             </div>
             <div>
               <div className="font-bold text-sm text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-                <span>{user?.full_name || user?.username || 'Local Steward'}</span>
+                <span>{user?.full_name || user?.username || 'User'}</span>
                 {user?.role && (
                   <span
                     data-testid="user-role-badge"
                     className={cn(
-                      'text-[10px] font-semibold px-2 py-0.5 rounded-full border',
+                      'text-xs font-semibold px-2 py-0.5 rounded-full border',
                       user.role === 'admin'
                         ? 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900/60 dark:bg-purple-950/40 dark:text-purple-300'
                         : user.role === 'steward'
@@ -136,29 +138,47 @@ export function SecurityProfilePanel() {
             </div>
           </div>
 
-          {authProvider !== 'disabled' && (
+          {isRealUserSignedIn ? (
             <button
               type="button"
               data-testid="profile-sign-out-btn"
-              onClick={() => logout()}
+              onClick={async () => {
+                await logout();
+              }}
               className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sign Out</span>
             </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline"
+              >
+                Sign In
+              </Link>
+              <span className="text-slate-300 dark:text-zinc-600">·</span>
+              <Link
+                href="/register"
+                className="text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:underline"
+              >
+                Register
+              </Link>
+            </div>
           )}
         </div>
 
         {/* Account Details Metadata */}
         <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200 dark:border-zinc-700/80 text-xs">
           <div>
-            <span className="text-slate-500 dark:text-zinc-400 block text-[11px]">Auth Provider:</span>
+            <span className="text-slate-500 dark:text-zinc-400 block text-xs">Auth Provider:</span>
             <span className="font-semibold text-slate-800 dark:text-zinc-200 capitalize">
               {user?.auth_provider || authProvider || 'local'}
             </span>
           </div>
           <div>
-            <span className="text-slate-500 dark:text-zinc-400 block text-[11px]">Account Status:</span>
+            <span className="text-slate-500 dark:text-zinc-400 block text-xs">Account Status:</span>
             <span className="font-semibold text-emerald-600 dark:text-emerald-400 capitalize">
               {user?.status || 'active'}
             </span>
@@ -166,21 +186,43 @@ export function SecurityProfilePanel() {
         </div>
       </div>
 
-      {/* Disabled Mode Notice */}
-      {authProvider === 'disabled' && (
+      {/* Disabled Mode Notice & Sign-in Actions */}
+      {!isRealUserSignedIn && (
         <div
           data-testid="disabled-auth-notice"
-          className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-950 dark:text-emerald-200 flex items-start gap-3"
+          className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-950 dark:text-emerald-200 flex items-start gap-3"
         >
           <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <span className="font-semibold text-emerald-900 dark:text-emerald-300 block">
-              Single-User Local Desktop Mode
-            </span>
-            <p className="text-[11px] leading-relaxed">
-              Authentication is bypassed for local steward desktop use. Passwords and sessions are not required.
-              To enable multi-user authentication, configure local auth mode in the Admin Control Panel.
-            </p>
+          <div className="space-y-2 flex-1 min-w-0">
+            <div>
+              <span className="font-semibold text-emerald-900 dark:text-emerald-300 block">
+                Single-User Local Desktop Mode
+              </span>
+              <p className="text-xs leading-relaxed text-emerald-800 dark:text-emerald-300">
+                You are currently running in offline local mode without a cloud account.
+                You can sign in to an existing account, create a new account, or reset a password.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2.5 pt-1">
+              <Link
+                href="/login"
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm transition"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 transition"
+              >
+                Create Account
+              </Link>
+              <Link
+                href="/forgot-password"
+                className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:underline ml-1"
+              >
+                Forgot Password?
+              </Link>
+            </div>
           </div>
         </div>
       )}
@@ -231,7 +273,7 @@ export function SecurityProfilePanel() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   placeholder="••••••••••"
-                  className="w-full px-3 pr-9 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full px-3 pr-9 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
                 />
                 <button
                   type="button"
@@ -260,7 +302,7 @@ export function SecurityProfilePanel() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Min 10 characters with mixed case & numbers"
-                  className="w-full px-3 pr-9 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full px-3 pr-9 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
                 />
                 <button
                   type="button"
@@ -274,7 +316,7 @@ export function SecurityProfilePanel() {
               {/* Password Strength Indicator */}
               {newPassword.length > 0 && (
                 <div className="space-y-1 pt-1">
-                  <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500 dark:text-zinc-400">Strength:</span>
                     <span
                       className={cn(
@@ -311,7 +353,7 @@ export function SecurityProfilePanel() {
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-1 pt-1 text-[10px] text-slate-600 dark:text-zinc-400">
+                  <div className="grid grid-cols-2 gap-1 pt-1 text-xs text-slate-600 dark:text-zinc-400">
                     <div className="flex items-center gap-1.5">
                       {strength.criteria.minLength ? (
                         <CheckCircle2 className="w-3 h-3 text-emerald-500" />
@@ -367,10 +409,10 @@ export function SecurityProfilePanel() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Re-enter new password"
                   className={cn(
-                    'w-full px-3 pr-9 py-2 text-xs rounded-xl border bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 transition',
+                    'w-full px-3 pr-9 py-2 text-xs rounded-xl border bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 transition',
                     confirmPassword.length > 0 && !passwordsMatch
-                      ? 'border-rose-300 dark:border-rose-800 focus:ring-rose-500/20 focus:border-rose-500'
-                      : 'border-slate-300 dark:border-zinc-700 focus:ring-emerald-500/20 focus:border-emerald-500'
+                      ? 'border-rose-300 dark:border-rose-800 focus:border-rose-600'
+                      : 'border-slate-300 dark:border-zinc-700 focus:border-emerald-700 dark:focus:border-emerald-400'
                   )}
                 />
                 <button
@@ -387,7 +429,7 @@ export function SecurityProfilePanel() {
               type="submit"
               data-testid="update-password-submit-btn"
               disabled={isSubmitting || !strength.isValid || !passwordsMatch || !currentPassword}
-              className="py-2 px-3 text-xs font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="py-2 px-3 text-xs font-semibold rounded-xl text-white bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] dark:active:bg-emerald-600 shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Updating...' : 'Update Password'}
             </button>
@@ -405,11 +447,11 @@ export function SecurityProfilePanel() {
           <div>
             <div className="font-semibold text-slate-800 dark:text-zinc-200 flex items-center gap-2">
               <span>This Device (Browser)</span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
                 Current
               </span>
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-zinc-400">
+            <div className="text-xs text-slate-500 dark:text-zinc-400">
               Session secured with HTTP-only cookie
             </div>
           </div>

@@ -575,7 +575,7 @@ class TestAdversarialEdgeCasesAndResilience:
     """Stress-tests edge cases: malformed responses, empty catalogs, and high concurrency."""
 
     @pytest.mark.asyncio
-    async def test_adversarial_malformed_model_responses(
+    async def test_malformed_model_responses(
         self, memory_catalog: SqliteCatalogAdapter, temp_workspace: Path
     ):
         """Tests resilience when model returns various corrupted or malformed outputs."""
@@ -603,7 +603,7 @@ class TestAdversarialEdgeCasesAndResilience:
             assert res["current_agent"] == "benefits-guide"
 
     @pytest.mark.asyncio
-    async def test_adversarial_empty_catalog_fallback(self, temp_workspace: Path):
+    async def test_empty_catalog_fallback(self, temp_workspace: Path):
         """Verifies graceful degradation when catalog exists but is completely empty."""
         empty_catalog = SqliteCatalogAdapter(db_path=":memory:")
         registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
@@ -626,7 +626,7 @@ class TestAdversarialEdgeCasesAndResilience:
         await empty_catalog.close()
 
     @pytest.mark.asyncio
-    async def test_adversarial_concurrent_two_hop_invocations(
+    async def test_concurrent_two_hop_invocations(
         self, memory_catalog: SqliteCatalogAdapter, temp_workspace: Path
     ):
         """Concurrently runs 20 parallel routing requests to stress-test async execution and SQLite locks."""

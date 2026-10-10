@@ -34,8 +34,9 @@ export async function GET(
   if (incomingCookie) headers['cookie'] = incomingCookie;
   if (authHeader) headers['authorization'] = authHeader;
 
+  const url = new URL(req.url);
   try {
-    const targetUrl = `${backendUrl}/api/agents/${encodeURIComponent(agentId)}/docs`;
+    const targetUrl = `${backendUrl}/api/v1/agents/${encodeURIComponent(agentId)}/docs${url.search}`;
     const res = await fetch(targetUrl, {
       method: 'GET',
       headers,
@@ -78,8 +79,9 @@ export async function POST(
     body = '{}';
   }
 
+  const url = new URL(req.url);
   try {
-    const targetUrl = `${backendUrl}/api/agents/${encodeURIComponent(agentId)}/docs`;
+    const targetUrl = `${backendUrl}/api/v1/agents/${encodeURIComponent(agentId)}/docs${url.search}`;
     const res = await fetch(targetUrl, {
       method: 'POST',
       headers: forwardHeaders,

@@ -16,17 +16,18 @@
  */
 
 import type { ChecklistItemState } from './types';
+import { getScopedStorageKey } from '@/lib/storageNamespace';
 
 export const CHECKLIST_STORAGE_PREFIX = 'carefold_checklist_';
 
 /**
  * Returns standardized storage key for a thread and message checklist:
- * `carefold_checklist_${threadId}_${messageId}`
+ * `carefold_{userId}_checklist_${threadId}_${messageId}`
  */
-export function getChecklistKey(threadId?: string, messageId?: string): string {
+export function getChecklistKey(threadId?: string, messageId?: string, userId?: string | null): string {
   const cleanThread = (threadId || 'default').replace(/[^a-zA-Z0-9_\-]/g, '_');
   const cleanMsg = (messageId || 'default').replace(/[^a-zA-Z0-9_\-]/g, '_');
-  return `${CHECKLIST_STORAGE_PREFIX}${cleanThread}_${cleanMsg}`;
+  return getScopedStorageKey(userId, `checklist_${cleanThread}_${cleanMsg}`);
 }
 
 /**
@@ -36,7 +37,8 @@ export function getChecklistKey(threadId?: string, messageId?: string): string {
 export function loadChecklist(
   threadId?: string,
   messageId?: string,
-  initialQuestions?: string[]
+  initialQuestions?: string[],
+  userId?: string | null
 ): ChecklistItemState[] {
   const fallback = (initialQuestions || []).map((q, idx) => ({
     id: `init-${idx}`,
@@ -48,9 +50,12 @@ export function loadChecklist(
     return fallback;
   }
 
-  const key = getChecklistKey(threadId, messageId);
+  const key = getChecklistKey(threadId, messageId, userId);
   try {
-    const raw = window.localStorage.getItem(key);
+    const cleanThread = (threadId || 'default').replace(/[^a-zA-Z0-9_\-]/g, '_');
+    const cleanMsg = (messageId || 'default').replace(/[^a-zA-Z0-9_\-]/g, '_');
+    const legacyKey = `${CHECKLIST_STORAGE_PREFIX}${cleanThread}_${cleanMsg}`;
+    const raw = window.localStorage.getItem(key) || window.localStorage.getItem(legacyKey);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -70,12 +75,19 @@ export function loadChecklist(
 export function saveChecklist(
   threadId: string | undefined,
   messageId: string | undefined,
-  items: ChecklistItemState[]
+  items: ChecklistItemState[],
+  userId?: string | null
 ): void {
   if (typeof window === 'undefined' || !window.localStorage) return;
-  const key = getChecklistKey(threadId, messageId);
+  const key = getChecklistKey(threadId, messageId, userId);
   try {
-    window.localStorage.setItem(key, JSON.stringify(items));
+    const val = JSON.stringify(items);
+    window.localStorage.setItem(key, val);
+    if (!userId) {
+      const cleanThread = (threadId || 'default').replace(/[^a-zA-Z0-9_\-]/g, '_');
+      const cleanMsg = (messageId || 'default').replace(/[^a-zA-Z0-9_\-]/g, '_');
+      window.localStorage.setItem(`${CHECKLIST_STORAGE_PREFIX}${cleanThread}_${cleanMsg}`, val);
+    }
   } catch {
     // Storage access or quota error protection
   }
@@ -88,13 +100,14 @@ export function toggleChecklistItem(
   threadId: string | undefined,
   messageId: string | undefined,
   itemId: string,
-  currentItems?: ChecklistItemState[]
+  currentItems?: ChecklistItemState[],
+  userId?: string | null
 ): ChecklistItemState[] {
-  const items = currentItems ? [...currentItems] : loadChecklist(threadId, messageId);
+  const items = currentItems ? [...currentItems] : loadChecklist(threadId, messageId, undefined, userId);
   const updated = items.map((item) =>
     item.id === itemId ? { ...item, completed: !item.completed } : item
   );
-  saveChecklist(threadId, messageId, updated);
+  saveChecklist(threadId, messageId, updated, userId);
   return updated;
 }
 
@@ -106,19 +119,20 @@ export function addChecklistItem(
   threadId: string | undefined,
   messageId: string | undefined,
   text: string,
-  currentItems?: ChecklistItemState[]
+  currentItems?: ChecklistItemState[],
+  userId?: string | null
 ): ChecklistItemState[] {
   const trimmed = text.trim();
   if (!trimmed) {
-    return currentItems ? [...currentItems] : loadChecklist(threadId, messageId);
+    return currentItems ? [...currentItems] : loadChecklist(threadId, messageId, undefined, userId);
   }
-  const items = currentItems ? [...currentItems] : loadChecklist(threadId, messageId);
+  const items = currentItems ? [...currentItems] : loadChecklist(threadId, messageId, undefined, userId);
   const id =
     typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID()
       : `item-${Date.now()}`;
   const updated = [...items, { id, text: trimmed, completed: false, isCustom: true }];
-  saveChecklist(threadId, messageId, updated);
+  saveChecklist(threadId, messageId, updated, userId);
   return updated;
 }
 
@@ -129,11 +143,12 @@ export function clearChecklistsForThread(threadId: string): void {
   if (typeof window === 'undefined' || !window.localStorage || !threadId) return;
   try {
     const cleanThread = threadId.replace(/[^a-zA-Z0-9_\-]/g, '_');
-    const prefix = `${CHECKLIST_STORAGE_PREFIX}${cleanThread}_`;
+    const legacyPrefix = `${CHECKLIST_STORAGE_PREFIX}${cleanThread}_`;
+    const needle = `checklist_${cleanThread}_`;
     const keysToRemove: string[] = [];
     for (let i = 0; i < window.localStorage.length; i++) {
       const key = window.localStorage.key(i);
-      if (key && key.startsWith(prefix)) {
+      if (key && (key.startsWith(legacyPrefix) || key.includes(needle))) {
         keysToRemove.push(key);
       }
     }

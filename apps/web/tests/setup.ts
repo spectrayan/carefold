@@ -18,6 +18,34 @@
 import '@testing-library/jest-dom/vitest';
 import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
+import fsSync from 'node:fs';
+import path from 'node:path';
+
+// Establish isolated temporary home and workspace directories for Vitest
+const vitestHome = '/tmp/carefold-vitest-home';
+process.env.CAREFOLD_HOME = vitestHome;
+if (!fsSync.existsSync(vitestHome)) {
+  fsSync.mkdirSync(vitestHome, { recursive: true });
+  fsSync.mkdirSync(path.join(vitestHome, 'uploads'), { recursive: true });
+  fsSync.mkdirSync(path.join(vitestHome, 'logs'), { recursive: true });
+}
+
+const vitestWs = '/tmp/carefold-vitest-ws';
+process.env.CAREFOLD_WORKSPACE = vitestWs;
+if (!fsSync.existsSync(vitestWs)) {
+  fsSync.mkdirSync(vitestWs, { recursive: true });
+  fsSync.mkdirSync(path.join(vitestWs, 'attachments'), { recursive: true });
+  fsSync.mkdirSync(path.join(vitestWs, 'logs'), { recursive: true });
+}
+
+// Suppress false-positive React 19 script warning in test environment
+const originalConsoleError = console.error;
+console.error = (...args: unknown[]) => {
+  if (typeof args[0] === 'string' && args[0].includes('Encountered a script tag')) {
+    return;
+  }
+  originalConsoleError(...args);
+};
 
 // Mock next/navigation for App Router client components
 vi.mock('next/navigation', () => {
@@ -32,6 +60,17 @@ vi.mock('next/navigation', () => {
     }),
     useSearchParams: () => new URLSearchParams(),
     usePathname: () => '/'
+  };
+});
+
+// Mock next/font/local for Vitest component tests rendering RootLayout
+vi.mock('next/font/local', () => {
+  return {
+    default: (options?: { variable?: string }) => ({
+      className: options?.variable ? `font-${options.variable.replace('--', '')}` : 'font-local',
+      variable: options?.variable || '--font-local',
+      style: { fontFamily: 'mock-font' },
+    }),
   };
 });
 

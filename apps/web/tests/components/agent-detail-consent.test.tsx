@@ -92,7 +92,7 @@ describe('AgentDetailClient clinical consent (#87)', () => {
     fireEvent.click(screen.getByTestId('clinical-consent-accept'));
 
     expect(await screen.findByText('FULL PERSONA INSTRUCTIONS')).toBeInTheDocument();
-    expect(mockFetch).toHaveBeenCalledWith('/api/agents/cardiology-guide?allow_clinical=true');
+    expect(mockFetch).toHaveBeenCalledWith('/api/v1/agents/cardiology-guide?allow_clinical=true');
     expect(screen.getByTestId('clinical-consent-chip')).toBeInTheDocument();
     expect(screen.queryByTestId('agent-consent-required')).not.toBeInTheDocument();
   });

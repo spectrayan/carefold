@@ -203,7 +203,7 @@ describe('LibraryClient Component (Issue #95)', () => {
       expect(
         screen.getByText(/When Carefold specialist agents/i)
       ).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /Start a consultation/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Start a chat/i })).toBeInTheDocument();
     });
 
     it('opens note detail modal and renders markdown content, title, copy and export buttons', async () => {

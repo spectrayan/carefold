@@ -115,19 +115,19 @@ export function ToolTraceCard({ trace, defaultExpanded = false }: ToolTraceCardP
           </span>
           <span
             data-testid="tool-trace-status-badge"
-            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${currentConfig.badge}`}
+            className={`px-1.5 py-0.5 rounded text-xs font-semibold border ${currentConfig.badge}`}
           >
             {currentConfig.label}
           </span>
           {typeof trace.duration_ms === 'number' && (
-            <span data-testid="tool-trace-duration" className="text-slate-600 dark:text-zinc-400 font-mono text-[11px]">
+            <span data-testid="tool-trace-duration" className="text-slate-600 dark:text-zinc-400 font-mono text-xs">
               {trace.duration_ms} ms
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-1 text-slate-600 dark:text-zinc-400">
-          <span className="text-[11px] select-none">{expanded ? 'Hide' : 'Details'}</span>
+          <span className="text-xs select-none">{expanded ? 'Hide' : 'Details'}</span>
           <svg
             className={`w-3.5 h-3.5 transform transition-transform duration-150 ${expanded ? 'rotate-180' : ''}`}
             fill="none"
@@ -157,8 +157,8 @@ export function ToolTraceCard({ trace, defaultExpanded = false }: ToolTraceCardP
 
           {inputParams && Object.keys(inputParams).length > 0 && (
             <div>
-              <div className="font-semibold text-slate-600 dark:text-zinc-400 text-[11px] mb-1">Parameters:</div>
-              <pre data-testid="tool-trace-params" className="p-2 rounded bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 font-mono text-[11px] max-h-40 overflow-auto text-slate-800 dark:text-zinc-200">
+              <div className="font-semibold text-slate-600 dark:text-zinc-400 text-xs mb-1">Parameters:</div>
+              <pre data-testid="tool-trace-params" className="p-2 rounded bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 font-mono text-xs max-h-40 overflow-auto text-slate-800 dark:text-zinc-200">
                 {JSON.stringify(sanitizedInput, null, 2)}
               </pre>
             </div>
@@ -166,8 +166,8 @@ export function ToolTraceCard({ trace, defaultExpanded = false }: ToolTraceCardP
 
           {outputData !== undefined && outputData !== null && (
             <div>
-              <div className="font-semibold text-slate-600 dark:text-zinc-400 text-[11px] mb-1">Output Preview:</div>
-              <pre data-testid="tool-trace-output" className="p-2 rounded bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 font-mono text-[11px] max-h-40 overflow-auto text-slate-800 dark:text-zinc-200">
+              <div className="font-semibold text-slate-600 dark:text-zinc-400 text-xs mb-1">Output Preview:</div>
+              <pre data-testid="tool-trace-output" className="p-2 rounded bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 font-mono text-xs max-h-40 overflow-auto text-slate-800 dark:text-zinc-200">
                 {typeof outputData === 'object' ? JSON.stringify(outputData, null, 2) : String(outputData)}
               </pre>
             </div>

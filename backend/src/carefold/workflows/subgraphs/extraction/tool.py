@@ -273,22 +273,19 @@ class ExtractDocumentDossierTool(BaseTool):
             raise ValueError("Either file_path or document_text must be provided.")
 
         ws_root = Path(workspace_root) if workspace_root else Path(settings.workspace_root)
-        allowed_sandbox = (ws_root / "attachments").resolve()
+        uploads_dir = settings.get_uploads_dir().resolve()
+        ws_uploads_dir = (ws_root / "uploads").resolve()
+        legacy_att_dir = (ws_root / "attachments").resolve()
 
-        # Reject path traversals or escaping paths upfront
-        try:
-            candidate = (ws_root / "attachments" / file_path).resolve()
-            if not candidate.is_relative_to(allowed_sandbox):
-                raise DocumentSandboxError(
-                    f"Path traversal forbidden: Path '{file_path}' escapes allowed directory '{allowed_sandbox}'"
-                )
-        except DocumentSandboxError:
-            raise
-        except Exception:
-            pass
+        allowed_sandboxes = [uploads_dir, ws_uploads_dir, legacy_att_dir]
+
+        # Reject null bytes or URI schemes
+        clean_path = str(file_path).strip()
+        if any(c in clean_path for c in ("\0", "file://", "http://", "https://")):
+            raise DocumentSandboxError(f"Path traversal forbidden: Invalid path characters in '{file_path}'")
 
         # 1. Attempt sandboxed execution via attach_read
-        ctx = type("MockCtx", (), {"workspace_root": ws_root})()
+        ctx = type("ExtractionExecutionContext", (), {"workspace_root": ws_root})()
 
         res = None
         try:
@@ -331,19 +328,21 @@ class ExtractDocumentDossierTool(BaseTool):
                 ):
                     raise DocumentSandboxError(res.error)
 
-        # 2. Direct path resolution fallbacks - strictly within attachments sandbox
+        # 2. Direct path resolution fallbacks across allowed sandboxes
         candidate_paths = [
-            ws_root / "attachments" / file_path,
+            uploads_dir / file_path,
+            ws_uploads_dir / file_path,
+            legacy_att_dir / file_path,
         ]
-        if str(file_path).startswith("attachments/"):
+        if str(file_path).startswith("attachments/") or str(file_path).startswith("uploads/"):
             candidate_paths.append(ws_root / file_path)
 
         for p in candidate_paths:
             try:
                 resolved = p.resolve()
-                if not resolved.is_relative_to(allowed_sandbox):
+                if not any(resolved.is_relative_to(sandbox) for sandbox in allowed_sandboxes):
                     raise DocumentSandboxError(
-                        f"Path traversal forbidden: Path '{file_path}' escapes allowed directory '{allowed_sandbox}'"
+                        f"Path traversal forbidden: Path '{file_path}' escapes allowed directory"
                     )
                 if resolved.is_file():
                     if resolved.suffix.lower() == ".pdf":

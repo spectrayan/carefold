@@ -98,7 +98,7 @@ export async function POST(req: Request | NextRequest): Promise<Response> {
     const incomingCookie = req.headers.get('cookie');
     const authHeader = req.headers.get('authorization');
   try {
-    const backendRes = await fetch(`${backendUrl}/api/chat`, {
+    const backendRes = await fetch(`${backendUrl}/api/v1/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

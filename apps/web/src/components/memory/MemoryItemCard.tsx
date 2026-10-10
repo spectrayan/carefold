@@ -124,7 +124,7 @@ export function MemoryItemCard({ record, onEdit, onDelete }: MemoryItemCardProps
         <div className="flex items-center gap-2">
           <span
             className={cn(
-              'px-2 py-0.5 rounded-md text-[11px] font-bold border flex items-center gap-1',
+              'px-2 py-0.5 rounded-md text-xs font-bold border flex items-center gap-1',
               tierConfig.classes
             )}
             title={`Cognitive tier: ${tierConfig.label}`}
@@ -142,10 +142,10 @@ export function MemoryItemCard({ record, onEdit, onDelete }: MemoryItemCardProps
         </div>
 
         {/* Salience or namespace */}
-        <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-zinc-500">
+        <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-zinc-500">
           {record.salience !== undefined && record.salience !== null && (
             <span
-              className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono text-[10px] flex items-center gap-0.5"
+              className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-mono text-xs flex items-center gap-0.5"
               title="Salience retrieval weight"
             >
               <Sparkles className="w-2.5 h-2.5 text-amber-500" />
@@ -154,7 +154,7 @@ export function MemoryItemCard({ record, onEdit, onDelete }: MemoryItemCardProps
           )}
           {record.namespace && record.namespace !== 'default' && (
             <span
-              className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 text-[10px]"
+              className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 text-xs"
               title={`Namespace: ${record.namespace}`}
             >
               ns: {record.namespace}
@@ -169,7 +169,7 @@ export function MemoryItemCard({ record, onEdit, onDelete }: MemoryItemCardProps
       </div>
 
       {/* Footer: Provenance metadata & Actions */}
-      <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/60 flex items-center justify-between gap-2 flex-wrap text-[11px]">
+      <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/60 flex items-center justify-between gap-2 flex-wrap text-xs">
         {/* Provenance Tags */}
         <div className="flex items-center gap-3 text-slate-500 dark:text-zinc-400 flex-wrap">
           {agentId && (
@@ -181,7 +181,7 @@ export function MemoryItemCard({ record, onEdit, onDelete }: MemoryItemCardProps
 
           {sessionId && (
             <span
-              className="flex items-center gap-1 font-mono text-[10px] text-slate-400 dark:text-zinc-500"
+              className="flex items-center gap-1 font-mono text-xs text-slate-400 dark:text-zinc-500"
               title={`Session Thread: ${sessionId}`}
             >
               <Hash className="w-2.5 h-2.5" />
@@ -194,7 +194,7 @@ export function MemoryItemCard({ record, onEdit, onDelete }: MemoryItemCardProps
           )}
 
           {formattedDate && (
-            <span className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-zinc-500">
+            <span className="flex items-center gap-1 text-xs text-slate-400 dark:text-zinc-500">
               <Calendar className="w-2.5 h-2.5" />
               {formattedDate}
             </span>
@@ -208,7 +208,7 @@ export function MemoryItemCard({ record, onEdit, onDelete }: MemoryItemCardProps
             data-testid={`edit-memory-btn-${record.key}`}
             onClick={() => onEdit(record)}
             aria-label={`Edit memory ${record.key}`}
-            className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 text-[11px] font-semibold transition flex items-center gap-1 cursor-pointer"
+            className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
           >
             <Edit2 className="w-3 h-3 text-slate-500 dark:text-zinc-400" />
             <span>Edit</span>
@@ -219,7 +219,7 @@ export function MemoryItemCard({ record, onEdit, onDelete }: MemoryItemCardProps
             data-testid={`delete-memory-btn-${record.key}`}
             onClick={() => onDelete(record)}
             aria-label={`Forget memory ${record.key}`}
-            className="px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-[11px] font-semibold transition flex items-center gap-1 cursor-pointer"
+            className="px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
           >
             <Trash2 className="w-3 h-3 text-rose-500" />
             <span>Forget</span>

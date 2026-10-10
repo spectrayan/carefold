@@ -54,10 +54,20 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const targetUrl = `${backendUrl}/api/audit?${query.toString()}`;
+    const targetUrl = `${backendUrl}/api/v1/audit?${query.toString()}`;
+    const forwardHeaders: Record<string, string> = { Accept: 'application/json' };
+    const cookie = req.headers.get('cookie');
+    if (cookie) {
+      forwardHeaders['cookie'] = cookie;
+    }
+    const authHeader = req.headers.get('authorization');
+    if (authHeader) {
+      forwardHeaders['authorization'] = authHeader;
+    }
+
     const res = await fetch(targetUrl, {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers: forwardHeaders,
       cache: 'no-store'
     });
 

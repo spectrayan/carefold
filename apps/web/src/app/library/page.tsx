@@ -28,11 +28,11 @@ async function getInitialLibraryData(): Promise<{
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
 
   const [attachmentsRes, notesRes] = await Promise.allSettled([
-    fetch(`${backendUrl}/api/attachments`, {
+    fetch(`${backendUrl}/api/v1/attachments`, {
       headers: { Accept: 'application/json' },
       cache: 'no-store'
     }),
-    fetch(`${backendUrl}/api/notes`, {
+    fetch(`${backendUrl}/api/v1/notes`, {
       headers: { Accept: 'application/json' },
       cache: 'no-store'
     })

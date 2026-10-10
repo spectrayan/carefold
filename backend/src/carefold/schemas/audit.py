@@ -37,6 +37,7 @@ class AuditEvent(BaseModel):
     prompt: Optional[str] = None      # Redacted unless store_bodies=True
     completion: Optional[str] = None  # Redacted unless store_bodies=True
     thread_id: Optional[str] = None
+    profile_id: Optional[str] = None
 
 
 class AuditListResponse(BaseModel):

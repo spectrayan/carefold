@@ -31,7 +31,7 @@ from carefold.auth.ports import AuthPort
 logger = logging.getLogger(__name__)
 
 ENV_AUTH_PROVIDER = "CAREFOLD_AUTH_PROVIDER"
-DEFAULT_AUTH_PROVIDER = "disabled"
+DEFAULT_AUTH_PROVIDER = "local"
 
 _CACHED_AUTH_PORT: Optional[AuthPort] = None
 

@@ -44,7 +44,7 @@ describe('First-Run Setup Checklist & Diagnostics (#99)', () => {
     it('renders setup card on first launch when carefold_setup_complete is absent', async () => {
       // Mock fetch so checks resolve
       vi.spyOn(global, 'fetch').mockImplementation((url: any) => {
-        if (String(url).includes('/api/health')) {
+        if ((String(url).includes('/api/v1/health') || String(url).includes('/api/health'))) {
           return Promise.resolve(new Response(JSON.stringify({
             status: 'ok',
             version: '0.4.0',
@@ -55,7 +55,7 @@ describe('First-Run Setup Checklist & Diagnostics (#99)', () => {
             ollama: { status: 'connected', endpoint: 'http://127.0.0.1:11434', reachable: true }
           })));
         }
-        if (String(url).includes('/api/models')) {
+        if ((String(url).includes('/api/v1/models') || String(url).includes('/api/models'))) {
           return Promise.resolve(new Response(JSON.stringify({
             provider: 'ollama',
             reachable: true,
@@ -106,7 +106,7 @@ describe('First-Run Setup Checklist & Diagnostics (#99)', () => {
   describe('Probe 1: Backend API Status', () => {
     it('shows PASS [READY] when backend is online and responding', async () => {
       vi.spyOn(global, 'fetch').mockImplementation((url: any) => {
-        if (String(url).includes('/api/health')) {
+        if ((String(url).includes('/api/v1/health') || String(url).includes('/api/health'))) {
           return Promise.resolve(new Response(JSON.stringify({
             status: 'ok',
             version: '0.4.0',
@@ -117,7 +117,7 @@ describe('First-Run Setup Checklist & Diagnostics (#99)', () => {
             ollama: { status: 'connected', endpoint: 'http://127.0.0.1:11434', reachable: true }
           })));
         }
-        if (String(url).includes('/api/models')) {
+        if ((String(url).includes('/api/v1/models') || String(url).includes('/api/models'))) {
           return Promise.resolve(new Response(JSON.stringify({
             provider: 'ollama',
             reachable: true,
@@ -139,10 +139,10 @@ describe('First-Run Setup Checklist & Diagnostics (#99)', () => {
 
     it('shows FAIL [OFFLINE] and copyable fix commands when backend is unreachable', async () => {
       vi.spyOn(global, 'fetch').mockImplementation((url: any) => {
-        if (String(url).includes('/api/health')) {
+        if ((String(url).includes('/api/v1/health') || String(url).includes('/api/health'))) {
           return Promise.reject(new Error('connect ECONNREFUSED 127.0.0.1:8010'));
         }
-        if (String(url).includes('/api/models')) {
+        if ((String(url).includes('/api/v1/models') || String(url).includes('/api/models'))) {
           return Promise.resolve(new Response(JSON.stringify({
             provider: 'ollama',
             reachable: false,
@@ -169,7 +169,7 @@ describe('First-Run Setup Checklist & Diagnostics (#99)', () => {
   describe('Probe 2: Ollama Local Model & Provider Status', () => {
     it('shows FAIL [OFFLINE] and "ollama serve" when Ollama daemon is unreachable', async () => {
       vi.spyOn(global, 'fetch').mockImplementation((url: any) => {
-        if (String(url).includes('/api/health')) {
+        if ((String(url).includes('/api/v1/health') || String(url).includes('/api/health'))) {
           return Promise.resolve(new Response(JSON.stringify({
             status: 'degraded',
             version: '0.4.0',
@@ -180,7 +180,7 @@ describe('First-Run Setup Checklist & Diagnostics (#99)', () => {
             ollama: { status: 'unreachable', endpoint: 'http://127.0.0.1:11434', reachable: false }
           })));
         }
-        if (String(url).includes('/api/models')) {
+        if ((String(url).includes('/api/v1/models') || String(url).includes('/api/models'))) {
           return Promise.resolve(new Response(JSON.stringify({
             provider: 'ollama',
             reachable: false,
@@ -204,7 +204,7 @@ describe('First-Run Setup Checklist & Diagnostics (#99)', () => {
 
     it('shows WARN [MISSING MODEL] and "ollama pull llama3.2" when Ollama has 0 models', async () => {
       vi.spyOn(global, 'fetch').mockImplementation((url: any) => {
-        if (String(url).includes('/api/health')) {
+        if ((String(url).includes('/api/v1/health') || String(url).includes('/api/health'))) {
           return Promise.resolve(new Response(JSON.stringify({
             status: 'ok',
             version: '0.4.0',
@@ -215,7 +215,7 @@ describe('First-Run Setup Checklist & Diagnostics (#99)', () => {
             ollama: { status: 'connected', endpoint: 'http://127.0.0.1:11434', reachable: true, availableModels: [] }
           })));
         }
-        if (String(url).includes('/api/models')) {
+        if ((String(url).includes('/api/v1/models') || String(url).includes('/api/models'))) {
           return Promise.resolve(new Response(JSON.stringify({
             provider: 'ollama',
             reachable: true,
@@ -239,7 +239,7 @@ describe('First-Run Setup Checklist & Diagnostics (#99)', () => {
 
     it('shows PASS [READY] and detected models when models are available', async () => {
       vi.spyOn(global, 'fetch').mockImplementation((url: any) => {
-        if (String(url).includes('/api/health')) {
+        if ((String(url).includes('/api/v1/health') || String(url).includes('/api/health'))) {
           return Promise.resolve(new Response(JSON.stringify({
             status: 'ok',
             version: '0.4.0',
@@ -250,7 +250,7 @@ describe('First-Run Setup Checklist & Diagnostics (#99)', () => {
             ollama: { status: 'connected', endpoint: 'http://127.0.0.1:11434', reachable: true, availableModels: ['llama3.2:latest', 'mistral:latest'] }
           })));
         }
-        if (String(url).includes('/api/models')) {
+        if ((String(url).includes('/api/v1/models') || String(url).includes('/api/models'))) {
           return Promise.resolve(new Response(JSON.stringify({
             provider: 'ollama',
             reachable: true,
@@ -284,7 +284,7 @@ describe('First-Run Setup Checklist & Diagnostics (#99)', () => {
       localStorage.setItem(CAREFOLD_SETTINGS_STORAGE_KEY, JSON.stringify(cloudSettings));
 
       vi.spyOn(global, 'fetch').mockImplementation((url: any) => {
-        if (String(url).includes('/api/health')) {
+        if ((String(url).includes('/api/v1/health') || String(url).includes('/api/health'))) {
           return Promise.resolve(new Response(JSON.stringify({
             status: 'ok',
             version: '0.4.0',
@@ -381,7 +381,7 @@ describe('First-Run Setup Checklist & Diagnostics (#99)', () => {
       const writeTextSpy = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
 
       vi.spyOn(global, 'fetch').mockImplementation((url: any) => {
-        if (String(url).includes('/api/health')) {
+        if ((String(url).includes('/api/v1/health') || String(url).includes('/api/health'))) {
           return Promise.reject(new Error('offline'));
         }
         return Promise.resolve(new Response('{}', { status: 500 }));

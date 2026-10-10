@@ -28,6 +28,10 @@ from __future__ import annotations
 DEFAULT_WORKSPACE_ROOT: str = "."
 WORKSPACE_DIR: str = "workspace"
 
+# Dedicated user home storage directory (M1)
+DEFAULT_HOME_DIR: str = ".carefold"
+UPLOADS_DIR: str = "uploads"
+
 AGENTS_DIR: str = "agents"
 SYSTEM_AGENTS_DIR: str = "_system"
 TEMPLATE_DIR: str = "_template"
@@ -50,15 +54,15 @@ DEFAULT_AUDIT_LOG: str = "logs/audit.jsonl"
 DEFAULT_AUDIT_LOG_FILE: str = "audit.jsonl"
 
 SQLITE_DB_FILENAME: str = "checkpoints.db"
-DEFAULT_DB_PATH: str = "chats/checkpoints.db"
+DEFAULT_DB_PATH: str = "checkpoints.db"
 DEFAULT_CHECKPOINTS_DB: str = "checkpoints.db"
 
 CATALOG_DB_FILENAME: str = "catalog.db"
 DEFAULT_CATALOG_DB: str = "catalog.db"
 
 SQL_DB_FILENAME: str = "carefold.db"
-DEFAULT_SQL_DB_PATH: str = "workspace/carefold.db"
-DEFAULT_SQL_DB_FILE: str = "workspace/carefold.db"
+DEFAULT_SQL_DB_PATH: str = "carefold.db"
+DEFAULT_SQL_DB_FILE: str = "carefold.db"
 
 
 # ============================================================================
@@ -105,6 +109,8 @@ ROUTING_PATTERNS_YAML: str = "routing_patterns.yaml"
 # 5. Environment Variable Names
 # ============================================================================
 
+ENV_HOME_DIR: str = "CAREFOLD_HOME"
+CAREFOLD_HOME: str = "CAREFOLD_HOME"
 ENV_WORKSPACE_ROOT: str = "CAREFOLD_WORKSPACE_ROOT"
 ENV_DB_PATH: str = "CAREFOLD_DB_PATH"
 ENV_AUDIT_LOG_PATH: str = "CAREFOLD_AUDIT_LOG_PATH"

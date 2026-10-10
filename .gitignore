@@ -261,3 +261,6 @@ carefold.config.json
 .DS_Store
 Thumbs.db
 
+# UI Redesign assets & mockups
+/assets/carefold-ui-redesign/
+

@@ -118,7 +118,7 @@ export function Navbar() {
     let mounted = true;
     async function checkHealth() {
       try {
-        const res = await fetch('/api/health');
+        const res = await fetch('/api/v1/health');
         if (res.ok) {
           const data = await res.json();
           if (mounted) setOllamaOnline(Boolean(data.ollama?.reachable || data.modelReachable));
@@ -271,7 +271,7 @@ export function Navbar() {
                       ? 'Checking local model (127.0.0.1:11434)...'
                       : ollamaOnline
                       ? 'Local Ollama endpoint active (127.0.0.1:11434)'
-                      : 'Ollama offline (Mock/Offline mode active)'
+                      : 'Ollama offline (Offline mode active)'
                     : 'Local endpoint active'
                   : `${privacyState.providerLabel} inference active`
               }
@@ -364,7 +364,7 @@ export function Navbar() {
                           saveSettings({ provider: 'ollama', model: 'llama3.2' });
                           setShowExplainer(false);
                         }}
-                        className="w-full min-h-[32px] px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center justify-center gap-1.5 shadow-sm"
+                        className="w-full min-h-[44px] px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] transition flex items-center justify-center gap-1.5 shadow-sm"
                       >
                         <Cpu className="w-3.5 h-3.5" />
                         Switch to Local (Ollama)
@@ -377,7 +377,7 @@ export function Navbar() {
                         setShowExplainer(false);
                         setShowSettingsModal(true);
                       }}
-                      className="w-full min-h-[32px] px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition flex items-center justify-center gap-1.5"
+                      className="w-full min-h-[44px] px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition flex items-center justify-center gap-1.5"
                     >
                       <Settings className="w-3.5 h-3.5" />
                       Configure in Settings
@@ -392,11 +392,11 @@ export function Navbar() {
           {authProvider === 'disabled' ? (
             <div
               data-testid="local-steward-badge"
-              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-purple-200/80 dark:border-purple-800/80 bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 shadow-sm"
-              title="Single-user local steward mode"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 shadow-sm"
+              title="Single-user local mode"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-              <span className="font-semibold">Local Steward</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+              <span className="font-semibold">Local Mode</span>
             </div>
           ) : isAuthenticated && user ? (
             <div className="relative hidden sm:block" ref={userMenuRef}>
@@ -409,7 +409,7 @@ export function Navbar() {
                 onClick={() => setShowUserMenu((prev) => !prev)}
                 className="flex items-center gap-2 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 transition cursor-pointer text-xs shadow-sm"
               >
-                <div className="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-[10px]">
+                <div className="w-6 h-6 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center text-xs">
                   {user.full_name
                     ? user.full_name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
                     : user.username.slice(0, 2).toUpperCase()}
@@ -420,12 +420,12 @@ export function Navbar() {
                 <span
                   data-testid="user-nav-role-badge"
                   className={cn(
-                    'text-[10px] font-semibold px-1.5 py-0.5 rounded-full border',
+                    'text-xs font-semibold px-2 py-0.5 rounded-full border',
                     user.role === 'admin'
-                      ? 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900/60 dark:bg-purple-950/40 dark:text-purple-300'
+                      ? 'border-slate-300 bg-slate-100 text-slate-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200'
                       : user.role === 'steward'
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300'
-                      : 'border-slate-200 bg-slate-100 text-slate-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                      ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300'
+                      : 'border-slate-300 bg-slate-100 text-slate-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
                   )}
                 >
                   {user.role}
@@ -448,7 +448,7 @@ export function Navbar() {
                       <div className="font-bold text-slate-900 dark:text-zinc-100 truncate">
                         {user.full_name || user.username}
                       </div>
-                      <div className="text-[11px] text-slate-500 dark:text-zinc-400 font-mono truncate">
+                      <div className="text-xs text-slate-500 dark:text-zinc-400 font-mono truncate">
                         {user.email}
                       </div>
                     </div>
@@ -485,9 +485,9 @@ export function Navbar() {
                         type="button"
                         role="menuitem"
                         data-testid="nav-dropdown-sign-out-btn"
-                        onClick={() => {
+                        onClick={async () => {
                           setShowUserMenu(false);
-                          logout();
+                          await logout();
                         }}
                         className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition font-semibold text-left cursor-pointer"
                       >
@@ -504,7 +504,7 @@ export function Navbar() {
               <Link
                 href="/register?mode=admin-setup"
                 data-testid="nav-admin-setup-btn"
-                className="px-3 py-1.5 text-xs font-semibold rounded-xl text-white bg-purple-600 hover:bg-purple-700 transition shadow-sm flex items-center gap-1.5"
+                className="px-3 py-1.5 text-xs font-semibold rounded-xl text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-500 dark:text-[#04201a] transition shadow-sm flex items-center gap-1.5"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Admin Setup</span>
@@ -523,7 +523,7 @@ export function Navbar() {
                 <Link
                   href="/register"
                   data-testid="nav-register-btn"
-                  className="px-3 py-1.5 text-xs font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-sm"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-500 dark:text-[#04201a] transition shadow-sm"
                 >
                   Register
                 </Link>
@@ -539,7 +539,7 @@ export function Navbar() {
             title={`Current theme: ${effectiveTheme} (${effectiveResolvedTheme}). Click to switch.`}
             onClick={toggleTheme}
             suppressHydrationWarning
-            className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-700 transition cursor-pointer shadow-sm"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-700 transition cursor-pointer shadow-sm"
           >
             {mounted && effectiveResolvedTheme === 'dark' ? (
               <Sun data-testid="theme-icon-sun" className="w-4 h-4 text-amber-400" />
@@ -560,7 +560,7 @@ export function Navbar() {
               setShowExplainer(false);
               setIsMobileOpen((prev) => !prev);
             }}
-            className="sm:hidden w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-700 transition cursor-pointer shadow-sm shrink-0"
+            className="sm:hidden w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-700 transition cursor-pointer shadow-sm shrink-0"
           >
             {isMobileOpen ? (
               <X className="w-4 h-4" />
@@ -613,15 +613,15 @@ export function Navbar() {
           {/* Mobile Auth / Profile Section */}
           <div className="pt-2 mt-2 border-t border-slate-200 dark:border-zinc-800 space-y-1">
             {authProvider === 'disabled' ? (
-              <div className="px-3.5 py-2 text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4" />
-                <span>Local Steward Active</span>
+              <div className="px-3.5 py-2 text-xs font-semibold text-slate-800 dark:text-zinc-200 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                <span>Local Mode Active</span>
               </div>
             ) : isAuthenticated && user ? (
               <div className="space-y-1">
                 <div className="px-3.5 py-2 text-xs font-semibold text-slate-800 dark:text-zinc-200 flex items-center justify-between">
                   <span>{user.full_name || user.username}</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full border border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 capitalize">
+                  <span className="text-xs px-2 py-0.5 rounded-full border border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 capitalize">
                     {user.role}
                   </span>
                 </div>
@@ -629,9 +629,9 @@ export function Navbar() {
                   <Link
                     href="/admin"
                     onClick={() => setIsMobileOpen(false)}
-                    className="flex items-center gap-3 px-3.5 py-2 rounded-lg text-sm font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+                    className="flex items-center gap-3 px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
                   >
-                    <Shield className="w-4 h-4" />
+                    <Shield className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                     <span>Admin Console</span>
                   </Link>
                 )}
@@ -648,9 +648,9 @@ export function Navbar() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     setIsMobileOpen(false);
-                    logout();
+                    await logout();
                   }}
                   className="w-full flex items-center gap-3 px-3.5 py-2 rounded-lg text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left"
                 >
@@ -664,7 +664,7 @@ export function Navbar() {
                   href="/register?mode=admin-setup"
                   onClick={() => setIsMobileOpen(false)}
                   data-testid="mobile-admin-setup-link"
-                  className="w-full py-2 text-center text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-700 text-white shadow-sm flex items-center justify-center gap-1.5"
+                  className="w-full py-2 text-center text-xs font-semibold rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm flex items-center justify-center gap-1.5"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>Set Up Administrator</span>
@@ -685,7 +685,7 @@ export function Navbar() {
                     href="/register"
                     onClick={() => setIsMobileOpen(false)}
                     data-testid="mobile-register-link"
-                    className="flex-1 py-2 text-center text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                    className="flex-1 py-2 text-center text-xs font-semibold rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:text-[#04201a] shadow-sm"
                   >
                     Register
                   </Link>

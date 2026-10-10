@@ -40,6 +40,8 @@ class ChatRequestBody(BaseModel):
     # LangGraph state & session parameters
     threadId: Optional[str] = None
     thread_id: Optional[str] = None
+    profileId: Optional[str] = None
+    profile_id: Optional[str] = None
 
     # LangChain multi-provider parameters
     provider: Optional[str] = "ollama"
@@ -58,6 +60,9 @@ class ChatRequestBody(BaseModel):
 
     def get_thread_id(self) -> Optional[str]:
         return self.threadId or self.thread_id
+
+    def get_profile_id(self) -> Optional[str]:
+        return self.profileId or self.profile_id
 
     def get_provider(self) -> str:
         return self.provider or "ollama"

@@ -216,7 +216,35 @@ def _create_specialist_node(
         if resolved_prompt and not (messages and isinstance(messages[0], SystemMessage)):
             messages = [SystemMessage(content=resolved_prompt)] + messages
 
-        response = await bound_model.ainvoke(messages)
+        raw_model = bound_model
+        while hasattr(raw_model, "bound") and getattr(raw_model, "bound", None) is not None:
+            raw_model = raw_model.bound
+
+        try:
+            response = await bound_model.ainvoke(messages)
+        except Exception as exc:
+            exc_str = str(exc).lower()
+            if bound_model is not raw_model and any(
+                p in exc_str
+                for p in (
+                    "does not support tools",
+                    "does not support tool",
+                    "tools not supported",
+                    "tools are not supported",
+                    "tool calling not supported",
+                    "tool calling is not supported",
+                    "function calling not supported",
+                    "function calling is not supported",
+                )
+            ):
+                logger.warning(
+                    "Specialist '%s' model does not support tools (%s); invoking without tools",
+                    specialist_id,
+                    exc,
+                )
+                response = await raw_model.ainvoke(messages)
+            else:
+                raise
         if not isinstance(response, BaseMessage):
             response = AIMessage(content=str(response))
 

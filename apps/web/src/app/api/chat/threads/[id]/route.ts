@@ -39,6 +39,15 @@ export async function GET(
   }
 
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  let search = '';
+  if (_req?.url) {
+    try {
+      const parsed = new URL(_req.url, 'http://localhost:3000');
+      search = parsed.search;
+    } catch {
+      search = '';
+    }
+  }
 
   try {
     const forwardHeaders: Record<string, string> = { Accept: 'application/json' };
@@ -46,8 +55,12 @@ export async function GET(
     if (incomingCookie) {
       forwardHeaders['cookie'] = incomingCookie;
     }
+    const authHeader = _req.headers.get('authorization');
+    if (authHeader) {
+      forwardHeaders['authorization'] = authHeader;
+    }
 
-    const res = await fetch(`${backendUrl}/api/chat/threads/${threadId}`, {
+    const res = await fetch(`${backendUrl}/api/v1/chat/threads/${threadId}${search}`, {
       method: 'GET',
       headers: forwardHeaders,
       cache: 'no-store'

@@ -111,7 +111,7 @@ export function SkillFormModal({
     };
 
     try {
-      const endpoint = isEditing ? `/api/skills/${encodeURIComponent(initialSkill!.id)}` : '/api/skills';
+      const endpoint = isEditing ? `/api/v1/skills/${encodeURIComponent(initialSkill!.id)}` : '/api/v1/skills';
       const method = isEditing ? 'PUT' : 'POST';
       const body = isEditing ? JSON.stringify(payload) : JSON.stringify({ id: id.trim(), ...payload });
 
@@ -179,7 +179,7 @@ export function SkillFormModal({
                     if (!name) setName(slug);
                   }}
                   placeholder="e.g. oncology-prep"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:border-emerald-700 dark:focus:border-emerald-400"
                 />
               </div>
             )}
@@ -194,7 +194,7 @@ export function SkillFormModal({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Oncology Consultation Prep"
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
               />
             </div>
 
@@ -205,7 +205,7 @@ export function SkillFormModal({
               <select
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
               >
                 <option value="clinical">Clinical</option>
                 <option value="navigation">Navigation</option>
@@ -221,7 +221,7 @@ export function SkillFormModal({
               <select
                 value={riskClass}
                 onChange={(e) => setRiskClass(e.target.value as RiskClass)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
               >
                 <option value="clinical_assist">Clinical Assist (HITL review)</option>
                 <option value="admin">Admin (Formulary / Insurance)</option>
@@ -239,7 +239,7 @@ export function SkillFormModal({
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="e.g. oncology or insurance"
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
               />
             </div>
           </div>
@@ -254,7 +254,7 @@ export function SkillFormModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g. Prepares patient dossier and question checklist for oncology consultation."
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
             />
           </div>
 
@@ -280,7 +280,7 @@ export function SkillFormModal({
                       <span className="font-mono font-bold">{t.label}</span>
                       {checked && <Check className="w-3.5 h-3.5 text-emerald-600" />}
                     </div>
-                    <p className="text-[11px] opacity-80">{t.desc}</p>
+                    <p className="text-xs opacity-80">{t.desc}</p>
                   </div>
                 );
               })}
@@ -293,7 +293,7 @@ export function SkillFormModal({
               <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300">
                 System Instructions (Markdown)
               </label>
-              <div className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+              <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                 <ShieldAlert className="w-3 h-3" />
                 <span>Safety disclosures enforced</span>
               </div>
@@ -303,7 +303,7 @@ export function SkillFormModal({
               required
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
-              className="w-full p-3 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none leading-relaxed"
+              className="w-full p-3 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:border-emerald-700 dark:focus:border-emerald-400 leading-relaxed"
             />
           </div>
 
@@ -319,7 +319,7 @@ export function SkillFormModal({
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition disabled:opacity-50"
+              className="px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm transition disabled:opacity-50"
             >
               {submitting ? 'Saving...' : isEditing ? 'Update Skill' : 'Create Skill'}
             </button>

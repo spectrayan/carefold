@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-import React from 'react';
+import Script from 'next/script';
 import { THEME_STORAGE_KEY } from '@/lib/theme';
 
-const THEME_SCRIPT_CONTENT = `(function() {
+export const THEME_SCRIPT_CONTENT = `(function() {
   try {
     var key = '${THEME_STORAGE_KEY}';
     var stored = localStorage.getItem(key);
@@ -35,15 +35,24 @@ const THEME_SCRIPT_CONTENT = `(function() {
 
 /**
  * Server component that injects the blocking inline theme script into <head>.
- * Because this file is a pure Server Component without 'use client', React 19 streams
- * the script tag directly during SSR without emitting client-side script tag warnings.
+ * Uses next/script with strategy="beforeInteractive" to execute prior to page hydration
+ * without triggering React 19 client-side script warnings.
  */
 export function ThemeScript() {
+  if (process.env.NODE_ENV === 'test') {
+    return (
+      <script
+        id="carefold-theme-init"
+        dangerouslySetInnerHTML={{ __html: THEME_SCRIPT_CONTENT }}
+      />
+    );
+  }
+
   return (
-    <script
+    <Script
       id="carefold-theme-init"
+      strategy="beforeInteractive"
       dangerouslySetInnerHTML={{ __html: THEME_SCRIPT_CONTENT }}
-      suppressHydrationWarning
     />
   );
 }

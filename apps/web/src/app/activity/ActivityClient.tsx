@@ -18,6 +18,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import {
   ShieldAlert,
   AlertTriangle,
@@ -48,12 +49,14 @@ import {
 
 interface ActivityClientProps {
   initialEvents: AuditEvent[];
+  initialUnauthenticated?: boolean;
 }
 
-export function ActivityClient({ initialEvents }: ActivityClientProps) {
+export function ActivityClient({ initialEvents, initialUnauthenticated = false }: ActivityClientProps) {
   const [events, setEvents] = useState<AuditEvent[]>(initialEvents);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unauthenticated, setUnauthenticated] = useState<boolean>(initialUnauthenticated);
 
   // Filters
   const [agentFilter, setAgentFilter] = useState<string>('all');
@@ -72,7 +75,11 @@ export function ActivityClient({ initialEvents }: ActivityClientProps) {
     try {
       const response = await fetchAuditEvents({ limit: 100 });
       setEvents(response.events || []);
+      setUnauthenticated(false);
     } catch (err: any) {
+      if (err?.status === 401 || err?.message?.includes('401') || err?.message?.toLowerCase().includes('unauthorized')) {
+        setUnauthenticated(true);
+      }
       setError(err?.message || 'Failed to refresh activity events');
     } finally {
       setLoading(false);
@@ -143,7 +150,7 @@ export function ActivityClient({ initialEvents }: ActivityClientProps) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -159,7 +166,7 @@ export function ActivityClient({ initialEvents }: ActivityClientProps) {
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400">
-            Inspect runtime agent operations, tool calls, and clinical guardrail decisions in your local workspace.
+            Review what your health helpers did and how safety checks were applied.
           </p>
         </div>
 
@@ -168,10 +175,10 @@ export function ActivityClient({ initialEvents }: ActivityClientProps) {
           <div
             data-testid="redacted-mode-badge"
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-medium shadow-sm"
-            title="Prompts and completion bodies are never recorded or displayed"
+            title="Your messages and notes stay on this device and are never recorded."
           >
             <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span>Redacted Mode (Zero Prompt Retention)</span>
+            <span>Private Mode · Not Stored</span>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -213,7 +220,7 @@ export function ActivityClient({ initialEvents }: ActivityClientProps) {
               data-testid="export-audit-btn"
               onClick={handleExport}
               disabled={filteredEvents.length === 0}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition cursor-pointer disabled:opacity-50 shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] text-xs font-medium transition cursor-pointer disabled:opacity-50 shadow-sm"
               title="Download events as JSON"
             >
               <Download className="w-3.5 h-3.5" />
@@ -292,8 +299,36 @@ export function ActivityClient({ initialEvents }: ActivityClientProps) {
         </div>
       </div>
 
+      {/* Unauthenticated state */}
+      {unauthenticated && (
+        <div
+          data-testid="audit-unauthenticated-banner"
+          className="p-5 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 shadow-sm space-y-3"
+        >
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                Authentication Required
+              </h3>
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                Activity and security audit logs require authentication when user accounts are enabled. Please sign in to view your activity and safety log.
+              </p>
+            </div>
+          </div>
+          <div className="pt-1 flex items-center gap-3">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium transition cursor-pointer shadow-sm"
+            >
+              Sign In
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Error state */}
-      {error && (
+      {error && !unauthenticated && (
         <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 text-sm">
           <div className="font-semibold mb-1 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
@@ -329,7 +364,7 @@ export function ActivityClient({ initialEvents }: ActivityClientProps) {
                 setOnlyBlocked(false);
                 setSearchQuery('');
               }}
-              className="mt-3 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+              className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:underline cursor-pointer"
             >
               Reset all filters
             </button>

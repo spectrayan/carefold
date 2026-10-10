@@ -85,7 +85,7 @@ function RegisterForm() {
 
     setIsSubmitting(true);
     try {
-      await register({
+      const newUser = await register({
         email: email.trim(),
         username: username.trim(),
         password,
@@ -93,8 +93,8 @@ function RegisterForm() {
       });
       setSuccess(true);
       setTimeout(() => {
-        if (isSetupMode) {
-          router.push('/admin');
+        if (isSetupMode || newUser.role === 'admin') {
+          router.push('/');
         } else {
           router.push('/login');
         }
@@ -107,8 +107,8 @@ function RegisterForm() {
   };
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center py-10 px-4">
-      <div className="w-full max-w-md mx-auto p-6 sm:p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl space-y-6">
+    <div className="min-h-[75vh] flex items-center justify-center py-6 sm:py-10 px-3.5 sm:px-4">
+      <div className="w-full max-w-md mx-auto p-5 sm:p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl space-y-6">
         {/* Brand & Heading */}
         <div className="text-center space-y-2">
           <div
@@ -130,7 +130,7 @@ function RegisterForm() {
           {isSetupMode && (
             <div
               data-testid="admin-setup-badge"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
               <span>Role: Primary Administrator</span>
@@ -146,10 +146,10 @@ function RegisterForm() {
           >
             <div className="flex items-center gap-2 font-semibold text-emerald-800 dark:text-emerald-300">
               <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Single-User Local Steward Mode</span>
+              <span>Single-User Local Mode</span>
             </div>
-            <p className="text-[11px] leading-relaxed">
-              Carefold is currently operating in offline steward mode. Registration is optional.
+            <p className="text-xs leading-relaxed">
+              Carefold is currently operating in offline local mode. Registration is optional.
             </p>
             <Link
               href="/"
@@ -172,7 +172,7 @@ function RegisterForm() {
               <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span>Self-Registration is Closed</span>
             </div>
-            <p className="text-[11px] leading-relaxed">
+            <p className="text-xs leading-relaxed">
               New account registration is currently disabled by the system administrator.
               Please contact your administrator for an account invitation.
             </p>
@@ -237,7 +237,7 @@ function RegisterForm() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Jane Doe"
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
                 />
               </div>
             </div>
@@ -263,7 +263,7 @@ function RegisterForm() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="janedoe"
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
                 />
               </div>
             </div>
@@ -289,7 +289,7 @@ function RegisterForm() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="jane@example.com"
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
                 />
               </div>
             </div>
@@ -315,7 +315,7 @@ function RegisterForm() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Min 10 characters, mixed case & numbers"
-                  className="w-full pl-9 pr-9 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                  className="w-full pl-9 pr-9 py-2 text-xs rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-700 dark:focus:border-emerald-400 transition"
                 />
                 <button
                   type="button"
@@ -331,7 +331,7 @@ function RegisterForm() {
               {/* 4-Tier Password Strength Meter Bar */}
               {password.length > 0 && (
                 <div className="space-y-1.5 pt-1" data-testid="password-strength-container">
-                  <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500 dark:text-zinc-400">Strength:</span>
                     <span
                       data-testid="password-strength-label"
@@ -365,7 +365,7 @@ function RegisterForm() {
                   </div>
 
                   {/* Criteria Checklist */}
-                  <div className="grid grid-cols-2 gap-1 pt-1.5 text-[10px] text-slate-600 dark:text-zinc-400">
+                  <div className="grid grid-cols-2 gap-1 pt-1.5 text-xs text-slate-600 dark:text-zinc-400">
                     <div className="flex items-center gap-1.5">
                       {strength.criteria.minLength ? (
                         <CheckCircle2 className="w-3 h-3 text-emerald-500" />
@@ -425,10 +425,10 @@ function RegisterForm() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Re-enter password"
                   className={cn(
-                    'w-full pl-9 pr-9 py-2 text-xs rounded-xl border bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 transition',
+                    'w-full pl-9 pr-9 py-2 text-xs rounded-xl border bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 transition',
                     confirmPassword.length > 0 && !passwordsMatch
-                      ? 'border-rose-500 dark:border-rose-400 focus:ring-rose-500/20 focus:border-rose-500'
-                      : 'border-[#7f8ea3] dark:border-[#657895] focus:ring-emerald-500/20 focus:border-emerald-500'
+                      ? 'border-rose-500 dark:border-rose-400 focus:border-rose-600'
+                      : 'border-[#7f8ea3] dark:border-[#657895] focus:border-emerald-700 dark:focus:border-emerald-400'
                   )}
                 />
                 <button
@@ -442,7 +442,7 @@ function RegisterForm() {
                 </button>
               </div>
               {confirmPassword.length > 0 && !passwordsMatch && (
-                <p className="text-[11px] text-rose-600 dark:text-rose-400">
+                <p className="text-xs text-rose-600 dark:text-rose-400">
                   Passwords do not match.
                 </p>
               )}
@@ -454,10 +454,10 @@ function RegisterForm() {
               data-testid="register-submit-btn"
               disabled={isSubmitting || !strength.isValid || !passwordsMatch}
               className={cn(
-                "w-full py-2.5 px-4 text-xs font-semibold rounded-xl text-white focus:outline-none focus:ring-2 shadow-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                "w-full py-2.5 px-4 text-xs font-semibold rounded-xl text-white shadow-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                 isSetupMode
-                  ? "bg-purple-600 hover:bg-purple-700 active:bg-purple-800 focus:ring-purple-500/30"
-                  : "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 focus:ring-emerald-500/30"
+                  ? "bg-purple-600 hover:bg-purple-700 active:bg-purple-800"
+                  : "bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] dark:active:bg-emerald-600"
               )}
             >
               {isSubmitting ? (
@@ -482,7 +482,7 @@ function RegisterForm() {
           Already have an account?{' '}
           <Link
             href="/login"
-            className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+            className="font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:underline"
           >
             Sign in
           </Link>

@@ -57,7 +57,7 @@ export function EmergencyEscalationCard({
       <div className="flex items-center gap-2 pb-2 border-b border-red-200 dark:border-red-900/60 text-red-800 dark:text-red-300 font-bold text-sm">
         <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" aria-hidden="true" />
         <span data-testid="emergency-card-heading">This may be an emergency</span>
-        <span className="ml-auto text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-red-200 dark:bg-red-900/80 text-red-900 dark:text-red-200">
+        <span className="ml-auto text-xs font-semibold uppercase px-2 py-0.5 rounded-full bg-red-200 dark:bg-red-900/80 text-red-900 dark:text-red-200">
           Immediate Action Required
         </span>
       </div>

@@ -57,7 +57,7 @@ describe('AuthProvider & useAuth', () => {
   it('initializes in disabled auth mode with DEFAULT_STEWARD_USER', async () => {
     vi.mocked(fetch).mockImplementation(async (url: any) => {
       const urlStr = String(url);
-      if (urlStr.includes('/api/auth/providers')) {
+      if (urlStr.includes('/auth/providers')) {
         return {
           ok: true,
           json: async () => ({
@@ -67,7 +67,7 @@ describe('AuthProvider & useAuth', () => {
           })
         } as any;
       }
-      if (urlStr.includes('/api/auth/me')) {
+      if (urlStr.includes('/auth/me')) {
         return {
           ok: false,
           status: 401,
@@ -95,7 +95,7 @@ describe('AuthProvider & useAuth', () => {
   it('initializes in local mode unauthenticated when no session exists', async () => {
     vi.mocked(fetch).mockImplementation(async (url: any) => {
       const urlStr = String(url);
-      if (urlStr.includes('/api/auth/providers')) {
+      if (urlStr.includes('/auth/providers')) {
         return {
           ok: true,
           json: async () => ({
@@ -105,7 +105,7 @@ describe('AuthProvider & useAuth', () => {
           })
         } as any;
       }
-      if (urlStr.includes('/api/auth/me')) {
+      if (urlStr.includes('/auth/me')) {
         return {
           ok: false,
           status: 401,
@@ -137,7 +137,7 @@ describe('AuthProvider & useAuth', () => {
       const urlStr = String(url);
       const method = init?.method || 'GET';
 
-      if (urlStr.includes('/api/auth/providers')) {
+      if (urlStr.includes('/auth/providers')) {
         return {
           ok: true,
           json: async () => ({
@@ -147,14 +147,14 @@ describe('AuthProvider & useAuth', () => {
           })
         } as any;
       }
-      if (urlStr.includes('/api/auth/me')) {
+      if (urlStr.includes('/auth/me')) {
         return {
           ok: false,
           status: 401,
           json: async () => ({ detail: 'Not authenticated' })
         } as any;
       }
-      if (urlStr.includes('/api/auth/login') && method === 'POST') {
+      if (urlStr.includes('/auth/login') && method === 'POST') {
         return {
           ok: true,
           json: async () => ({
@@ -171,13 +171,13 @@ describe('AuthProvider & useAuth', () => {
           })
         } as any;
       }
-      if (urlStr.includes('/api/auth/change-password') && method === 'POST') {
+      if (urlStr.includes('/auth/change-password') && method === 'POST') {
         return {
           ok: true,
           json: async () => ({ detail: 'Password updated successfully' })
         } as any;
       }
-      if (urlStr.includes('/api/auth/logout') && method === 'POST') {
+      if (urlStr.includes('/auth/logout') && method === 'POST') {
         return {
           ok: true,
           json: async () => ({ detail: 'Logged out' })
@@ -221,14 +221,14 @@ describe('AuthProvider & useAuth', () => {
     expect(screen.getByTestId('is-authenticated').textContent).toBe('no');
   });
 
-  it('handles register action invoking /api/auth/register', async () => {
+  it('handles register action invoking /auth/register', async () => {
     let authRef: ReturnType<typeof useAuth> | null = null;
 
     vi.mocked(fetch).mockImplementation(async (url: any, init: any) => {
       const urlStr = String(url);
       const method = init?.method || 'GET';
 
-      if (urlStr.includes('/api/auth/providers')) {
+      if (urlStr.includes('/auth/providers')) {
         return {
           ok: true,
           json: async () => ({
@@ -238,14 +238,14 @@ describe('AuthProvider & useAuth', () => {
           })
         } as any;
       }
-      if (urlStr.includes('/api/auth/me')) {
+      if (urlStr.includes('/auth/me')) {
         return {
           ok: false,
           status: 401,
           json: async () => ({ detail: 'Not authenticated' })
         } as any;
       }
-      if (urlStr.includes('/api/auth/register') && method === 'POST') {
+      if (urlStr.includes('/auth/register') && method === 'POST') {
         return {
           ok: true,
           json: async () => ({

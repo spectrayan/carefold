@@ -18,7 +18,7 @@
 import { describe, it, expect } from 'vitest';
 import { evaluatePasswordStrength, MIN_PASSWORD_LENGTH } from '@/lib/passwordStrength';
 
-describe('evaluatePasswordStrength - Empirical Challenge & Stress Suite', () => {
+describe('evaluatePasswordStrength - Robustness & Stress Suite', () => {
   describe('Constants & Baseline Specifications', () => {
     it('exports MIN_PASSWORD_LENGTH equal to 10', () => {
       expect(MIN_PASSWORD_LENGTH).toBe(10);
@@ -63,7 +63,7 @@ describe('evaluatePasswordStrength - Empirical Challenge & Stress Suite', () => 
       expect(result.colorClass).toContain('bg-emerald-500');
     });
 
-    it('empirically verifies the step-function transition strictly between length 9 and length 10', () => {
+    it('verifies the step-function transition strictly between length 9 and length 10', () => {
       const base = 'Ab1!cdef'; // length 8
       const pw8 = base; // 8
       const pw9 = base + 'g'; // 9
@@ -188,7 +188,7 @@ describe('evaluatePasswordStrength - Empirical Challenge & Stress Suite', () => 
     });
   });
 
-  describe('3. Extreme & Adversarial Inputs', () => {
+  describe('3. Extreme & Malformed Inputs', () => {
     it('handles empty string with score 0 and initial neutral styling', () => {
       const result = evaluatePasswordStrength('');
       expect(result.score).toBe(0);
@@ -337,7 +337,7 @@ describe('evaluatePasswordStrength - Empirical Challenge & Stress Suite', () => 
       expect(nullRes.score).toBe(4);
     });
 
-    it('guarantees linear performance on 50,000-character adversarial string', () => {
+    it('guarantees linear performance on 50,000-character string', () => {
       const hugeString = 'Aa1!' + 'x'.repeat(49996);
       const start = performance.now();
       const res = evaluatePasswordStrength(hugeString);

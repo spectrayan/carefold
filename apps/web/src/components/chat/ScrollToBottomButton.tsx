@@ -53,14 +53,14 @@ export function ScrollToBottomButton({
         tabIndex={visible ? 0 : -1}
         aria-label={hasUnread ? `Scroll to bottom (${unreadCount} unread)` : 'Scroll to bottom'}
         title="Scroll to bottom"
-        className="relative min-w-[36px] min-h-[36px] w-9 h-9 sm:w-10 sm:h-10 rounded-full shadow-md hover:shadow-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 hover:text-slate-900 dark:hover:text-white flex items-center justify-center cursor-pointer transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+        className="relative min-w-[44px] min-h-[44px] w-11 h-11 rounded-full shadow-md hover:shadow-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750 hover:text-slate-900 dark:hover:text-white flex items-center justify-center cursor-pointer transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
       >
         <ChevronDown className="w-5 h-5 text-slate-600 dark:text-zinc-300" />
 
         {hasUnread && (
           <span
             data-testid="unread-counter-badge"
-            className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 bg-blue-600 dark:bg-blue-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center shadow-sm animate-pulse"
+            className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 bg-blue-600 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-sm animate-pulse"
           >
             {badgeText}
           </span>

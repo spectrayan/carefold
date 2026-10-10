@@ -93,10 +93,10 @@ def test_resolve_database_url_priority(monkeypatch, tmp_path):
     monkeypatch.delenv(ENV_DATABASE_URL, raising=False)
     monkeypatch.delenv(ENV_DATABASE_URL_FALLBACK, raising=False)
 
-    # 1. Default fallback to workspace
+    # 1. Default fallback to ~/.carefold (or isolated test home)
     resolved_default = resolve_database_url()
     assert resolved_default.startswith("sqlite+aiosqlite:///")
-    assert "workspace/carefold.db" in resolved_default
+    assert "carefold.db" in resolved_default
 
     # 2. DATABASE_URL fallback
     monkeypatch.setenv(ENV_DATABASE_URL_FALLBACK, "postgresql://user:pass@host/fallback_db")

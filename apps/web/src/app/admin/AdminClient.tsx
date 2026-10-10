@@ -19,6 +19,7 @@
 
 import React, { useState, useEffect, useCallback, useTransition } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ShieldAlert,
   ShieldCheck,
@@ -62,7 +63,15 @@ interface DiagnosticsState {
 }
 
 export default function AdminClient() {
+  const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
+
+  // Redirect unauthenticated visitors immediately to /login with return target
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/login?redirect=/admin');
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   const [activeTab, setActiveTab] = useState<AdminTab>('identity');
   const [, startTransition] = useTransition();
@@ -122,7 +131,7 @@ export default function AdminClient() {
   const fetchSettings = useCallback(async () => {
     setSettingsLoading(true);
     try {
-      const res = await fetch('/api/admin/settings', { cache: 'no-store' });
+      const res = await fetch('/api/v1/admin/settings', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         const s = data.settings || {};
@@ -152,8 +161,8 @@ export default function AdminClient() {
     setUsersLoading(true);
     try {
       const url = query
-        ? `/api/admin/users?page=1&limit=50&search=${encodeURIComponent(query)}`
-        : `/api/admin/users?page=1&limit=50`;
+        ? `/api/v1/admin/users?page=1&limit=50&search=${encodeURIComponent(query)}`
+        : `/api/v1/admin/users?page=1&limit=50`;
       const res = await fetch(url, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
@@ -173,8 +182,8 @@ export default function AdminClient() {
     const startTime = performance.now();
     try {
       const [diagRes, healthRes] = await Promise.all([
-        fetch('/api/admin/diagnostics', { cache: 'no-store' }).catch(() => null),
-        fetch('/api/health', { cache: 'no-store' }).catch(() => null)
+        fetch('/api/v1/admin/diagnostics', { cache: 'no-store' }).catch(() => null),
+        fetch('/api/v1/health', { cache: 'no-store' }).catch(() => null)
       ]);
 
       const latency = Math.round(performance.now() - startTime);
@@ -270,7 +279,7 @@ export default function AdminClient() {
           'auth.password_min_length': minPasswordLengthVal
         }
       };
-      const res = await fetch('/api/admin/settings', {
+      const res = await fetch('/api/v1/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -307,7 +316,7 @@ export default function AdminClient() {
         updateObj['google_api_key'] = googleKeyVal.trim();
       }
 
-      const res = await fetch('/api/admin/settings', {
+      const res = await fetch('/api/v1/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ settings: updateObj })
@@ -331,7 +340,7 @@ export default function AdminClient() {
     setOllamaTesting(true);
     setOllamaTestResult(null);
     try {
-      const res = await fetch('/api/health');
+      const res = await fetch('/api/v1/health');
       if (res.ok) {
         const data = await res.json();
         if (data.ollama?.reachable || data.modelReachable) {
@@ -373,7 +382,7 @@ export default function AdminClient() {
   const handleRoleChange = async (targetUserId: string, newRole: string) => {
     setUserActionMessage(null);
     try {
-      const res = await fetch(`/api/admin/users/${targetUserId}`, {
+      const res = await fetch(`/api/v1/admin/users/${targetUserId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole })
@@ -394,7 +403,7 @@ export default function AdminClient() {
     setUserActionMessage(null);
     const newStatus = currentStatus === 'active' ? 'disabled' : 'active';
     try {
-      const res = await fetch(`/api/admin/users/${targetUserId}`, {
+      const res = await fetch(`/api/v1/admin/users/${targetUserId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -416,7 +425,7 @@ export default function AdminClient() {
     setCreateSubmitting(true);
     setUserActionMessage(null);
     try {
-      const res = await fetch('/api/admin/users', {
+      const res = await fetch('/api/v1/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newUserData)
@@ -443,7 +452,7 @@ export default function AdminClient() {
     setResetPwdSubmitting(true);
     setUserActionMessage(null);
     try {
-      const res = await fetch(`/api/admin/users/${resetPwdUserId}/reset-password`, {
+      const res = await fetch(`/api/v1/admin/users/${resetPwdUserId}/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ new_password: newPasswordInput })
@@ -468,7 +477,7 @@ export default function AdminClient() {
     setDeleteSubmitting(true);
     setUserActionMessage(null);
     try {
-      const res = await fetch(`/api/admin/users/${deleteUserId}`, {
+      const res = await fetch(`/api/v1/admin/users/${deleteUserId}`, {
         method: 'DELETE'
       });
       if (!res.ok) {
@@ -501,7 +510,7 @@ export default function AdminClient() {
     );
   }
 
-  // 403 Forbidden Access Denied Card
+  // 403 Forbidden Access Denied Card (Unauthenticated or non-admin role)
   if (!isAuthenticated || user?.role !== 'admin') {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4 sm:p-6">
@@ -519,9 +528,9 @@ export default function AdminClient() {
               403 — Administrator Privileges Required
             </h1>
             <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
-              Your account (@{user?.username || 'unauthenticated'}, role:{' '}
+              Your account (@{user?.username || 'user'}, role:{' '}
               <span className="font-semibold text-slate-800 dark:text-zinc-200">
-                {user?.role || 'none'}
+                {user?.role || 'member'}
               </span>
               ) does not have administrative permissions to view or configure Carefold system settings.
             </p>
@@ -537,7 +546,7 @@ export default function AdminClient() {
             <Link
               href="/chat"
               data-testid="forbidden-return-chat-btn"
-              className="py-2.5 px-4 text-xs font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-sm"
+              className="py-2.5 px-4 text-xs font-semibold rounded-xl text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] transition flex items-center justify-center gap-2 shadow-sm"
             >
               <MessageSquare className="w-4 h-4" />
               <span>Return to Chat</span>
@@ -703,7 +712,7 @@ export default function AdminClient() {
                   >
                     <div className="flex items-start justify-between">
                       <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">
-                        Disabled (Local Steward)
+                        Disabled (Local Mode)
                       </span>
                       <input
                         type="radio"
@@ -714,7 +723,7 @@ export default function AdminClient() {
                         className="text-emerald-600 focus:ring-emerald-500"
                       />
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-2">
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-2">
                       Zero-friction single user mode. Login bypassed with synthetic admin profile.
                     </p>
                   </label>
@@ -740,7 +749,7 @@ export default function AdminClient() {
                         className="text-emerald-600 focus:ring-emerald-500"
                       />
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-2">
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-2">
                       Self-hosted accounts stored securely in the local SQL database.
                     </p>
                   </label>
@@ -766,7 +775,7 @@ export default function AdminClient() {
                         className="text-emerald-600 focus:ring-emerald-500"
                       />
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-2">
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-2">
                       External identity federation via Google, GitHub, or Keycloak OAuth2.
                     </p>
                   </label>
@@ -787,7 +796,7 @@ export default function AdminClient() {
                     <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">
                       Enable Open Self-Registration
                     </span>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
                       When enabled, new users can sign up at <code className="text-emerald-600">/register</code>. When disabled, only admins can create accounts.
                     </p>
                   </div>
@@ -805,7 +814,7 @@ export default function AdminClient() {
                       <span className="font-semibold text-slate-700 dark:text-zinc-300">Minimum Password Length:</span>
                       <span className="font-bold text-emerald-600 dark:text-emerald-400">{minPasswordLengthVal} characters</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
                       Enforced by backend regex and live client validation meter.
                     </p>
                   </div>
@@ -815,13 +824,13 @@ export default function AdminClient() {
                       <span className="font-semibold text-slate-700 dark:text-zinc-300">Password Security:</span>
                       <span className="font-medium text-emerald-600 dark:text-emerald-400">Enterprise Salted & Hashed</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
                       High-security cryptographic protection against unauthorized access and brute force attacks.
                     </p>
                   </div>
                 </div>
 
-                <ul className="text-[11px] text-slate-600 dark:text-zinc-400 space-y-1 list-disc list-inside">
+                <ul className="text-xs text-slate-600 dark:text-zinc-400 space-y-1 list-disc list-inside">
                   <li>Requires combination of uppercase and lowercase letters.</li>
                   <li>Requires at least one numeric digit (0–9).</li>
                   <li>Requires at least one special character symbol.</li>
@@ -834,7 +843,7 @@ export default function AdminClient() {
                   type="submit"
                   data-testid="save-identity-settings-btn"
                   disabled={settingsLoading}
-                  className="py-2.5 px-5 text-xs font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition cursor-pointer shadow-sm disabled:opacity-50"
+                  className="py-2.5 px-5 text-xs font-semibold rounded-xl text-white bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] dark:active:bg-emerald-600 transition cursor-pointer shadow-sm disabled:opacity-50"
                 >
                   Save Identity Settings
                 </button>
@@ -871,7 +880,7 @@ export default function AdminClient() {
                   data-testid="model-provider-select"
                   value={defaultProviderVal}
                   onChange={(e) => setDefaultProviderVal(e.target.value)}
-                  className="w-full sm:w-80 px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full sm:w-80 px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
                 >
                   <option value="ollama">Ollama (Local / On-Device)</option>
                   <option value="openai">OpenAI (GPT-4o, etc.)</option>
@@ -896,7 +905,7 @@ export default function AdminClient() {
                     value={ollamaUrlVal}
                     onChange={(e) => setOllamaUrlVal(e.target.value)}
                     placeholder="http://127.0.0.1:11434"
-                    className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
                   />
                   <button
                     type="button"
@@ -939,7 +948,7 @@ export default function AdminClient() {
                     <h3 className="text-xs font-bold text-slate-800 dark:text-zinc-200">
                       Server-Side Encrypted API Keys
                     </h3>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
                       StoredKeys in the database and masked. Leave blank to keep existing keys.
                     </p>
                   </div>
@@ -958,7 +967,7 @@ export default function AdminClient() {
                   <div className="space-y-1">
                     <label
                       htmlFor="openai-key"
-                      className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300"
+                      className="block text-xs font-semibold text-slate-700 dark:text-zinc-300"
                     >
                       OpenAI API Key
                     </label>
@@ -969,7 +978,7 @@ export default function AdminClient() {
                       value={openaiKeyVal}
                       onChange={(e) => setOpenaiKeyVal(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
                     />
                   </div>
 
@@ -977,7 +986,7 @@ export default function AdminClient() {
                   <div className="space-y-1">
                     <label
                       htmlFor="anthropic-key"
-                      className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300"
+                      className="block text-xs font-semibold text-slate-700 dark:text-zinc-300"
                     >
                       Anthropic API Key
                     </label>
@@ -988,7 +997,7 @@ export default function AdminClient() {
                       value={anthropicKeyVal}
                       onChange={(e) => setAnthropicKeyVal(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
                     />
                   </div>
 
@@ -996,7 +1005,7 @@ export default function AdminClient() {
                   <div className="space-y-1">
                     <label
                       htmlFor="google-key"
-                      className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300"
+                      className="block text-xs font-semibold text-slate-700 dark:text-zinc-300"
                     >
                       Google Gemini API Key
                     </label>
@@ -1007,7 +1016,7 @@ export default function AdminClient() {
                       value={googleKeyVal}
                       onChange={(e) => setGoogleKeyVal(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
                     />
                   </div>
                 </div>
@@ -1027,7 +1036,7 @@ export default function AdminClient() {
                     <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">
                       Allow Client API Key Overrides
                     </span>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
                       Permit users to provide their own personal API keys via browser settings. When disabled, only server keys are utilized.
                     </p>
                   </div>
@@ -1039,7 +1048,7 @@ export default function AdminClient() {
                   type="submit"
                   data-testid="save-models-btn"
                   disabled={settingsLoading}
-                  className="py-2.5 px-5 text-xs font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition cursor-pointer shadow-sm disabled:opacity-50"
+                  className="py-2.5 px-5 text-xs font-semibold rounded-xl text-white bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] dark:active:bg-emerald-600 transition cursor-pointer shadow-sm disabled:opacity-50"
                 >
                   Save Model Configuration
                 </button>
@@ -1062,7 +1071,7 @@ export default function AdminClient() {
                 value={userSearch}
                 onChange={handleSearchChange}
                 placeholder="Search by username, email, or name..."
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 focus:border-emerald-700 dark:focus:border-emerald-400"
               />
             </div>
 
@@ -1070,7 +1079,7 @@ export default function AdminClient() {
               type="button"
               data-testid="open-create-user-modal-btn"
               onClick={() => setShowCreateModal(true)}
-              className="py-2 px-4 text-xs font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+              className="py-2 px-4 text-xs font-semibold rounded-xl text-white bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] dark:active:bg-emerald-600 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
             >
               <Plus className="w-4 h-4" />
               <span>Create User</span>
@@ -1137,7 +1146,7 @@ export default function AdminClient() {
                                 <span className="font-semibold text-slate-900 dark:text-zinc-100 block">
                                   {u.full_name || u.username}
                                 </span>
-                                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                                <span className="text-xs text-slate-500 dark:text-zinc-400">
                                   @{u.username}
                                 </span>
                               </div>
@@ -1145,7 +1154,7 @@ export default function AdminClient() {
                           </td>
 
                           {/* Email */}
-                          <td className="py-3 px-4 text-slate-600 dark:text-zinc-300 font-mono text-[11px]">
+                          <td className="py-3 px-4 text-slate-600 dark:text-zinc-300 font-mono text-xs">
                             {u.email}
                           </td>
 
@@ -1156,7 +1165,7 @@ export default function AdminClient() {
                               value={u.role}
                               disabled={isCurrentUser}
                               onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                              className="px-2 py-1 rounded-lg border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 text-[11px] font-semibold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                              className="px-2 py-1 rounded-lg border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 text-xs font-semibold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                               <option value="member">member</option>
                               <option value="steward">steward</option>
@@ -1171,7 +1180,7 @@ export default function AdminClient() {
                               data-testid={`user-status-toggle-${u.id}`}
                               disabled={isCurrentUser}
                               onClick={() => handleStatusToggle(u.id, u.status)}
-                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                              className={`px-2.5 py-0.5 rounded-full text-xs font-bold border transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
                                 u.status === 'active'
                                   ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
                                   : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-900/60'
@@ -1183,13 +1192,13 @@ export default function AdminClient() {
 
                           {/* Provider */}
                           <td className="py-3 px-4">
-                            <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-mono bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700">
+                            <span className="inline-block px-2 py-0.5 rounded-md text-xs font-mono bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700">
                               {u.auth_provider || 'local'}
                             </span>
                           </td>
 
                           {/* Created */}
-                          <td className="py-3 px-4 text-slate-500 dark:text-zinc-400 text-[11px] whitespace-nowrap">
+                          <td className="py-3 px-4 text-slate-500 dark:text-zinc-400 text-xs whitespace-nowrap">
                             {new Date(u.created_at).toLocaleDateString()}
                           </td>
 
@@ -1265,7 +1274,7 @@ export default function AdminClient() {
 
                 <form onSubmit={handleCreateUserSubmit} className="space-y-3">
                   <div className="space-y-1">
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300">
                       Email Address *
                     </label>
                     <input
@@ -1274,12 +1283,12 @@ export default function AdminClient() {
                       value={newUserData.email}
                       onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
                       placeholder="user@example.com"
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300">
                       Username *
                     </label>
                     <input
@@ -1288,12 +1297,12 @@ export default function AdminClient() {
                       value={newUserData.username}
                       onChange={(e) => setNewUserData({ ...newUserData, username: e.target.value })}
                       placeholder="username"
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300">
                       Initial Password *
                     </label>
                     <input
@@ -1302,12 +1311,12 @@ export default function AdminClient() {
                       value={newUserData.password}
                       onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
                       placeholder="Min 10 characters with mixed case, digits & symbols"
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300">
                       Full Name
                     </label>
                     <input
@@ -1315,12 +1324,12 @@ export default function AdminClient() {
                       value={newUserData.full_name}
                       onChange={(e) => setNewUserData({ ...newUserData, full_name: e.target.value })}
                       placeholder="Dr. Jane Doe"
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300">
                       Access Role
                     </label>
                     <select
@@ -1328,7 +1337,7 @@ export default function AdminClient() {
                       onChange={(e) =>
                         setNewUserData({ ...newUserData, role: e.target.value as 'admin' | 'steward' | 'member' })
                       }
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
                     >
                       <option value="member">member (standard consultations & records)</option>
                       <option value="steward">steward (clinical notes & oversight)</option>
@@ -1348,7 +1357,7 @@ export default function AdminClient() {
                       type="submit"
                       data-testid="create-user-submit-btn"
                       disabled={createSubmitting}
-                      className="py-2 px-4 text-xs font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+                      className="py-2 px-4 text-xs font-semibold rounded-xl text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm transition disabled:opacity-50"
                     >
                       {createSubmitting ? 'Creating...' : 'Create Account'}
                     </button>
@@ -1374,7 +1383,7 @@ export default function AdminClient() {
 
                 <form onSubmit={handleResetPasswordSubmit} className="space-y-3">
                   <div className="space-y-1">
-                    <label className="block text-[11px] font-semibold text-slate-700 dark:text-zinc-300">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300">
                       New Password
                     </label>
                     <input
@@ -1384,7 +1393,7 @@ export default function AdminClient() {
                       value={newPasswordInput}
                       onChange={(e) => setNewPasswordInput(e.target.value)}
                       placeholder="Min 10 chars with uppercase, digits & symbols"
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
                     />
                   </div>
 
@@ -1401,7 +1410,7 @@ export default function AdminClient() {
                       type="submit"
                       data-testid="reset-pwd-submit-btn"
                       disabled={resetPwdSubmitting}
-                      className="py-2 px-4 text-xs font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+                      className="py-2 px-4 text-xs font-semibold rounded-xl text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm transition disabled:opacity-50"
                     >
                       {resetPwdSubmitting ? 'Updating...' : 'Set Password'}
                     </button>
@@ -1492,7 +1501,7 @@ export default function AdminClient() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Database Dialect */}
             <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-2">
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+              <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
                 Database Dialect
               </span>
               <div className="flex items-center gap-2">
@@ -1506,14 +1515,14 @@ export default function AdminClient() {
                     : 'SQLite (aiosqlite)'}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 dark:text-zinc-500">
+              <p className="text-xs text-slate-400 dark:text-zinc-500">
                 Switchable via CAREFOLD_DATABASE_URL
               </p>
             </div>
 
             {/* Backend Health & Latency */}
             <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-2">
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+              <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
                 Backend Status & Latency
               </span>
               <div className="flex items-center gap-2">
@@ -1528,14 +1537,14 @@ export default function AdminClient() {
                   </span>
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 dark:text-zinc-500">
+              <p className="text-xs text-slate-400 dark:text-zinc-500">
                 FastAPI 0.115 • LangGraph 0.2
               </p>
             </div>
 
             {/* Specialist Agents */}
             <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-2">
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+              <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
                 Specialist Agents
               </span>
               <div className="flex items-baseline gap-2">
@@ -1549,14 +1558,14 @@ export default function AdminClient() {
                   registered
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 dark:text-zinc-500">
+              <p className="text-xs text-slate-400 dark:text-zinc-500">
                 Verified clinical & navigation guides
               </p>
             </div>
 
             {/* Skill Packs */}
             <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-2">
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
+              <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">
                 Clinical Skill Packs
               </span>
               <div className="flex items-baseline gap-2">
@@ -1570,7 +1579,7 @@ export default function AdminClient() {
                   modular packs
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 dark:text-zinc-500">
+              <p className="text-xs text-slate-400 dark:text-zinc-500">
                 Sandboxed guideline toolsets
               </p>
             </div>
@@ -1585,7 +1594,7 @@ export default function AdminClient() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
               {/* Users */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-700/60">
-                <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 block mb-1">
+                <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 block mb-1">
                   Users Table
                 </span>
                 <span
@@ -1598,7 +1607,7 @@ export default function AdminClient() {
 
               {/* Sessions */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-700/60">
-                <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 block mb-1">
+                <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 block mb-1">
                   Active Sessions
                 </span>
                 <span
@@ -1611,7 +1620,7 @@ export default function AdminClient() {
 
               {/* Password Resets */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-700/60">
-                <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 block mb-1">
+                <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 block mb-1">
                   Password Resets
                 </span>
                 <span
@@ -1624,7 +1633,7 @@ export default function AdminClient() {
 
               {/* System Settings */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-700/60">
-                <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 block mb-1">
+                <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 block mb-1">
                   System Settings
                 </span>
                 <span

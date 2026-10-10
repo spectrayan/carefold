@@ -69,16 +69,16 @@ describe('Auth Pages', () => {
     it('submits login request and handles error alert on failure', async () => {
       vi.mocked(fetch).mockImplementation(async (url: any) => {
         const urlStr = String(url);
-        if (urlStr.includes('/api/auth/providers')) {
+        if (urlStr.includes('/auth/providers')) {
           return {
             ok: true,
             json: async () => ({ active_provider: 'local', sso_providers: [], registration_enabled: true })
           } as any;
         }
-        if (urlStr.includes('/api/auth/me')) {
+        if (urlStr.includes('/auth/me')) {
           return { ok: false, status: 401, json: async () => ({}) } as any;
         }
-        if (urlStr.includes('/api/auth/login')) {
+        if (urlStr.includes('/auth/login')) {
           return {
             ok: false,
             status: 401,

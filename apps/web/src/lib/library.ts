@@ -76,7 +76,7 @@ export function getFileFormat(filename: string): 'PDF' | 'MD' | 'JSON' | 'CSV' |
  * Client-side fetcher for workspace attachments.
  */
 export async function fetchAttachments(): Promise<AttachmentItem[]> {
-  const res = await fetch('/api/attachments', {
+  const res = await fetch('/api/v1/attachments', {
     method: 'GET',
     headers: { Accept: 'application/json' },
     cache: 'no-store'
@@ -91,7 +91,7 @@ export async function fetchAttachments(): Promise<AttachmentItem[]> {
  * Client-side fetcher for workspace notes.
  */
 export async function fetchNotes(): Promise<WorkspaceNoteSummary[]> {
-  const res = await fetch('/api/notes', {
+  const res = await fetch('/api/v1/notes', {
     method: 'GET',
     headers: { Accept: 'application/json' },
     cache: 'no-store'
@@ -106,7 +106,7 @@ export async function fetchNotes(): Promise<WorkspaceNoteSummary[]> {
  * Client-side fetcher for a single workspace note detail.
  */
 export async function fetchNoteDetail(slug: string): Promise<WorkspaceNoteDetail> {
-  const res = await fetch(`/api/notes/${encodeURIComponent(slug)}`, {
+  const res = await fetch(`/api/v1/notes/${encodeURIComponent(slug)}`, {
     method: 'GET',
     headers: { Accept: 'application/json' },
     cache: 'no-store'
@@ -124,7 +124,7 @@ export async function uploadAttachment(file: File): Promise<AttachmentUploadResp
   const formData = new FormData();
   formData.append('file', file, file.name);
 
-  const res = await fetch('/api/attachments', {
+  const res = await fetch('/api/v1/attachments', {
     method: 'POST',
     body: formData
   });

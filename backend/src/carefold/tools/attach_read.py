@@ -29,6 +29,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, Set
 
+from carefold.config import settings
 from carefold.constants.defaults import (
     ALLOWED_ATTACHMENT_EXTENSIONS as CONST_ALLOWED_ATTACHMENT_EXTENSIONS,
     ALLOWED_TEXT_EXTENSIONS as CONST_ALLOWED_TEXT_EXTENSIONS,
@@ -185,9 +186,75 @@ async def execute_attach_read(params: Dict[str, Any], context: Any) -> ToolResul
                 error='Parameter "path" must be a non-empty string.',
             )
 
-        # Determine workspace root and attachments directory
-        ws_root = getattr(context, "workspace_root", None) or Path.cwd()
-        attachments_dir = Path(ws_root) / ATTACHMENTS_DIR
+        # Determine workspace root and attachments/uploads directory
+        ws_root = getattr(context, "workspace_root", None)
+        if ws_root:
+            ws_path = Path(ws_root)
+            if (ws_path / "uploads").is_dir():
+                base_dir = ws_path / "uploads"
+            elif (ws_path / ATTACHMENTS_DIR).is_dir():
+                base_dir = ws_path / ATTACHMENTS_DIR
+            else:
+                base_dir = ws_path / ATTACHMENTS_DIR
+        else:
+            base_dir = settings.get_uploads_dir()
+
+        user_id = getattr(context, "user_id", None)
+        profile_id = getattr(context, "profile_id", None)
+        uid_str = str(user_id).strip() if (user_id and str(user_id).strip()) else None
+        pid_str = str(profile_id).strip() if (profile_id and str(profile_id).strip()) else None
+
+        if uid_str and pid_str:
+            attachments_dir = base_dir / uid_str / pid_str
+        elif uid_str:
+            attachments_dir = base_dir / uid_str
+        elif pid_str:
+            attachments_dir = base_dir / pid_str
+        else:
+            attachments_dir = base_dir
+
+        # Strip caller's own user/profile prefix if path is explicitly qualified
+        clean_path = raw_path.strip().lstrip("/\\")
+        prefixes_to_strip: list[str] = []
+        if uid_str and pid_str:
+            prefixes_to_strip.extend([
+                f"attachments/{uid_str}/{pid_str}/",
+                f"attachments\\{uid_str}\\{pid_str}\\",
+                f"uploads/{uid_str}/{pid_str}/",
+                f"uploads\\{uid_str}\\{pid_str}\\",
+                f"{uid_str}/{pid_str}/",
+                f"{uid_str}\\{pid_str}\\",
+            ])
+        if uid_str:
+            prefixes_to_strip.extend([
+                f"attachments/{uid_str}/",
+                f"attachments\\{uid_str}\\",
+                f"uploads/{uid_str}/",
+                f"uploads\\{uid_str}\\",
+                f"{uid_str}/",
+                f"{uid_str}\\",
+            ])
+        if pid_str:
+            prefixes_to_strip.extend([
+                f"attachments/{pid_str}/",
+                f"attachments\\{pid_str}\\",
+                f"uploads/{pid_str}/",
+                f"uploads\\{pid_str}\\",
+                f"{pid_str}/",
+                f"{pid_str}\\",
+            ])
+        prefixes_to_strip.extend([
+            "attachments/",
+            "attachments\\",
+            "uploads/",
+            "uploads\\",
+        ])
+
+        for prefix in prefixes_to_strip:
+            if clean_path.startswith(prefix):
+                clean_path = clean_path[len(prefix):]
+                raw_path = clean_path
+                break
 
         safe_file_path = resolve_sandboxed_path(attachments_dir, raw_path, must_exist=True)
 

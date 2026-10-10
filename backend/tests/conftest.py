@@ -15,6 +15,7 @@
 
 """Pytest configuration and shared fixtures."""
 
+import asyncio
 import os
 from pathlib import Path
 import shutil
@@ -22,6 +23,14 @@ import tempfile
 import pytest
 from fastapi.testclient import TestClient
 
+from carefold.constants.paths import (
+    ENV_AUDIT_LOG_PATH,
+    ENV_CATALOG_DB_PATH,
+    ENV_DATABASE_URL,
+    ENV_DATABASE_URL_FALLBACK,
+    ENV_DB_PATH,
+    ENV_WORKSPACE_ROOT,
+)
 from carefold.config import settings
 from carefold.main import app
 from tests.fixtures.fake_model import (
@@ -30,6 +39,83 @@ from tests.fixtures.fake_model import (
     MockChatModel,
     MockModelClient,
 )
+
+
+@pytest.fixture(autouse=True)
+def isolate_test_carefold_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Guarantees every pytest execution runs strictly inside tmp_path / '.carefold'.
+
+    Prevents tests from touching ~/.carefold and disposes DB connections on teardown.
+    """
+    test_home = tmp_path / ".carefold"
+    test_home.mkdir(parents=True, exist_ok=True)
+    (test_home / "uploads").mkdir(parents=True, exist_ok=True)
+    (test_home / "logs").mkdir(parents=True, exist_ok=True)
+    (test_home / "notes").mkdir(parents=True, exist_ok=True)
+
+    test_db_url = f"sqlite+aiosqlite:///{test_home}/carefold.db"
+
+    monkeypatch.setenv("CAREFOLD_HOME", str(test_home))
+    monkeypatch.delenv(ENV_DATABASE_URL, raising=False)
+    monkeypatch.delenv(ENV_DB_PATH, raising=False)
+    monkeypatch.delenv(ENV_CATALOG_DB_PATH, raising=False)
+    monkeypatch.delenv(ENV_AUDIT_LOG_PATH, raising=False)
+    monkeypatch.delenv(ENV_DATABASE_URL_FALLBACK, raising=False)
+
+    old_home = getattr(settings, "home_dir", None)
+    old_db_url = settings.database_url
+    old_audit = settings.audit_log_path
+    old_cat = settings.catalog_db_path
+    old_db_path = settings.db_path
+    old_auth = settings.auth_provider
+
+    if hasattr(settings, "home_dir"):
+        settings.home_dir = test_home
+    settings.database_url = test_db_url
+    settings.audit_log_path = None
+    settings.catalog_db_path = None
+    settings.db_path = None
+    settings.auth_provider = "disabled"
+
+    try:
+        yield test_home
+    finally:
+        from carefold.db.session import close_db, reset_engine
+        from carefold.memory.factory import reset_memory_ports
+        from carefold.auth.factory import reset_auth_port
+        from carefold.settings.factory import reset_settings_port
+        from carefold.engine.graph import reset_db_init_cache
+        from carefold.storage.factory import reset_storage_adapter
+
+        try:
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop is not None and loop.is_running():
+                asyncio.create_task(close_db())
+            else:
+                asyncio.run(close_db())
+        except Exception:
+            reset_engine()
+
+        for reset_fn in (reset_memory_ports, reset_auth_port, reset_settings_port, reset_db_init_cache, reset_storage_adapter):
+            try:
+                reset_fn()
+            except Exception:
+                pass
+
+        if hasattr(settings, "home_dir") and old_home is not None:
+            settings.home_dir = old_home
+        settings.database_url = old_db_url
+        settings.audit_log_path = old_audit
+        settings.catalog_db_path = old_cat
+        settings.db_path = old_db_path
+        settings.auth_provider = old_auth
+
+
+isolate_test_home_and_settings = isolate_test_carefold_home
 
 
 @pytest.fixture(scope="session")
@@ -73,6 +159,12 @@ def temp_workspace(tmp_path: Path, repo_root: Path):
     settings.audit_store_bodies = False
     settings.auth_provider = "disabled"
 
+    try:
+        from carefold.db.session import init_db
+        asyncio.run(init_db())
+    except Exception:
+        pass
+
     yield ws
 
     settings.workspace_root = old_root
@@ -84,7 +176,8 @@ def temp_workspace(tmp_path: Path, repo_root: Path):
 @pytest.fixture
 def client(temp_workspace: Path) -> TestClient:
     """Returns a FastAPI TestClient configured with test workspace."""
-    return TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 @pytest.fixture
