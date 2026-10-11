@@ -133,12 +133,18 @@ export function AppRail({
     const match = pathname.match(/^\/p\/([^/]+)/);
     const profileId = match ? match[1] : 'me';
 
+    const userFallbackName = user?.full_name?.trim() || user?.username?.trim() || 'Me';
+    const userShortName = user?.full_name ? user.full_name.trim().split(/\s+/)[0] : (user?.username || 'Me');
+
     const household = getHouseholdProfile(profileId);
     if (household) {
+      const isSelf = household.role === 'self' || household.relationship?.toLowerCase() === 'self' || profileId === 'me';
+      const resolvedName = (isSelf && (household.name === 'Me' || !household.name)) ? userFallbackName : household.name;
+      const resolvedShortName = household.shortName || (resolvedName ? resolvedName.split(/\s+/)[0] : userShortName);
       return {
         id: household.id,
-        name: household.name,
-        shortName: household.shortName || household.name.split(' ')[0],
+        name: resolvedName,
+        shortName: resolvedShortName,
         relationship: household.relationship,
         age: household.age,
         role: household.role === 'self' ? 'Personal care' : 'You manage',
@@ -146,15 +152,20 @@ export function AppRail({
       };
     }
 
+    const isGenericId =
+      !profileId ||
+      profileId.toLowerCase() === 'me' ||
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileId);
+
     return {
       id: profileId,
-      name: profileId === 'me' ? 'Me' : profileId,
-      shortName: profileId === 'me' ? 'Me' : profileId,
+      name: isGenericId ? userFallbackName : profileId,
+      shortName: isGenericId ? userShortName : profileId,
       relationship: 'Self',
       role: 'Personal care',
       colorSlot: 1
     };
-  }, [activeProfileProp, pathname]);
+  }, [activeProfileProp, pathname, user]);
 
   useEffect(() => {
     const loaded = loadSettings();
@@ -319,6 +330,7 @@ export function AppRail({
           onClick={onOpenProfileSwitcher ? onOpenProfileSwitcher : () => setIsProfileSwitcherOpen(true)}
           aria-haspopup="listbox"
           aria-label={`Switch person. Current: ${derivedProfile.name}`}
+          suppressHydrationWarning
           className={cn(
             'w-full items-center gap-2.5 p-2.5 rounded-xl bg-[var(--cf-surface)] border border-[var(--cf-border)] shadow-sm text-left hover:bg-[var(--cf-surface-2)] hover:border-[var(--cf-border-strong)] transition-all min-h-[56px] focus-visible:outline-2 focus-visible:outline-[var(--cf-focus)]',
             isAlwaysCollapsed ? 'hidden' : isAlwaysExpanded ? 'flex' : 'hidden xl:flex'
@@ -330,11 +342,11 @@ export function AppRail({
             size="md"
             className="shrink-0"
           />
-          <div className="flex flex-col min-w-0 flex-1">
-            <span className="text-sm font-semibold text-[var(--cf-fg)] truncate">
+          <div className="flex flex-col min-w-0 flex-1" suppressHydrationWarning>
+            <span className="text-sm font-semibold text-[var(--cf-fg)] truncate" suppressHydrationWarning>
               {derivedProfile.name}
             </span>
-            <span className="text-xs text-[var(--cf-fg-subtle)] truncate">
+            <span className="text-xs text-[var(--cf-fg-subtle)] truncate" suppressHydrationWarning>
               <span>{derivedProfile.relationship || 'Self'}</span>
               {derivedProfile.age ? ` · ${derivedProfile.age}` : ''}
               {derivedProfile.role ? ` · ${derivedProfile.role}` : ''}
@@ -350,6 +362,7 @@ export function AppRail({
           aria-haspopup="listbox"
           aria-label={`Switch person. Current: ${derivedProfile.name}`}
           title={`Switch person. Current: ${derivedProfile.name}`}
+          suppressHydrationWarning
           className={cn(
             'w-11 h-11 mx-auto flex items-center justify-center rounded-xl bg-[var(--cf-surface)] border border-[var(--cf-border)] hover:bg-[var(--cf-surface-2)] transition-all min-h-[44px] min-w-[44px]',
             isAlwaysCollapsed ? 'flex' : isAlwaysExpanded ? 'hidden' : 'flex xl:hidden'

@@ -108,6 +108,22 @@ describe('Auth Pages', () => {
       });
       expect(screen.getByTestId('login-error-alert')).toHaveTextContent(/Invalid credentials provided/i);
     });
+
+    it('displays service unavailable alert when error=service_unavailable query param is present', () => {
+      mockSearchParams = new URLSearchParams('error=service_unavailable');
+      render(<LoginPage />);
+
+      expect(screen.getByTestId('service-unavailable-alert')).toBeInTheDocument();
+      expect(screen.getByTestId('service-unavailable-alert')).toHaveTextContent(/Carefold service is currently unavailable/i);
+    });
+
+    it('displays session expired alert when error=session_expired query param is present', () => {
+      mockSearchParams = new URLSearchParams('error=session_expired');
+      render(<LoginPage />);
+
+      expect(screen.getByTestId('session-expired-alert')).toBeInTheDocument();
+      expect(screen.getByTestId('session-expired-alert')).toHaveTextContent(/Your session has expired/i);
+    });
   });
 
   describe('RegisterPage (/register)', () => {

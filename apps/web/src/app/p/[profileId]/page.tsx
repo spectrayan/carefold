@@ -16,6 +16,8 @@
  */
 
 import React from 'react';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { HomeDashboardClient } from './HomeDashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -26,5 +28,31 @@ interface PageProps {
 
 export default async function ProfileHomePage({ params }: PageProps) {
   const { profileId } = await params;
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('carefold_session');
+
+  // 1. Unauthenticated -> immediate redirect to /login
+  if (!sessionCookie || !sessionCookie.value.trim()) {
+    redirect(`/login?redirect=${encodeURIComponent(`/p/${profileId}`)}`);
+  }
+
+  // 2. Validate session against backend service before rendering dashboard
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  try {
+    const res = await fetch(`${backendUrl}/api/v1/auth/me`, {
+      headers: {
+        cookie: `carefold_session=${sessionCookie.value}`,
+        accept: 'application/json'
+      },
+      cache: 'no-store'
+    });
+    if (!res.ok) {
+      const errorParam = res.status === 503 ? 'service_unavailable' : 'session_expired';
+      redirect(`/login?error=${errorParam}&redirect=${encodeURIComponent(`/p/${profileId}`)}`);
+    }
+  } catch {
+    redirect(`/login?error=service_unavailable&redirect=${encodeURIComponent(`/p/${profileId}`)}`);
+  }
+
   return <HomeDashboardClient profileId={profileId} />;
 }

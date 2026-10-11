@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
+import * as authModule from '@/lib/auth';
 import { HomeDashboardClient, type CareProfile } from '@/app/p/[profileId]/HomeDashboardClient';
 
 const mockRosaProfile: CareProfile = {
@@ -187,5 +188,63 @@ describe('Home Dashboard Client (/p/[profileId])', () => {
     expect(screen.getByText(/no upcoming visits scheduled/i)).toBeInTheDocument();
     expect(screen.getByText(/no insurance paperwork on file/i)).toBeInTheDocument();
     expect(screen.getByText(/no active daily routines/i)).toBeInTheDocument();
+  });
+
+  it('renders loading skeleton and never renders greeting when authentication is loading', () => {
+    vi.spyOn(authModule, 'useAuth').mockReturnValue({
+      user: null,
+      isLoading: true,
+      isAuthenticated: false,
+      isAdmin: false,
+      isSteward: false,
+      authProvider: 'local',
+      activeProvider: 'local',
+      registrationEnabled: true,
+      allowRegistration: true,
+      minPasswordLength: 10,
+      ssoProviders: [],
+      hasAdmin: true,
+      needsAdminSetup: false,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      changePassword: vi.fn(),
+      refreshUser: vi.fn()
+    });
+
+    render(<HomeDashboardClient profile={mockRosaProfile} />);
+
+    expect(screen.getByTestId('dashboard-loading')).toBeInTheDocument();
+    expect(screen.queryByText(/good (morning|afternoon|evening)/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/good morning, me/i)).not.toBeInTheDocument();
+  });
+
+  it('renders nothing and never displays "Good morning, Me" when unauthenticated (service unavailable)', () => {
+    vi.spyOn(authModule, 'useAuth').mockReturnValue({
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+      isAdmin: false,
+      isSteward: false,
+      authProvider: 'local',
+      activeProvider: 'local',
+      registrationEnabled: true,
+      allowRegistration: true,
+      minPasswordLength: 10,
+      ssoProviders: [],
+      hasAdmin: true,
+      needsAdminSetup: false,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      changePassword: vi.fn(),
+      refreshUser: vi.fn()
+    });
+
+    const { container } = render(<HomeDashboardClient profileId="me" />);
+
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByText(/good morning, me/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/good morning/i)).not.toBeInTheDocument();
   });
 });

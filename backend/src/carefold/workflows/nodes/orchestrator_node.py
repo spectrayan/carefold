@@ -578,10 +578,24 @@ class OrchestratorNode(BaseNode):
         has_auth_kw = any(kw in prompt_lower for kw in auth_keywords)
         has_spec_kw = any(kw in prompt_lower for kw in specialty_keywords)
 
+        coordination_keywords = (
+            "coordinate",
+            "consult both",
+            "both specialists",
+            "multi-specialist",
+            "multiple specialists",
+            "team of specialists",
+            "concurrent",
+        )
+        explicit_coordination = any(ck in prompt_lower for ck in coordination_keywords)
+
         is_cross_functional = (
-            (has_auth_kw and has_spec_kw)
-            or (target_agent in nav_agent_ids and has_spec_kw)
-            or (target_agent not in nav_agent_ids and has_auth_kw)
+            not (is_explicit and not explicit_coordination)
+            and (
+                (has_auth_kw and has_spec_kw)
+                or (target_agent in nav_agent_ids and has_spec_kw)
+                or (target_agent not in nav_agent_ids and has_auth_kw)
+            )
         )
 
         if is_cross_functional:
@@ -654,17 +668,6 @@ class OrchestratorNode(BaseNode):
 
         # 3. Check for multimorbid presentation (parallel mode)
         # Preserve explicit single-specialist intent unless the user prompt explicitly requests multi-specialist coordination.
-        coordination_keywords = (
-            "coordinate",
-            "consult both",
-            "both specialists",
-            "multi-specialist",
-            "multiple specialists",
-            "team of specialists",
-            "concurrent",
-        )
-        explicit_coordination = any(ck in prompt_lower for ck in coordination_keywords)
-
         if not (is_explicit and not explicit_coordination):
             condition_patterns = [
                 (("heart", "cardio", "cardiac", "hypertension", "blood pressure", "chf", "congestive"), "cardiology-guide"),

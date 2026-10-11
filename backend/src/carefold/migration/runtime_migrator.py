@@ -213,6 +213,26 @@ def _copy_sqlite_database_safely(src: Path, dst: Path, is_large: bool = False) -
             tmp_dst.unlink(missing_ok=True)
 
 
+def _retire_migrated_source(source_path: Path) -> None:
+    """Safely archives a migrated SQLite database or asset to avoid resurrection loops."""
+    try:
+        if not source_path.exists():
+            return
+        # Clean up transient WAL/SHM companion files
+        for suffix in ("-shm", "-wal"):
+            f = source_path.with_name(f"{source_path.name}{suffix}")
+            if f.exists():
+                f.unlink(missing_ok=True)
+        # Rename primary DB to .migrated so it remains as a backup but is ignored by scans
+        migrated_path = source_path.with_name(f"{source_path.name}.migrated")
+        if migrated_path.exists():
+            migrated_path.unlink(missing_ok=True)
+        source_path.rename(migrated_path)
+        logger.info("retired_migrated_source", source=str(source_path), target=str(migrated_path))
+    except Exception as err:
+        logger.warning("failed_to_retire_migrated_source", source=str(source_path), error=str(err))
+
+
 def _migrate_checkpoints_db(workspace_root: Path, home_dir: Path) -> Dict[str, Any]:
     """Migrates large LangGraph checkpoints.db (~1.1GB) to ~/.carefold/checkpoints.db."""
     target_path = home_dir / "checkpoints.db"
@@ -230,6 +250,8 @@ def _migrate_checkpoints_db(workspace_root: Path, home_dir: Path) -> Dict[str, A
     src_size = source_path.stat().st_size
     chk_res = _checkpoint_sqlite_database(source_path)
     copied = _copy_sqlite_database_safely(source_path, target_path, is_large=True)
+    if copied and source_path.is_file():
+        _retire_migrated_source(source_path)
 
     return {
         "migrated": copied,
@@ -255,6 +277,8 @@ def _migrate_catalog_db(workspace_root: Path, home_dir: Path) -> Dict[str, Any]:
 
     chk_res = _checkpoint_sqlite_database(source_path)
     copied = _copy_sqlite_database_safely(source_path, target_path, is_large=False)
+    if copied and source_path.is_file():
+        _retire_migrated_source(source_path)
     return {
         "migrated": copied,
         "source": str(source_path),
@@ -306,6 +330,8 @@ def _migrate_carefold_db_and_notes(workspace_root: Path, home_dir: Path) -> Dict
                 "size_bytes": target_db.stat().st_size,
                 "wal_checkpoint": list(chk_res),
             }
+            if source_db.is_file():
+                _retire_migrated_source(source_db)
         finally:
             if tmp_db.exists():
                 tmp_db.unlink(missing_ok=True)
@@ -514,6 +540,14 @@ def _migrate_audit_log(workspace_root: Path, home_dir: Path) -> Dict[str, Any]:
                             lines_written += 1
 
         tmp_log.replace(target_log)
+        for src in existing_sources:
+            try:
+                migrated_src = src.with_name(f"{src.name}.migrated")
+                if migrated_src.exists():
+                    migrated_src.unlink(missing_ok=True)
+                src.rename(migrated_src)
+            except Exception:
+                pass
         return {"migrated": True, "lines_written": lines_written, "sources": [str(s) for s in existing_sources]}
     finally:
         if tmp_log.exists():

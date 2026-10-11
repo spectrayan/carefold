@@ -76,10 +76,11 @@ function parseColorSlot(avatarColor?: string): 1 | 2 | 3 | 4 | 5 {
 
 function mapBackendProfileToCareProfile(raw: any): CareProfile {
   const demographicDob = raw ? (raw['date_' + 'of_' + 'birth'] || raw.dateOfBirth) : undefined;
+  const rawName = raw ? String(raw.name || '') : '';
   return {
     id: raw.id,
-    name: raw.name,
-    shortName: raw.short_name || undefined,
+    name: rawName,
+    shortName: raw.short_name || (rawName ? rawName.trim().split(/\s+/)[0] : undefined),
     relationship: raw.relationship || 'Self',
     role: (raw.role as any) || 'self',
     colorSlot: parseColorSlot(raw.avatar_color),
@@ -172,6 +173,18 @@ export async function fetchHouseholdProfiles(): Promise<CareProfile[]> {
 
 export function getHouseholdProfile(id: string): CareProfile | null {
   const profiles = loadHouseholdProfiles();
+  if (id === 'me') {
+    return (
+      profiles.find(
+        (p) =>
+          p.id === 'me' ||
+          p.role === 'self' ||
+          p.relationship?.toLowerCase() === 'self'
+      ) ||
+      profiles[0] ||
+      null
+    );
+  }
   return profiles.find((p) => p.id === id) || null;
 }
 

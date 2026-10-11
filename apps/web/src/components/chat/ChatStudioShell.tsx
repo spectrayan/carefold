@@ -23,7 +23,6 @@ import {
   Send,
   Square,
   Paperclip,
-  Cpu,
   Lock,
   Plus,
   Search,
@@ -33,14 +32,20 @@ import {
   Stethoscope,
   PanelLeftClose,
   PanelLeft,
-  ArrowDown
+  ArrowDown,
+  Trash2,
+  Check
 } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Avatar, type MemberColorSlot } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/Sheet';
 import { ChatMarkdown } from '@/components/chat/ChatMarkdown';
 import { ThinkingIndicator } from '@/components/chat/ThinkingIndicator';
+import { MessageToolbar } from '@/components/chat/MessageToolbar';
+import { StartersChips } from '@/components/StartersChips';
+import { SuggestedQuestionsChips } from '@/components/SuggestedQuestionsChips';
 import { ModelSelector } from '@/components/ModelSelector';
 import { DossierExportMenu } from '@/components/chat/DossierExportMenu';
 import { ActivityLogDrawer } from '@/components/chat/ActivityLogDrawer';
@@ -49,7 +54,6 @@ import {
   DEFAULT_USER_SETTINGS,
   loadSettings,
   saveSettings,
-  getProviderPrivacyState,
   getEffectiveModel,
   getApiKeyForProvider,
   getEndpointForProvider
@@ -57,6 +61,7 @@ import {
 import { hasClinicalConsent } from '@/lib/clinicalConsent';
 import {
   listSessions,
+  deleteSession,
   upsertSessionFromMessages,
   type ChatSessionMeta
 } from '@/lib/sessionHistory';
@@ -100,37 +105,106 @@ function formatSessionTimeAndGroup(updatedAtStr: string): { timeStr: string; gro
   return { timeStr, group };
 }
 
+const EMPTY_AGENTS: AgentSummary[] = [];
+
+const DEFAULT_FALLBACK_AGENTS: AgentSummary[] = [
+  {
+    id: 'visit-steward',
+    title: 'Visit Steward',
+    version: '0.4.0',
+    risk_class: 'clinical_assist',
+    skills: ['visit-prep'],
+    effectiveTools: ['attach-read', 'workspace-note'],
+    starters: ['Help me prepare for my visit'],
+    description: 'Prepares questions and checklists for upcoming clinical visits.'
+  },
+  {
+    id: 'benefits-guide',
+    title: 'Benefits Guide',
+    version: '0.4.0',
+    risk_class: 'admin',
+    skills: ['benefits-explainer'],
+    effectiveTools: ['attach-read'],
+    starters: ['Explain my benefits'],
+    description: 'Explains health insurance coverage, copays, and deductibles.'
+  },
+  {
+    id: 'habit-companion',
+    title: 'Habit Companion',
+    version: '0.4.0',
+    risk_class: 'wellness',
+    skills: ['habit-checkin'],
+    effectiveTools: ['workspace-note'],
+    starters: ['Log my daily habit'],
+    description: 'Gentle check-ins for health routines and daily living.'
+  }
+];
+
 export function ChatStudioShell({
   profileId: profileIdProp = 'me',
   initialProfile,
-  initialAgents = [],
+  initialAgents = EMPTY_AGENTS,
   initialThreadId,
   initialPrompt
 }: ChatStudioShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
 
   // Active Profile Resolution
   const profile: CareProfile = useMemo(() => {
     if (initialProfile) return initialProfile;
+    const userFallbackName = user?.full_name?.trim() || user?.username?.trim() || 'Me';
     const household = getHouseholdProfile(profileIdProp);
     if (household) {
+      const isSelf = household.role === 'self' || household.relationship?.toLowerCase() === 'self' || profileIdProp === 'me';
+      const resolvedName = (isSelf && (household.name === 'Me' || !household.name)) ? userFallbackName : household.name;
       return {
         id: household.id,
-        name: household.name,
+        name: resolvedName,
         relationship: household.relationship || 'Self',
         colorSlot: household.colorSlot || 1,
         role: household.role || 'Personal care'
       };
     }
+    const isGenericId =
+      !profileIdProp ||
+      profileIdProp.toLowerCase() === 'me' ||
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileIdProp);
+
     return {
       id: profileIdProp,
-      name: profileIdProp === 'me' ? 'Me' : profileIdProp,
+      name: isGenericId ? userFallbackName : profileIdProp,
       relationship: 'Self',
       colorSlot: 1,
       role: 'Personal care'
     };
-  }, [initialProfile, profileIdProp]);
+  }, [initialProfile, profileIdProp, user]);
+
+  // Agent Selection Dropdown
+  const [isAgentMenuOpen, setIsAgentMenuOpen] = useState<boolean>(false);
+  const agentMenuRef = useRef<HTMLDivElement>(null);
+  const [agentSearchQuery, setAgentSearchQuery] = useState<string>('');
+
+  useEffect(() => {
+    if (!isAgentMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (agentMenuRef.current && !agentMenuRef.current.contains(e.target as Node)) {
+        setIsAgentMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsAgentMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isAgentMenuOpen]);
 
   // Collapsible Left Thread Sidebar
   const [isThreadSidebarCollapsed, setIsThreadSidebarCollapsed] = useState<boolean>(false);
@@ -159,52 +233,71 @@ export function ChatStudioShell({
     if (initialAgents && initialAgents.length > 0) {
       return initialAgents.filter((a) => !a.hidden);
     }
-    return [
-      {
-        id: 'visit-steward',
-        title: 'Visit Steward',
-        version: '0.4.0',
-        risk_class: 'clinical_assist',
-        skills: ['visit-prep'],
-        effectiveTools: ['attach-read', 'workspace-note'],
-        starters: ['Help me prepare for my visit'],
-        description: 'Prepares questions and checklists for upcoming clinical visits.'
-      },
-      {
-        id: 'benefits-guide',
-        title: 'Benefits Guide',
-        version: '0.4.0',
-        risk_class: 'admin',
-        skills: ['benefits-explainer'],
-        effectiveTools: ['attach-read'],
-        starters: ['Explain my benefits'],
-        description: 'Explains health insurance coverage, copays, and deductibles.'
-      },
-      {
-        id: 'habit-companion',
-        title: 'Habit Companion',
-        version: '0.4.0',
-        risk_class: 'wellness',
-        skills: ['habit-checkin'],
-        effectiveTools: ['workspace-note'],
-        starters: ['Log my daily habit'],
-        description: 'Gentle check-ins for health routines and daily living.'
-      }
-    ] as AgentSummary[];
+    return DEFAULT_FALLBACK_AGENTS;
   }, [initialAgents]);
 
   const agentParam = searchParams.get('agent');
   const [selectedAgentId, setSelectedAgentId] = useState<string>(
     agentParam || agents[0]?.id || 'visit-steward'
   );
+
+  useEffect(() => {
+    if (agentParam && agentParam !== selectedAgentId) {
+      setSelectedAgentId(agentParam);
+    }
+  }, [agentParam, selectedAgentId]);
+
   const selectedAgent = agents.find((a) => a.id === selectedAgentId) || agents[0];
 
-  // Settings & Residency
+  // Starters & AI Follow-up Suggestions State
+  const [starters, setStarters] = useState<string[]>(() => selectedAgent?.starters || []);
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (selectedAgent?.starters && selectedAgent.starters.length > 0) {
+      setStarters((prev) => {
+        if (
+          prev.length === selectedAgent.starters.length &&
+          prev.every((s, i) => s === selectedAgent.starters[i])
+        ) {
+          return prev;
+        }
+        return selectedAgent.starters;
+      });
+    } else {
+      let isMounted = true;
+      async function loadAgentStarters() {
+        try {
+          const allowClinical = hasClinicalConsent(selectedAgentId);
+          const res = await fetch(
+            `/api/v1/agents/${encodeURIComponent(selectedAgentId)}?allow_clinical=${allowClinical}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            if (isMounted) {
+              setStarters(data.starters || []);
+            }
+          } else if (isMounted) {
+            setStarters([]);
+          }
+        } catch {
+          if (isMounted) {
+            setStarters([]);
+          }
+        }
+      }
+      loadAgentStarters();
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [selectedAgentId, selectedAgent?.starters]);
+
+  // Settings
   const [settings, setSettings] = useState<CarefoldUserSettings>(DEFAULT_USER_SETTINGS);
   useEffect(() => {
     setSettings(loadSettings());
   }, []);
-  const privacyState = getProviderPrivacyState(settings);
 
   // Threads State
   const [threadSearch, setThreadSearch] = useState('');
@@ -212,6 +305,10 @@ export function ChatStudioShell({
     initialThreadId || `thread-${profile.id}-1`
   );
   const [sessions, setSessions] = useState<ChatSessionMeta[]>([]);
+
+  useEffect(() => {
+    setSuggestedQuestions([]);
+  }, [activeThreadId, selectedAgentId]);
 
   const refreshSessions = useCallback(() => {
     setSessions(listSessions());
@@ -257,6 +354,42 @@ export function ChatStudioShell({
       (t) => t.title.toLowerCase().includes(q) || t.agentTitle.toLowerCase().includes(q)
     );
   }, [profileThreads, threadSearch]);
+
+  // Thread Deletion State & Handler
+  const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
+
+  const handleConfirmDeleteThread = useCallback(
+    async (threadIdToDelete: string) => {
+      deleteSession(threadIdToDelete);
+      try {
+        localStorage.removeItem(`carefold_msgs_${threadIdToDelete}`);
+        localStorage.removeItem(getScopedStorageKey(`msgs_${threadIdToDelete}`));
+      } catch {}
+
+      try {
+        fetch(`/api/v1/chat/threads/${encodeURIComponent(threadIdToDelete)}`, {
+          method: 'DELETE'
+        }).catch(() => {});
+      } catch {}
+
+      if (threadIdToDelete === activeThreadId) {
+        const remaining = profileThreads.filter((t) => t.id !== threadIdToDelete);
+        if (remaining.length > 0) {
+          setActiveThreadId(remaining[0].id);
+        } else {
+          const newId = `thread-${profile.id}-${Date.now()}`;
+          setActiveThreadId(newId);
+          setMessages([]);
+          setSuggestedQuestions([]);
+          setInputText('');
+        }
+      }
+
+      setDeletingThreadId(null);
+      refreshSessions();
+    },
+    [activeThreadId, profile.id, profileThreads, refreshSessions]
+  );
 
   // Messages State
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -370,15 +503,21 @@ export function ChatStudioShell({
     return detectProfileAmbiguity(text, profile.id, household);
   };
 
-  const executeChatStream = async (text: string) => {
+  const executeChatStream = async (text: string, baseMessages?: ChatMessage[]) => {
     if (!text.trim() || isStreaming) return;
+    setSuggestedQuestions([]);
 
-    const userMsg: ChatMessage = {
-      id: `u-${Date.now()}`,
-      role: 'user',
-      content: text
-    };
-    const updatedMessages = [...messages, userMsg];
+    let updatedMessages: ChatMessage[];
+    if (baseMessages && baseMessages.length > 0) {
+      updatedMessages = baseMessages;
+    } else {
+      const userMsg: ChatMessage = {
+        id: `u-${Date.now()}`,
+        role: 'user',
+        content: text
+      };
+      updatedMessages = [...messages, userMsg];
+    }
     setMessages(updatedMessages);
     persistMessages(updatedMessages);
     setInputText('');
@@ -482,6 +621,11 @@ export function ChatStudioShell({
                       : msg
                   )
                 );
+              } else if (eventType === 'suggestions') {
+                const list = data.suggestions || data.followUpSuggestions;
+                if (Array.isArray(list) && list.length > 0) {
+                  setSuggestedQuestions(list);
+                }
               } else if (eventType === 'refusal') {
                 refusalMessage = data.message || refusalMessage;
                 const isHard = Boolean(data.refused);
@@ -506,6 +650,10 @@ export function ChatStudioShell({
                   )
                 );
               } else if (eventType === 'done') {
+                const list = data.suggestions || data.followUpSuggestions;
+                if (Array.isArray(list) && list.length > 0) {
+                  setSuggestedQuestions(list);
+                }
                 const isRefusal = Boolean(data.refused);
                 const hasBoundaryWarning = Boolean(data.boundaryWarning);
                 const isEmergency = Boolean(
@@ -529,6 +677,8 @@ export function ChatStudioShell({
                     };
                   })
                 );
+              } else if (eventType === 'error') {
+                setSuggestedQuestions([]);
               }
             } catch {
               // ignore partial chunk
@@ -588,6 +738,33 @@ export function ChatStudioShell({
     }
 
     executeChatStream(text);
+  };
+
+  const handleRegenerate = async (assistantMessageId: string) => {
+    if (isStreaming) return;
+
+    const idx = messages.findIndex((m) => m.id === assistantMessageId);
+    if (idx === -1) return;
+
+    // Locate preceding user turn
+    let userIdx = -1;
+    let userPrompt = '';
+    for (let i = idx - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        userIdx = i;
+        userPrompt = messages[i].content;
+        break;
+      }
+    }
+
+    if (userIdx === -1 || !userPrompt) return;
+
+    const historyBeforeUser = messages.slice(0, userIdx);
+    const userMsg = messages[userIdx];
+    const newBaseMessages = [...historyBeforeUser, userMsg];
+
+    setMessages(newBaseMessages);
+    await executeChatStream(userPrompt, newBaseMessages);
   };
 
   const handleResolveAmbiguity = (routeToTarget: boolean) => {
@@ -681,25 +858,42 @@ export function ChatStudioShell({
                   .map((t) => {
                     const isActive = t.id === activeThreadId;
                     return (
-                      <button
+                      <div
                         key={t.id}
-                        type="button"
-                        onClick={() => setActiveThreadId(t.id)}
                         className={cn(
-                          'w-full text-left p-2.5 rounded-xl transition-all min-h-[44px]',
+                          'group flex items-center justify-between rounded-xl transition-all min-h-[44px]',
                           isActive
                             ? 'bg-[var(--cf-surface)] border border-[var(--cf-border)] shadow-sm'
                             : 'hover:bg-[var(--cf-surface-2)] text-[var(--cf-fg-muted)]'
                         )}
                       >
-                        <div className="text-xs font-semibold text-[var(--cf-fg)] truncate">
-                          {t.title}
-                        </div>
-                        <div className="text-[11px] text-[var(--cf-fg-subtle)] flex items-center justify-between mt-0.5">
-                          <span>{t.agentTitle}</span>
-                          <span>{t.timeStr}</span>
-                        </div>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveThreadId(t.id)}
+                          className="flex-1 text-left p-2.5 min-w-0 min-h-[44px] cursor-pointer"
+                        >
+                          <div className="text-xs font-semibold text-[var(--cf-fg)] truncate">
+                            {t.title}
+                          </div>
+                          <div className="text-[11px] text-[var(--cf-fg-subtle)] flex items-center justify-between mt-0.5">
+                            <span>{t.agentTitle}</span>
+                            <span>{t.timeStr}</span>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          data-testid={`delete-thread-${t.id}`}
+                          aria-label={`Delete conversation ${t.title}`}
+                          title="Delete conversation"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingThreadId(t.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-2 rounded-lg text-[var(--cf-fg-subtle)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0 mr-1.5 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     );
                   })}
               </div>
@@ -717,25 +911,42 @@ export function ChatStudioShell({
                     .map((t) => {
                       const isActive = t.id === activeThreadId;
                       return (
-                        <button
+                        <div
                           key={t.id}
-                          type="button"
-                          onClick={() => setActiveThreadId(t.id)}
                           className={cn(
-                            'w-full text-left p-2.5 rounded-xl transition-all min-h-[44px]',
+                            'group flex items-center justify-between rounded-xl transition-all min-h-[44px]',
                             isActive
                               ? 'bg-[var(--cf-surface)] border border-[var(--cf-border)] shadow-sm'
                               : 'hover:bg-[var(--cf-surface-2)] text-[var(--cf-fg-muted)]'
                           )}
                         >
-                          <div className="text-xs font-semibold text-[var(--cf-fg)] truncate">
-                            {t.title}
-                          </div>
-                          <div className="text-[11px] text-[var(--cf-fg-subtle)] flex items-center justify-between mt-0.5">
-                            <span>{t.agentTitle}</span>
-                            <span>{t.timeStr}</span>
-                          </div>
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveThreadId(t.id)}
+                            className="flex-1 text-left p-2.5 min-w-0 min-h-[44px] cursor-pointer"
+                          >
+                            <div className="text-xs font-semibold text-[var(--cf-fg)] truncate">
+                              {t.title}
+                            </div>
+                            <div className="text-[11px] text-[var(--cf-fg-subtle)] flex items-center justify-between mt-0.5">
+                              <span>{t.agentTitle}</span>
+                              <span>{t.timeStr}</span>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            data-testid={`delete-thread-${t.id}`}
+                            aria-label={`Delete conversation ${t.title}`}
+                            title="Delete conversation"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingThreadId(t.id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-2 rounded-lg text-[var(--cf-fg-subtle)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0 mr-1.5 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       );
                     })}
                 </div>
@@ -784,18 +995,24 @@ export function ChatStudioShell({
               <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shrink-0">
                 <Stethoscope className="w-4 h-4" />
               </div>
-              <div className="min-w-0">
+              <div ref={agentMenuRef} className="min-w-0 relative">
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => {
-                      const nextIdx = (agents.findIndex((a) => a.id === selectedAgentId) + 1) % agents.length;
-                      setSelectedAgentId(agents[nextIdx].id);
-                    }}
-                    className="text-sm font-bold text-[var(--cf-fg)] truncate flex items-center gap-1 hover:opacity-80 transition"
+                    data-testid="agent-select-btn"
+                    onClick={() => setIsAgentMenuOpen((prev) => !prev)}
+                    aria-expanded={isAgentMenuOpen}
+                    aria-haspopup="listbox"
+                    aria-label={`Select agent, currently ${selectedAgent.title}`}
+                    className="text-sm font-bold text-[var(--cf-fg)] truncate flex items-center gap-1 hover:opacity-80 transition cursor-pointer"
                   >
                     <span>{selectedAgent.title}</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-[var(--cf-fg-subtle)]" />
+                    <ChevronDown
+                      className={cn(
+                        'w-3.5 h-3.5 text-[var(--cf-fg-subtle)] transition-transform duration-150',
+                        isAgentMenuOpen && 'rotate-180'
+                      )}
+                    />
                   </button>
                 </div>
                 <span className="text-[11px] text-[var(--cf-fg-subtle)] block truncate">
@@ -803,6 +1020,92 @@ export function ChatStudioShell({
                     ? 'Clinical prep · consent given'
                     : 'Everyday wellness'}
                 </span>
+
+                {/* Agent Selection Dropdown Menu */}
+                {isAgentMenuOpen && (
+                  <div
+                    role="listbox"
+                    aria-label="Available Carefold Agents"
+                    data-testid="agent-dropdown-menu"
+                    className="absolute left-0 top-full mt-2 w-72 sm:w-80 max-h-96 rounded-2xl bg-[var(--cf-surface)] border border-[var(--cf-border)] shadow-xl z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100"
+                  >
+                    {/* Optional Quick Filter */}
+                    {agents.length > 5 && (
+                      <div className="p-2 border-b border-[var(--cf-border)] bg-[var(--cf-canvas)]">
+                        <div className="relative flex items-center">
+                          <Search className="w-3.5 h-3.5 absolute left-2.5 text-[var(--cf-fg-subtle)] pointer-events-none" />
+                          <input
+                            type="text"
+                            placeholder="Filter specialists..."
+                            value={agentSearchQuery}
+                            onChange={(e) => setAgentSearchQuery(e.target.value)}
+                            className="w-full text-xs pl-8 pr-2.5 py-1.5 rounded-lg bg-[var(--cf-surface)] border border-[var(--cf-border)] text-[var(--cf-fg)] placeholder:text-[var(--cf-fg-subtle)] focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Agent List */}
+                    <div className="overflow-y-auto p-1.5 space-y-0.5 max-h-80 overscroll-contain">
+                      {agents
+                        .filter((a) => !a.hidden)
+                        .filter((a) =>
+                          agentSearchQuery
+                            ? a.title.toLowerCase().includes(agentSearchQuery.toLowerCase()) ||
+                              (a.description && a.description.toLowerCase().includes(agentSearchQuery.toLowerCase()))
+                            : true
+                        )
+                        .map((a) => {
+                          const isSelected = a.id === selectedAgentId;
+                          return (
+                            <button
+                              key={a.id}
+                              type="button"
+                              role="option"
+                              aria-selected={isSelected}
+                              data-testid={`select-agent-${a.id}`}
+                              onClick={() => {
+                                setSelectedAgentId(a.id);
+                                setIsAgentMenuOpen(false);
+                                setAgentSearchQuery('');
+                              }}
+                              className={cn(
+                                'w-full flex items-start gap-2.5 p-2 rounded-xl text-left transition cursor-pointer',
+                                isSelected
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-medium'
+                                  : 'hover:bg-[var(--cf-surface-2)] text-[var(--cf-fg)]'
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold',
+                                  isSelected
+                                    ? 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-[#04201a]'
+                                    : 'bg-[var(--cf-surface-2)] text-[var(--cf-fg-muted)]'
+                                )}
+                              >
+                                {a.title.slice(0, 1).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="text-xs font-semibold truncate">{a.title}</span>
+                                  {isSelected && (
+                                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                  )}
+                                </div>
+                                {a.description && (
+                                  <p className="text-[11px] text-[var(--cf-fg-subtle)] line-clamp-1 mt-0.5">
+                                    {a.description}
+                                  </p>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -822,17 +1125,6 @@ export function ChatStudioShell({
                 <Avatar name={profile.name} size="xs" colorSlot={profile.colorSlot} />
                 <span>About {profile.name.split(' ')[0]}</span>
               </div>
-
-              {/* Model Selector */}
-              <ModelSelector
-                settings={settings}
-                onSettingsChange={(newSettings) => {
-                  setSettings(newSettings);
-                  saveSettings(newSettings);
-                }}
-                onOpenSettings={() => router.push('/settings/model')}
-                disabled={isStreaming}
-              />
 
               {/* Export Menu */}
               <DossierExportMenu
@@ -868,8 +1160,21 @@ export function ChatStudioShell({
             >
               <div className="max-w-[760px] mx-auto space-y-4">
                 {messages.length === 0 && (
-                  <div className="text-center py-12 text-xs text-[var(--cf-fg-subtle)]">
-                    Start a conversation about {profile.name}&apos;s care with {selectedAgent.title}.
+                  <div className="space-y-6 py-8">
+                    <div className="text-center text-xs text-[var(--cf-fg-subtle)]">
+                      Start a conversation about {profile.name}&apos;s care with {selectedAgent.title}.
+                    </div>
+                    {starters.length > 0 && (
+                      <div className="w-full text-left">
+                        <StartersChips
+                          starters={starters}
+                          onSelectStarter={(prompt) => {
+                            executeChatStream(prompt);
+                          }}
+                          disabled={isStreaming}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -878,11 +1183,11 @@ export function ChatStudioShell({
                   return (
                     <div
                       key={m.id}
-                      className={cn('flex flex-col', isUser ? 'items-end' : 'items-start')}
+                      className={cn('flex flex-col group relative', isUser ? 'items-end' : 'items-start')}
                     >
                       <div
                         className={cn(
-                          'max-w-[85%] sm:max-w-[78%] rounded-2xl p-3.5 text-sm leading-relaxed',
+                          'max-w-[85%] sm:max-w-[78%] rounded-2xl p-3.5 text-sm leading-relaxed relative',
                           isUser
                             ? 'bg-[var(--cf-surface-2)] border border-[var(--cf-border)] text-[var(--cf-fg)] rounded-tr-sm'
                             : 'bg-[var(--cf-surface)] border border-[var(--cf-border)] text-[var(--cf-fg)] rounded-tl-sm shadow-sm'
@@ -905,9 +1210,42 @@ export function ChatStudioShell({
                           </>
                         )}
                       </div>
+
+                      {/* Message Actions: Copy for all, Regenerate only for assistant — displayed on mouse hover */}
+                      {(!m.isStreaming || m.content.trim().length > 0) && (
+                        <div
+                          className={cn(
+                            'flex items-center px-1 mt-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity select-none',
+                            isUser ? 'justify-end' : 'justify-start'
+                          )}
+                        >
+                          <MessageToolbar
+                            role={isUser ? 'user' : 'assistant'}
+                            content={m.content}
+                            messageId={m.id}
+                            onRegenerate={!isUser ? () => handleRegenerate(m.id) : undefined}
+                            disabled={isStreaming}
+                            isStreaming={m.isStreaming}
+                          />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
+
+                {/* Interactive Contextual Follow-up Suggestions */}
+                {!isStreaming && suggestedQuestions.length > 0 && (
+                  <div className="flex justify-start my-2 max-w-[95%] md:max-w-[85%]">
+                    <SuggestedQuestionsChips
+                      suggestions={suggestedQuestions}
+                      onSelectSuggestion={(question) => {
+                        setSuggestedQuestions([]);
+                        executeChatStream(question);
+                      }}
+                      disabled={isStreaming}
+                    />
+                  </div>
+                )}
 
                 {/* Ambiguity Interception Card Flow */}
                 {heldAmbiguity && (
@@ -1032,10 +1370,17 @@ export function ChatStudioShell({
                       <Paperclip className="w-4 h-4" />
                     </button>
 
-                    {/* Data Residency Indicator */}
-                    <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
-                      <Cpu className="w-3.5 h-3.5" />
-                      <span>{privacyState.badgeText} · llama3.2</span>
+                    {/* Model Selector */}
+                    <div className="hidden sm:flex items-center">
+                      <ModelSelector
+                        settings={settings}
+                        onSettingsChange={(newSettings) => {
+                          setSettings(newSettings);
+                          saveSettings(newSettings);
+                        }}
+                        onOpenSettings={() => router.push('/settings/model')}
+                        disabled={isStreaming}
+                      />
                     </div>
                   </div>
 
@@ -1116,28 +1461,45 @@ export function ChatStudioShell({
                   .map((t) => {
                     const isActive = t.id === activeThreadId;
                     return (
-                      <button
+                      <div
                         key={t.id}
-                        type="button"
-                        onClick={() => {
-                          setActiveThreadId(t.id);
-                          setIsMobileThreadDrawerOpen(false);
-                        }}
                         className={cn(
-                          'w-full text-left p-2.5 rounded-xl transition-all min-h-[44px]',
+                          'group flex items-center justify-between rounded-xl transition-all min-h-[44px]',
                           isActive
                             ? 'bg-[var(--cf-surface)] border border-[var(--cf-border)] shadow-sm'
                             : 'hover:bg-[var(--cf-surface-2)] text-[var(--cf-fg-muted)]'
                         )}
                       >
-                        <div className="text-xs font-semibold text-[var(--cf-fg)] truncate">
-                          {t.title}
-                        </div>
-                        <div className="text-[11px] text-[var(--cf-fg-subtle)] flex items-center justify-between mt-0.5">
-                          <span>{t.agentTitle}</span>
-                          <span>{t.timeStr}</span>
-                        </div>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveThreadId(t.id);
+                            setIsMobileThreadDrawerOpen(false);
+                          }}
+                          className="flex-1 text-left p-2.5 min-w-0 min-h-[44px] cursor-pointer"
+                        >
+                          <div className="text-xs font-semibold text-[var(--cf-fg)] truncate">
+                            {t.title}
+                          </div>
+                          <div className="text-[11px] text-[var(--cf-fg-subtle)] flex items-center justify-between mt-0.5">
+                            <span>{t.agentTitle}</span>
+                            <span>{t.timeStr}</span>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          data-testid={`mobile-delete-thread-${t.id}`}
+                          aria-label={`Delete conversation ${t.title}`}
+                          title="Delete conversation"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingThreadId(t.id);
+                          }}
+                          className="p-2 rounded-lg text-[var(--cf-fg-subtle)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0 mr-1.5 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     );
                   })}
               </div>
@@ -1155,28 +1517,45 @@ export function ChatStudioShell({
                     .map((t) => {
                       const isActive = t.id === activeThreadId;
                       return (
-                        <button
+                        <div
                           key={t.id}
-                          type="button"
-                          onClick={() => {
-                            setActiveThreadId(t.id);
-                            setIsMobileThreadDrawerOpen(false);
-                          }}
                           className={cn(
-                            'w-full text-left p-2.5 rounded-xl transition-all min-h-[44px]',
+                            'group flex items-center justify-between rounded-xl transition-all min-h-[44px]',
                             isActive
                               ? 'bg-[var(--cf-surface)] border border-[var(--cf-border)] shadow-sm'
                               : 'hover:bg-[var(--cf-surface-2)] text-[var(--cf-fg-muted)]'
                           )}
                         >
-                          <div className="text-xs font-semibold text-[var(--cf-fg)] truncate">
-                            {t.title}
-                          </div>
-                          <div className="text-[11px] text-[var(--cf-fg-subtle)] flex items-center justify-between mt-0.5">
-                            <span>{t.agentTitle}</span>
-                            <span>{t.timeStr}</span>
-                          </div>
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveThreadId(t.id);
+                              setIsMobileThreadDrawerOpen(false);
+                            }}
+                            className="flex-1 text-left p-2.5 min-w-0 min-h-[44px] cursor-pointer"
+                          >
+                            <div className="text-xs font-semibold text-[var(--cf-fg)] truncate">
+                              {t.title}
+                            </div>
+                            <div className="text-[11px] text-[var(--cf-fg-subtle)] flex items-center justify-between mt-0.5">
+                              <span>{t.agentTitle}</span>
+                              <span>{t.timeStr}</span>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            data-testid={`mobile-delete-thread-${t.id}`}
+                            aria-label={`Delete conversation ${t.title}`}
+                            title="Delete conversation"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingThreadId(t.id);
+                            }}
+                            className="p-2 rounded-lg text-[var(--cf-fg-subtle)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0 mr-1.5 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       );
                     })}
                 </div>
@@ -1191,6 +1570,50 @@ export function ChatStudioShell({
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Delete Thread Confirmation Dialog */}
+      {deletingThreadId && (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="delete-dialog-title"
+          aria-describedby="delete-dialog-desc"
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div className="w-full max-w-sm bg-[var(--cf-surface)] rounded-2xl border border-[var(--cf-border)] p-5 shadow-xl space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 id="delete-dialog-title" className="text-sm font-bold text-[var(--cf-fg)]">
+                  Delete conversation?
+                </h3>
+                <p id="delete-dialog-desc" className="text-xs text-[var(--cf-fg-muted)] mt-1 leading-relaxed">
+                  This will permanently delete this conversation and its message history from this device.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--cf-border)]">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDeletingThreadId(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => handleConfirmDeleteThread(deletingThreadId)}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Slide-over Activity Log Drawer */}
       <ActivityLogDrawer

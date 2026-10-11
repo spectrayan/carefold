@@ -282,7 +282,7 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
         try {
           const allowClinical = hasClinicalConsent(selectedAgentId);
           const res = await fetch(
-            `/api/v1/agents?id=${encodeURIComponent(selectedAgentId)}&allow_clinical=${allowClinical}`
+            `/api/v1/agents/${encodeURIComponent(selectedAgentId)}?allow_clinical=${allowClinical}`
           );
           if (res.ok) {
             const data = await res.json();

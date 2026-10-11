@@ -198,8 +198,11 @@ class ResponseSynthesizerNode(BaseNode):
         if settings.audit_log_path:
             log_path = Path(settings.audit_log_path)
         else:
-            ws_root = state.get("workspace_root") or settings.workspace_root
-            log_path = Path(ws_root) / LOGS_DIR / DEFAULT_AUDIT_LOG_FILE
+            ws_root = state.get("workspace_root")
+            if ws_root and not (Path(ws_root) / "backend").is_dir() and Path(ws_root).resolve() != settings.workspace_root:
+                log_path = Path(ws_root) / LOGS_DIR / DEFAULT_AUDIT_LOG_FILE
+            else:
+                log_path = settings.get_audit_log_path()
 
         try:
             log_path.parent.mkdir(parents=True, exist_ok=True)

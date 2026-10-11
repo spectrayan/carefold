@@ -143,4 +143,70 @@ describe('ChatStudioShell Component (/p/[profileId]/chat)', () => {
       expect(screen.getByText('What questions should I ask Dr. Whitfield about blood pressure?')).toBeInTheDocument();
     });
   });
+
+  it('renders starter chips when there are no messages in the active thread', () => {
+    // thread-empty has no stored messages
+    render(<ChatStudioShell profileId="rosa" initialThreadId="thread-empty" />);
+
+    expect(screen.getByTestId('starters-container')).toBeInTheDocument();
+    expect(screen.getByText('Help me prepare for my visit')).toBeInTheDocument();
+  });
+
+  it('clicking a starter chip immediately sends the starter prompt', async () => {
+    render(<ChatStudioShell profileId="rosa" initialThreadId="thread-empty" />);
+
+    const starterChip = screen.getByText('Help me prepare for my visit');
+    fireEvent.click(starterChip);
+
+    await waitFor(() => {
+      expect(screen.getByText('Help me prepare for my visit')).toBeInTheDocument();
+    });
+  });
+
+  it('renders copy button on both user and assistant messages, and regenerate ONLY on assistant messages', () => {
+    const { container } = render(<ChatStudioShell profileId="rosa" />);
+
+    // In thread-rosa-1 we have 1 user message and 1 assistant message
+    const copyButtons = screen.getAllByTestId('message-copy-btn');
+    expect(copyButtons.length).toBe(2);
+
+    // Regenerate button must only exist on assistant messages
+    const rerunButtons = screen.getAllByTestId('message-rerun-btn');
+    expect(rerunButtons.length).toBe(1);
+    expect(rerunButtons[0]).toHaveAttribute('data-action', 'regenerate');
+
+    // Message bubbles must NOT have a border-t footer or author labels
+    expect(container.querySelectorAll('.border-t.select-none').length).toBe(0);
+
+    // Message action toolbars must have hover-only styling (opacity-0 group-hover:opacity-100)
+    const toolbars = screen.getAllByTestId('message-action-toolbar');
+    expect(toolbars.length).toBe(2);
+    toolbars.forEach((toolbar) => {
+      const parent = toolbar.parentElement;
+      expect(parent?.className).toContain('opacity-0');
+      expect(parent?.className).toContain('group-hover:opacity-100');
+    });
+  });
+
+  it('provides an option to delete conversations with confirmation dialog', async () => {
+    render(<ChatStudioShell profileId="rosa" />);
+
+    const deleteBtn = screen.getByTestId('delete-thread-thread-rosa-1');
+    expect(deleteBtn).toBeInTheDocument();
+
+    fireEvent.click(deleteBtn);
+
+    // Confirmation alertdialog opens
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(screen.getByText('Delete conversation?')).toBeInTheDocument();
+
+    const confirmDeleteBtn = screen.getByRole('button', { name: /^delete$/i });
+    fireEvent.click(confirmDeleteBtn);
+
+    // Dialog is dismissed and thread is deleted
+    await waitFor(() => {
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('delete-thread-thread-rosa-1')).not.toBeInTheDocument();
+    });
+  });
 });

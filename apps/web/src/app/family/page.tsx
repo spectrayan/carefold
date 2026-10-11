@@ -18,8 +18,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { UserCheck, Printer, CheckCircle2, Plus } from 'lucide-react';
+import { UserCheck, Printer, Plus, Eye, Key, Info } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Avatar } from '@/components/ui/Avatar';
 import {
   type CareProfile,
   type ViewerInvite,
@@ -189,6 +190,7 @@ export default function FamilyPage() {
             <Button
               variant="primary"
               size="sm"
+              leftIcon={<Plus className="w-4 h-4 shrink-0" />}
               data-testid="add-member-btn"
               onClick={() =>
                 setEditingProfile({
@@ -201,27 +203,26 @@ export default function FamilyPage() {
                 })
               }
             >
-              <Plus className="w-4 h-4 mr-1.5" />
               Add member
             </Button>
 
             <Button
               variant="secondary"
               size="sm"
+              leftIcon={<UserCheck className="w-4 h-4 shrink-0" />}
               data-testid="invite-viewer-btn"
               onClick={() => setInviteModalOpen(true)}
             >
-              <UserCheck className="w-4 h-4 mr-1.5" />
               Invite a viewer
             </Button>
 
             <Button
               variant="secondary"
               size="sm"
+              leftIcon={<Printer className="w-4 h-4 shrink-0" />}
               data-testid="export-bundle-btn"
               onClick={() => setShareModalOpen(true)}
             >
-              <Printer className="w-4 h-4 mr-1.5" />
               Export share bundle
             </Button>
           </div>
@@ -283,25 +284,33 @@ export default function FamilyPage() {
                     data-testid={`invite-row-${invite.id}`}
                     className="py-3 flex items-center justify-between gap-3 text-xs"
                   >
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-[var(--cf-fg)]">{invite.inviteeName}</span>
-                        <span className="px-2 py-0.5 rounded text-[11px] bg-amber-500/10 text-amber-700 dark:text-amber-400">
-                          Viewer &middot; {invite.targetProfileName}
-                        </span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar name={invite.inviteeName} size="xs" colorSlot={5} />
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-[var(--cf-fg)]">{invite.inviteeName}</span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 shrink-0">
+                            <Eye className="w-3 h-3 shrink-0" />
+                            <span>Viewer &middot; {invite.targetProfileName}</span>
+                          </span>
+                        </div>
+                        <p className="text-[var(--cf-fg-subtle)] flex items-center gap-1.5 flex-wrap">
+                          <Key className="w-3 h-3 text-[var(--cf-fg-subtle)] shrink-0" />
+                          <span>Code: <code className="font-mono bg-[var(--cf-surface-2)] px-1 py-0.5 rounded text-[11px]">{invite.inviteCode}</code></span>
+                          <span>&middot;</span>
+                          <span>
+                            {invite.permissions.view_clinical ? 'Visit prep & clinical' : ''}
+                            {invite.permissions.view_clinical && invite.permissions.view_paperwork ? ', ' : ''}
+                            {invite.permissions.view_paperwork ? 'Insurance & paperwork' : ''}
+                          </span>
+                        </p>
                       </div>
-                      <p className="text-[var(--cf-fg-subtle)]">
-                        Code: <code className="font-mono bg-[var(--cf-surface-2)] px-1 rounded">{invite.inviteCode}</code> &middot;{' '}
-                        {invite.permissions.view_clinical ? 'Visit prep & clinical' : ''}
-                        {invite.permissions.view_clinical && invite.permissions.view_paperwork ? ', ' : ''}
-                        {invite.permissions.view_paperwork ? 'Insurance & paperwork' : ''}
-                      </p>
                     </div>
 
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                      className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 shrink-0"
                       onClick={() => handleRevokeInvite(invite.id)}
                       data-testid={`revoke-invite-${invite.id}`}
                     >
@@ -320,16 +329,35 @@ export default function FamilyPage() {
             </span>
 
             <div className="divide-y divide-[var(--cf-border)]" data-testid="bundles-list">
-              {shareBundles.map((bundle) => (
-                <div key={bundle.id} className="py-2.5 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2 text-[var(--cf-fg)]">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                    <span>{bundle.title}</span>
+              {shareBundles.length === 0 ? (
+                <p className="text-xs text-[var(--cf-fg-subtle)] italic py-2">No export history recorded on this device.</p>
+              ) : (
+                shareBundles.map((bundle) => (
+                  <div key={bundle.id} className="py-2.5 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-[var(--cf-surface-2)] border border-[var(--cf-border)] flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400">
+                        <Printer className="w-3.5 h-3.5 shrink-0" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="font-medium text-[var(--cf-fg)] block truncate">{bundle.title}</span>
+                        <span className="text-[11px] text-[var(--cf-fg-subtle)] block">
+                          {bundle.profileName ? `${bundle.profileName} · ` : ''}Printed care sheet
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[11px] text-[var(--cf-fg-subtle)] shrink-0">{bundle.exportedAt}</span>
                   </div>
-                  <span className="text-[var(--cf-fg-subtle)]">{bundle.exportedAt}</span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
+          </div>
+
+          {/* Local Privacy Reassurance Note */}
+          <div className="p-3.5 rounded-xl bg-[var(--cf-surface-2)] border border-[var(--cf-border)] flex items-start gap-3 text-xs text-[var(--cf-fg-muted)]">
+            <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+            <p className="leading-relaxed">
+              Viewers sign in to this Carefold on your computer or local network. Nothing is uploaded to a Carefold server &mdash; your medical data stays on this device.
+            </p>
           </div>
         </div>
       </section>

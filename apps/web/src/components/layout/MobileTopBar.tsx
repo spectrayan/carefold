@@ -51,7 +51,7 @@ export function MobileTopBar({
 }: MobileTopBarProps) {
   const pathname = usePathname();
   const themeContext = useOptionalTheme();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const [isProfileSwitcherOpen, setIsProfileSwitcherOpen] = React.useState(false);
 
   // Derive active profile dynamically from household store or URL pathname
@@ -60,23 +60,34 @@ export function MobileTopBar({
     const match = pathname.match(/^\/p\/([^/]+)/);
     const profileId = match ? match[1] : 'me';
 
+    const userFallbackName = user?.full_name?.trim() || user?.username?.trim() || 'Me';
+    const userShortName = user?.full_name ? user.full_name.trim().split(/\s+/)[0] : (user?.username || 'Me');
+
     const household = getHouseholdProfile(profileId);
     if (household) {
+      const isSelf = household.role === 'self' || household.relationship?.toLowerCase() === 'self' || profileId === 'me';
+      const resolvedName = (isSelf && (household.name === 'Me' || !household.name)) ? userFallbackName : household.name;
+      const resolvedShortName = household.shortName || (resolvedName ? resolvedName.split(/\s+/)[0] : userShortName);
       return {
         id: household.id,
-        name: household.name,
-        shortName: household.shortName || household.name.split(' ')[0],
+        name: resolvedName,
+        shortName: resolvedShortName,
         colorSlot: (household.colorSlot || 1) as MemberColorSlot
       };
     }
 
+    const isGenericId =
+      !profileId ||
+      profileId.toLowerCase() === 'me' ||
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileId);
+
     return {
       id: profileId,
-      name: profileId === 'me' ? 'Me' : profileId,
-      shortName: profileId === 'me' ? 'Me' : profileId,
+      name: isGenericId ? userFallbackName : profileId,
+      shortName: isGenericId ? userShortName : profileId,
       colorSlot: 1 as MemberColorSlot
     };
-  }, [activeProfileProp, pathname]);
+  }, [activeProfileProp, pathname, user]);
 
   return (
     <header
@@ -112,6 +123,7 @@ export function MobileTopBar({
         }
         aria-haspopup="dialog"
         aria-label={`Switch care profile. Current: ${derivedProfile.name}`}
+        suppressHydrationWarning
         className="flex items-center gap-1.5 min-[380px]:gap-2 h-10 px-2 min-[380px]:px-2.5 py-1 rounded-full bg-[var(--cf-surface)] border border-[var(--cf-border)] shadow-sm hover:bg-[var(--cf-surface-2)] transition-all min-h-[44px] focus-visible:outline-2 focus-visible:outline-[var(--cf-focus)] shrink-0"
       >
         <Avatar
@@ -119,7 +131,10 @@ export function MobileTopBar({
           colorSlot={derivedProfile.colorSlot || 1}
           size="xs"
         />
-        <span className="text-xs min-[380px]:text-sm font-semibold text-[var(--cf-fg)] truncate max-w-[80px] min-[380px]:max-w-[120px]">
+        <span
+          suppressHydrationWarning
+          className="text-xs min-[380px]:text-sm font-semibold text-[var(--cf-fg)] truncate max-w-[80px] min-[380px]:max-w-[120px]"
+        >
           {derivedProfile.shortName || derivedProfile.name.split(' ')[0]}
         </span>
         <ChevronDown className="w-3.5 h-3.5 text-[var(--cf-fg-subtle)] shrink-0" />

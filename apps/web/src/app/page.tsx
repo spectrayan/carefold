@@ -40,10 +40,11 @@ export default async function RootPage() {
       cache: 'no-store'
     });
     if (!res.ok) {
-      redirect('/login');
+      const errorParam = res.status === 503 ? 'service_unavailable' : 'session_expired';
+      redirect(`/login?error=${errorParam}`);
     }
   } catch {
-    redirect('/login');
+    redirect('/login?error=service_unavailable');
   }
 
   // 3. Authenticated -> redirect to active profile (or /p/me)

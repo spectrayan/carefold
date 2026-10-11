@@ -60,27 +60,29 @@ async def execute_workspace_note(params: Dict[str, Any], context: Any) -> ToolRe
                 error='Parameter "content" must be a string.',
             )
 
-        ws_root = getattr(context, "workspace_root", None) or Path.cwd()
-        ws_root_path = Path(ws_root).resolve()
+        from carefold.config import settings
+
+        ws_root = getattr(context, "workspace_root", None)
+        if ws_root and not (Path(ws_root) / "backend").is_dir():
+            ws_root_path = Path(ws_root).resolve()
+            sub_ws_notes = ws_root_path / WORKSPACE_NOTES_DIR
+            root_notes = ws_root_path / NOTES_DIR
+
+            if sub_ws_notes.is_dir() or (ws_root_path / WORKSPACE_DIR).is_dir():
+                notes_dir = sub_ws_notes
+            elif root_notes.is_dir():
+                notes_dir = root_notes
+            else:
+                notes_dir = sub_ws_notes
+        else:
+            ws_root_path = settings.home_dir
+            notes_dir = settings.get_notes_dir()
 
         # Sanitize title to safe filename slug
         safe_title = re.sub(r"[^a-zA-Z0-9_\-\s]", "", title.strip())
         safe_title = re.sub(r"\s+", "-", safe_title).lower()[:MAX_NOTE_SLUG_LENGTH] or DEFAULT_NOTE_SLUG
         filename = f"{safe_title}.md"
-
-        # Determine target notes directory (support both ws/workspace/notes and ws/notes)
-        sub_ws_notes = ws_root_path / WORKSPACE_NOTES_DIR
-        root_notes = ws_root_path / NOTES_DIR
-
-        if sub_ws_notes.is_dir() or (ws_root_path / WORKSPACE_DIR).is_dir():
-            notes_dir = sub_ws_notes
-        elif root_notes.is_dir():
-            notes_dir = root_notes
-        else:
-            notes_dir = sub_ws_notes
-
         notes_dir.mkdir(parents=True, exist_ok=True)
-
         target_path = resolve_sandboxed_path(notes_dir, filename, must_exist=False, for_write=True)
 
         # Defense-in-depth: check if candidate or target is an existing symlink

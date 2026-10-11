@@ -143,8 +143,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               currentPath.startsWith('/register') ||
               currentPath.startsWith('/forgot-password') ||
               currentPath.startsWith('/reset-password');
-            if (!isAuthRoute && meRes.status === 401) {
-              window.location.href = `/login?redirect=${encodeURIComponent(currentPath + window.location.search)}`;
+            if (!isAuthRoute) {
+              const errQuery = meRes.status === 503 ? 'error=service_unavailable&' : '';
+              window.location.href = `/login?${errQuery}redirect=${encodeURIComponent(currentPath + window.location.search)}`;
             }
           }
           return null;
@@ -157,6 +158,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return DEFAULT_STEWARD_USER;
       }
       setUser(null);
+      if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname;
+        const isAuthRoute =
+          currentPath.startsWith('/login') ||
+          currentPath.startsWith('/register') ||
+          currentPath.startsWith('/forgot-password') ||
+          currentPath.startsWith('/reset-password');
+        if (!isAuthRoute) {
+          window.location.href = `/login?error=service_unavailable&redirect=${encodeURIComponent(currentPath + window.location.search)}`;
+        }
+      }
       return null;
     } finally {
       setIsLoading(false);

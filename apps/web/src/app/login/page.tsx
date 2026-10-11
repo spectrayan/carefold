@@ -168,6 +168,35 @@ function LoginForm() {
         </div>
       )}
 
+      {/* Service Unavailable Alert */}
+      {searchParams.get('error') === 'service_unavailable' && (
+        <div
+          role="alert"
+          data-testid="service-unavailable-alert"
+          className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2.5 animate-in fade-in"
+        >
+          <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <span className="font-semibold block">Carefold service is currently unavailable</span>
+            <span className="leading-relaxed block text-amber-700 dark:text-amber-400">
+              The backend service could not be reached. Please verify the backend service is running and try again.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Session Expired Alert */}
+      {searchParams.get('error') === 'session_expired' && (
+        <div
+          role="alert"
+          data-testid="session-expired-alert"
+          className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 text-xs text-slate-800 dark:text-zinc-200 flex items-start gap-2.5 animate-in fade-in"
+        >
+          <AlertCircle className="w-4 h-4 text-slate-600 dark:text-zinc-400 shrink-0 mt-0.5" />
+          <span className="leading-relaxed">Your session has expired or is invalid. Please sign in again.</span>
+        </div>
+      )}
+
       {/* Error Alert */}
       {error && (
         <div

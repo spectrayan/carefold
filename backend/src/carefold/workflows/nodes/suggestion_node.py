@@ -86,17 +86,24 @@ class SuggestionNode(BaseNode):
         # 1. Dynamic LLM generation if model is present and context exists
         if self.model is not None and (prompt_text or completion_text):
             try:
+                import asyncio
                 loader = get_resource_loader()
                 prompt_tmpl = loader.get_prompt_text("suggestions/generation")
+                # Keep prompt compact to avoid high TTFT on local models
+                clean_assistant_resp = (completion_text or "")[:400]
+                clean_user_prompt = (prompt_text or "")[:200]
                 rendered_prompt = prompt_tmpl.format(
                     agent_title=agent_id.replace("-", " ").title(),
-                    user_prompt=prompt_text or "(none)",
-                    assistant_response=completion_text or "(none)",
+                    user_prompt=clean_user_prompt or "(none)",
+                    assistant_response=clean_assistant_resp or "(none)",
                     tools_used=", ".join(tools_used) if tools_used else "None",
                 )
-                resp = await self.model.ainvoke(
-                    [SystemMessage(content=rendered_prompt)],
-                    config={"tags": ["internal", "suggestion", "no_stream"]},
+                resp = await asyncio.wait_for(
+                    self.model.ainvoke(
+                        [SystemMessage(content=rendered_prompt)],
+                        config={"tags": ["internal", "suggestion", "no_stream"]},
+                    ),
+                    timeout=2.0,
                 )
                 content = str(getattr(resp, "content", "") or "").strip()
 
@@ -129,7 +136,7 @@ class SuggestionNode(BaseNode):
 
                 chips = filtered_chips[:3]
             except Exception as err:
-                logger.debug("Dynamic suggestion generation failed: %s; falling back to curated chips", err)
+                logger.debug("Dynamic suggestion generation timed out or failed: %s; falling back to curated chips", err)
 
         # 2. Offline / parameterless fallback to curated chips from ResourceLoader
         if not chips:
@@ -141,6 +148,17 @@ class SuggestionNode(BaseNode):
                 user_queries=user_queries,
             )
             chips = list(raw_chips)[:3]
+
+        # 3. Emit SSE custom event immediately so stream consumers receive it promptly
+        try:
+            from langchain_core.callbacks.manager import adispatch_custom_event
+            from carefold.constants.api import SSE_EVENT_SUGGESTIONS
+            await adispatch_custom_event(
+                SSE_EVENT_SUGGESTIONS,
+                {"type": SSE_EVENT_SUGGESTIONS, "suggestions": chips},
+            )
+        except Exception:
+            pass
 
         return {
             "follow_up_suggestions": chips,

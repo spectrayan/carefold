@@ -528,6 +528,7 @@ class GraphBuilder:
                         msg.content = json.dumps({"error": err_str, "success": False})
 
             res["iteration_count"] = state.get("iteration_count", 0) + 1
+            res["tool_calls"] = []
             return res
 
         async def _output_guardrail_wrapper(state: AgentState) -> Dict[str, Any]:

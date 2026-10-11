@@ -633,7 +633,7 @@ class AgentExecutionService:
         from carefold.loaders.context_loader import ContextLoader
         initial_input = ContextLoader.load_context(initial_input, ws_root)
 
-        graph_config = {"configurable": {"thread_id": thread_id}}
+        graph_config = {"configurable": {"thread_id": thread_id}, "recursion_limit": 25}
 
         # Helper context manager supporting both self.checkpointer and default AsyncSqliteSaver
         @asynccontextmanager

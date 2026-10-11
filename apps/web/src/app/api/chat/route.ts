@@ -21,6 +21,10 @@ import type { ChatRequestBody } from '@/types/api';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export async function GET(): Promise<NextResponse> {
+  return NextResponse.json({ status: 'ok', service: 'chat' }, { status: 200 });
+}
+
 export async function POST(req: Request | NextRequest): Promise<Response> {
   // 1. Parse JSON body
   let body: ChatRequestBody;

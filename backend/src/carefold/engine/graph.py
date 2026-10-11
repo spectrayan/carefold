@@ -633,10 +633,7 @@ def resolve_checkpointer_path(
         db_path = settings.db_path.resolve()
     elif os.getenv(ENV_DB_PATH) and os.getenv(ENV_DB_PATH).strip():
         db_path = Path(os.getenv(ENV_DB_PATH).strip()).resolve()
-    elif workspace_root is not None and (
-        (Path(workspace_root) / CHATS_DIR / DEFAULT_CHECKPOINTS_DB).is_file()
-        or not (Path(workspace_root) / "backend").is_dir()
-    ):
+    elif workspace_root is not None and not (Path(workspace_root) / "backend").is_dir():
         ws = Path(workspace_root)
         db_path = ws / CHATS_DIR / DEFAULT_CHECKPOINTS_DB
     else:

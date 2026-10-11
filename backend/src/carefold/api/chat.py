@@ -274,3 +274,35 @@ async def get_thread_history(
     except Exception:
         logger.exception("Failed to load thread history")
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to load thread history.")
+
+
+@router.delete("/chat/threads")
+@router.delete("/chat/threads/{thread_id}")
+@router.delete(ROUTE_CHAT_THREADS)
+async def delete_thread_history(
+    thread_id: Optional[str] = None,
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Deletes conversation thread tracking entity."""
+    clean_thread_id = (thread_id or "").strip()
+    if not clean_thread_id:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="Parameter 'thread_id' is required.")
+
+    owner_id = resolve_owner_user_id(user)
+    stmt = select(ChatThread).where(ChatThread.id == clean_thread_id)
+    res = await db.execute(stmt)
+    thread_record = res.scalar_one_or_none()
+
+    if thread_record is not None:
+        if owner_id and getattr(user, "role", "member") != "admin":
+            if thread_record.user_id is not None and thread_record.user_id != owner_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Access denied: conversation thread belongs to another user.",
+                )
+        await db.delete(thread_record)
+        await db.commit()
+
+    return {"success": True, "threadId": clean_thread_id, "deleted": True}
+

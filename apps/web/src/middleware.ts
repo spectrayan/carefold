@@ -73,9 +73,19 @@ export function middleware(request: NextRequest) {
 
   // 3. Authenticated visitors accessing auth entrypoints (/login, /register)
   const isAuthEntry = AUTH_ENTRY_ROUTES.some((route) => pathname === route);
-  if (isAuthEntry && isAuthenticated) {
-    const profileId = getActiveProfileId();
-    return NextResponse.redirect(new URL(`/p/${profileId}`, request.url));
+  const hasError = request.nextUrl.searchParams.has('error');
+  const isForce = request.nextUrl.searchParams.has('force');
+
+  if (isAuthEntry) {
+    if (hasError || isForce) {
+      const response = NextResponse.next();
+      response.cookies.delete('carefold_session');
+      return response;
+    }
+    if (isAuthenticated) {
+      const profileId = getActiveProfileId();
+      return NextResponse.redirect(new URL(`/p/${profileId}`, request.url));
+    }
   }
 
   return NextResponse.next();

@@ -125,6 +125,27 @@ describe('Edge Middleware Auth Route Guards', () => {
       const registerReq = new NextRequest(new URL('/register', BASE_URL));
       expect(middleware(registerReq).status).toBe(200);
     });
+
+    it('allows access to /login and clears stale session cookie when error=service_unavailable is present', () => {
+      const req = new NextRequest(new URL('/login?error=service_unavailable', BASE_URL), {
+        headers: { cookie: 'carefold_session=stale-session-token' },
+      });
+      const res = middleware(req);
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get('x-middleware-next')).toBe('1');
+      expect(res.cookies.get('carefold_session')?.value).toBe('');
+    });
+
+    it('allows access to /login when force parameter is present', () => {
+      const req = new NextRequest(new URL('/login?force=true', BASE_URL), {
+        headers: { cookie: 'carefold_session=stale-session-token' },
+      });
+      const res = middleware(req);
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get('x-middleware-next')).toBe('1');
+    });
   });
 
   describe('4. Root Path (/) Redirection at Edge', () => {

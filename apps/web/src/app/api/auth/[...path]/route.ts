@@ -87,16 +87,20 @@ async function proxyAuthRequest(req: NextRequest, subpath: string): Promise<Next
       headers: responseHeaders
     });
 
-    if (backendRes.status === 401 && subpath === 'me') {
+    if ((backendRes.status === 401 || backendRes.status === 503) && subpath === 'me') {
       nextRes.cookies.delete('carefold_session');
     }
 
     return nextRes;
   } catch (err: any) {
-    return NextResponse.json(
+    const errorRes = NextResponse.json(
       { error: `Auth backend unreachable: ${err.message}`, code: 'BACKEND_UNREACHABLE' },
       { status: 503 }
     );
+    if (subpath === 'me') {
+      errorRes.cookies.delete('carefold_session');
+    }
+    return errorRes;
   }
 }
 

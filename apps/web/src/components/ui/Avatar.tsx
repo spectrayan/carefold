@@ -95,6 +95,7 @@ export const Avatar = React.forwardRef<HTMLSpanElement, AvatarProps>(
         ref={ref}
         role={isShowingImage ? undefined : 'img'}
         aria-label={isShowingImage ? undefined : (alt || name || 'Avatar')}
+        suppressHydrationWarning
         className={cn(
           'relative inline-flex items-center justify-center rounded-full overflow-hidden shrink-0 select-none font-medium',
           slotStyles[effectiveSlot],
@@ -116,7 +117,7 @@ export const Avatar = React.forwardRef<HTMLSpanElement, AvatarProps>(
             {fallbackIcon}
           </span>
         ) : (
-          <span>{initials}</span>
+          <span suppressHydrationWarning>{initials}</span>
         )}
       </span>
     );

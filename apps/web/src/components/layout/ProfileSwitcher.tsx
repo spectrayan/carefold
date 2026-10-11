@@ -75,17 +75,38 @@ export function ProfileSwitcher({
   }, [activeProfileIdProp, pathname]);
 
   const activeProfile = React.useMemo(() => {
-    return (
+    const userFallbackName = user?.full_name?.trim() || user?.username?.trim() || 'Me';
+    const primarySelfProfile = profiles.find((p) => p.role === 'self' || p.relationship?.toLowerCase() === 'self');
+    const matched =
       profiles.find((p) => p.id === derivedProfileId) ||
-      profiles[0] || {
-        id: derivedProfileId,
-        name: derivedProfileId === 'me' ? 'Me' : derivedProfileId,
-        relationship: 'Self',
-        role: 'self' as const,
-        colorSlot: 1 as const
-      }
-    );
-  }, [profiles, derivedProfileId]);
+      (derivedProfileId === 'me' ? primarySelfProfile : undefined) ||
+      profiles[0];
+
+    if (matched) {
+      const isSelf = matched.role === 'self' || matched.relationship?.toLowerCase() === 'self' || derivedProfileId === 'me';
+      const resolvedName = (isSelf && (matched.name === 'Me' || !matched.name)) ? userFallbackName : matched.name;
+      return {
+        ...matched,
+        name: resolvedName,
+        shortName: matched.shortName || (resolvedName ? resolvedName.split(/\s+/)[0] : 'Me')
+      };
+    }
+
+    const isGenericId =
+      !derivedProfileId ||
+      derivedProfileId.toLowerCase() === 'me' ||
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(derivedProfileId);
+
+    const fallback: CareProfile = {
+      id: derivedProfileId,
+      name: isGenericId ? userFallbackName : derivedProfileId,
+      shortName: isGenericId ? (userFallbackName ? userFallbackName.split(/\s+/)[0] : 'Me') : derivedProfileId,
+      relationship: 'Self',
+      role: 'self',
+      colorSlot: 1
+    };
+    return fallback;
+  }, [profiles, derivedProfileId, user]);
 
   const handleOpenChange = useCallback(
     (newOpen: boolean) => {

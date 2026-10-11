@@ -161,12 +161,18 @@ export function HomeDashboardClient({
   // Resolved Profile Info
   const baseProfile: CareProfile = React.useMemo(() => {
     if (resolvedInitialProfile) return resolvedInitialProfile;
+    const userFallbackName = user?.full_name?.trim() || user?.username?.trim() || 'Me';
+    const userShortName = user?.full_name ? user.full_name.trim().split(/\s+/)[0] : (user?.username || 'Me');
+
     const household = getHouseholdProfile(profileId);
     if (household) {
+      const isSelf = household.role === 'self' || household.relationship?.toLowerCase() === 'self' || profileId === 'me';
+      const resolvedName = (isSelf && (household.name === 'Me' || !household.name)) ? userFallbackName : household.name;
+      const resolvedShortName = household.shortName || (resolvedName ? resolvedName.split(/\s+/)[0] : userShortName);
       return {
         id: household.id,
-        name: household.name,
-        shortName: household.shortName,
+        name: resolvedName,
+        shortName: resolvedShortName,
         relationship: household.relationship || 'Self',
         role: household.role || 'Personal care profile',
         colorSlot: household.colorSlot || 1,
@@ -175,14 +181,20 @@ export function HomeDashboardClient({
         viewers: household.viewers
       };
     }
+    const isGenericId =
+      !profileId ||
+      profileId.toLowerCase() === 'me' ||
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileId);
+
     return {
       id: profileId,
-      name: profileId === 'me' ? 'Me' : profileId,
+      name: isGenericId ? userFallbackName : profileId,
+      shortName: isGenericId ? userShortName : profileId,
       relationship: 'Self',
       role: 'Personal care profile',
       colorSlot: 1
     };
-  }, [resolvedInitialProfile, profileId]);
+  }, [resolvedInitialProfile, profileId, user]);
 
   const profile: CareProfile = profileOverride || baseProfile;
 
@@ -262,6 +274,22 @@ export function HomeDashboardClient({
   const prepPercent = appointment
     ? Math.round((appointment.prepCompletedQuestions / appointment.prepTotalQuestions) * 100)
     : 0;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-pulse p-4" data-testid="dashboard-loading" aria-busy="true">
+        <div className="h-28 bg-[var(--cf-surface)] rounded-2xl border border-[var(--cf-border)]" />
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6">
+          <div className="h-64 bg-[var(--cf-surface)] rounded-2xl border border-[var(--cf-border)]" />
+          <div className="h-64 bg-[var(--cf-surface)] rounded-2xl border border-[var(--cf-border)]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
@@ -512,14 +540,14 @@ export function HomeDashboardClient({
           <div className="flex items-center gap-2 pb-3 mb-4 border-b border-[var(--cf-border)]">
             <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <h2 id="section-ask" className="text-base font-semibold text-[var(--cf-fg)]">
-              Ask about {profile.name}
+              Ask about {displayName}
             </h2>
           </div>
 
           <form onSubmit={handleAskSubmit} className="space-y-3">
             <textarea
-              aria-label={`Ask Carefold about ${profile.name}`}
-              placeholder={`Ask anything about ${profile.name.split(' ')[0].toLowerCase()}'s health, paperwork, or visits...`}
+              aria-label={`Ask Carefold about ${displayName}`}
+              placeholder={`Ask anything about ${displayName.split(' ')[0].toLowerCase()}'s health, paperwork, or visits...`}
               value={askDraft}
               onChange={(e) => setAskDraft(e.target.value)}
               onKeyDown={(e) => {
