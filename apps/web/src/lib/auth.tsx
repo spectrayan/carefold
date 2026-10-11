@@ -102,8 +102,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isLoggingOutRef.current) {
       return null;
     }
+    let activeMode: string = 'local';
     try {
-      let activeMode: string = 'local';
 
       // 1. Fetch provider status
       try {
