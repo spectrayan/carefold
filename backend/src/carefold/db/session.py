@@ -499,7 +499,7 @@ async def _sqlite_file_lock(db_path: Optional[Path]):
     lock_path = Path(f"{db_path}.lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        lock_fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o666)
+        lock_fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o600)
     except OSError as err:
         logger.warning("sqlite_lock_file_open_failed", error=str(err), path=str(lock_path))
         yield

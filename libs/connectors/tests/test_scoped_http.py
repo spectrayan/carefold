@@ -60,7 +60,7 @@ async def test_scoped_http_blocks_unauthorized_host(mock_transport: httpx.MockTr
     with pytest.raises(EgressBlockedError) as exc_info:
         await scoped.get("https://unauthorized-leak.com/exfiltrate")
     assert "blocked by manifest policy" in str(exc_info.value)
-    assert "unauthorized-leak.com" in str(exc_info.value)
+    assert exc_info.value.host == "unauthorized-leak.com"
 
 
 @pytest.mark.asyncio

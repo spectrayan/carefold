@@ -30,10 +30,7 @@ from connectors.base import (
 )
 from connectors.http import ScopedHttp
 from connectors.manifest import ConnectorManifest
-try:
-    from tests.fixtures.dummy_connector import DummyClinicalConnector
-except ImportError:
-    from .fixtures.dummy_connector import DummyClinicalConnector
+from .fixtures.dummy_connector import DummyClinicalConnector
 
 
 def test_connector_protocol_runtime_checkable():

@@ -57,8 +57,11 @@ jobs:
           pip install -e backend
           pip install -r backend/requirements-dev.txt
 
-      - name: Run pytest test suite
-        run: pytest backend/tests/ libs/connectors/tests/
+      - name: Run backend pytest test suite
+        run: pytest backend/tests/
+
+      - name: Run connectors pytest test suite
+        run: pytest libs/connectors/tests/
 
   frontend:
     name: Frontend Verification
