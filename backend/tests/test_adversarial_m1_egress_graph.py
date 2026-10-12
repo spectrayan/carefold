@@ -558,9 +558,9 @@ class TestMultiTurnReentrancyAdversarial:
             done_ev = next((e for e in events if e.get("type") == "done"), None)
             assert done_ev is not None, f"Turn {idx} failed to complete!"
 
-        # Verify files were actually written in workspace
-        assert (notes_dir / "NoteOne.md").is_file()
-        assert (notes_dir / "NoteTwo.md").is_file()
+        # Verify files were actually written in workspace (workspace-note tool slugifies title to lowercase)
+        assert (notes_dir / "noteone.md").is_file()
+        assert (notes_dir / "notetwo.md").is_file()
 
         # Check total messages in history:
         # Turn 1: Human, AI(tool_call), ToolMessage, AI(final) -> 4
