@@ -60,6 +60,7 @@ from langgraph.store.base import BaseStore
 from carefold.audit.logger import record_audit
 from carefold.config import settings
 from carefold.constants.api import (
+    SSE_EVENT_APPROVAL_REQUIRED,
     SSE_EVENT_DONE,
     SSE_EVENT_ERROR,
     SSE_EVENT_MESSAGE,
@@ -398,6 +399,8 @@ class AgentExecutionService:
         boundary_reason: Optional[str] = None,
         suggestions: Optional[List[str]] = None,
         citations: Optional[List[Dict[str, Any]]] = None,
+        approval_required: bool = False,
+        approval_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Formats the terminal completion event."""
         chips = suggestions or []
@@ -415,6 +418,9 @@ class AgentExecutionService:
         }
         if citations:
             payload["citations"] = citations
+        if approval_required:
+            payload["approval_required"] = True
+            payload["approval_id"] = approval_id
         return payload
 
     @staticmethod
@@ -600,6 +606,8 @@ class AgentExecutionService:
         accumulated_text = ""
         refusal_triggered = False
         refusal_reason: Optional[str] = None
+        approval_required_triggered = False
+        active_approval_id: Optional[str] = None
         suggestions: List[str] = []
         citations: List[Dict[str, Any]] = []
 
@@ -770,6 +778,16 @@ class AgentExecutionService:
                                 thread_id=thread_id,
                             )
                             yield data
+                        elif name in (SSE_EVENT_APPROVAL_REQUIRED, "approval_required"):
+                            approval_required_triggered = True
+                            active_approval_id = data.get("approval_id")
+                            logger.info(
+                                "approval_required_emitted",
+                                approval_id=active_approval_id,
+                                tool=data.get("tool_name"),
+                                thread_id=thread_id,
+                            )
+                            yield data
                         elif name == SSE_EVENT_REFUSAL:
                             refusal_triggered = True
                             refusal_reason = data.get("reason")
@@ -820,6 +838,19 @@ class AgentExecutionService:
                 yield self.format_error_event("Database error: file is not a database")
             else:
                 yield self.format_error_event("An error occurred during turn execution.")
+            return
+
+        # Handle turn interrupted for HITL approval
+        if approval_required_triggered:
+            logger.info("workflow_turn_interrupted_for_approval", thread_id=thread_id, approval_id=active_approval_id)
+            yield self.format_done_event(
+                full_text=accumulated_text or "Action paused: human approval required to execute this operation.",
+                thread_id=thread_id,
+                refused=False,
+                suggestions=[],
+                approval_required=True,
+                approval_id=active_approval_id,
+            )
             return
 
         # 7. Post-Execution Safety Verification and Done Event
@@ -992,6 +1023,205 @@ class AgentExecutionService:
             model_name=model_name,
             api_key=api_key,
             base_url=base_url,
+            **kwargs,
+        ):
+            if raw_events:
+                yield event
+            else:
+                yield self.format_sse_wire_event(event)
+
+    async def execute_resume_turn(
+        self,
+        thread_id: str,
+        approval_id: str,
+        decision: str = "approved",
+        edited_args: Optional[Dict[str, Any]] = None,
+        user_id: Optional[str] = None,
+        profile_id: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[Dict[str, Any]]:
+        """Resumes an interrupted LangGraph thread with human steward approval or rejection decision."""
+        from langgraph.types import Command
+        from carefold.db.session import get_session_factory
+        from carefold.db.models import Approval
+        from sqlalchemy import select
+
+        app_store = kwargs.get("approval_store")
+        eff_args = edited_args
+        rec_profile_id = profile_id or "default_profile"
+        rec_payload_hash = ""
+        rec_status = decision
+
+        # 1. Lookup approval record in app_store or database
+        if app_store and hasattr(app_store, "get"):
+            if inspect.iscoroutinefunction(app_store.get):
+                rec = await app_store.get(approval_id)
+            else:
+                rec = app_store.get(approval_id)
+            if rec:
+                rec_status = getattr(rec, "status", decision)
+                eff_args = edited_args or getattr(rec, "args", {})
+                rec_profile_id = getattr(rec, "profile_id", rec_profile_id)
+                rec_payload_hash = getattr(rec, "payload_hash", "")
+        elif app_store and hasattr(app_store, "_records"):
+            rec = app_store._records.get(approval_id)
+            if rec:
+                rec_status = getattr(rec, "status", decision)
+                eff_args = edited_args or getattr(rec, "args", {})
+                rec_profile_id = getattr(rec, "profile_id", rec_profile_id)
+                rec_payload_hash = getattr(rec, "payload_hash", "")
+        else:
+            try:
+                factory = get_session_factory()
+                async with factory() as session:
+                    stmt = select(Approval).where(Approval.id == approval_id)
+                    res = await session.execute(stmt)
+                    approval_record = res.scalar_one_or_none()
+                    if approval_record is None:
+                        yield self.format_error_event(f"Approval record '{approval_id}' not found.")
+                        return
+
+                    if approval_record.status not in ("approved", "rejected", "consumed"):
+                        yield self.format_error_event(
+                            f"Approval '{approval_id}' has status '{approval_record.status}', cannot resume. Must be approved or rejected first."
+                        )
+                        return
+
+                    eff_args = edited_args or approval_record.args_dict
+                    rec_profile_id = approval_record.profile_id
+                    rec_payload_hash = approval_record.payload_hash
+                    rec_status = approval_record.status
+            except Exception as db_err:
+                logger.warning("Could not query DB for approval record: %s", db_err)
+
+        # 2. Resolve checkpointer and graph
+        db_path = self.db_path or resolve_checkpointer_path(self.workspace_root)
+        checkpointer = kwargs.get("checkpointer") or self.checkpointer
+        effective_store = kwargs.get("store") or self.store
+
+        @asynccontextmanager
+        async def _resolve_checkpointer():
+            if checkpointer is not None:
+                yield checkpointer
+            else:
+                async with create_async_sqlite_saver(db_path) as saver:
+                    yield saver
+
+        active_model = self.model or create_chat_model(provider="ollama")
+
+        graph_config = {
+            "configurable": {
+                "thread_id": thread_id,
+                "user_id": user_id or "default_user",
+                "profile_id": profile_id or rec_profile_id,
+                "approval_id": approval_id,
+            }
+        }
+        if app_store:
+            graph_config["configurable"]["approval_store"] = app_store
+
+        async with _resolve_checkpointer() as cp:
+            if self.graph is not None:
+                compiled_graph = self.graph
+            elif self.graph_builder is not None:
+                if hasattr(self.graph_builder, "build"):
+                    compiled_graph = self.graph_builder.build(checkpointer=cp, store=effective_store)
+                elif hasattr(self.graph_builder, "build_graph"):
+                    compiled_graph = self.graph_builder.build_graph(active_model, checkpointer=cp, store=effective_store)
+                elif callable(self.graph_builder):
+                    compiled_graph = self.graph_builder(active_model, checkpointer=cp, store=effective_store)
+                else:
+                    compiled_graph = create_agent_graph(active_model, checkpointer=cp, store=effective_store)
+            else:
+                try:
+                    from carefold.engine.builder import GraphBuilder
+                    compiled_graph = (
+                        GraphBuilder(include_supervisor=False)
+                        .with_model(active_model)
+                        .with_checkpointer(cp)
+                        .build(checkpointer=cp, store=effective_store)
+                    )
+                except Exception:
+                    compiled_graph = create_agent_graph(active_model, checkpointer=cp, store=effective_store)
+
+            resume_payload = {
+                "approval_id": approval_id,
+                "decision": decision or rec_status,
+                "edited_args": eff_args,
+                "payload_hash": rec_payload_hash,
+            }
+
+            resume_cmd = Command(resume=resume_payload)
+            accumulated_text = ""
+            suggestions = []
+
+            try:
+                async for event in compiled_graph.astream_events(resume_cmd, config=graph_config, version="v2"):
+                    ev_kind = event.get("event")
+                    if ev_kind == "on_chat_model_stream":
+                        node_name = event.get("metadata", {}).get("langgraph_node")
+                        tags = event.get("tags") or []
+                        if (
+                            (node_name and node_name in NON_STREAMING_NODES)
+                            or "internal" in tags
+                            or "no_stream" in tags
+                            or "suggestion" in tags
+                        ):
+                            continue
+                        chunk = event.get("data", {}).get("chunk")
+                        if chunk and getattr(chunk, "content", None):
+                            accumulated_text += chunk.content
+                            yield self.format_token_event(chunk.content)
+
+                    elif ev_kind == "on_custom_event":
+                        name = event.get("name")
+                        data = event.get("data", {})
+                        if name in (SSE_EVENT_TOOL_START, SSE_EVENT_TOOL_END, SSE_EVENT_REFUSAL, SSE_EVENT_SUGGESTIONS):
+                            yield data
+                            if name == SSE_EVENT_SUGGESTIONS:
+                                suggestions = data.get("suggestions", [])
+
+            except Exception as err:
+                logger.exception("resume_stream_error", error=str(err), thread_id=thread_id)
+                yield self.format_error_event(f"Resume error: {err}")
+                return
+
+            yield self.format_done_event(
+                full_text=accumulated_text,
+                thread_id=thread_id,
+                refused=False,
+                suggestions=suggestions,
+            )
+
+    async def execute_resume_chat(
+        self,
+        request: Union[Dict[str, Any], Any],
+        raw_events: bool = False,
+        **kwargs: Any,
+    ) -> AsyncIterator[Union[Dict[str, Any], str]]:
+        """High-level chat resumption generator yielding wire SSE strings or raw dict events."""
+        if hasattr(request, "model_dump"):
+            req_dict = request.model_dump()
+        elif isinstance(request, dict):
+            req_dict = request
+        else:
+            req_dict = dict(request)
+
+        thread_id = req_dict.get("thread_id") or req_dict.get("threadId")
+        approval_id = req_dict.get("approval_id") or req_dict.get("approvalId")
+        decision = req_dict.get("decision", "approved")
+        edited_args = req_dict.get("edited_args") or req_dict.get("editedArgs")
+        profile_id = req_dict.get("profile_id") or req_dict.get("profileId")
+        user_id = req_dict.get("user_id") or req_dict.get("userId") or kwargs.get("user_id", "default_user")
+
+        async for event in self.execute_resume_turn(
+            thread_id=thread_id,
+            approval_id=approval_id,
+            decision=decision,
+            edited_args=edited_args,
+            user_id=user_id,
+            profile_id=profile_id,
             **kwargs,
         ):
             if raw_events:

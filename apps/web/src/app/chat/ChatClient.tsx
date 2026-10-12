@@ -49,6 +49,10 @@ import { DossierExportMenu } from '@/components/chat/DossierExportMenu';
 import { ClinicalConsentDialog } from '@/components/ClinicalConsentDialog';
 import { SessionHistorySidebar } from '@/components/chat/SessionHistorySidebar';
 import { ActivityLogDrawer } from '@/components/chat/ActivityLogDrawer';
+import { ContextSourcesChip } from '@/components/chat/ContextSourcesChip';
+import { CloudDisclosureModal } from '@/components/chat/CloudDisclosureModal';
+import { shouldTriggerCloudDisclosure, grantCloudConsent } from '@/lib/cloudConsent';
+import type { ContextSourceItem, ApprovalRecord } from '@/lib/types';
 import {
   upsertSessionFromMessages,
   generateThreadId,
@@ -116,6 +120,13 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
 
   // Session continuity thread ID (deterministic initial state for SSR)
   const [threadId, setThreadId] = useState<string>(`thread-${defaultAgentId}`);
+
+  // Context sources & monotone taint state (AU-19 & AU-20)
+  const [activeSources, setActiveSources] = useState<ContextSourceItem[]>([]);
+  const [isContextTainted, setIsContextTainted] = useState(false);
+  const [showCloudDisclosureModal, setShowCloudDisclosureModal] = useState(false);
+  const pendingSendPromptRef = useRef<string | null>(null);
+  const currentProfileId = (user as any)?.profile_id || (user as any)?.profileId || 'me';
 
   // Load client-persisted user settings on mount & subscribe to settings changes
   useEffect(() => {
@@ -746,6 +757,31 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
                       : msg
                   )
                 );
+              } else if (eventType === 'approval_required') {
+                const approvalRecord: ApprovalRecord = {
+                  id: data.approval_id || data.id,
+                  tool_name: data.tool || data.tool_name,
+                  risk_tier: data.risk_tier || 'write_external',
+                  destination_hosts: data.destination_hosts || [],
+                  args_redacted: data.args || data.args_redacted || {},
+                  payload_hash: data.payload_hash || '',
+                  status: 'pending',
+                  expires_at: data.expires_at,
+                  created_at: new Date().toISOString(),
+                  thread_id: threadId,
+                  reason: data.reason
+                };
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, approval: approvalRecord, isStreaming: false }
+                      : msg
+                  )
+                );
+                setIsStreaming(false);
+              } else if (eventType === 'context_sources') {
+                setActiveSources(data.sources || []);
+                setIsContextTainted(Boolean(data.tainted));
               } else if (eventType === 'suggestions') {
                 const list = data.suggestions || data.followUpSuggestions;
                 if (Array.isArray(list) && list.length > 0) {
@@ -842,6 +878,17 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
 
     setChatError(null);
 
+    const hasSensitiveContext =
+      selectedAgent?.risk_class === 'clinical_assist' ||
+      attachedFiles.length > 0 ||
+      isContextTainted;
+
+    if (shouldTriggerCloudDisclosure(settings, hasSensitiveContext, currentProfileId)) {
+      pendingSendPromptRef.current = text;
+      setShowCloudDisclosureModal(true);
+      return;
+    }
+
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -893,6 +940,99 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
       messages,
       assistantMessageId
     );
+  };
+
+  const handleApprovalDecided = (updatedApproval: ApprovalRecord) => {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.approval?.id === updatedApproval.id
+          ? { ...msg, approval: updatedApproval }
+          : msg
+      )
+    );
+  };
+
+  const handleResume = async (approvalId: string, resumeThreadId?: string) => {
+    const targetThreadId = resumeThreadId || threadId;
+    setIsStreaming(true);
+    setPoliteAnnouncement('Resuming tool execution after authorization...');
+
+    try {
+      const res = await fetch('/api/chat/resume', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream'
+        },
+        body: JSON.stringify({
+          thread_id: targetThreadId,
+          approval_id: approvalId,
+          decision: 'approved',
+          profile_id: currentProfileId
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Resume error: HTTP ${res.status}`);
+      }
+
+      if (!res.body) throw new Error('Resume response body is null');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let currentEvent = 'token';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          if (trimmed.startsWith('event:')) {
+            currentEvent = trimmed.slice(6).trim();
+            continue;
+          }
+          if (trimmed.startsWith('data:')) {
+            const dataStr = trimmed.slice(5).trim();
+            try {
+              const data = JSON.parse(dataStr);
+              const eventType = data.type || currentEvent;
+
+              if (eventType === 'token') {
+                const delta = data.delta || data.token || '';
+                setMessages((prev) => {
+                  const lastAssistant = [...prev].reverse().find((m) => m.role === 'assistant');
+                  if (!lastAssistant) return prev;
+                  return prev.map((m) =>
+                    m.id === lastAssistant.id ? { ...m, content: m.content + delta } : m
+                  );
+                });
+              } else if (eventType === 'tool_end') {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.approval?.id === approvalId
+                      ? { ...m, approval: { ...m.approval, status: 'consumed' as const } }
+                      : m
+                  )
+                );
+              } else if (eventType === 'done') {
+                setIsStreaming(false);
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to resume chat:', err);
+    } finally {
+      setIsStreaming(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -1060,6 +1200,16 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
                   <span className="sr-only sm:not-sr-only">Clinical assist: consent given</span>
                 </span>
               )}
+
+              <ContextSourcesChip
+                sources={activeSources}
+                isTainted={isContextTainted}
+                hasPhi={
+                  selectedAgent?.risk_class === 'clinical_assist' ||
+                  attachedFiles.length > 0 ||
+                  activeSources.some((s) => s.has_phi)
+                }
+              />
             </div>
 
             {/* Sub-caption description directly below agent dropdown */}
@@ -1242,6 +1392,9 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
                   disabled={isStreaming}
                   threadId={threadId}
                   agentTitle={selectedAgent?.title}
+                  profileId={currentProfileId}
+                  onApprovalDecided={handleApprovalDecided}
+                  onResume={handleResume}
                 />
               ))}
 
@@ -1440,6 +1593,35 @@ export function ChatClient({ initialAgents }: { initialAgents: AgentSummary[] })
         isOpen={isActivityOpen}
         onClose={() => setIsActivityOpen(false)}
         activeAgentId={selectedAgentId}
+      />
+
+      {/* Cloud PHI Disclosure Modal (AU-20) */}
+      <CloudDisclosureModal
+        isOpen={showCloudDisclosureModal}
+        provider={settings.provider}
+        model={getEffectiveModel(settings)}
+        onFallbackToLocal={() => {
+          handleSettingsChange({ ...settings, provider: 'ollama', model: 'llama3.2' });
+          setShowCloudDisclosureModal(false);
+          if (pendingSendPromptRef.current !== null) {
+            const prompt = pendingSendPromptRef.current;
+            pendingSendPromptRef.current = null;
+            sendMessage(prompt);
+          }
+        }}
+        onAuthorizeCloud={() => {
+          grantCloudConsent(settings.provider, getEffectiveModel(settings), currentProfileId);
+          setShowCloudDisclosureModal(false);
+          if (pendingSendPromptRef.current !== null) {
+            const prompt = pendingSendPromptRef.current;
+            pendingSendPromptRef.current = null;
+            sendMessage(prompt);
+          }
+        }}
+        onCancel={() => {
+          setShowCloudDisclosureModal(false);
+          pendingSendPromptRef.current = null;
+        }}
       />
     </div>
   );

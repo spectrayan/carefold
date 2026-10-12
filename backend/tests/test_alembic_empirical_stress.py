@@ -45,12 +45,18 @@ EXPECTED_BASELINE_TABLES = {
     "chat_threads",
 }
 
+EXPECTED_AUTONOMY_BATCH_1_TABLES = {
+    "profile_keys",
+    "approvals",
+    "jobs",
+}
+
 EXPECTED_HEAD_TABLES = EXPECTED_BASELINE_TABLES | {
     "alembic_version",
     "audit_events",
     "connections",
     "credentials",
-}
+} | EXPECTED_AUTONOMY_BATCH_1_TABLES
 
 EXPECTED_CAS_COLUMNS = {
     "extracted_text",
@@ -64,7 +70,7 @@ EXPECTED_CAS_COLUMNS = {
 def test_repeated_upgrade_downgrade_cycles_sqlite():
     """Empirically stress-tests repeated upgrade/downgrade cycles across multiple rounds:
 
-    upgrade head -> downgrade 0001_baseline_schema -> upgrade head -> downgrade base -> upgrade head (x3 iterations).
+    upgrade head -> downgrade 0002_autonomy_foundations -> downgrade 0001_baseline_schema -> upgrade head -> downgrade base -> upgrade head (x3 iterations).
     Verifies table sets, indexes, alembic_version tracking, and absence of temporary rebuild tables.
     """
     engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
@@ -73,7 +79,7 @@ def test_repeated_upgrade_downgrade_cycles_sqlite():
         cfg = get_alembic_config(conn)
 
         for iteration in range(1, 4):
-            # 1. Upgrade to head
+            # 1. Upgrade to head (0003_autonomy_batch_1)
             alembic.command.upgrade(cfg, "head")
             insp = inspect(conn)
             tables = set(insp.get_table_names())
@@ -81,7 +87,19 @@ def test_repeated_upgrade_downgrade_cycles_sqlite():
             assert not any(t.startswith("_alembic_tmp_") for t in tables), f"Iteration {iteration}: Lingering tmp tables"
 
             curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert curr_ver == "0002_autonomy_foundations", f"Iteration {iteration}: Expected 0002 at head, got {curr_ver}"
+            assert curr_ver == "0003_autonomy_batch_1", f"Iteration {iteration}: Expected 0003_autonomy_batch_1 at head, got {curr_ver}"
+
+            # 1b. Downgrade to 0002_autonomy_foundations
+            alembic.command.downgrade(cfg, "0002_autonomy_foundations")
+            insp_0002 = inspect(conn)
+            tables_0002 = set(insp_0002.get_table_names())
+            assert "profile_keys" not in tables_0002, f"Iteration {iteration}: profile_keys not dropped on 0002 downgrade"
+            assert "approvals" not in tables_0002, f"Iteration {iteration}: approvals not dropped on 0002 downgrade"
+            assert "jobs" not in tables_0002, f"Iteration {iteration}: jobs not dropped on 0002 downgrade"
+            assert {"audit_events", "connections", "credentials"}.issubset(tables_0002), f"Iteration {iteration}: Missing 0002 tables"
+            assert not any(t.startswith("_alembic_tmp_") for t in tables_0002), f"Iteration {iteration}: Lingering tmp tables"
+            curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+            assert curr_ver == "0002_autonomy_foundations", f"Iteration {iteration}: Expected 0002 at foundations, got {curr_ver}"
 
             # 2. Downgrade to 0001_baseline_schema
             alembic.command.downgrade(cfg, "0001_baseline_schema")
@@ -91,6 +109,9 @@ def test_repeated_upgrade_downgrade_cycles_sqlite():
             assert "audit_events" not in tables, f"Iteration {iteration}: audit_events not dropped"
             assert "connections" not in tables, f"Iteration {iteration}: connections not dropped"
             assert "credentials" not in tables, f"Iteration {iteration}: credentials not dropped"
+            assert "profile_keys" not in tables, f"Iteration {iteration}: profile_keys not dropped"
+            assert "approvals" not in tables, f"Iteration {iteration}: approvals not dropped"
+            assert "jobs" not in tables, f"Iteration {iteration}: jobs not dropped"
             assert not any(t.startswith("_alembic_tmp_") for t in tables), f"Iteration {iteration}: Lingering tmp tables"
 
             curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -101,6 +122,8 @@ def test_repeated_upgrade_downgrade_cycles_sqlite():
             insp = inspect(conn)
             tables = set(insp.get_table_names())
             assert EXPECTED_HEAD_TABLES.issubset(tables), f"Iteration {iteration}: Missing head tables after re-upgrade"
+            curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+            assert curr_ver == "0003_autonomy_batch_1", f"Iteration {iteration}: Expected 0003_autonomy_batch_1 after re-upgrade, got {curr_ver}"
 
             # 4. Downgrade to base
             alembic.command.downgrade(cfg, "base")
@@ -114,6 +137,8 @@ def test_repeated_upgrade_downgrade_cycles_sqlite():
             insp = inspect(conn)
             tables = set(insp.get_table_names())
             assert EXPECTED_HEAD_TABLES.issubset(tables), f"Iteration {iteration}: Missing head tables after base upgrade"
+            curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+            assert curr_ver == "0003_autonomy_batch_1", f"Iteration {iteration}: Expected 0003_autonomy_batch_1 after base upgrade, got {curr_ver}"
 
 
 def test_batch_rebuild_data_preservation_and_cas_lifecycle():
@@ -716,6 +741,9 @@ def test_offline_sql_downgrade_generation_dialects():
 
     alembic.command.downgrade(cfg_pg_down, "head:0001_baseline_schema", sql=True)
     sql_pg_down = buf_pg_down.getvalue()
+    assert "DROP TABLE jobs;" in sql_pg_down
+    assert "DROP TABLE approvals;" in sql_pg_down
+    assert "DROP TABLE profile_keys;" in sql_pg_down
     assert "DROP TABLE credentials;" in sql_pg_down
     assert "DROP TABLE connections;" in sql_pg_down
     assert "DROP TABLE audit_events;" in sql_pg_down

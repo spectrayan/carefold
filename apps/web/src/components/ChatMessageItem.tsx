@@ -25,6 +25,8 @@ import { ChatMarkdown } from './chat/ChatMarkdown';
 import { ThinkingIndicator } from './chat/ThinkingIndicator';
 import { EmergencyEscalationCard } from './chat/EmergencyEscalationCard';
 import { DossierCard } from './chat/DossierCard';
+import { ApprovalCard } from './chat/ApprovalCard';
+import type { ApprovalRecord } from '@/lib/types';
 
 export interface ChatMessage {
   id: string;
@@ -41,6 +43,7 @@ export interface ChatMessage {
   toolTraces?: ToolTraceItem[];
   traces?: ToolTraceItem[];
   attachments?: string[];
+  approval?: ApprovalRecord;
 }
 
 export interface ChatMessageItemProps {
@@ -50,6 +53,9 @@ export interface ChatMessageItemProps {
   disabled?: boolean;
   agentTitle?: string;
   threadId?: string;
+  profileId?: string;
+  onApprovalDecided?: (updatedApproval: ApprovalRecord) => void;
+  onResume?: (approvalId: string, threadId?: string) => void;
 }
 
 const SAFE_REFUSAL_SNIPPET = 'I am a wellness and care navigation assistant, not a licensed medical professional';
@@ -109,7 +115,10 @@ export function ChatMessageItem({
   onRegenerate,
   disabled = false,
   agentTitle,
-  threadId
+  threadId,
+  profileId,
+  onApprovalDecided,
+  onResume,
 }: ChatMessageItemProps) {
   const displayContent = message.role === 'assistant'
     ? stripReferencePreamble(stripSuggestionLeakage(message.content))
@@ -204,6 +213,19 @@ export function ChatMessageItem({
       {isHardRefusal && message.refusalReason && (
         <div data-testid="refusal-reason-callout" className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-2 italic">
           Blocked Category: {message.refusalReason}
+        </div>
+      )}
+
+      {/* Human-in-the-Loop Action Approval Card */}
+      {message.approval && (
+        <div data-testid="embedded-approval-card" className="mb-3">
+          <ApprovalCard
+            approval={message.approval}
+            profileId={profileId}
+            onDecided={onApprovalDecided}
+            onResume={onResume}
+            disabled={disabled}
+          />
         </div>
       )}
 

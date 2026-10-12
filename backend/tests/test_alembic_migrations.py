@@ -54,12 +54,18 @@ EXPECTED_BASELINE_TABLES = {
     "chat_threads",
 }
 
+EXPECTED_AUTONOMY_BATCH_1_TABLES = {
+    "profile_keys",
+    "approvals",
+    "jobs",
+}
+
 EXPECTED_HEAD_TABLES = EXPECTED_BASELINE_TABLES | {
     "alembic_version",
     "audit_events",
     "connections",
     "credentials",
-}
+} | EXPECTED_AUTONOMY_BATCH_1_TABLES
 
 EXPECTED_ATTACHMENT_CAS_COLUMNS = {
     "extracted_text",
@@ -101,10 +107,32 @@ def test_upgrade_head_fresh_sqlite():
 
         cred_cols = {c["name"] for c in insp.get_columns("credentials")}
         expected_cred_cols = {
-            "id", "connection_id", "profile_id", "token_version",
+            "id", "connection_id", "profile_id", "token_version", "dek_version",
             "encrypted_blob", "expires_at", "created_at", "updated_at",
         }
         assert expected_cred_cols.issubset(cred_cols)
+
+        pk_cols = {c["name"] for c in insp.get_columns("profile_keys")}
+        expected_pk_cols = {"id", "profile_id", "encrypted_dek", "dek_version", "created_at", "updated_at"}
+        assert expected_pk_cols.issubset(pk_cols)
+
+        appr_cols = {c["name"] for c in insp.get_columns("approvals")}
+        expected_appr_cols = {
+            "id", "profile_id", "run_id", "thread_id", "tool_name",
+            "args_redacted", "payload_hash", "destination_hosts",
+            "risk_tier", "status", "expires_at", "created_at",
+            "decided_at", "decided_by",
+        }
+        assert expected_appr_cols.issubset(appr_cols)
+
+        job_cols = {c["name"] for c in insp.get_columns("jobs")}
+        expected_job_cols = {
+            "id", "profile_id", "kind", "routine_id", "connection_id",
+            "payload", "timezone", "rrule", "next_run_at", "lease_owner",
+            "lease_until", "attempts", "idempotency_key", "status",
+            "created_at", "updated_at",
+        }
+        assert expected_job_cols.issubset(job_cols)
 
 
 def test_downgrade_to_baseline_sqlite_batch_rebuild():
@@ -152,6 +180,9 @@ def test_downgrade_to_baseline_sqlite_batch_rebuild():
         assert "audit_events" not in tables
         assert "connections" not in tables
         assert "credentials" not in tables
+        assert "profile_keys" not in tables
+        assert "approvals" not in tables
+        assert "jobs" not in tables
 
         # Baseline tables should still exist
         assert EXPECTED_BASELINE_TABLES.issubset(tables)
@@ -170,6 +201,118 @@ def test_downgrade_to_baseline_sqlite_batch_rebuild():
         assert row[1] == "doc.pdf"
         assert row[2] == "application/pdf"
         assert row[3] == 1024
+
+
+def test_downgrade_to_0002_autonomy_foundations():
+    """Tests downgrading from 0003_autonomy_batch_1 to 0002_autonomy_foundations.
+
+    Asserts:
+    1. Table drops: jobs, approvals, profile_keys are completely dropped.
+    2. Batch column drop: dek_version is stripped from credentials.
+    3. Data preservation: existing credential columns and data survive the batch alter.
+    4. Re-upgrade: upgrade back to head succeeds without errors.
+    """
+    engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
+    with engine.connect() as conn:
+        cfg = get_alembic_config(conn)
+        alembic.command.upgrade(cfg, "head")
+
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+        # Seed profile, connection, and credential with dek_version = 2
+        conn.execute(
+            text("""
+                INSERT INTO profiles (id, name, relationship, role, avatar_color, is_primary, created_at, updated_at)
+                VALUES ('prof-m2-test', 'Alice', 'self', 'self', '1', 1, :now, :now)
+            """),
+            {"now": now},
+        )
+        conn.execute(
+            text("""
+                INSERT INTO connections (id, user_id, profile_id, connector_id, status, config_json, created_at, updated_at)
+                VALUES ('conn-m2-test', 'user-1', 'prof-m2-test', 'epic-fhir', 'active', '{}', :now, :now)
+            """),
+            {"now": now},
+        )
+        conn.execute(
+            text("""
+                INSERT INTO credentials (
+                    id, connection_id, profile_id, token_version, dek_version,
+                    encrypted_blob, aad_binding, created_at, updated_at
+                ) VALUES (
+                    'cred-m2-test', 'conn-m2-test', 'prof-m2-test', 1, 2,
+                    'encrypted_blob_payload_xyz', 'prof-m2-test|conn-m2-test|2', :now, :now
+                )
+            """),
+            {"now": now},
+        )
+        conn.execute(
+            text("""
+                INSERT INTO profile_keys (id, profile_id, encrypted_dek, dek_version, created_at, updated_at)
+                VALUES ('pk-m2-test', 'prof-m2-test', 'enc_dek_hex_123', 1, :now, :now)
+            """),
+            {"now": now},
+        )
+        conn.execute(
+            text("""
+                INSERT INTO approvals (
+                    id, profile_id, run_id, tool_name, args_redacted, payload_hash,
+                    risk_tier, status, expires_at, created_at
+                ) VALUES (
+                    'appr-m2-test', 'prof-m2-test', 'run-1', 'test_tool', '{}', 'hash123',
+                    'write_external', 'pending', :now, :now
+                )
+            """),
+            {"now": now},
+        )
+        conn.execute(
+            text("""
+                INSERT INTO jobs (
+                    id, profile_id, kind, payload, next_run_at, status, created_at, updated_at
+                ) VALUES (
+                    'job-m2-test', 'prof-m2-test', 'reminder', '{}', :now, 'pending', :now, :now
+                )
+            """),
+            {"now": now},
+        )
+        conn.commit()
+
+        # Execute downgrade to 0002_autonomy_foundations
+        alembic.command.downgrade(cfg, "0002_autonomy_foundations")
+
+        insp = inspect(conn)
+        tables = set(insp.get_table_names())
+
+        # Assert 0003 tables are removed
+        assert "profile_keys" not in tables
+        assert "approvals" not in tables
+        assert "jobs" not in tables
+
+        # Assert 0002 tables remain intact
+        assert {"credentials", "connections", "audit_events"}.issubset(tables)
+
+        # Assert dek_version column was dropped from credentials
+        cred_cols = {c["name"] for c in insp.get_columns("credentials")}
+        assert "dek_version" not in cred_cols
+
+        # Assert credential data was preserved through the SQLite batch table rebuild
+        row = conn.execute(
+            text("SELECT id, connection_id, profile_id, encrypted_blob FROM credentials WHERE id = 'cred-m2-test'")
+        ).fetchone()
+        assert row is not None
+        assert row[0] == "cred-m2-test"
+        assert row[1] == "conn-m2-test"
+        assert row[2] == "prof-m2-test"
+        assert row[3] == "encrypted_blob_payload_xyz"
+
+        # Re-upgrade back to head
+        alembic.command.upgrade(cfg, "head")
+        insp_head = inspect(conn)
+        tables_head = set(insp_head.get_table_names())
+        assert EXPECTED_AUTONOMY_BATCH_1_TABLES.issubset(tables_head)
+
+        cred_cols_head = {c["name"] for c in insp_head.get_columns("credentials")}
+        assert "dek_version" in cred_cols_head
 
 
 def test_downgrade_to_base_and_upgrade_back_to_head():

@@ -62,6 +62,8 @@ export interface ChatMessage {
   toolTraces?: ToolTraceItem[];
   traces?: ToolTraceItem[];
   attachments?: string[];
+  approval?: ApprovalRecord;
+  contextSources?: ContextSourceItem[];
 }
 
 // ---------------------------------------------------------------------------
@@ -168,4 +170,65 @@ export type {
   MemoryBulkDeleteResponse,
   MemoryUpdateRequest,
 } from '../types/api.js';
+
+// ---------------------------------------------------------------------------
+// Human-in-the-Loop Approvals Engine Types (AU-18)
+// ---------------------------------------------------------------------------
+export type RiskTier = 'read' | 'write_local' | 'write_workspace' | 'write_external' | 'admin' | 'irreversible';
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'consumed' | 'expired';
+
+export interface ApprovalRecord {
+  id: string;
+  profile_id?: string;
+  run_id?: string;
+  thread_id?: string;
+  tool_name: string;
+  args_redacted: Record<string, any> | string;
+  payload_hash: string;
+  destination_hosts?: string[] | string;
+  risk_tier: RiskTier;
+  status: ApprovalStatus;
+  expires_at?: string;
+  created_at?: string;
+  decided_at?: string;
+  decided_by?: string;
+  reason?: string;
+}
+
+export interface ApprovalDecisionRequest {
+  decision: 'approved' | 'rejected';
+  edited_args?: Record<string, any>;
+  reason?: string;
+}
+
+export interface ApprovalDecisionResponse {
+  id: string;
+  status: ApprovalStatus;
+  payload_hash: string;
+  decided_at: string;
+  decided_by?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Context Sources Streaming Types (AU-20)
+// ---------------------------------------------------------------------------
+export type ContextSourceType = 'thread' | 'attachments' | 'records' | 'vault' | 'connector' | 'web';
+
+export interface ContextSourceItem {
+  id: string;
+  type: ContextSourceType;
+  label: string;
+  description?: string;
+  has_phi?: boolean;
+  is_tainted?: boolean;
+  metadata?: Record<string, any>;
+}
+
+export interface ContextSourcesEventPayload {
+  type: 'context_sources';
+  sources: ContextSourceItem[];
+  tainted: boolean;
+  has_phi: boolean;
+}
 

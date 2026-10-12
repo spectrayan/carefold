@@ -19,6 +19,7 @@ from fastapi import APIRouter
 
 from carefold.api.admin import router as admin_router
 from carefold.api.agents import router as agents_router
+from carefold.api.approvals import router as approvals_router
 from carefold.api.attachments import router as attachments_router
 from carefold.api.audit import router as audit_router
 from carefold.api.auth import router as auth_router
@@ -35,6 +36,13 @@ api_router.include_router(health_router)
 api_router.include_router(agents_router)
 api_router.include_router(skills_router)
 api_router.include_router(audit_router)
+api_router.include_router(approvals_router, prefix="/approvals", tags=["approvals"])
+api_router.include_router(
+    approvals_router,
+    prefix="/profiles/{profile_id}/approvals",
+    tags=["approvals"],
+    include_in_schema=False,
+)
 api_router.include_router(chat_router)
 api_router.include_router(models_router)
 api_router.include_router(attachments_router)

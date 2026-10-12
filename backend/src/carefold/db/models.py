@@ -20,7 +20,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import enum
 import json
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 import uuid
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
@@ -892,6 +892,24 @@ class Profile(Base):
     )
     credentials: Mapped[List[Credential]] = sa_relationship(
         "Credential",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    profile_keys: Mapped[List[ProfileKey]] = sa_relationship(
+        "ProfileKey",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    approvals: Mapped[List[Approval]] = sa_relationship(
+        "Approval",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    jobs: Mapped[List[Job]] = sa_relationship(
+        "Job",
         back_populates="profile",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -1777,6 +1795,12 @@ class Credential(Base):
         nullable=False,
         doc="Optimistic concurrency version for rotating refresh tokens",
     )
+    dek_version: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        nullable=False,
+        doc="Data Encryption Key version under which this credential was encrypted",
+    )
     aad_binding: Mapped[Optional[str]] = mapped_column(
         String(255),
         nullable=True,
@@ -1823,7 +1847,342 @@ class Credential(Base):
         super().__init__(**kwargs)
 
     def __repr__(self) -> str:
-        return f"<Credential id={self.id!r} connection_id={self.connection_id!r} token_version={self.token_version}>"
+        return f"<Credential id={self.id!r} connection_id={self.connection_id!r} token_version={self.token_version} dek_version={self.dek_version}>"
+
+
+class ProfileKey(Base):
+    """Cryptographic Data Encryption Key (DEK) envelope storage per profile."""
+
+    __tablename__ = "profile_keys"
+    __table_args__ = (
+        UniqueConstraint("profile_id", "dek_version", name="uq_profile_keys_profile_id_dek_version"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique profile key identifier (UUID v4)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+        doc="Patient profile ID (foreign key with cascade crypto-shredding)",
+    )
+    encrypted_dek: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        doc="Encrypted DEK ciphertext (12-byte nonce + 32-byte ct + 16-byte tag, stored as text/hex)",
+    )
+    dek_version: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        nullable=False,
+        doc="Data Encryption Key version number",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Key generation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Key last modification timestamp (UTC)",
+    )
+
+    # Relationships
+    profile: Mapped[Profile] = relationship("Profile", back_populates="profile_keys")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "encrypted_dek" in kwargs and isinstance(kwargs["encrypted_dek"], bytes):
+            kwargs["encrypted_dek"] = kwargs["encrypted_dek"].hex()
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    @property
+    def encrypted_dek_bytes(self) -> bytes:
+        """Helper returning ciphertext bytes whether stored as hex or raw string."""
+        if isinstance(self.encrypted_dek, bytes):
+            return self.encrypted_dek
+        try:
+            return bytes.fromhex(self.encrypted_dek)
+        except ValueError:
+            return self.encrypted_dek.encode("utf-8")
+
+    def __repr__(self) -> str:
+        return f"<ProfileKey id={self.id!r} profile_id={self.profile_id!r} dek_version={self.dek_version}>"
+
+
+class Approval(Base):
+    """Human-in-the-loop tool execution approval record with single-use token semantics (AU-18)."""
+
+    __tablename__ = "approvals"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique approval request identifier (UUID v4)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+        doc="Target profile ID",
+    )
+    run_id: Mapped[str] = mapped_column(
+        String(64),
+        index=True,
+        nullable=False,
+        doc="Workflow execution run identifier",
+    )
+    thread_id: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        index=True,
+        nullable=True,
+        doc="LangGraph conversation thread identifier",
+    )
+    tool_name: Mapped[str] = mapped_column(
+        String(128),
+        index=True,
+        nullable=False,
+        doc="Target tool specification name",
+    )
+    args_redacted: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+        nullable=False,
+        doc="Redacted tool invocation arguments serialized as canonical JSON",
+    )
+    payload_hash: Mapped[str] = mapped_column(
+        String(64),
+        index=True,
+        nullable=False,
+        doc="SHA-256 digest of canonical JSON tool arguments",
+    )
+    destination_hosts: Mapped[Optional[str]] = mapped_column(
+        Text,
+        default="[]",
+        nullable=True,
+        doc="Allowed outbound destination hostnames as JSON list",
+    )
+    risk_tier: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        doc="Tool risk tier: read, write_local, write_external, irreversible",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="pending",
+        index=True,
+        nullable=False,
+        doc="Lifecycle state: pending, approved, rejected, consumed, expired",
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+        nullable=False,
+        doc="Approval expiration timestamp (UTC)",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Approval creation timestamp (UTC)",
+    )
+    decided_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Steward decision timestamp (UTC)",
+    )
+    decided_by: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        nullable=True,
+        doc="Identifier of user/steward granting or rejecting approval",
+    )
+
+    # Relationships
+    profile: Mapped[Profile] = relationship("Profile", back_populates="approvals")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "args_redacted" in kwargs and isinstance(kwargs["args_redacted"], (dict, list)):
+            kwargs["args_redacted"] = json.dumps(kwargs["args_redacted"])
+        if "destination_hosts" in kwargs and isinstance(kwargs["destination_hosts"], (list, tuple)):
+            kwargs["destination_hosts"] = json.dumps(list(kwargs["destination_hosts"]))
+        if "expires_at" in kwargs and isinstance(kwargs["expires_at"], (int, float)):
+            kwargs["expires_at"] = datetime.fromtimestamp(kwargs["expires_at"], tz=timezone.utc)
+        if "decided_at" in kwargs and isinstance(kwargs["decided_at"], (int, float)):
+            kwargs["decided_at"] = datetime.fromtimestamp(kwargs["decided_at"], tz=timezone.utc)
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    @property
+    def args_dict(self) -> Dict[str, Any]:
+        """Parsed arguments dictionary."""
+        try:
+            return json.loads(self.args_redacted)
+        except Exception:
+            return {}
+
+    @property
+    def hosts_list(self) -> List[str]:
+        """Parsed destination hosts list."""
+        try:
+            return json.loads(self.destination_hosts or "[]")
+        except Exception:
+            return []
+
+    def __repr__(self) -> str:
+        return f"<Approval id={self.id!r} tool={self.tool_name!r} status={self.status!r} risk={self.risk_tier!r}>"
+
+
+class Job(Base):
+    """Wall-clock scheduled and background routine job entity with atomic leasing (AU-21)."""
+
+    __tablename__ = "jobs"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique job identifier (UUID v4)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+        doc="Target profile ID",
+    )
+    kind: Mapped[str] = mapped_column(
+        String(64),
+        index=True,
+        nullable=False,
+        doc="Job kind: routine, connector_sync, reminder",
+    )
+    routine_id: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        index=True,
+        nullable=True,
+        doc="Associated routine definition identifier",
+    )
+    connection_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        index=True,
+        nullable=True,
+        doc="Associated connector connection identifier",
+    )
+    payload: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+        nullable=False,
+        doc="Serialized parameters and context for job execution",
+    )
+    timezone: Mapped[str] = mapped_column(
+        String(64),
+        default="UTC",
+        nullable=False,
+        doc="IANA timezone string for recurrence evaluation",
+    )
+    rrule: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="RFC 5545 recurrence rule string",
+    )
+    next_run_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+        nullable=False,
+        doc="Next scheduled execution timestamp (UTC)",
+    )
+    lease_owner: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        doc="Worker ID currently holding execution lease lock",
+    )
+    lease_until: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+        nullable=True,
+        doc="Lease expiration timestamp (UTC)",
+    )
+    attempts: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+        doc="Failed execution retry counter",
+    )
+    idempotency_key: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        index=True,
+        nullable=True,
+        doc="Unique idempotency key for job scheduling deduplication",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="pending",
+        index=True,
+        nullable=False,
+        doc="Execution state: pending, active, completed, failed, missed",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Job creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Job modification timestamp (UTC)",
+    )
+
+    # Relationships
+    profile: Mapped[Profile] = relationship("Profile", back_populates="jobs")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "payload" in kwargs and isinstance(kwargs["payload"], (dict, list)):
+            kwargs["payload"] = json.dumps(kwargs["payload"])
+        if "next_run_at" in kwargs and isinstance(kwargs["next_run_at"], (int, float)):
+            kwargs["next_run_at"] = datetime.fromtimestamp(kwargs["next_run_at"], tz=timezone.utc)
+        if "lease_until" in kwargs and isinstance(kwargs["lease_until"], (int, float)):
+            kwargs["lease_until"] = datetime.fromtimestamp(kwargs["lease_until"], tz=timezone.utc)
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    @property
+    def payload_dict(self) -> Dict[str, Any]:
+        """Parsed payload dictionary."""
+        try:
+            return json.loads(self.payload)
+        except Exception:
+            return {}
+
+    def __repr__(self) -> str:
+        return f"<Job id={self.id!r} kind={self.kind!r} status={self.status!r} next_run_at={self.next_run_at!s}>"
+
 
 
 

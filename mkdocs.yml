@@ -81,3 +81,8 @@ nav:
       - 0000 - ADR Template: adr/0000-template.md
       - 0001 - Orchestrator Architecture: adr/0001-orchestrator-driven-agent-architecture.md
       - 0002 - Hexagonal Memory Ports: adr/0002-hexagonal-memory-and-catalog-ports.md
+      - 0003 - Progressive Disclosure: adr/0003-progressive-disclosure-skill-context-management.md
+      - 0004 - Policy Approvals & Resume: adr/0004-policy-approvals-and-resume.md
+      - 0005 - Vault Threat Model & KEK: adr/0005-vault-threat-model-and-kek-sources.md
+      - 0006 - Deployment Modes & Tiers: adr/0006-deployment-modes-and-requirement-tiers.md
+      - 0007 - Content-Addressed Storage: adr/0007-content-addressed-storage-and-hybrid-search.md

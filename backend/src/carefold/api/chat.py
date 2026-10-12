@@ -19,11 +19,12 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Literal, Optional
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,6 +48,7 @@ from carefold.constants.api import (
 from carefold.constants.paths import CHATS_DIR, DEFAULT_CHECKPOINTS_DB, SYSTEM_AGENTS_DIR
 from carefold.engine.graph import create_async_sqlite_saver, resolve_checkpointer_path
 from carefold.engine.runner import execute_agent_run
+from carefold.engine.service import AgentExecutionService
 from carefold.schemas.chat import ChatRequestBody
 
 from carefold.logging import get_logger
@@ -297,4 +299,51 @@ async def delete_thread_history(
         await db.commit()
 
     return {"success": True, "threadId": clean_thread_id, "deleted": True}
+
+
+class ChatResumeRequestBody(BaseModel):
+    thread_id: str = Field(..., description="Conversation thread identifier to resume")
+    approval_id: str = Field(..., description="Approval record identifier")
+    decision: Literal["approved", "rejected"] = Field("approved", description="Decision outcome")
+    edited_args: Optional[Dict[str, Any]] = Field(None, description="Optional edited tool arguments")
+    profile_id: Optional[str] = Field(None, description="Target profile ID")
+
+
+@router.post("/chat/resume")
+@router.post("/v1/chat/resume")
+async def chat_resume_stream(
+    request: ChatResumeRequestBody,
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    """Resumes an interrupted conversation thread after human steward approval or rejection."""
+    owner_id = resolve_owner_user_id(user)
+    service = AgentExecutionService()
+
+    async def sse_resume_generator() -> AsyncIterator[str]:
+        try:
+            async for event in service.execute_resume_turn(
+                thread_id=request.thread_id,
+                approval_id=request.approval_id,
+                decision=request.decision,
+                edited_args=request.edited_args,
+                user_id=owner_id,
+                profile_id=request.profile_id,
+            ):
+                event_type = event.get("type", SSE_EVENT_MESSAGE)
+                data_str = json.dumps(event)
+                yield f"event: {event_type}\ndata: {data_str}\n\n"
+        except Exception:
+            logger.exception("Unexpected error in chat resume stream")
+            err_data = json.dumps({
+                "type": SSE_EVENT_ERROR,
+                "message": "An unexpected error occurred during chat resumption.",
+            })
+            yield f"event: {SSE_EVENT_ERROR}\ndata: {err_data}\n\n"
+
+    return StreamingResponse(
+        sse_resume_generator(),
+        media_type=SSE_MEDIA_TYPE,
+        headers=SSE_HEADERS,
+    )
 
