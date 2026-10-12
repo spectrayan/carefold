@@ -125,7 +125,8 @@ async def test_server_restart_multi_turn_persistence(temp_workspace: Path):
     thread_id = "restart-adversarial-thread-4turns-001"
     chats_dir = temp_workspace / "chats"
     db_file = chats_dir / "checkpoints.db"
-    attachments_dir = temp_workspace / "attachments"
+    attachments_dir = temp_workspace / "attachments" / "default_user" / "default_profile"
+    attachments_dir.mkdir(parents=True, exist_ok=True)
     (attachments_dir / "vitals.txt").write_text("Blood Pressure: 135/85, Pulse: 72", encoding="utf-8")
 
     # Turn 1: Initial context
@@ -436,7 +437,8 @@ def test_sse_event_sequencing_with_tools(client: TestClient, temp_workspace: Pat
     """Verifies exact event sequencing for tool-executing turns:
     Sequence: tool_start -> tool_end -> [token*] -> suggestions -> done
     """
-    attachments_dir = temp_workspace / "attachments"
+    attachments_dir = temp_workspace / "attachments" / "default_user" / "default_profile"
+    attachments_dir.mkdir(parents=True, exist_ok=True)
     (attachments_dir / "blood_work.txt").write_text("WBC: 6.5, RBC: 4.8", encoding="utf-8")
 
     payload = {
@@ -651,7 +653,8 @@ async def test_multi_turn_distinct_tools_pipeline(temp_workspace: Path):
     Verifies that all tool calls, outputs, and assistant summaries accumulate correctly in checkpoints.
     """
     thread_id = "multi-turn-distinct-tools-pipeline-99"
-    attachments_dir = temp_workspace / "attachments"
+    attachments_dir = temp_workspace / "attachments" / "default_user" / "default_profile"
+    attachments_dir.mkdir(parents=True, exist_ok=True)
     (attachments_dir / "labs.txt").write_text("HbA1c: 5.6%, Glucose: 95 mg/dL", encoding="utf-8")
 
     # Turn 1: attach-read

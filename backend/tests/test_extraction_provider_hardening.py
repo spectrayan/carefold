@@ -712,8 +712,8 @@ class TestToolExecutionHardening:
 
     def test_attach_read_oversized_file_rejection(self, tmp_path: Path) -> None:
         """Verify attach_read rejects files exceeding the 10MB limit."""
-        attachments_dir = tmp_path / "attachments"
-        attachments_dir.mkdir(parents=True)
+        attachments_dir = tmp_path / "attachments" / "test-user" / "test-profile"
+        attachments_dir.mkdir(parents=True, exist_ok=True)
 
         oversized_file = attachments_dir / "huge_file.txt"
         # Seek beyond 10MB limit and write 1 byte
@@ -721,7 +721,7 @@ class TestToolExecutionHardening:
             f.seek(MAX_FILE_SIZE_BYTES + 1024)
             f.write(b"X")
 
-        ctx = type("MockCtx", (), {"workspace_root": tmp_path})()
+        ctx = type("MockCtx", (), {"workspace_root": tmp_path, "user_id": "test-user", "profile_id": "test-profile"})()
         result = asyncio.run(execute_attach_read({"path": "huge_file.txt"}, ctx))
 
         assert result.success is False
@@ -729,14 +729,14 @@ class TestToolExecutionHardening:
 
     def test_attach_read_corrupted_utf8_recovery(self, tmp_path: Path) -> None:
         """Verify attach_read safely decodes corrupted or invalid UTF-8 without raising exceptions."""
-        attachments_dir = tmp_path / "attachments"
-        attachments_dir.mkdir(parents=True)
+        attachments_dir = tmp_path / "attachments" / "test-user" / "test-profile"
+        attachments_dir.mkdir(parents=True, exist_ok=True)
 
         corrupt_file = attachments_dir / "corrupted.txt"
         corrupt_bytes = b"Prefix valid text \xff\xfe\x00\x80\xfa suffix text."
         corrupt_file.write_bytes(corrupt_bytes)
 
-        ctx = type("MockCtx", (), {"workspace_root": tmp_path})()
+        ctx = type("MockCtx", (), {"workspace_root": tmp_path, "user_id": "test-user", "profile_id": "test-profile"})()
         result = asyncio.run(execute_attach_read({"path": "corrupted.txt"}, ctx))
 
         assert result.success is True

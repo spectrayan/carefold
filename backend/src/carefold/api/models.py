@@ -93,7 +93,8 @@ async def list_models(
     Dynamically queries Ollama /api/tags when provider is 'ollama',
     filtering out embedding-only models.
     """
-    prov_lower = provider.lower()
+    raw_prov = provider if isinstance(provider, str) else getattr(provider, "default", "ollama")
+    prov_lower = str(raw_prov).lower()
 
     if prov_lower != "ollama":
         models = PREDEFINED_MODELS.get(prov_lower, [])
@@ -104,8 +105,13 @@ async def list_models(
         }
 
     # Resolve Ollama base URL
-    raw_endpoint = endpoint or settings.ollama_url or "http://127.0.0.1:11434"
+    ep_val = endpoint if isinstance(endpoint, str) else getattr(endpoint, "default", None)
+    raw_endpoint = ep_val or settings.ollama_url or "http://127.0.0.1:11434"
     clean_endpoint = raw_endpoint.rstrip("/").removesuffix("/v1")
+
+    # Validate Ollama endpoint against egress policy before polling tags
+    from carefold.model.egress import validate_model_endpoint
+    validate_model_endpoint("ollama", clean_endpoint)
 
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:

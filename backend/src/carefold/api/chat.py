@@ -130,17 +130,9 @@ async def chat_stream(
         db.add(new_thread)
         await db.commit()
 
-    # Resolve provider and custom endpoint parameters
+    # Resolve provider and model from request; keys and endpoints resolve exclusively server-side
     provider = request.get_provider()
     model = request.model
-    api_key = request.get_api_key()
-    custom_endpoint = request.get_custom_endpoint()
-    if (provider or "ollama") == "ollama" and custom_endpoint:
-        cleaned_ep = str(custom_endpoint).strip().rstrip("/")
-        if cleaned_ep in ("http://127.0.0.1:11434", "http://localhost:11434", "http://127.0.0.1:11434/v1", "http://localhost:11434/v1"):
-            from carefold.constants.models import DEFAULT_OLLAMA_URL
-            if settings.ollama_url.rstrip("/") != DEFAULT_OLLAMA_URL.rstrip("/"):
-                custom_endpoint = settings.ollama_url
 
     logger.info(
         "chat_stream_initiated",
@@ -162,8 +154,8 @@ async def chat_stream(
                 thread_id=thread_id,
                 provider=provider,
                 model=model,
-                api_key=api_key,
-                base_url=custom_endpoint,
+                api_key=None,
+                base_url=None,
                 user_id=owner_id,
                 profile_id=profile_id,
             ):

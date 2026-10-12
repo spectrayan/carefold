@@ -94,7 +94,7 @@ class PenetrationSuite:
     async def test_attach_read_path_traversal(self):
         category = "1. attach-read Path Traversal"
         ws = self.temp_dir / "ws_attach"
-        att_dir = ws / "attachments"
+        att_dir = ws / "attachments" / "test-user" / "test-profile"
         att_dir.mkdir(parents=True, exist_ok=True)
 
         valid_file = att_dir / "lab_results.txt"
@@ -103,6 +103,8 @@ class PenetrationSuite:
         class Ctx:
             workspace_root = ws
             agent = AgentManifest(id="test-agent", title="Test", persona="Role")
+            user_id = "test-user"
+            profile_id = "test-profile"
 
         ctx = Ctx()
 
@@ -242,12 +244,14 @@ class PenetrationSuite:
     async def test_symlink_escape_attacks(self):
         category = "2. Symlink Escape Attacks"
         ws = self.temp_dir / "ws_symlinks"
-        att_dir = ws / "attachments"
+        att_dir = ws / "attachments" / "test-user" / "test-profile"
         att_dir.mkdir(parents=True, exist_ok=True)
 
         class Ctx:
             workspace_root = ws
             agent = AgentManifest(id="test-agent", title="Test", persona="Role")
+            user_id = "test-user"
+            profile_id = "test-profile"
 
         ctx = Ctx()
 

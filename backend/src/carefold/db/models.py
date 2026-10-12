@@ -18,14 +18,21 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import enum
 import json
 from typing import Any, List, Optional
 import uuid
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship as sa_relationship, relationship, validates
+from sqlalchemy.orm import Mapped, mapped_column, relationship as sa_relationship, relationship, synonym, validates
+
 
 from carefold.db.base import Base
+
+
+def utc_now() -> datetime:
+    """Returns current UTC timestamp with timezone."""
+    return datetime.now(timezone.utc)
 
 
 class User(Base):
@@ -150,6 +157,18 @@ class User(Base):
         foreign_keys="ViewerInvite.accepted_by",
         back_populates="acceptor",
         lazy="selectin",
+    )
+    connections: Mapped[List[Connection]] = relationship(
+        "Connection",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    credentials: Mapped[List[Credential]] = relationship(
+        "Credential",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     @validates("email")
@@ -865,6 +884,18 @@ class Profile(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    connections: Mapped[List[Connection]] = sa_relationship(
+        "Connection",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    credentials: Mapped[List[Credential]] = sa_relationship(
+        "Credential",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __repr__(self) -> str:
         return f"<Profile id={self.id!r} name={self.name!r} relationship={self.relationship!r} role={self.role!r}>"
@@ -1270,9 +1301,42 @@ class Attachment(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=utc_now,
         nullable=False,
         doc="Upload timestamp (UTC)",
+    )
+    extracted_text: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Extracted plain text layer (from PDFs, Markdown, TXT, CSV)",
+    )
+    source: Mapped[str] = mapped_column(
+        String(64),
+        default="upload",
+        server_default="upload",
+        nullable=False,
+        index=True,
+        doc="Origin of attachment: upload, connector, agent, export",
+    )
+    source_ref: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="External reference tracking: connector stream ID, remote document URI, or message ID",
+    )
+    extraction_status: Mapped[str] = mapped_column(
+        String(32),
+        default="pending",
+        server_default="pending",
+        nullable=False,
+        index=True,
+        doc="Processing lifecycle state: pending, completed, failed, not_applicable",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
     )
 
     # Relationships
@@ -1281,22 +1345,59 @@ class Attachment(Base):
 
     def __init__(self, **kwargs: Any) -> None:
         """Initializes Attachment, mapping backward-compatible aliases to canonical columns."""
-        # Normalize legacy field aliases
+        # Normalize legacy and unified field aliases
         if "file_name" in kwargs and "filename" not in kwargs:
             kwargs["filename"] = kwargs.pop("file_name")
         if "file_size" in kwargs and "size_bytes" not in kwargs:
             kwargs["size_bytes"] = kwargs.pop("file_size")
         if "byte_size" in kwargs and "size_bytes" not in kwargs:
             kwargs["size_bytes"] = kwargs.pop("byte_size")
+        if "size" in kwargs and "size_bytes" not in kwargs:
+            kwargs["size_bytes"] = kwargs.pop("size")
         if "mime_type" in kwargs and "content_type" not in kwargs:
             kwargs["content_type"] = kwargs.pop("mime_type")
+        if "mime" in kwargs and "content_type" not in kwargs:
+            kwargs["content_type"] = kwargs.pop("mime")
+        if "sha256" in kwargs and "sha256_hash" not in kwargs:
+            kwargs["sha256_hash"] = kwargs.pop("sha256")
         if "file_path" in kwargs and "storage_key" not in kwargs:
             kwargs["storage_key"] = kwargs.pop("file_path")
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
         super().__init__(**kwargs)
 
     # -------------------------------------------------------------------------
-    # Backward Compatibility Properties & Aliases
+    # Backward Compatibility & Unified Properties
     # -------------------------------------------------------------------------
+
+    @property
+    def mime(self) -> str:
+        """Unified standard alias for content_type."""
+        return self.content_type
+
+    @mime.setter
+    def mime(self, value: str) -> None:
+        self.content_type = value
+
+    @property
+    def size(self) -> int:
+        """Unified standard alias for size_bytes."""
+        return self.size_bytes
+
+    @size.setter
+    def size(self, value: int) -> None:
+        self.size_bytes = value
+
+    @property
+    def sha256(self) -> Optional[str]:
+        """Unified standard alias for sha256_hash."""
+        return self.sha256_hash
+
+    @sha256.setter
+    def sha256(self, value: Optional[str]) -> None:
+        self.sha256_hash = value
 
     @property
     def file_path(self) -> str:
@@ -1419,4 +1520,310 @@ class ChatThread(Base):
 
     def __repr__(self) -> str:
         return f"<ChatThread id={self.id!r} agent_id={self.agent_id!r} user_id={self.user_id!r}>"
+
+
+class AuditEventRecord(Base):
+    """Database-backed audit logging entity for clinical safety and tool execution auditing."""
+
+    __tablename__ = "audit_events"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique audit record UUID",
+    )
+    ts: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        index=True,
+        nullable=False,
+        doc="Event issuance UTC timestamp",
+    )
+    profile_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        doc="Referenced CareProfile identifier",
+    )
+    actor_user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        doc="Authenticated user UUID who triggered the action",
+    )
+    principal: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="user",
+        doc="Execution principal: user, agent, orchestrator, connector",
+    )
+    run_id: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        doc="Workflow execution or LangGraph thread/run identifier",
+    )
+    event: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        index=True,
+        doc="Event type: run, tool, refuse, error, boundary_warning",
+    )
+    tool: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        doc="Invoked tool name if event is tool execution",
+    )
+    risk: Mapped[Optional[str]] = mapped_column(
+        String(32),
+        nullable=True,
+        doc="Risk class classification at execution time",
+    )
+    decision: Mapped[Optional[str]] = mapped_column(
+        String(32),
+        nullable=True,
+        doc="Policy decision: allow, refuse, modify, error",
+    )
+    payload_hash: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        doc="Cryptographic SHA-256 digest of input parameters/payload",
+    )
+    external_ref: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="External stream identifier, connector sync ID, or message ID",
+    )
+    detail_redacted: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Serialized JSON dictionary containing sanitized metadata and durations",
+    )
+
+    profile: Mapped[Optional[Profile]] = relationship("Profile")
+    actor: Mapped[Optional[User]] = relationship("User")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "ts" not in kwargs:
+            kwargs["ts"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return f"<AuditEventRecord id={self.id!r} event={self.event!r} tool={self.tool!r} profile_id={self.profile_id!r}>"
+
+
+class ConnectionState(str, enum.Enum):
+    """Lifecycle states for external connectors bound to patient profiles."""
+
+    PENDING_AUTH = "pending_auth"
+    ACTIVE = "active"
+    DEGRADED = "degraded"
+    NEEDS_REAUTH = "needs_reauth"
+    REVOKED = "revoked"
+    DELETED = "deleted"
+
+
+class Connection(Base):
+    """External connector link bound to a patient profile with a state machine."""
+
+    __tablename__ = "connections"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique connection identifier (UUID v4)",
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+        doc="Owner user ID",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+        doc="Associated patient profile ID",
+    )
+    connector_id: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        index=True,
+        doc="Connector identifier matching ConnectorManifest.id (e.g. 'epic-mychart')",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="pending_auth",
+        nullable=False,
+        index=True,
+        doc="State machine: pending_auth, active, degraded, needs_reauth, revoked, deleted",
+    )
+    state = synonym("status")
+    label: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="Human display label (e.g. 'City General Hospital')",
+    )
+    status_message: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Explanation of degraded or error state",
+    )
+    sync_cursor: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Opaque sync checkpoint cursor",
+    )
+    last_sync_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Timestamp of last successful stream ingestion (UTC)",
+    )
+    config_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+        nullable=False,
+        doc="Serialized connector configuration JSON",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    # Relationships
+    user: Mapped[User] = relationship("User", back_populates="connections")
+    profile: Mapped[Profile] = relationship("Profile", back_populates="connections")
+    credentials: Mapped[List[Credential]] = relationship(
+        "Credential",
+        back_populates="connection",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "state" in kwargs and "status" not in kwargs:
+            kwargs["status"] = kwargs.pop("state")
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return f"<Connection id={self.id!r} connector_id={self.connector_id!r} state={self.state!r} profile_id={self.profile_id!r}>"
+
+
+class Credential(Base):
+    """Encrypted credential vault entry with token_version optimistic concurrency and AAD binding."""
+
+    __tablename__ = "credentials"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique credential identifier (UUID v4)",
+    )
+    connection_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("connections.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+        doc="Parent connection ID",
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=True,
+        doc="User ID",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+        doc="Patient profile ID",
+    )
+    encrypted_blob: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        doc="Encrypted credential payload (ciphertext)",
+    )
+    encrypted_data = synonym("encrypted_blob")
+    token_version: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        nullable=False,
+        doc="Optimistic concurrency version for rotating refresh tokens",
+    )
+    aad_binding: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="Cryptographic Additional Authenticated Data binding string (e.g. carefold:p:{profile_id}:c:{connection_id})",
+    )
+    expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Access token expiration timestamp (UTC)",
+    )
+    rotated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Last token rotation timestamp (UTC)",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    # Relationships
+    connection: Mapped[Connection] = relationship("Connection", back_populates="credentials")
+    user: Mapped[Optional[User]] = relationship("User", back_populates="credentials")
+    profile: Mapped[Profile] = relationship("Profile", back_populates="credentials")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "encrypted_data" in kwargs and "encrypted_blob" not in kwargs:
+            kwargs["encrypted_blob"] = kwargs.pop("encrypted_data")
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return f"<Credential id={self.id!r} connection_id={self.connection_id!r} token_version={self.token_version}>"
+
+
 

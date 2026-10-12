@@ -603,11 +603,21 @@ class AgentExecutionService:
         suggestions: List[str] = []
         citations: List[Dict[str, Any]] = []
 
+        from carefold.loaders.context_loader import ContextLoader
+        from carefold.engine.tool_exec import ToolContext, TaintFlag
+
+        effective_user_id = str(user_id or "default_user").strip()
+        effective_profile_id = (
+            str(profile_id).strip()
+            if profile_id is not None
+            else str(kwargs.get("profile_id", "default_profile")).strip()
+        )
+
         initial_input: Dict[str, Any] = {
             "messages": initial_messages,
             "thread_id": thread_id,
-            "user_id": user_id,
-            "profile_id": profile_id or kwargs.get("profile_id"),
+            "user_id": effective_user_id,
+            "profile_id": effective_profile_id,
             "agent_id": agent.id,
             "current_agent": agent.id,
             "explicit_agent": agent_id,
@@ -618,6 +628,7 @@ class AgentExecutionService:
             "refused": False,
             "is_refusal": False,
             "refusal_reason": None,
+            "output": "",
             "follow_up_suggestions": [],
             "document_dossiers": [],
             "store_bodies": effective_store_bodies,
@@ -630,10 +641,40 @@ class AgentExecutionService:
             "specialist_outputs": {},
         }
         # Ingest multi-source context (attachments, notes, catalog summary)
-        from carefold.loaders.context_loader import ContextLoader
-        initial_input = ContextLoader.load_context(initial_input, ws_root)
 
-        graph_config = {"configurable": {"thread_id": thread_id}, "recursion_limit": 25}
+        effective_run_id = str(kwargs.get("run_id") or f"run_{uuid.uuid4().hex}")
+        tool_context: Optional[ToolContext] = None
+        if effective_user_id and effective_profile_id:
+            try:
+                tool_context = ToolContext(
+                    user_id=effective_user_id,
+                    profile_id=effective_profile_id,
+                    principal="user",
+                    run_id=effective_run_id,
+                    mode="local",
+                    autonomy="A1",
+                    taint=TaintFlag(),
+                    workspace_root=ws_root,
+                    skills_dir=skills_dir,
+                    agent=agent,
+                    effective_tools=tuple(effective_tools or ()),
+                    skills=tuple(skills or ()),
+                )
+            except ValueError:
+                tool_context = None
+        elif isinstance(kwargs.get("tool_context"), ToolContext):
+            tool_context = kwargs["tool_context"]
+
+        graph_config = {
+            "configurable": {
+                "thread_id": thread_id,
+                "tool_context": tool_context,
+                "user_id": effective_user_id,
+                "profile_id": effective_profile_id,
+                "run_id": effective_run_id,
+            },
+            "recursion_limit": 25,
+        }
 
         # Helper context manager supporting both self.checkpointer and default AsyncSqliteSaver
         @asynccontextmanager
@@ -679,7 +720,7 @@ class AgentExecutionService:
                     try:
                         from carefold.engine.builder import GraphBuilder
                         builder_instance = (
-                            GraphBuilder()
+                            GraphBuilder(include_supervisor=False)
                             .with_model(active_model)
                             .with_checkpointer(checkpointer)
                             .with_execution_context(execution_context)
@@ -925,8 +966,8 @@ class AgentExecutionService:
             thread_id = request.get_thread_id() or f"thread_{agent_id}_{uuid.uuid4().hex[:12]}"
             provider = request.get_provider()
             model_name = request.model
-            api_key = request.get_api_key()
-            base_url = request.get_custom_endpoint()
+            api_key = None
+            base_url = None
         else:
             agent_id = request.get("agent_id") or request.get("agentId") or "visit-steward"
             prompt = request.get("prompt", "")
@@ -936,8 +977,8 @@ class AgentExecutionService:
             thread_id = request.get("thread_id") or request.get("threadId") or f"thread_{agent_id}_{uuid.uuid4().hex[:12]}"
             provider = request.get("provider", "ollama")
             model_name = request.get("model")
-            api_key = request.get("api_key") or request.get("apiKey")
-            base_url = request.get("base_url") or request.get("customEndpoint")
+            api_key = None
+            base_url = None
 
         async for event in self.execute_turn(
             thread_id=thread_id,

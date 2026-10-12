@@ -285,7 +285,17 @@ class ExtractDocumentDossierTool(BaseTool):
             raise DocumentSandboxError(f"Path traversal forbidden: Invalid path characters in '{file_path}'")
 
         # 1. Attempt sandboxed execution via attach_read
-        ctx = type("ExtractionExecutionContext", (), {"workspace_root": ws_root})()
+        user_id = getattr(self, "user_id", None) or "default_user"
+        profile_id = getattr(self, "profile_id", None) or "default_profile"
+        ctx = type(
+            "ExtractionExecutionContext",
+            (),
+            {
+                "workspace_root": ws_root,
+                "user_id": user_id,
+                "profile_id": profile_id,
+            },
+        )()
 
         res = None
         try:
@@ -314,16 +324,16 @@ class ExtractDocumentDossierTool(BaseTool):
 
             if not res.success and res.error:
                 err_lower = res.error.lower()
+                # Only raise DocumentSandboxError for genuine path traversal and escape attacks
                 if any(
                     kw in err_lower
                     for kw in (
                         "traversal",
                         "escape",
                         "escapes",
-                        "forbidden",
                         "null byte",
                         "uri scheme",
-                        "security",
+                        "cross-profile",
                     )
                 ):
                     raise DocumentSandboxError(res.error)

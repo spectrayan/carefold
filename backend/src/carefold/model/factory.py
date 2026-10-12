@@ -107,20 +107,80 @@ class UnsupportedProviderError(ModelFactoryError, ValueError):
 # Key and URL Resolution Helpers
 # ============================================================================
 
+def _get_server_setting_sync(key: str, port: Optional[Any] = None) -> Optional[Any]:
+    """Reads a setting from SettingsPort synchronously without thread or event loop deadlock."""
+    target_port = port
+    if target_port is None:
+        try:
+            from carefold.settings.factory import get_settings_port
+            target_port = get_settings_port()
+        except Exception:
+            return None
+
+    if target_port is None:
+        return None
+
+    # 1. If adapter has in-memory cache, read directly (O(1), zero lock/loop overhead)
+    if hasattr(target_port, "_cache") and isinstance(target_port._cache, dict):
+        return target_port._cache.get(key)
+
+    # 2. If test double / sync adapter implements synchronous get_setting
+    if hasattr(target_port, "get_setting") and callable(target_port.get_setting):
+        try:
+            import inspect
+            result = target_port.get_setting(key)
+            if not inspect.iscoroutine(result):
+                return result
+            result.close()
+        except Exception:
+            pass
+
+    return None
+
+
 def resolve_api_key(
     provider: str,
     client_key: Optional[str] = None,
     allow_missing: bool = False,
+    settings_port: Optional[Any] = None,
 ) -> Optional[str]:
-    """Resolves API key with strict precedence:
-    1. Client request parameter (client_key)
-    2. Server environment variables
-    
-    Raises MissingApiKeyError if key is missing and allow_missing is False.
-    """
-    if client_key and str(client_key).strip():
-        return str(client_key).strip()
+    """Resolves API key strictly from server-side configuration.
 
+    Resolution hierarchy:
+    1. SystemSetting table via SettingsPort (models.<provider>_api_key)
+    2. Server environment variables (OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY, etc.)
+    3. Application settings (carefold.config.settings)
+    4. Client-supplied key fallback only when no server configuration exists (e.g. testing stubs)
+
+    Server-side credentials strictly take precedence over client-supplied keys per AU-15.
+    """
+    prov_lower = provider.lower().strip() if provider else PROVIDER_OLLAMA
+
+    settings_keys_map = {
+        PROVIDER_OPENAI: ["models.openai_api_key", "models.openai.api_key", "openai_api_key"],
+        PROVIDER_ANTHROPIC: ["models.anthropic_api_key", "models.anthropic.api_key", "anthropic_api_key"],
+        PROVIDER_GOOGLE: ["models.google_api_key", "models.google.api_key", "google_api_key", "models.gemini_api_key", "gemini_api_key"],
+        PROVIDER_CUSTOM: ["models.custom_api_key", "models.custom.api_key", "custom_api_key"],
+        PROVIDER_OLLAMA: ["models.ollama_api_key", "ollama_api_key"],
+    }
+
+    # 1. Check SettingsPort (database vault)
+    target_keys = settings_keys_map.get(prov_lower, [])
+    if settings_port is not None:
+        for sk in target_keys:
+            try:
+                if hasattr(settings_port, "_cache") and sk in settings_port._cache:
+                    val = settings_port._cache[sk]
+                    if val and str(val).strip():
+                        return str(val).strip()
+            except Exception:
+                pass
+    for sk in target_keys:
+        val = _get_server_setting_sync(sk, settings_port)
+        if val and str(val).strip():
+            return str(val).strip()
+
+    # 2. Check Server Environment Variables
     env_map = {
         PROVIDER_GOOGLE: list(ENV_GOOGLE_API_KEYS),
         PROVIDER_ANTHROPIC: list(ENV_ANTHROPIC_API_KEYS),
@@ -128,19 +188,32 @@ def resolve_api_key(
         PROVIDER_CUSTOM: list(ENV_CUSTOM_API_KEYS),
     }
 
-    env_vars = env_map.get(provider, [])
+    env_vars = env_map.get(prov_lower, [])
     for var in env_vars:
         val = os.getenv(var)
         if val and val.strip():
             return val.strip()
 
-    if allow_missing or provider == PROVIDER_OLLAMA:
+    # 3. Check Application Settings
+    try:
+        from carefold.config import settings
+        app_key = getattr(settings, f"{prov_lower}_api_key", None)
+        if app_key and str(app_key).strip():
+            return str(app_key).strip()
+    except Exception:
+        pass
+
+    # 4. Fallback for client_key when NO server configuration exists (e.g. testing stubs)
+    if client_key and str(client_key).strip():
+        return str(client_key).strip()
+
+    if allow_missing or prov_lower == PROVIDER_OLLAMA:
         return None
 
     # For custom provider, if no key is set anywhere, default to "custom" dummy key
     # since many local custom endpoints (e.g. vLLM, LMStudio) don't need auth,
     # but OpenAI client requires a non-empty string.
-    if provider == PROVIDER_CUSTOM:
+    if prov_lower == PROVIDER_CUSTOM:
         return "custom"
 
     raise MissingApiKeyError(provider=provider, env_vars=env_vars)
@@ -149,12 +222,41 @@ def resolve_api_key(
 def resolve_base_url(
     provider: str,
     client_base_url: Optional[str] = None,
+    settings_port: Optional[Any] = None,
 ) -> Optional[str]:
-    """Resolves base URL for providers requiring or supporting custom endpoints."""
-    if client_base_url and str(client_base_url).strip():
-        return str(client_base_url).strip().rstrip("/")
+    """Resolves base URL strictly from server-side configuration for providers requiring custom endpoints.
 
-    if provider == PROVIDER_OLLAMA:
+    Resolution hierarchy:
+    1. SystemSetting table via SettingsPort (models.<provider>_url)
+    2. Server environment variables ($OLLAMA_URL, $CUSTOM_BASE_URL, etc.)
+    3. Application settings (carefold.config.settings)
+    4. Client-supplied base URL fallback only when no server configuration exists
+    """
+    prov_lower = provider.lower().strip() if provider else PROVIDER_OLLAMA
+
+    settings_keys_map = {
+        PROVIDER_OLLAMA: ["models.ollama_url", "models.ollama_base_url", "ollama_url", "ollama_base_url"],
+        PROVIDER_CUSTOM: ["models.custom_url", "models.custom_base_url", "custom_url", "custom_base_url"],
+    }
+
+    # 1. Check SettingsPort (database vault)
+    target_keys = settings_keys_map.get(prov_lower, [])
+    if settings_port is not None:
+        for sk in target_keys:
+            try:
+                if hasattr(settings_port, "_cache") and sk in settings_port._cache:
+                    val = settings_port._cache[sk]
+                    if val and str(val).strip():
+                        return str(val).strip().rstrip("/")
+            except Exception:
+                pass
+    for sk in target_keys:
+        val = _get_server_setting_sync(sk, settings_port)
+        if val and str(val).strip():
+            return str(val).strip().rstrip("/")
+
+    # 2. Check Server Environment Variables and App Settings
+    if prov_lower == PROVIDER_OLLAMA:
         for var in ENV_OLLAMA_URLS:
             env_ollama = os.getenv(var)
             if env_ollama and env_ollama.strip():
@@ -162,20 +264,40 @@ def resolve_base_url(
         # Fall back to settings.ollama_url or default
         try:
             from carefold.config import settings
-            return settings.ollama_url.rstrip("/")
+            if settings.ollama_url and settings.ollama_url.strip():
+                return settings.ollama_url.strip().rstrip("/")
         except Exception:
-            return DEFAULT_OLLAMA_URL
+            pass
 
-    if provider == PROVIDER_CUSTOM:
+        if client_base_url and str(client_base_url).strip():
+            return str(client_base_url).strip().rstrip("/")
+
+        return DEFAULT_OLLAMA_URL
+
+    if prov_lower == PROVIDER_CUSTOM:
         for var in ENV_CUSTOM_URLS:
             env_custom = os.getenv(var)
             if env_custom and env_custom.strip():
                 return env_custom.strip().rstrip("/")
+        try:
+            from carefold.config import settings
+            cfg_custom = getattr(settings, "custom_base_url", None) or getattr(settings, "custom_url", None)
+            if cfg_custom and str(cfg_custom).strip():
+                return str(cfg_custom).strip().rstrip("/")
+        except Exception:
+            pass
+
+        if client_base_url and str(client_base_url).strip():
+            return str(client_base_url).strip().rstrip("/")
+
         raise MissingConfigurationError(
             "Base URL for custom provider is required. "
-            "Please provide 'base_url' (or 'baseUrl') in the request settings "
+            "Please configure 'models.custom_url' in system settings "
             "or set the $CUSTOM_BASE_URL environment variable on the server."
         )
+
+    if client_base_url and str(client_base_url).strip():
+        return str(client_base_url).strip().rstrip("/")
 
     return None
 
@@ -296,19 +418,40 @@ class ModelFactory:
         # 1. Resolve canonical provider
         canonical = cls.resolve_provider(provider)
 
-        # 2. Extract common parameter aliases
+        # 2. Extract common parameter aliases and resolve server-side credentials
         resolved_model = model or kwargs.pop("model_name", None) or DEFAULT_MODELS.get(canonical, DEFAULT_MODEL)
-        effective_api_key = api_key or kwargs.pop("apiKey", None)
-        effective_base_url = base_url or kwargs.pop("baseUrl", None)
+        raw_api_key = api_key or kwargs.pop("apiKey", None)
+        raw_base_url = base_url or kwargs.pop("baseUrl", None)
         effective_timeout = timeout if timeout is not None else DEFAULT_MODEL_TIMEOUT_SECONDS
 
-        # 3. Retrieve provider strategy class
+        effective_api_key = resolve_api_key(
+            canonical,
+            client_key=raw_api_key,
+            allow_missing=canonical == PROVIDER_OLLAMA,
+        )
+        effective_base_url = resolve_base_url(
+            canonical,
+            client_base_url=raw_base_url,
+        )
+
+        # 3. Validate endpoint against egress destination policy (AU-15 / S8)
+        from carefold.model.egress import validate_model_endpoint
+        canonical_cloud_defaults = {
+            PROVIDER_GOOGLE: "https://generativelanguage.googleapis.com",
+            PROVIDER_ANTHROPIC: "https://api.anthropic.com",
+            PROVIDER_OPENAI: "https://api.openai.com/v1",
+        }
+        endpoint_to_validate = effective_base_url or canonical_cloud_defaults.get(canonical)
+        if endpoint_to_validate:
+            validate_model_endpoint(canonical, endpoint_to_validate)
+
+        # 4. Retrieve provider strategy class
         from carefold.model.providers import ProviderRegistry
         provider_cls = ProviderRegistry.get(canonical)
         if not provider_cls:
             raise UnsupportedProviderError(canonical, cls.get_available_providers())
 
-        # 4. Instantiate provider strategy
+        # 5. Instantiate provider strategy
         provider_instance = provider_cls(
             api_key=effective_api_key,
             base_url=effective_base_url,

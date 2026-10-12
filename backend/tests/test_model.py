@@ -274,17 +274,17 @@ def test_factory_unsupported_provider():
 # ============================================================================
 
 def test_key_resolution_client_override(monkeypatch):
-    """Verify client request key strictly overrides environment variable."""
+    """Verify server environment variable strictly takes precedence over client key (AU-15 / S8)."""
     if not _FACTORY_AVAILABLE:
         pytest.skip("Factory module not yet loaded")
     monkeypatch.setenv("OPENAI_API_KEY", "server-secret-openai")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "server-secret-anthropic")
     monkeypatch.setenv("GOOGLE_API_KEY", "server-secret-google")
 
-    # Client key overrides
-    assert resolve_api_key("openai", client_key="client-override-openai") == "client-override-openai"
-    assert resolve_api_key("anthropic", client_key="client-override-anthropic") == "client-override-anthropic"
-    assert resolve_api_key("google", client_key="client-override-google") == "client-override-google"
+    # Server environment secret strictly takes precedence over client-supplied keys
+    assert resolve_api_key("openai", client_key="client-override-openai") == "server-secret-openai"
+    assert resolve_api_key("anthropic", client_key="client-override-anthropic") == "server-secret-anthropic"
+    assert resolve_api_key("google", client_key="client-override-google") == "server-secret-google"
 
 
 def test_key_resolution_env_fallback(monkeypatch):

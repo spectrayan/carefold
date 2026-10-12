@@ -33,6 +33,7 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.35",
     "asyncpg>=0.29.0",
     "pwdlib[argon2]>=0.2.0",
+    "alembic>=1.13.0",
 ]
 
 [project.optional-dependencies]
@@ -55,7 +56,7 @@ where = ["src"]
 minversion = "8.0"
 addopts = "-ra -q --asyncio-mode=auto"
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "../libs/connectors"]
 markers = [
     "ollama: marks tests as requiring local Ollama daemon",
 ]

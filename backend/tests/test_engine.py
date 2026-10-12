@@ -166,7 +166,8 @@ async def test_engine_safe_history_disclosure_not_refused(temp_workspace: Path):
 @pytest.mark.asyncio
 async def test_engine_tool_execution(temp_workspace: Path):
     """Verifies declared tool execution inside sandboxed attachments."""
-    attachments_dir = temp_workspace / "attachments"
+    attachments_dir = temp_workspace / "attachments" / "default_user" / "default_profile"
+    attachments_dir.mkdir(parents=True, exist_ok=True)
     (attachments_dir / "blood_work.txt").write_text("Platelets: 250k, Cholesterol: 180", encoding="utf-8")
 
     mock = MockModelClient()
@@ -339,7 +340,8 @@ async def test_engine_multi_turn_conversation_with_thread_id(temp_workspace: Pat
 @pytest.mark.asyncio
 async def test_engine_multi_turn_tool_feedback_loop(temp_workspace: Path):
     """Verifies that tool results loop back to model and feed into subsequent turn."""
-    attachments_dir = temp_workspace / "attachments"
+    attachments_dir = temp_workspace / "attachments" / "default_user" / "default_profile"
+    attachments_dir.mkdir(parents=True, exist_ok=True)
     (attachments_dir / "medications.txt").write_text("Metformin 500mg, Lisinopril 10mg", encoding="utf-8")
 
     mock = MockModelClient()

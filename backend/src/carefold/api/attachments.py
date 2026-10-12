@@ -45,8 +45,10 @@ from carefold.constants.api import (
 from carefold.db.models import Attachment, Profile, ProfileAccess
 from carefold.db.session import get_db
 from carefold.logging import get_logger
+from carefold.storage.cas import get_cas_path, read_cas_file, store_cas_file
 from carefold.storage.factory import get_storage_adapter
 from carefold.storage.ports import StorageFile, StorageFileMetadata, StoragePort
+from carefold.tools.attach_read import extract_text_from_pdf_bytes
 
 logger = get_logger("carefold.api.attachments")
 
@@ -146,7 +148,14 @@ async def upload_attachment(
 
     sanitized_name = _sanitize_filename(file.filename)
 
-    # 4. Save file through Hexagonal StoragePort (computes SHA-256 and handles auto-renaming)
+    # 4. Save file through Content-Addressed Storage (CAS) layout and StoragePort
+    cas_path, cas_sha256, is_dedup = store_cas_file(
+        content=content,
+        carefold_home=settings.home_dir,
+        user_id=owner_id,
+        profile_id=profile_id,
+    )
+
     try:
         meta: StorageFileMetadata = await storage.save_file(
             content=content,
@@ -162,7 +171,21 @@ async def upload_attachment(
             detail=f"Failed to save attachment to storage: {storage_err}",
         )
 
-    # 5. Persist Attachment entity in relational database (carefold.db)
+    # 5. Extract plain text if applicable (for grounded recall without repeated parsing)
+    extracted_text: Optional[str] = None
+    extraction_status = "not_applicable"
+    if ext in (".txt", ".md", ".json", ".csv", ".tsv", ".yaml", ".yml"):
+        extracted_text = content.decode("utf-8", errors="replace")
+        extraction_status = "completed"
+    elif ext == ".pdf":
+        try:
+            extracted_text = extract_text_from_pdf_bytes(content)
+            extraction_status = "completed"
+        except Exception as pdf_err:
+            logger.debug("pdf_extraction_failed", error=str(pdf_err))
+            extraction_status = "failed"
+
+    # 6. Persist Attachment entity in relational database (carefold.db)
     now = meta.created_at or datetime.now(timezone.utc)
     attachment_id = str(uuid.uuid4())
 
@@ -176,8 +199,13 @@ async def upload_attachment(
             original_name=sanitized_name,
             content_type=meta.mime_type or file.content_type or "application/octet-stream",
             size_bytes=meta.byte_size,
-            sha256_hash=meta.sha256_hash,
+            sha256_hash=meta.sha256_hash or cas_sha256,
+            extracted_text=extracted_text,
+            source="upload",
+            source_ref=None,
+            extraction_status=extraction_status,
             created_at=now,
+            updated_at=now,
         )
         db.add(attachment_record)
         await db.commit()
@@ -206,8 +234,9 @@ async def upload_attachment(
         renamed=renamed,
         size_bytes=meta.byte_size,
         storage_key=meta.storage_key,
-        sha256_hash=meta.sha256_hash,
+        sha256_hash=meta.sha256_hash or cas_sha256,
         profile_id=profile_id,
+        is_deduplicated=is_dedup,
     )
 
     return {
@@ -217,12 +246,19 @@ async def upload_attachment(
         "original_name": sanitized_name,
         "storage_key": meta.storage_key,
         "path": rel_path,
+        "user_id": owner_id,
         "profile_id": profile_id,
         "size": meta.byte_size,
         "type": meta.mime_type or file.content_type or "application/octet-stream",
-        "sha256_hash": meta.sha256_hash,
+        "mime": meta.mime_type or file.content_type or "application/octet-stream",
+        "sha256": meta.sha256_hash or cas_sha256,
+        "sha256_hash": meta.sha256_hash or cas_sha256,
         "timestamp": timestamp,
         "renamed": renamed,
+        "extracted_text": extracted_text,
+        "source": "upload",
+        "extraction_status": extraction_status,
+        "is_deduplicated": is_dedup,
     }
 
 
@@ -312,43 +348,16 @@ async def list_attachments(
                 "size": att.size_bytes,
                 "type": att.content_type,
                 "sha256_hash": att.sha256_hash,
+                "extracted_text": att.extracted_text,
+                "source": att.source,
+                "source_ref": att.source_ref,
+                "extraction_status": att.extraction_status,
                 "timestamp": att.created_at.isoformat() if att.created_at else datetime.now(timezone.utc).isoformat(),
                 "download_url": f"/api/v1/attachments/{att.id}/download",
             })
     except Exception as db_err:
         await db.rollback()
         logger.warning("db_list_attachments_failed", error=str(db_err))
-
-    # Reconcile with unindexed files in storage (e.g. legacy workspace/attachments)
-    try:
-        storage_files = await storage.list_files(user_id=owner_id, profile_id=profile_id)
-        for sf in storage_files:
-            if sf.filename in seen_filenames:
-                continue
-            if owner_id and profile_id:
-                rel = f"attachments/{owner_id}/{profile_id}/{sf.filename}"
-            elif owner_id:
-                rel = f"attachments/{owner_id}/{sf.filename}"
-            elif profile_id:
-                rel = f"attachments/{profile_id}/{sf.filename}"
-            else:
-                rel = f"attachments/{sf.filename}"
-
-            results.append({
-                "id": sf.storage_key,
-                "filename": sf.filename,
-                "original_name": sf.filename,
-                "storage_key": sf.storage_key,
-                "path": rel,
-                "profile_id": sf.profile_id,
-                "size": sf.byte_size,
-                "type": sf.mime_type,
-                "sha256_hash": sf.sha256_hash,
-                "timestamp": sf.created_at.isoformat(),
-                "download_url": f"/api/v1/attachments/{sf.storage_key}/download",
-            })
-    except Exception as list_err:
-        logger.debug("storage_list_files_skipped", error=str(list_err))
 
     results.sort(key=lambda x: x["timestamp"], reverse=True)
     return results
@@ -379,74 +388,96 @@ async def download_attachment(
     res = await db.execute(stmt)
     att = res.scalar_one_or_none()
 
-    # 2. Authorize caller access
-    if att is not None:
-        if att.profile_id is not None:
-            p_stmt = select(Profile).where(Profile.id == att.profile_id)
-            p_res = await db.execute(p_stmt)
-            prof = p_res.scalar_one_or_none()
-            if prof is not None:
-                access = await get_user_profile_access(prof, user, db)
-                if access is None:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Access denied: no permission for attachment profile.",
-                    )
-        elif owner_id and not is_admin:
-            if att.user_id is not None and att.user_id != owner_id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Access denied: attachment belongs to another user.",
-                )
-
-        target_storage_key = att.storage_key or att.filename
-        target_user_id = att.user_id
-        target_profile_id = att.profile_id
-        content_type = att.content_type or "application/octet-stream"
-        filename = att.original_name or att.filename
-    else:
-        # Fallback: direct storage key lookup if DB record does not exist
-        target_storage_key = attachment_id
-        target_user_id = owner_id
-        target_profile_id = None
-        content_type = "application/octet-stream"
-        filename = os.path.basename(attachment_id)
-
-    # 3. Retrieve file from Hexagonal StoragePort
-    stored_file: Optional[StorageFile] = await storage.get_file(
-        target_storage_key,
-        user_id=target_user_id,
-        profile_id=target_profile_id,
-    )
-
-    if stored_file is None:
-        # Retry with base filename if storage_key had a path prefix
-        if "/" in target_storage_key or "\\" in target_storage_key:
-            stored_file = await storage.get_file(
-                os.path.basename(target_storage_key),
-                user_id=target_user_id,
-                profile_id=target_profile_id,
-            )
-
-    if stored_file is None:
+    # 2. Authorize caller access & resolve physical file
+    if att is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Attachment '{attachment_id}' not found in storage.",
+            detail=f"Attachment '{attachment_id}' not found.",
         )
 
-    # 4. Stream response with appropriate RFC headers
-    content_bytes = stored_file.content
-    content_length = len(content_bytes)
-    resolved_mime = stored_file.metadata.mime_type or content_type
+    if att.profile_id is not None:
+        p_stmt = select(Profile).where(Profile.id == att.profile_id)
+        p_res = await db.execute(p_stmt)
+        prof = p_res.scalar_one_or_none()
+        if prof is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Profile not found.",
+            )
+        access = await get_user_profile_access(prof, user, db)
+        if access is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: no permission for attachment profile.",
+            )
+    elif owner_id and not is_admin:
+        if att.user_id is not None and att.user_id != owner_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: attachment belongs to another user.",
+            )
 
+    target_storage_key = att.storage_key or att.filename
+    target_user_id = att.user_id
+    target_profile_id = att.profile_id
+    content_type = att.content_type or "application/octet-stream"
+    filename = att.original_name or att.filename
+
+    # 3. Retrieve file: First check Content-Addressed Storage (CAS) layout
+    content_bytes: Optional[bytes] = None
+    stored_file: Optional[StorageFile] = None
+
+    if att.sha256_hash:
+        try:
+            content_bytes = read_cas_file(
+                carefold_home=settings.home_dir,
+                user_id=att.user_id,
+                profile_id=att.profile_id,
+                sha256_hash=att.sha256_hash,
+            )
+        except (FileNotFoundError, ValueError):
+            content_bytes = None
+
+    if content_bytes is None:
+        # Fallback to Hexagonal StoragePort
+        stored_file = await storage.get_file(
+            target_storage_key,
+            user_id=target_user_id,
+            profile_id=target_profile_id,
+        )
+
+        if stored_file is None:
+            # Retry with base filename if storage_key had a path prefix
+            if "/" in target_storage_key or "\\" in target_storage_key:
+                stored_file = await storage.get_file(
+                    os.path.basename(target_storage_key),
+                    user_id=target_user_id,
+                    profile_id=target_profile_id,
+                )
+
+        if stored_file is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Attachment '{attachment_id}' not found in storage.",
+            )
+
+        content_bytes = stored_file.content
+        resolved_mime = stored_file.metadata.mime_type or content_type
+    else:
+        resolved_mime = content_type
+
+    content_length = len(content_bytes)
     safe_filename = _sanitize_filename(filename)
     headers = {
         "Content-Disposition": f'attachment; filename="{safe_filename}"',
         "Content-Length": str(content_length),
         "X-Content-Type-Options": "nosniff",
     }
-    if stored_file.metadata.sha256_hash:
-        headers["ETag"] = f'"{stored_file.metadata.sha256_hash}"'
+    etag_hash = getattr(att, "sha256_hash", None) or (
+        stored_file.metadata.sha256_hash if (stored_file and getattr(stored_file, "metadata", None)) else None
+    )
+    if etag_hash:
+        headers["ETag"] = f'"{etag_hash}"'
 
     return StreamingResponse(
         io.BytesIO(content_bytes),
@@ -504,7 +535,7 @@ async def delete_attachment(
                 detail="Access denied: attachment belongs to another user.",
             )
 
-    # 3. Delete file from StoragePort
+    # 3. Delete file from StoragePort and CAS
     storage_key_to_delete = att.storage_key or att.filename
     try:
         await storage.delete_file(
@@ -518,6 +549,45 @@ async def delete_attachment(
             storage_key=storage_key_to_delete,
             error=str(storage_err),
         )
+
+    if att.sha256_hash:
+        try:
+            # Reference count check: only unlink if no other Attachment record shares this physical CAS file
+            ref_conditions = [
+                Attachment.id != att.id,
+                Attachment.sha256_hash == att.sha256_hash,
+            ]
+            if att.user_id is not None:
+                ref_conditions.append(Attachment.user_id == att.user_id)
+            else:
+                ref_conditions.append(Attachment.user_id.is_(None))
+
+            if att.profile_id is not None:
+                ref_conditions.append(Attachment.profile_id == att.profile_id)
+            else:
+                ref_conditions.append(Attachment.profile_id.is_(None))
+
+            other_ref_stmt = select(Attachment.id).where(*ref_conditions).limit(1)
+            other_ref_res = await db.execute(other_ref_stmt)
+            has_shared_references = other_ref_res.scalar_one_or_none() is not None
+
+            if not has_shared_references:
+                cas_file = get_cas_path(
+                    settings.home_dir,
+                    att.user_id,
+                    att.profile_id,
+                    att.sha256_hash,
+                )
+                if cas_file.is_file():
+                    cas_file.unlink()
+            else:
+                logger.debug(
+                    "cas_delete_retained_for_shared_reference",
+                    sha256=att.sha256_hash[:8],
+                    retained_profile=att.profile_id,
+                )
+        except Exception as cas_del_err:
+            logger.debug("cas_delete_skipped", error=str(cas_del_err))
 
     # 4. Remove record from carefold.db
     deleted_id = att.id

@@ -95,6 +95,11 @@ def e2e_workspace(tmp_path: Path, e2e_repo_root: Path):
         encoding="utf-8"
     )
 
+    scoped_att_dir = attachments_dir / "test-user" / "test-profile"
+    scoped_att_dir.mkdir(parents=True, exist_ok=True)
+    (scoped_att_dir / "sample_visit.txt").write_text(sample_text_path.read_text(encoding="utf-8"), encoding="utf-8")
+    (scoped_att_dir / "sample_insurance.txt").write_text(sample_insurance_path.read_text(encoding="utf-8"), encoding="utf-8")
+
     # Override application settings for test isolation
     old_root = settings.workspace_root
     old_log = settings.audit_log_path
@@ -161,8 +166,23 @@ def sample_generic_text() -> str:
     )
 
 
-def read_attachment_sync(raw_path: str, workspace_root: Path) -> ToolResult:
+def read_attachment_sync(
+    raw_path: str,
+    workspace_root: Path,
+    user_id: str = "test-user",
+    profile_id: str = "test-profile",
+) -> ToolResult:
     """Synchronous helper to run execute_attach_read safely even inside running loops."""
+    # Ensure scoped directory exists in workspace
+    scoped_dir = workspace_root / "attachments" / user_id / profile_id
+    scoped_dir.mkdir(parents=True, exist_ok=True)
+
+    # Mirror root attachments file into scoped directory if test wrote to attachments/ root
+    source_file = workspace_root / "attachments" / raw_path
+    target_file = scoped_dir / Path(raw_path).name
+    if source_file.is_file() and not target_file.exists() and ".." not in raw_path and "/" not in raw_path and "\\" not in raw_path and "\0" not in raw_path:
+        shutil.copy2(source_file, target_file)
+
     ctx = type(
         "MockContext",
         (),
@@ -170,6 +190,8 @@ def read_attachment_sync(raw_path: str, workspace_root: Path) -> ToolResult:
             "workspace_root": workspace_root,
             "skills_dir": workspace_root / "skills",
             "agent": AgentManifest(id="test-agent", title="Test Agent", persona="Clinical Steward"),
+            "user_id": user_id,
+            "profile_id": profile_id,
         },
     )()
     try:

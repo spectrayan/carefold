@@ -28,15 +28,24 @@ from carefold.tools.workspace_note import execute_workspace_note
 
 
 class MockContext:
-    def __init__(self, workspace_root: Path, agent: AgentManifest):
+    def __init__(
+        self,
+        workspace_root: Path,
+        agent: AgentManifest,
+        user_id: str = "test-user",
+        profile_id: str = "test-profile",
+    ):
         self.workspace_root = workspace_root
         self.skills_dir = workspace_root / "skills"
         self.agent = agent
+        self.user_id = user_id
+        self.profile_id = profile_id
 
 
 @pytest.mark.asyncio
 async def test_attach_read_text_success(temp_workspace: Path):
-    attachments_dir = temp_workspace / "attachments"
+    attachments_dir = temp_workspace / "attachments" / "test-user" / "test-profile"
+    attachments_dir.mkdir(parents=True, exist_ok=True)
     test_file = attachments_dir / "blood_work.txt"
     test_file.write_text("WBC: 6.5, Hemoglobin: 14.2", encoding="utf-8")
 
@@ -50,7 +59,8 @@ async def test_attach_read_text_success(temp_workspace: Path):
 
 @pytest.mark.asyncio
 async def test_attach_read_pdf_success(temp_workspace: Path):
-    attachments_dir = temp_workspace / "attachments"
+    attachments_dir = temp_workspace / "attachments" / "test-user" / "test-profile"
+    attachments_dir.mkdir(parents=True, exist_ok=True)
     pdf_file = attachments_dir / "summary.pdf"
     # Simple valid synthetic PDF with a BT ... (Sample Clinical Note) Tj ... ET text layer
     pdf_bytes = (
@@ -99,7 +109,8 @@ async def test_attach_read_symlink_escape(temp_workspace: Path, tmp_path: Path):
     external_secret = tmp_path / "secret.txt"
     external_secret.write_text("TOP SECRET CLASSIFIED", encoding="utf-8")
 
-    attachments_dir = temp_workspace / "attachments"
+    attachments_dir = temp_workspace / "attachments" / "test-user" / "test-profile"
+    attachments_dir.mkdir(parents=True, exist_ok=True)
     symlink_file = attachments_dir / "evil_symlink.txt"
 
     try:
@@ -121,7 +132,9 @@ _UNESCAPED_PIPE = re.compile(r"(?<!\\)\|")
 
 
 async def _attach_read_bytes(workspace: Path, filename: str, data: bytes):
-    (workspace / "attachments" / filename).write_bytes(data)
+    target = workspace / "attachments" / "test-user" / "test-profile" / filename
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(data)
     ctx = MockContext(workspace, AgentManifest(id="test-agent", title="Test", persona="Role"))
     return await execute_attach_read({"path": filename}, ctx)
 

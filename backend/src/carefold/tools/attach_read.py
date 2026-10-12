@@ -23,11 +23,14 @@ Pure-Python PDF text extraction is included for 100% offline self-containment.
 from __future__ import annotations
 
 import csv
+from datetime import datetime, timezone
 import io
 import os
-import re
 from pathlib import Path
-from typing import Any, Dict, Set
+import re
+from typing import Any, Dict, Optional, Set
+
+from sqlalchemy import select
 
 from carefold.config import settings
 from carefold.constants.defaults import (
@@ -36,8 +39,14 @@ from carefold.constants.defaults import (
     MAX_FILE_SIZE_BYTES,
 )
 from carefold.constants.paths import ATTACHMENTS_DIR
+from carefold.db.models import Attachment
+from carefold.db.session import get_session_factory
+from carefold.logging import get_logger
 from carefold.schemas.tool import ToolResult
+from carefold.storage.cas import get_cas_path
 from carefold.tools.sandbox import SandboxSecurityError, resolve_sandboxed_path
+
+logger = get_logger("carefold.tools.attach_read")
 
 ALLOWED_TEXT_EXTS: Set[str] = set(CONST_ALLOWED_TEXT_EXTENSIONS)
 ALLOWED_ATTACHMENT_EXTENSIONS: Set[str] = set(CONST_ALLOWED_ATTACHMENT_EXTENSIONS)
@@ -176,9 +185,18 @@ def format_delimited_as_markdown(text: str, ext: str) -> str | None:
 
 
 async def execute_attach_read(params: Dict[str, Any], context: Any) -> ToolResult:
-    """Executes the attach-read tool securely within the attachments sandbox."""
+    """Executes the attach-read tool securely within the attachments sandbox.
+
+    Enforces:
+    1. Fail-closed ToolContext requirement: non-empty user_id and profile_id are mandatory.
+    2. Zero root directory fallback: never falls back to root base_dir.
+    3. Strict cross-profile blocking: reject cross-profile attempts immediately.
+    4. Database-grounded resolution: verifies attachment record in carefold.db when DB is active.
+    5. Content-Addressed Storage (CAS) resolution: queries <carefold_home>/data/files/<uid>/<pid>/<sha256>.
+    6. Cached plain-text fast path: returns extracted_text from DB when available.
+    """
     try:
-        raw_path = params.get("path") or params.get("file_path")
+        raw_path = params.get("path") or params.get("file_path") or params.get("filename") or params.get("id")
         if not raw_path or not isinstance(raw_path, str):
             return ToolResult(
                 success=False,
@@ -186,7 +204,26 @@ async def execute_attach_read(params: Dict[str, Any], context: Any) -> ToolResul
                 error='Parameter "path" must be a non-empty string.',
             )
 
-        # Determine workspace root and attachments/uploads directory
+        # 1. Enforce Fail-Closed Context: Non-empty user_id and profile_id are mandatory
+        user_id = getattr(context, "user_id", None)
+        profile_id = getattr(context, "profile_id", None)
+        uid_str = str(user_id).strip() if (user_id and str(user_id).strip()) else None
+        pid_str = str(profile_id).strip() if (profile_id and str(profile_id).strip()) else None
+
+        if not pid_str:
+            return ToolResult(
+                success=False,
+                output=None,
+                error="Security violation: profile_id is required for attach_read (fail-closed). Execution denied.",
+            )
+        if not uid_str:
+            return ToolResult(
+                success=False,
+                output=None,
+                error="Security violation: user_id is required for attach_read (fail-closed). Execution denied.",
+            )
+
+        # 2. Determine base directory for scoped storage
         ws_root = getattr(context, "workspace_root", None)
         if ws_root:
             ws_path = Path(ws_root)
@@ -199,64 +236,206 @@ async def execute_attach_read(params: Dict[str, Any], context: Any) -> ToolResul
         else:
             base_dir = settings.get_uploads_dir()
 
-        user_id = getattr(context, "user_id", None)
-        profile_id = getattr(context, "profile_id", None)
-        uid_str = str(user_id).strip() if (user_id and str(user_id).strip()) else None
-        pid_str = str(profile_id).strip() if (profile_id and str(profile_id).strip()) else None
+        # Invariant: Scoped attachments directory is strictly partitioned by user_id and profile_id.
+        # NEVER fall back to root base_dir.
+        attachments_dir = base_dir / uid_str / pid_str
 
-        if uid_str and pid_str:
-            attachments_dir = base_dir / uid_str / pid_str
-        elif uid_str:
-            attachments_dir = base_dir / uid_str
-        elif pid_str:
-            attachments_dir = base_dir / pid_str
-        else:
-            attachments_dir = base_dir
+        # 3. Path Traversal & Protocol Attacks Defense
+        if "\0" in raw_path:
+            return ToolResult(
+                success=False,
+                output=None,
+                error="Path traversal forbidden: Null byte detected in path.",
+            )
+        for scheme in ("file://", "http://", "https://", "ftp://", "gopher://", "data:", "javascript:", "blob:", "about:"):
+            if raw_path.lower().startswith(scheme):
+                return ToolResult(
+                    success=False,
+                    output=None,
+                    error="Path traversal forbidden: URI schemes are not permitted.",
+                )
 
-        # Strip caller's own user/profile prefix if path is explicitly qualified
+        # Reject absolute paths that escape the scoped attachments directory
+        if (
+            os.path.isabs(raw_path.strip())
+            or raw_path.strip().startswith(("/", "\\"))
+            or (len(raw_path.strip()) >= 2 and raw_path.strip()[1] == ":")
+        ):
+            try:
+                candidate_abs = Path(raw_path.strip()).resolve()
+                candidate_abs.relative_to(attachments_dir.resolve())
+            except Exception:
+                return ToolResult(
+                    success=False,
+                    output=None,
+                    error=f'Path traversal forbidden: Path "{raw_path}" escapes allowed directory.',
+                )
+
         clean_path = raw_path.strip().lstrip("/\\")
-        prefixes_to_strip: list[str] = []
-        if uid_str and pid_str:
-            prefixes_to_strip.extend([
-                f"attachments/{uid_str}/{pid_str}/",
-                f"attachments\\{uid_str}\\{pid_str}\\",
-                f"uploads/{uid_str}/{pid_str}/",
-                f"uploads\\{uid_str}\\{pid_str}\\",
-                f"{uid_str}/{pid_str}/",
-                f"{uid_str}\\{pid_str}\\",
-            ])
-        if uid_str:
-            prefixes_to_strip.extend([
-                f"attachments/{uid_str}/",
-                f"attachments\\{uid_str}\\",
-                f"uploads/{uid_str}/",
-                f"uploads\\{uid_str}\\",
-                f"{uid_str}/",
-                f"{uid_str}\\",
-            ])
-        if pid_str:
-            prefixes_to_strip.extend([
-                f"attachments/{pid_str}/",
-                f"attachments\\{pid_str}\\",
-                f"uploads/{pid_str}/",
-                f"uploads\\{pid_str}\\",
-                f"{pid_str}/",
-                f"{pid_str}\\",
-            ])
-        prefixes_to_strip.extend([
+        norm_path = clean_path.replace("\\", "/")
+
+        # Reject relative paths with traversal segments that escape the scoped directory
+        if any(p.startswith("..") for p in norm_path.split("/") if p):
+            return ToolResult(
+                success=False,
+                output=None,
+                error=f'Path traversal forbidden: Path "{raw_path}" escapes allowed directory.',
+            )
+
+        # 4. Detect Cross-Tenant / Cross-Profile Access Attempts in Path Segments
+        path_parts = [p for p in norm_path.split("/") if p and p != "." and p != ".."]
+
+        # Check explicit root-prefixed paths: attachments/ or uploads/
+        if path_parts and path_parts[0] in ("attachments", "uploads"):
+            sub_parts = path_parts[1:]
+            if len(sub_parts) >= 2:
+                if sub_parts[0] != uid_str or sub_parts[1] != pid_str:
+                    return ToolResult(
+                        success=False,
+                        output=None,
+                        error=f"Security violation: Cross-profile attachment access denied for '{raw_path}'.",
+                    )
+            elif len(sub_parts) == 1 and sub_parts[0] != uid_str and sub_parts[0] != pid_str:
+                # Check if sub_parts[0] exists as another partition on disk
+                if (base_dir / sub_parts[0]).is_dir():
+                    return ToolResult(
+                        success=False,
+                        output=None,
+                        error=f"Security violation: Cross-profile attachment access denied for '{raw_path}'.",
+                    )
+
+        # Detect paths beginning with explicit foreign user/profile prefix (e.g. user_alice/profile_alice/chart.txt)
+        if len(path_parts) >= 3:
+            part_u, part_p = path_parts[0], path_parts[1]
+            if part_u != uid_str or part_p != pid_str:
+                return ToolResult(
+                    success=False,
+                    output=None,
+                    error=f"Security violation: Cross-profile attachment access denied for '{raw_path}'.",
+                )
+
+        # Detect paths beginning with a foreign user directory on disk
+        if len(path_parts) >= 2:
+            part_u = path_parts[0]
+            if part_u != uid_str and (base_dir / part_u).is_dir():
+                return ToolResult(
+                    success=False,
+                    output=None,
+                    error=f"Security violation: Cross-profile attachment access denied for '{raw_path}'.",
+                )
+
+        # Strip caller's own user/profile prefix if explicitly qualified
+        prefixes_to_strip: list[str] = [
+            f"attachments/{uid_str}/{pid_str}/",
+            f"attachments\\{uid_str}\\{pid_str}\\",
+            f"uploads/{uid_str}/{pid_str}/",
+            f"uploads\\{uid_str}\\{pid_str}\\",
+            f"{uid_str}/{pid_str}/",
+            f"{uid_str}\\{pid_str}\\",
             "attachments/",
             "attachments\\",
             "uploads/",
             "uploads\\",
-        ])
-
+        ]
         for prefix in prefixes_to_strip:
             if clean_path.startswith(prefix):
                 clean_path = clean_path[len(prefix):]
-                raw_path = clean_path
                 break
 
-        safe_file_path = resolve_sandboxed_path(attachments_dir, raw_path, must_exist=True)
+        target_ident = os.path.basename(clean_path.replace("\\", "/"))
+
+        # 5. Database-Backed Resolution Scoped to (user_id, profile_id)
+        att_record: Optional[Attachment] = None
+        db_active = False
+
+        try:
+            session_factory = get_session_factory()
+            async with session_factory() as db:
+                # 5a. Lookup attachment belonging to active profile FIRST
+                stmt = (
+                    select(Attachment)
+                    .where(
+                        (Attachment.profile_id == pid_str)
+                        & (
+                            (Attachment.id == target_ident)
+                            | (Attachment.id == clean_path)
+                            | (Attachment.filename == target_ident)
+                            | (Attachment.original_name == target_ident)
+                            | (Attachment.sha256_hash == target_ident)
+                            | (Attachment.storage_key == clean_path)
+                        )
+                    )
+                    .limit(1)
+                )
+                res = await db.execute(stmt)
+                att_record = res.scalars().first()
+                db_active = True
+
+                # 5b. If NOT found in active profile, check if this is an attempt to access a foreign attachment
+                if att_record is None:
+                    cross_stmt = (
+                        select(Attachment.id)
+                        .where(
+                            (Attachment.profile_id != pid_str)
+                            & (
+                                (Attachment.id == target_ident)
+                                | (Attachment.id == clean_path)
+                                | (Attachment.filename == target_ident)
+                                | (Attachment.original_name == target_ident)
+                                | (Attachment.sha256_hash == target_ident)
+                                | (Attachment.storage_key == clean_path)
+                            )
+                        )
+                        .limit(1)
+                    )
+                    cross_res = await db.execute(cross_stmt)
+                    if cross_res.scalars().first() is not None:
+                        return ToolResult(
+                            success=False,
+                            output=None,
+                            error=f"Security violation: Cross-profile attachment access denied for '{raw_path}'.",
+                        )
+        except Exception as db_err:
+            logger.debug("Database attachment query skipped: %s", db_err)
+            db_active = False
+            att_record = None
+
+
+        # 6. Fast-path: Return cached plain text if available
+        if att_record is not None and att_record.extracted_text:
+            ext_lower = Path(att_record.filename).suffix.lower()
+            if ext_lower not in DELIMITED_FORMATS:
+                return ToolResult(
+                    success=True,
+                    output={
+                        "path": raw_path,
+                        "format": "pdf" if ext_lower == ".pdf" else "text",
+                        "size_bytes": att_record.size_bytes,
+                        "content": att_record.extracted_text,
+                    },
+                )
+
+        # 7. Physical File Resolution: Content-Addressed Storage (CAS) or scoped directory
+        safe_file_path: Optional[Path] = None
+
+        # Check CAS path first
+        target_sha256 = att_record.sha256_hash if att_record else None
+        if target_sha256:
+            try:
+                cas_path = get_cas_path(
+                    settings.home_dir,
+                    att_record.user_id or uid_str,
+                    att_record.profile_id or pid_str,
+                    target_sha256,
+                )
+                if cas_path.is_file():
+                    safe_file_path = cas_path
+            except ValueError:
+                pass
+
+        if safe_file_path is None:
+            target_filename = att_record.filename if att_record else clean_path
+            safe_file_path = resolve_sandboxed_path(attachments_dir, target_filename, must_exist=True)
 
         if not safe_file_path.is_file():
             return ToolResult(
@@ -274,6 +453,8 @@ async def execute_attach_read(params: Dict[str, Any], context: Any) -> ToolResul
             )
 
         ext = safe_file_path.suffix.lower()
+        if att_record and not ext:
+            ext = Path(att_record.filename).suffix.lower()
 
         # CSV/TSV handling: render as a Markdown table, falling back to raw text
         if ext in DELIMITED_FORMATS:
@@ -297,6 +478,18 @@ async def execute_attach_read(params: Dict[str, Any], context: Any) -> ToolResul
         # Text file handling
         if ext in ALLOWED_TEXT_EXTS:
             text = safe_file_path.read_text(encoding="utf-8", errors="replace")
+            if att_record and not att_record.extracted_text:
+                try:
+                    session_factory = get_session_factory()
+                    async with session_factory() as db:
+                        rec = await db.get(Attachment, att_record.id)
+                        if rec:
+                            rec.extracted_text = text
+                            rec.extraction_status = "completed"
+                            rec.updated_at = datetime.now(timezone.utc)
+                            await db.commit()
+                except Exception:
+                    pass
             return ToolResult(
                 success=True,
                 output={
@@ -311,6 +504,18 @@ async def execute_attach_read(params: Dict[str, Any], context: Any) -> ToolResul
         if ext == ".pdf":
             buffer = safe_file_path.read_bytes()
             extracted_text = extract_text_from_pdf_bytes(buffer)
+            if att_record and not att_record.extracted_text:
+                try:
+                    session_factory = get_session_factory()
+                    async with session_factory() as db:
+                        rec = await db.get(Attachment, att_record.id)
+                        if rec:
+                            rec.extracted_text = extracted_text
+                            rec.extraction_status = "completed"
+                            rec.updated_at = datetime.now(timezone.utc)
+                            await db.commit()
+                except Exception:
+                    pass
             return ToolResult(
                 success=True,
                 output={

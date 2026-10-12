@@ -304,7 +304,9 @@ class TestSandboxedFileReaderSecurity:
             notes_dir.mkdir(parents=True)
 
             # Legitimate file inside attachments/
-            valid_doc = att_dir / "valid_record.txt"
+            scoped_dir = att_dir / "test_user_gv" / "test_prof_gv"
+            scoped_dir.mkdir(parents=True, exist_ok=True)
+            valid_doc = scoped_dir / "valid_record.txt"
             valid_doc.write_text("CLINICAL VISIT SUMMARY\nReason for visit: Annual checkup\nFollow-up: 2 weeks\n")
 
             # Sensitive file in notes/ (outside attachments/)
@@ -312,13 +314,21 @@ class TestSandboxedFileReaderSecurity:
             secret_note.write_text("Confidential medical research data")
 
             # Symlink inside attachments/ pointing to notes/secret.txt
-            symlink_escape = att_dir / "symlink_escape.txt"
+            symlink_escape = scoped_dir / "symlink_escape.txt"
             try:
                 os.symlink(secret_note, symlink_escape)
             except OSError:
                 pass
+            try:
+                os.symlink(secret_note, att_dir / "symlink_escape.txt")
+            except OSError:
+                pass
 
-            ctx = type("MockCtx", (), {"workspace_root": ws})()
+            ctx = type("MockCtx", (), {
+                "workspace_root": ws,
+                "user_id": "test_user_gv",
+                "profile_id": "test_prof_gv",
+            })()
             yield ws, ctx
 
     @pytest.mark.asyncio
@@ -547,7 +557,11 @@ class TestGroundingDefectsRemediation:
         """Path traversal attempts like /etc/hosts or escaping paths raise PermissionError / SandboxSecurityError,
         strictly preventing arbitrary file reads outside the sandbox.
         """
-        ctx = type("MockCtx", (), {"workspace_root": Path("/tmp")})()
+        ctx = type("MockCtx", (), {
+            "workspace_root": Path("/tmp"),
+            "user_id": "test-user",
+            "profile_id": "test-profile",
+        })()
         res = asyncio.run(execute_attach_read({"path": "../notes/secret.txt"}, ctx))
         assert res.success is False
 

@@ -28,6 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from carefold.api.deps import get_current_user, resolve_owner_user_id
+from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
 from carefold.auth.ports import UserProfile
 from carefold.db.models import Profile, ProfileAccess, ProfileConsent, User, ViewerInvite
 from carefold.db.session import get_db
@@ -59,22 +60,18 @@ async def get_user_profile_access(
     db: AsyncSession,
 ) -> Optional[AccessLevel]:
     """Determines user's access level ('manage', 'view_clinical', 'view_paperwork') for a profile."""
-    # 1. System administrators always have full management access
-    if getattr(user, "role", "member") == "admin":
-        return "manage"
-
     owner_id = resolve_owner_user_id(user)
 
-    # 2. Offline / single-user mode bypass
+    # 1. Offline / single-user mode bypass (local desktop single steward)
     if owner_id is None:
-        if profile.user_id is None or profile.user_id == user.id:
+        if getattr(user, "id", None) == DEFAULT_STEWARD_USER.id or profile.user_id is None or profile.user_id == getattr(user, "id", None):
             return "manage"
 
-    # 3. Direct account ownership
+    # 2. Direct account ownership
     if profile.user_id is not None and profile.user_id == owner_id:
         return "manage"
 
-    # 4. Check explicit access grants in profile_access
+    # 3. Check explicit access grants in profile_access
     effective_user_id = owner_id or user.id
     stmt = select(ProfileAccess).where(
         ProfileAccess.profile_id == profile.id,
@@ -453,13 +450,6 @@ async def list_all_viewer_invites(
         )
         res_access = await db.execute(stmt_access)
         for row in res_access.all():
-            managed_profile_map[row[0]] = row[1]
-
-    # If admin, allow seeing all profiles
-    if getattr(user, "role", "member") == "admin":
-        stmt_all = select(Profile.id, Profile.name)
-        res_all = await db.execute(stmt_all)
-        for row in res_all.all():
             managed_profile_map[row[0]] = row[1]
 
     conditions = []
@@ -863,12 +853,12 @@ async def delete_profile(
 
     owner_id = resolve_owner_user_id(user)
     is_owner = (profile.user_id is None) if owner_id is None else (profile.user_id == owner_id)
-    is_admin = getattr(user, "role", "member") == "admin"
+    access_level = await get_user_profile_access(profile, user, db)
 
-    if not (is_owner or is_admin):
+    if not (is_owner or access_level == "manage"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Forbidden: only the account owner or administrator can delete this profile.",
+            detail="Forbidden: only the account owner or authorized manager can delete this profile.",
         )
 
     # Primary 'Me' profile deletion protection

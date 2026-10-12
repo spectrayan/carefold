@@ -33,10 +33,18 @@ from carefold.tools.workspace_note import execute_workspace_note
 
 
 class MockContext:
-    def __init__(self, workspace_root: Path, agent: AgentManifest):
+    def __init__(
+        self,
+        workspace_root: Path,
+        agent: AgentManifest,
+        user_id: str = "test-user",
+        profile_id: str = "test-profile",
+    ):
         self.workspace_root = workspace_root
         self.skills_dir = workspace_root / "skills"
         self.agent = agent
+        self.user_id = user_id
+        self.profile_id = profile_id
 
 
 def test_refusal_prompt_injection_attempts():
@@ -77,7 +85,8 @@ async def test_sandbox_parent_symlink_escape(temp_workspace: Path, tmp_path: Pat
     secret_file.write_text("CLASSIFIED", encoding="utf-8")
 
     # Create symlinked folder inside attachments pointing outside
-    attachments_dir = temp_workspace / "attachments"
+    attachments_dir = temp_workspace / "attachments" / "test-user" / "test-profile"
+    attachments_dir.mkdir(parents=True, exist_ok=True)
     sym_dir = attachments_dir / "external_link"
     try:
         os.symlink(external_dir, sym_dir)

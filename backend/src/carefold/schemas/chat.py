@@ -46,11 +46,31 @@ class ChatRequestBody(BaseModel):
     # LangChain multi-provider parameters
     provider: Optional[str] = "ollama"
     model: Optional[str] = None
-    apiKey: Optional[str] = None
-    api_key: Optional[str] = None
-    customEndpoint: Optional[str] = None
-    baseUrl: Optional[str] = None
-    base_url: Optional[str] = None
+    apiKey: Optional[str] = Field(
+        default=None,
+        deprecated=True,
+        description="Ignored by server; keys and endpoints resolve exclusively from server configuration.",
+    )
+    api_key: Optional[str] = Field(
+        default=None,
+        deprecated=True,
+        description="Ignored by server; keys and endpoints resolve exclusively from server configuration.",
+    )
+    customEndpoint: Optional[str] = Field(
+        default=None,
+        deprecated=True,
+        description="Ignored by server; keys and endpoints resolve exclusively from server configuration.",
+    )
+    baseUrl: Optional[str] = Field(
+        default=None,
+        deprecated=True,
+        description="Ignored by server; keys and endpoints resolve exclusively from server configuration.",
+    )
+    base_url: Optional[str] = Field(
+        default=None,
+        deprecated=True,
+        description="Ignored by server; keys and endpoints resolve exclusively from server configuration.",
+    )
 
     def get_agent_id(self) -> str:
         aid = self.agentId or self.agent_id
@@ -68,10 +88,13 @@ class ChatRequestBody(BaseModel):
         return self.provider or "ollama"
 
     def get_api_key(self) -> Optional[str]:
-        return self.apiKey or self.api_key
+        """Strictly ignored by server; resolves exclusively from server configuration."""
+        return None
 
     def get_custom_endpoint(self) -> Optional[str]:
-        return self.customEndpoint or self.baseUrl or self.base_url
+        """Strictly ignored by server; resolves exclusively from server configuration."""
+        return None
+
 
 
 class SSETokenEvent(BaseModel):

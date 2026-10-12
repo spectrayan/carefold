@@ -19,6 +19,7 @@ from carefold.db.base import Base
 from carefold.db.models import (
     Agent,
     Attachment,
+    AuditEventRecord,
     ChatThread,
     KnowledgeBase,
     Note,
@@ -56,6 +57,7 @@ __all__ = [
     "KnowledgeBase",
     "Note",
     "Attachment",
+    "AuditEventRecord",
     "ChatThread",
     "Profile",
     "ProfileAccess",

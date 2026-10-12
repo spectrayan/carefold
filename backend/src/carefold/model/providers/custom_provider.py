@@ -93,7 +93,9 @@ class CustomProvider(BaseModelProvider):
                     break
 
         if resolved_url and str(resolved_url).strip():
-            self.base_url: Optional[str] = str(resolved_url).strip().rstrip("/")
+            raw_url = str(resolved_url).strip().rstrip("/")
+            from carefold.model.egress import validate_model_endpoint
+            self.base_url = validate_model_endpoint(PROVIDER_CUSTOM, raw_url)
         else:
             self.base_url = None
 

@@ -43,7 +43,12 @@ class ToolValidatorNode(BaseNode):
         super().__init__(name=name)
         self.max_chars = max_chars
 
-    async def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(
+        self,
+        state: Dict[str, Any],
+        *,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """Sanitizes and truncates tool output if necessary."""
         raw_val = state.get("tool_output", "")
         if isinstance(raw_val, (dict, list)):

@@ -38,6 +38,14 @@ class AuditEvent(BaseModel):
     completion: Optional[str] = None  # Redacted unless store_bodies=True
     thread_id: Optional[str] = None
     profile_id: Optional[str] = None
+    id: Optional[str] = None
+    actor_user_id: Optional[str] = None
+    principal: Optional[str] = None
+    run_id: Optional[str] = None
+    risk: Optional[str] = None
+    decision: Optional[str] = None
+    payload_hash: Optional[str] = None
+    external_ref: Optional[str] = None
 
 
 class AuditListResponse(BaseModel):

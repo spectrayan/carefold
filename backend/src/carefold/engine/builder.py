@@ -55,6 +55,7 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
+from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -409,7 +410,10 @@ class GraphBuilder:
                     pass
             return res
 
-        async def _tool_wrapper(state: AgentState) -> Dict[str, Any]:
+        async def _tool_wrapper(
+            state: AgentState,
+            config: Optional[RunnableConfig] = None,
+        ) -> Dict[str, Any]:
             calls = list(state.get("tool_calls", []))
             if not calls:
                 msgs = state.get("messages", [])
@@ -453,7 +457,20 @@ class GraphBuilder:
             if effective_tools is not None and hasattr(tool_node, "allowed_tools"):
                 tool_node.allowed_tools = set(effective_tools)
 
-            res = await (tool_node(state) if callable(tool_node) else tool_node.execute(state))
+            if hasattr(tool_node, "execute"):
+                sig = inspect.signature(tool_node.execute)
+                if "config" in sig.parameters:
+                    res = await tool_node.execute(state, config=config)
+                else:
+                    res = await tool_node.execute(state)
+            elif callable(tool_node):
+                sig = inspect.signature(tool_node)
+                if "config" in sig.parameters:
+                    res = await tool_node(state, config=config)
+                else:
+                    res = await tool_node(state)
+            else:
+                res = await tool_node(state)
 
             ws_root = state.get("workspace_root") or settings.workspace_root
             resolved_log_path = (
@@ -477,7 +494,7 @@ class GraphBuilder:
                     tr["success"] = False
                     tr["output"] = None
                     if not tr.get("error") or "undeclared tool" not in str(tr.get("error")):
-                        tr["error"] = f"Tool '{tool_name}' execution denied: undeclared tool for agent '{agent_id}'."
+                        tr["error"] = f"Tool '{tool_name}' execution denied: undeclared tool for agent '{agent_id}'. Tool '{tool_name}' is not permitted or undeclared for agent '{agent_id}'."
 
                 is_allowed = tr.get("allowed", True)
                 dur_ms = tr.get("duration_ms", 0.0)
@@ -488,22 +505,24 @@ class GraphBuilder:
                     "output": tr.get("output"),
                     "error": tr.get("error"),
                 }
-                # Record tool audit event (including undeclared / denied tools)
-                try:
-                    await record_audit(
-                        AuditEvent(
-                            agent_id=agent_id,
-                            event="tool",
-                            tool=tool_name,
-                            allowed=is_allowed,
-                            duration_ms=dur_ms,
-                            reason=tr.get("error") if not is_allowed else None,
-                        ),
-                        log_path=resolved_log_path,
-                        store_bodies=store_bodies,
-                    )
-                except Exception as err:
-                    logger.debug("Failed to record tool audit event: %s", err)
+                # Record tool audit event if not already recorded by execute_tool_call
+                if not tr.get("audit_logged"):
+                    try:
+                        await record_audit(
+                            AuditEvent(
+                                agent_id=agent_id,
+                                event="tool",
+                                tool=tool_name,
+                                allowed=is_allowed,
+                                duration_ms=dur_ms,
+                                reason=tr.get("error") if not is_allowed else None,
+                            ),
+                            log_path=resolved_log_path,
+                            store_bodies=store_bodies,
+                        )
+                        tr["audit_logged"] = True
+                    except Exception as err:
+                        logger.debug("Failed to record tool audit event: %s", err)
 
                 try:
                     await adispatch_custom_event(
@@ -524,7 +543,7 @@ class GraphBuilder:
                 for msg in res["messages"]:
                     if isinstance(msg, ToolMessage) and getattr(msg, "name", None) not in effective_allowed_set:
                         msg.status = "error"
-                        err_str = f"Tool '{msg.name}' execution denied: undeclared tool for agent '{agent_id}'."
+                        err_str = f"Tool '{msg.name}' execution denied: undeclared tool for agent '{agent_id}'. Tool '{msg.name}' is not permitted or undeclared for agent '{agent_id}'."
                         msg.content = json.dumps({"error": err_str, "success": False})
 
             res["iteration_count"] = state.get("iteration_count", 0) + 1
@@ -825,6 +844,7 @@ def create_agent_graph(
     subgraphs: Optional[Dict[str, Union[StateGraph, CompiledStateGraph]]] = None,
     use_dynamic_orchestrator: bool = True,
     store: Optional[BaseStore] = None,
+    include_supervisor: bool = False,
     **kwargs: Any,
 ) -> CompiledStateGraph:
     """Builds and compiles the Carefold stateful execution graph delegating to GraphBuilder.
@@ -844,6 +864,7 @@ def create_agent_graph(
         execution_context=execution_context,
         use_dynamic_orchestrator=use_dynamic_orchestrator,
         store=store,
+        include_supervisor=include_supervisor,
         **kwargs,
     )
     return builder.build(checkpointer=checkpointer, store=store)

@@ -283,159 +283,25 @@ async def post_safety_node(
 
 
 async def tools_node(state: AgentState) -> Dict[str, Any]:
-    """Closed tool sandbox execution dispatcher with allow-list check.
-
-    Executes tool calls declared on AIMessage against the Phase 0 tool registry.
-    Strictly denies undeclared tools, emits lifecycle events, and enforces file sandboxing.
-    """
-    messages = state.get("messages", [])
-    last_ai = next((m for m in reversed(messages) if isinstance(m, AIMessage)), None)
-    tool_calls = getattr(last_ai, "tool_calls", []) if last_ai else []
-
+    """Closed tool sandbox execution compatibility helper delegating to ToolNode and execute_tool_call."""
     effective_tools = state.get("effective_tools", [])
-    agent_id = state.get("agent_id") or state.get("current_agent", "unknown")
-    ws_root = Path(state.get("workspace_root") or settings.workspace_root)
-    skills_dir = Path(state.get("skills_dir") or (ws_root / "skills"))
-
-    # Build ExecutionContext required by sandbox tools
-    from carefold.engine.runner import ExecutionContext
-    from carefold.loaders.agent_loader import find_agent_dir, load_agent
-
-    try:
-        agent_dir = find_agent_dir(ws_root / "agents", str(agent_id)) or (ws_root / "agents" / "visit-steward").resolve()
-        agent_obj, _, skills_list = load_agent(agent_dir, skills_dir)
-        ctx = ExecutionContext(
-            workspace_root=ws_root,
-            skills_dir=skills_dir,
-            agent=agent_obj,
-            effective_tools=effective_tools,
-            skills=skills_list,
-        )
-    except Exception:
-        agent_fallback = type("Agent", (), {"id": agent_id, "skills": []})()
-        ctx = type(
-            "FallbackExecutionContext",
-            (),
-            {
-                "workspace_root": ws_root,
-                "skills_dir": skills_dir,
-                "agent": agent_fallback,
-                "effective_tools": effective_tools,
-                "skills": [],
-            },
-        )()
-
-    tool_messages: List[ToolMessage] = []
-    audit_events: List[Dict[str, Any]] = []
-    tool_events: List[Dict[str, Any]] = []
-
-    for call in tool_calls:
-        tool_name = call.get("name", "")
-        tool_args = call.get("args", {})
-        call_id = call.get("id") or f"call_{len(tool_messages)}"
-
-        if isinstance(tool_args, str):
-            try:
-                tool_args = json.loads(tool_args)
-            except Exception:
-                tool_args = {}
-
-        is_allowed = tool_name in effective_tools
-
-        # Emit tool_start event
-        start_ev = {
-            "type": SSE_EVENT_TOOL_START,
-            "tool": tool_name,
-            "params": tool_args,
+    node = ToolNode(allowed_tools=effective_tools)
+    res = await node.execute(state)
+    agent_id = str(state.get("current_agent") or state.get("agent_id") or "carefold-agent")
+    audit_events = [
+        {
+            "agent_id": agent_id,
+            "event": "tool",
+            "tool": tr.get("tool"),
+            "allowed": tr.get("allowed", True),
+            "reason": tr.get("error") if not tr.get("allowed", True) else None,
+            "duration_ms": tr.get("duration_ms", 0),
         }
-        tool_events.append(start_ev)
-        try:
-            await adispatch_custom_event(SSE_EVENT_TOOL_START, start_ev)
-        except Exception:
-            pass
-
-        if not is_allowed:
-            # Undeclared tool interception
-            audit_ev = {
-                "agent_id": agent_id,
-                "event": "tool",
-                "tool": tool_name,
-                "allowed": False,
-                "reason": f'Tool "{tool_name}" is not declared on agent or not in Phase 0 registry.',
-                "duration_ms": 0,
-            }
-            audit_events.append(audit_ev)
-
-            denied_ev = {
-                "type": SSE_EVENT_TOOL_END,
-                "tool": tool_name,
-                "duration_ms": 0,
-                "status": "denied",
-                "allowed": False,
-                "result": {
-                    "success": False,
-                    "error": f"Tool '{tool_name}' execution denied: undeclared tool.",
-                },
-            }
-            tool_events.append(denied_ev)
-            try:
-                await adispatch_custom_event(SSE_EVENT_TOOL_END, denied_ev)
-            except Exception:
-                pass
-
-            tool_messages.append(
-                ToolMessage(
-                    content=f"Error: Tool '{tool_name}' is not permitted or undeclared for agent '{agent_id}'.",
-                    tool_call_id=call_id,
-                    status="error",
-                    name=tool_name,
-                )
-            )
-        else:
-            # Allowed tool execution
-            t0 = time.time()
-            res = await execute_tool(tool_name, tool_args, ctx)
-            dur_ms = (time.time() - t0) * 1000
-
-            audit_ev = {
-                "agent_id": agent_id,
-                "event": "tool",
-                "tool": tool_name,
-                "allowed": True,
-                "duration_ms": dur_ms,
-            }
-            audit_events.append(audit_ev)
-
-            completed_ev = {
-                "type": SSE_EVENT_TOOL_END,
-                "tool": tool_name,
-                "duration_ms": round(dur_ms, 2),
-                "status": "completed" if res.success else "failed",
-                "allowed": True,
-                "result": res.model_dump(),
-            }
-            tool_events.append(completed_ev)
-            try:
-                await adispatch_custom_event(SSE_EVENT_TOOL_END, completed_ev)
-            except Exception:
-                pass
-
-            output_payload = res.output if res.success else {"error": res.error}
-            tool_messages.append(
-                ToolMessage(
-                    content=json.dumps(output_payload),
-                    tool_call_id=call_id,
-                    status="success" if res.success else "error",
-                    name=tool_name,
-                )
-            )
-
-    return {
-        "messages": tool_messages,
-        "audit_events": audit_events,
-        "turn_tool_events": tool_events,
-        "iteration_count": state.get("iteration_count", 0) + 1,
-    }
+        for tr in res.get("tool_traces", [])
+    ]
+    res["audit_events"] = audit_events
+    res["iteration_count"] = state.get("iteration_count", 0) + 1
+    return res
 
 
 def create_suggestion_node(model: Optional[BaseChatModel] = None):
@@ -540,78 +406,18 @@ def create_agent_graph(
 ) -> CompiledStateGraph:
     """Builds and compiles the Carefold LangGraph stateful execution graph.
 
-    Args:
-        model: Unified LangChain BaseChatModel instance.
-        execution_context: Optional ExecutionContext instance or checkpointer if passed positionally.
-        checkpointer: Optional SQLite checkpointer (AsyncSqliteSaver or SqliteSaver).
-        system_prompt: Optional default system prompt.
-        store: Optional LangGraph BaseStore instance for long-term cognitive memory persistence.
-        **kwargs: Additional configuration parameters.
+    Delegates directly to GraphBuilder (engine/builder.py) as the sole execution graph.
     """
-    if execution_context is not None and isinstance(execution_context, BaseCheckpointSaver):
-        checkpointer = execution_context
-        execution_context = None
+    from carefold.engine.builder import create_agent_graph as builder_create_agent_graph
 
-    # 1. Bind closed Phase 0 tool schemas to the model
-    tool_schemas = list(CLOSED_TOOL_DEFINITIONS.values())
-    if hasattr(model, "bind_tools") and callable(model.bind_tools):
-        try:
-            bound_model = model.bind_tools(tool_schemas)
-        except NotImplementedError:
-            bound_model = model
-    else:
-        bound_model = model
-
-    # 2. Construct the StateGraph
-    builder = StateGraph(AgentState)
-
-    # 3. Add nodes
-    sugg_model = model
-    if sugg_model is not None:
-        cls_name = sugg_model.__class__.__name__.lower()
-        if any(skip in cls_name for skip in ("fake", "mock", "infinite", "loop", "double", "stub")):
-            sugg_model = None
-
-    builder.add_node("safety_guard_node", safety_guard_node)
-    builder.add_node("agent_node", create_agent_node(bound_model))
-    builder.add_node("post_safety_node", post_safety_node)
-    builder.add_node("tools_node", tools_node)
-    builder.add_node("suggestion_node", create_suggestion_node(sugg_model))
-    builder.add_node("audit_node", audit_node)
-
-    # 4. Define edges & conditional routes
-    builder.add_edge(START, "safety_guard_node")
-
-    builder.add_conditional_edges(
-        "safety_guard_node",
-        route_safety_guard,
-        {
-            "audit_node": "audit_node",
-            "agent_node": "agent_node",
-        },
+    return builder_create_agent_graph(
+        model=model,
+        execution_context=execution_context,
+        checkpointer=checkpointer,
+        system_prompt=system_prompt,
+        store=store,
+        **kwargs,
     )
-
-    builder.add_edge("agent_node", "post_safety_node")
-
-    builder.add_conditional_edges(
-        "post_safety_node",
-        route_post_safety,
-        {
-            "audit_node": "audit_node",
-            "tools_node": "tools_node",
-            "suggestion_node": "suggestion_node",
-        },
-    )
-
-    # Tool loop edge: executes tools and returns to agent_node
-    builder.add_edge("tools_node", "agent_node")
-
-    # Finalization edges
-    builder.add_edge("suggestion_node", "audit_node")
-    builder.add_edge("audit_node", END)
-
-    # 5. Compile with optional checkpointer and store
-    return builder.compile(checkpointer=checkpointer, store=store)
 
 
 # ============================================================================

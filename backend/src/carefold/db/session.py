@@ -17,12 +17,22 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
+try:
+    import fcntl
+except ImportError:
+    fcntl = None  # type: ignore
 import os
 from pathlib import Path
 import re
 from typing import AsyncIterator, Optional
 
+import alembic.command
+import alembic.script
+from alembic.config import Config
 from sqlalchemy import event, inspect
+from sqlalchemy.engine import Connection
 from sqlalchemy.engine.url import make_url, URL
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -41,6 +51,22 @@ logger = get_logger("carefold.db")
 
 _engine: Optional[AsyncEngine] = None
 _session_factory: Optional[async_sessionmaker[AsyncSession]] = None
+_init_db_lock: Optional[asyncio.Lock] = None
+_init_db_lock_loop: Optional[asyncio.AbstractEventLoop] = None
+
+
+def _get_init_db_lock() -> asyncio.Lock:
+    """Returns a module-level asyncio.Lock for in-process serialization of init_db."""
+    global _init_db_lock, _init_db_lock_loop
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if _init_db_lock is None or (_init_db_lock_loop is not None and _init_db_lock_loop is not loop):
+        _init_db_lock = asyncio.Lock()
+        _init_db_lock_loop = loop
+    return _init_db_lock
 
 
 def normalize_database_url(url: str) -> str:
@@ -181,10 +207,12 @@ def get_session_factory(
 
 
 def reset_engine() -> None:
-    """Resets global engine and sessionmaker references."""
-    global _engine, _session_factory
+    """Resets global engine, sessionmaker, and init lock references."""
+    global _engine, _session_factory, _init_db_lock, _init_db_lock_loop
     _engine = None
     _session_factory = None
+    _init_db_lock = None
+    _init_db_lock_loop = None
 
 
 async def get_db() -> AsyncIterator[AsyncSession]:
@@ -337,7 +365,30 @@ def _run_schema_migrations(connection) -> None:
             )
             attachment_cols.append("filename")
 
-        # 7d. Ensure indices exist for query performance and deduplication lookups
+        # 7d. Content-Addressed Storage (CAS) columns
+        if "extracted_text" not in attachment_cols:
+            connection.exec_driver_sql("ALTER TABLE attachments ADD COLUMN extracted_text TEXT;")
+            logger.info("migration_added_column", table="attachments", column="extracted_text")
+            attachment_cols.append("extracted_text")
+        if "source" not in attachment_cols:
+            connection.exec_driver_sql("ALTER TABLE attachments ADD COLUMN source VARCHAR(64) DEFAULT 'upload' NOT NULL;")
+            logger.info("migration_added_column", table="attachments", column="source")
+            attachment_cols.append("source")
+        if "source_ref" not in attachment_cols:
+            connection.exec_driver_sql("ALTER TABLE attachments ADD COLUMN source_ref VARCHAR(255);")
+            logger.info("migration_added_column", table="attachments", column="source_ref")
+            attachment_cols.append("source_ref")
+        if "extraction_status" not in attachment_cols:
+            connection.exec_driver_sql("ALTER TABLE attachments ADD COLUMN extraction_status VARCHAR(32) DEFAULT 'pending' NOT NULL;")
+            logger.info("migration_added_column", table="attachments", column="extraction_status")
+            attachment_cols.append("extraction_status")
+        if "updated_at" not in attachment_cols:
+            connection.exec_driver_sql("ALTER TABLE attachments ADD COLUMN updated_at TIMESTAMP;")
+            connection.exec_driver_sql("UPDATE attachments SET updated_at = created_at WHERE updated_at IS NULL;")
+            logger.info("migration_added_column", table="attachments", column="updated_at")
+            attachment_cols.append("updated_at")
+
+        # 7e. Ensure indices exist for query performance and deduplication lookups
         existing_indices = {
             idx["name"] for idx in inspector.get_indexes("attachments") if idx.get("name")
         }
@@ -396,15 +447,134 @@ def _run_schema_migrations(connection) -> None:
             """)
 
 
+def get_alembic_config(connection: Optional[Connection] = None) -> Config:
+    """Constructs and returns Alembic Config pointing to carefold migrations."""
+    backend_dir = Path(__file__).resolve().parents[3]
+    candidate_ini = backend_dir / "alembic.ini"
+    if candidate_ini.is_file():
+        cfg = Config(str(candidate_ini))
+    elif (Path.cwd() / "alembic.ini").is_file():
+        cfg = Config(str(Path.cwd() / "alembic.ini"))
+    elif (Path.cwd() / "backend" / "alembic.ini").is_file():
+        cfg = Config(str(Path.cwd() / "backend" / "alembic.ini"))
+    else:
+        cfg = Config()
+
+    migrations_dir = Path(__file__).resolve().parent / "migrations"
+    cfg.set_main_option("script_location", str(migrations_dir))
+    if connection is not None:
+        cfg.attributes["connection"] = connection
+    cfg.attributes["configure_logger"] = False
+    return cfg
+
+
+def _get_sqlite_db_path(url_or_engine: str | AsyncEngine | URL) -> Optional[Path]:
+    """Returns the resolved Path to the SQLite database file, or None if in-memory or not SQLite."""
+    if isinstance(url_or_engine, AsyncEngine):
+        url = url_or_engine.url
+    elif isinstance(url_or_engine, URL):
+        url = url_or_engine
+    elif isinstance(url_or_engine, str):
+        try:
+            url = make_url(url_or_engine)
+        except Exception:
+            return None
+    else:
+        return None
+
+    driver = getattr(url, "drivername", "")
+    database = getattr(url, "database", None)
+    if "sqlite" in driver and database and database != ":memory:":
+        return Path(database).resolve()
+    return None
+
+
+@contextlib.asynccontextmanager
+async def _sqlite_file_lock(db_path: Optional[Path]):
+    """Advisory file lock for SQLite databases to prevent cross-process migration races."""
+    if db_path is None or fcntl is None:
+        yield
+        return
+
+    lock_path = Path(f"{db_path}.lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        lock_fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o666)
+    except OSError as err:
+        logger.warning("sqlite_lock_file_open_failed", error=str(err), path=str(lock_path))
+        yield
+        return
+
+    try:
+        await asyncio.to_thread(fcntl.flock, lock_fd, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            try:
+                await asyncio.to_thread(fcntl.flock, lock_fd, fcntl.LOCK_UN)
+            except Exception as e:
+                logger.debug("sqlite_lock_release_failed", error=str(e))
+    finally:
+        try:
+            os.close(lock_fd)
+        except Exception:
+            pass
+
+
+def run_alembic_migrations(connection: Connection) -> None:
+    """Executes database schema migrations via Alembic.
+
+    - Unversioned existing databases (tables present without alembic_version) are
+      stamped with '0001_baseline_schema' then upgraded to head.
+    - Greenfield databases (empty or only alembic_version) are upgraded directly to head.
+    - Existing versioned databases are upgraded directly to head.
+    - If already at head revision, safely no-ops without running redundant migrations.
+    """
+    inspector = inspect(connection)
+    tables = set(inspector.get_table_names())
+    has_alembic = "alembic_version" in tables
+    is_greenfield = len(tables) == 0 or (tables == {"alembic_version"})
+    is_unversioned = not has_alembic and not is_greenfield
+
+    cfg = get_alembic_config(connection)
+
+    # Check whether migrations have already been applied to head
+    if has_alembic:
+        rows = connection.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()
+        current_revs = {row[0] for row in rows if row and row[0]}
+        script = alembic.script.ScriptDirectory.from_config(cfg)
+        heads = set(script.get_heads())
+        if heads and heads.issubset(current_revs):
+            logger.info("database_already_at_head", revisions=list(current_revs))
+            return
+
+    if is_unversioned:
+        _run_schema_migrations(connection)
+        Base.metadata.create_all(connection)
+        logger.info("stamping_legacy_database_baseline", revision="0001_baseline_schema")
+        alembic.command.stamp(cfg, "0001_baseline_schema")
+        logger.info("upgrading_database_to_head")
+        alembic.command.upgrade(cfg, "head")
+    elif is_greenfield:
+        logger.info("upgrading_greenfield_database_to_head")
+        alembic.command.upgrade(cfg, "head")
+    else:
+        logger.info("upgrading_versioned_database_to_head")
+        alembic.command.upgrade(cfg, "head")
+
+
 async def init_db(engine: Optional[AsyncEngine] = None) -> None:
     """Initializes database tables via Base.metadata.create_all and automated migrations."""
     import carefold.db.models  # noqa: F401
     target_engine = engine or get_engine()
     _ensure_sqlite_dir(str(target_engine.url))
+    db_path = _get_sqlite_db_path(target_engine)
 
-    async with target_engine.begin() as conn:
-        await conn.run_sync(_run_schema_migrations)
-        await conn.run_sync(Base.metadata.create_all)
+    async with _get_init_db_lock():
+        async with _sqlite_file_lock(db_path):
+            async with target_engine.begin() as conn:
+                await conn.run_sync(run_alembic_migrations)
+                await conn.run_sync(Base.metadata.create_all)
 
     logger.info(
         "database_initialized",
@@ -415,9 +585,11 @@ async def init_db(engine: Optional[AsyncEngine] = None) -> None:
 
 async def close_db() -> None:
     """Closes and disposes of the global database engine."""
-    global _engine, _session_factory
+    global _engine, _session_factory, _init_db_lock, _init_db_lock_loop
     if _engine is not None:
         await _engine.dispose()
         logger.info("database_connection_closed")
         _engine = None
         _session_factory = None
+        _init_db_lock = None
+        _init_db_lock_loop = None

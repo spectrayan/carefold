@@ -53,11 +53,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install -e libs/connectors
           pip install -e backend
           pip install -r backend/requirements-dev.txt
 
       - name: Run pytest test suite
-        run: pytest backend/tests/
+        run: pytest backend/tests/ libs/connectors/tests/
 
   frontend:
     name: Frontend Verification
@@ -107,9 +108,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install -e libs/connectors
           pip install -e backend
 
       - name: Run penetration security suite
         env:
-          PYTHONPATH: backend/src
+          PYTHONPATH: backend/src:libs/connectors
         run: python backend/tests/penetration_suite.py

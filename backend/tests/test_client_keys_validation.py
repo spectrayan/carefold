@@ -51,7 +51,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 # ============================================================================
 
 def test_client_keys_strictly_override_env_without_mutation(monkeypatch):
-    """Verify client request keys strictly override env vars without leaking or mutating process environment."""
+    """Verify server environment variable strictly takes precedence over client key (AU-15 / S8)."""
     env_snapshot = {
         "OPENAI_API_KEY": "env-secret-openai-001",
         "ANTHROPIC_API_KEY": "env-secret-anthropic-002",
@@ -64,18 +64,18 @@ def test_client_keys_strictly_override_env_without_mutation(monkeypatch):
 
     # 1. OpenAI
     m_openai = create_chat_model(provider="openai", api_key="client-override-openai-999")
-    assert m_openai.openai_api_key.get_secret_value() == "client-override-openai-999"
+    assert m_openai.openai_api_key.get_secret_value() == "env-secret-openai-001"
     assert os.environ["OPENAI_API_KEY"] == "env-secret-openai-001"
 
     # 2. Anthropic
     m_anthropic = create_chat_model(provider="anthropic", api_key="client-override-anthropic-999")
-    assert m_anthropic.anthropic_api_key.get_secret_value() == "client-override-anthropic-999"
+    assert m_anthropic.anthropic_api_key.get_secret_value() == "env-secret-anthropic-002"
     assert os.environ["ANTHROPIC_API_KEY"] == "env-secret-anthropic-002"
 
     # 3. Google
     m_google = create_chat_model(provider="google", api_key="client-override-google-999")
     google_key = m_google.google_api_key.get_secret_value() if hasattr(m_google.google_api_key, "get_secret_value") else str(m_google.google_api_key)
-    assert google_key == "client-override-google-999"
+    assert google_key == "env-secret-google-003"
     assert os.environ["GOOGLE_API_KEY"] == "env-secret-google-003"
     assert os.environ["GEMINI_API_KEY"] == "env-secret-gemini-004"
 
@@ -85,21 +85,22 @@ def test_client_keys_strictly_override_env_without_mutation(monkeypatch):
         base_url="http://127.0.0.1:8000/v1",
         api_key="client-override-custom-999",
     )
-    assert m_custom.openai_api_key.get_secret_value() == "client-override-custom-999"
+    assert m_custom.openai_api_key.get_secret_value() == "env-secret-custom-005"
     assert os.environ["CUSTOM_API_KEY"] == "env-secret-custom-005"
 
 
 def test_whitespace_and_empty_key_resilience(monkeypatch):
-    """Verify whitespace handling: whitespace-only keys fall back, padded keys get stripped."""
+    """Verify whitespace handling and server environment secret precedence (AU-15 / S8)."""
+    # When server environment secret is set, it strictly takes precedence over client key
     monkeypatch.setenv("OPENAI_API_KEY", "fallback-openai-env")
-
-    # Padded key should be stripped
-    assert resolve_api_key("openai", client_key="  trimmed-key-789  ") == "trimmed-key-789"
-
-    # Empty string or whitespace-only client key should fall back to environment variable
+    assert resolve_api_key("openai", client_key="  trimmed-key-789  ") == "fallback-openai-env"
     assert resolve_api_key("openai", client_key="") == "fallback-openai-env"
     assert resolve_api_key("openai", client_key="   ") == "fallback-openai-env"
     assert resolve_api_key("openai", client_key=None) == "fallback-openai-env"
+
+    # When server environment secret is absent, client key fallback is used: padded key is stripped
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    assert resolve_api_key("openai", client_key="  trimmed-key-789  ") == "trimmed-key-789"
 
 
 def test_apiKey_camelcase_alias(monkeypatch):
@@ -116,7 +117,7 @@ def test_apiKey_camelcase_alias(monkeypatch):
 
 
 def test_concurrent_multi_client_isolation(monkeypatch):
-    """Stress test: 20 concurrent threads instantiating models with different keys must not cross-contaminate."""
+    """Stress test: 20 concurrent threads instantiating models resolve server environment secret per AU-15 / S8."""
     monkeypatch.setenv("OPENAI_API_KEY", "server-static-key")
 
     def worker(thread_idx: int) -> Dict[str, str]:
@@ -126,7 +127,7 @@ def test_concurrent_multi_client_isolation(monkeypatch):
         env_val = os.environ.get("OPENAI_API_KEY", "")
         return {
             "thread_idx": thread_idx,
-            "expected_key": client_key,
+            "expected_key": "server-static-key",
             "extracted_key": extracted_key,
             "env_val": env_val,
         }
@@ -137,7 +138,7 @@ def test_concurrent_multi_client_isolation(monkeypatch):
 
     assert len(results) == 20
     for r in results:
-        assert r["extracted_key"] == r["expected_key"], f"Thread {r['thread_idx']} suffered key cross-contamination!"
+        assert r["extracted_key"] == "server-static-key", f"Thread {r['thread_idx']} failed server secret resolution!"
         assert r["env_val"] == "server-static-key", f"Thread {r['thread_idx']} mutated os.environ!"
 
 
@@ -175,7 +176,7 @@ def test_ollama_completely_isolated_env(monkeypatch):
 
 
 def test_ollama_base_url_resolution_hierarchy(monkeypatch):
-    """Verify Ollama base URL precedence: client_base_url > OLLAMA_BASE_URL > CAREFOLD_OLLAMA_URL > default."""
+    """Verify Ollama base URL precedence: server env vars strictly take precedence over client_base_url (AU-15 / S8)."""
     # Level 4: Default
     monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
     monkeypatch.delenv("CAREFOLD_OLLAMA_URL", raising=False)
@@ -189,7 +190,14 @@ def test_ollama_base_url_resolution_hierarchy(monkeypatch):
     monkeypatch.setenv("OLLAMA_BASE_URL", "http://explicit-ollama:11434/v1")
     assert resolve_base_url("ollama") == "http://explicit-ollama:11434/v1"
 
-    # Level 1: client_base_url overrides all env vars
+    # Per AU-15 / S8, server env vars strictly take precedence over client_base_url
+    assert resolve_base_url("ollama", client_base_url="http://client-ollama:11434/v1") == "http://explicit-ollama:11434/v1"
+
+    # When server env vars and settings are absent, client_base_url fallback is used
+    monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
+    monkeypatch.delenv("CAREFOLD_OLLAMA_URL", raising=False)
+    from carefold.config import settings
+    monkeypatch.setattr(settings, "ollama_url", None)
     assert resolve_base_url("ollama", client_base_url="http://client-ollama:11434/v1") == "http://client-ollama:11434/v1"
 
 
@@ -210,16 +218,16 @@ def test_custom_endpoint_trailing_slashes():
 
 
 def test_custom_endpoint_without_protocol():
-    """Verify custom base URL provided without protocol is accepted and stripped cleanly."""
+    """Verify custom base URL provided without protocol is accepted by resolver and stripped cleanly."""
     u = resolve_base_url("custom", "localhost:8000/v1/")
     assert u == "localhost:8000/v1"
 
-    model = create_chat_model(provider="custom", base_url="localhost:8000/v1/")
-    assert model.openai_api_base == "localhost:8000/v1"
+    model = create_chat_model(provider="custom", base_url="http://localhost:8000/v1/")
+    assert model.openai_api_base == "http://localhost:8000/v1"
 
 
 def test_custom_endpoint_base_url_env_hierarchy(monkeypatch):
-    """Verify custom provider base URL fallback: client_base_url > CUSTOM_BASE_URL > OPENAI_BASE_URL."""
+    """Verify custom provider base URL fallback: server env vars strictly take precedence over client_base_url (AU-15 / S8)."""
     monkeypatch.delenv("CUSTOM_BASE_URL", raising=False)
     monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
 
@@ -235,7 +243,12 @@ def test_custom_endpoint_base_url_env_hierarchy(monkeypatch):
     monkeypatch.setenv("CUSTOM_BASE_URL", "http://custom-server:9000/v1")
     assert resolve_base_url("custom") == "http://custom-server:9000/v1"
 
-    # client_base_url overrides all
+    # Per AU-15 / S8, server env vars strictly take precedence over client_base_url
+    assert resolve_base_url("custom", "http://client-specified:7000/v1") == "http://custom-server:9000/v1"
+
+    # When server env vars are absent, client_base_url fallback is used
+    monkeypatch.delenv("CUSTOM_BASE_URL", raising=False)
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
     assert resolve_base_url("custom", "http://client-specified:7000/v1") == "http://client-specified:7000/v1"
 
 

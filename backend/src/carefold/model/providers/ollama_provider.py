@@ -111,8 +111,10 @@ class OllamaProvider(BaseModelProvider):
                 url = DEFAULT_OLLAMA_URL
 
         clean_url = str(url).strip().rstrip("/")
-        self.base_url: str = clean_url
-        self.host: str = clean_url  # Exposed for host-attribute inspections
+        from carefold.model.egress import validate_model_endpoint
+        validated_url = validate_model_endpoint(PROVIDER_OLLAMA, clean_url)
+        self.base_url: str = validated_url
+        self.host: str = validated_url  # Exposed for host-attribute inspections
         self.model: str = model or DEFAULT_OLLAMA_MODEL
         self.timeout: float = timeout if timeout is not None else DEFAULT_MODEL_TIMEOUT_SECONDS
         self.temperature: float = temperature

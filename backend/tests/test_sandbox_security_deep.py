@@ -57,9 +57,18 @@ from carefold.tools.workspace_note import execute_workspace_note
 _SENTINEL = object()
 
 class MockContext:
-    def __init__(self, ws_root: Path, agent: Any = _SENTINEL, skills_dir: Path | None = None):
+    def __init__(
+        self,
+        ws_root: Path,
+        agent: Any = _SENTINEL,
+        skills_dir: Path | None = None,
+        user_id: str = "test-user",
+        profile_id: str = "test-profile",
+    ):
         self.workspace_root = ws_root
         self.skills_dir = skills_dir or (ws_root / "skills")
+        self.user_id = user_id
+        self.profile_id = profile_id
         if agent is _SENTINEL:
             self.agent = AgentManifest(
                 id="test-specialist",
@@ -77,7 +86,7 @@ def sandbox_env(tmp_path: Path):
     ws = tmp_path / "carefold_ws"
     ws.mkdir(parents=True, exist_ok=True)
 
-    att_dir = ws / "attachments"
+    att_dir = ws / "attachments" / "test-user" / "test-profile"
     att_dir.mkdir(parents=True, exist_ok=True)
 
     notes_dir = ws / "workspace" / "notes"

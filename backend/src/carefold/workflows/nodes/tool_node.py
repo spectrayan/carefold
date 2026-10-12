@@ -41,13 +41,24 @@ class ToolNode(BaseNode):
         allowed_tools: Optional[Sequence[str]] = None,
         tools: Optional[Sequence[Any]] = None,
         name: str = "tools",
+        tool_context: Optional[Any] = None,
     ) -> None:
         super().__init__(name=name)
         self.allowed_tools = set(allowed_tools) if allowed_tools is not None else None
         self.tools = tools or []
+        self.tool_context = tool_context
 
-    async def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """Executes tool calls declared in state or on latest AIMessage."""
+    async def execute(
+        self,
+        state: Dict[str, Any],
+        *,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Executes tool calls declared in state or on latest AIMessage through execute_tool_call."""
+        from carefold.tools.registry import CLOSED_TOOL_DEFINITIONS, TOOL_EXECUTORS
+        from carefold.engine.tool_exec import ToolContext, ToolSpec, execute_tool_call
+        from carefold.loaders.agent_loader import find_agent_dir, load_agent
+
         # Determine allowed tools boundary
         if self.allowed_tools is not None:
             allowed = self.allowed_tools
@@ -66,36 +77,75 @@ class ToolNode(BaseNode):
             if last_ai:
                 tool_calls = getattr(last_ai, "tool_calls", []) or []
 
+        if not tool_calls:
+            return {
+                "messages": [],
+                "tool_messages": [],
+                "tool_traces": list(state.get("tool_traces", [])),
+                "tool_output": "",
+                "next_step": "tool_validator",
+            }
+
         ws_root = Path(state.get("workspace_root") or settings.workspace_root)
         skills_dir = Path(state.get("skills_dir") or (ws_root / "skills"))
         agent_id = str(state.get("current_agent") or state.get("agent_id") or "carefold-agent")
 
-        from carefold.engine.runner import ExecutionContext
-        from carefold.loaders.agent_loader import find_agent_dir, load_agent
-
+        agent_obj = None
+        skills_list = []
         try:
             agent_dir = find_agent_dir(ws_root / "agents", str(agent_id)) or (ws_root / "agents" / "visit-steward").resolve()
             agent_obj, _, skills_list = load_agent(agent_dir, skills_dir)
-            ctx = ExecutionContext(
-                workspace_root=ws_root,
-                skills_dir=skills_dir,
-                agent=agent_obj,
-                effective_tools=list(allowed),
-                skills=skills_list,
-            )
         except Exception:
-            agent_fallback = type("Agent", (), {"id": agent_id, "skills": []})()
-            ctx = type(
-                "FallbackExecutionContext",
-                (),
-                {
-                    "workspace_root": ws_root,
-                    "skills_dir": skills_dir,
-                    "agent": agent_fallback,
-                    "effective_tools": list(allowed),
-                    "skills": [],
-                },
-            )()
+            agent_obj = type("Agent", (), {"id": agent_id, "skills": []})()
+
+        configurable = (config or {}).get("configurable", {})
+        raw_ctx = (
+            configurable.get("tool_context")
+            or getattr(self, "tool_context", None)
+            or state.get("tool_context")
+        )
+
+        # Check if any tool call is allowed and requires execution
+        has_allowed_calls = any(c.get("name") in allowed for c in tool_calls)
+
+        ctx: Optional[ToolContext] = None
+        if has_allowed_calls:
+            if isinstance(raw_ctx, ToolContext):
+                if not raw_ctx.profile_id or not str(raw_ctx.profile_id).strip():
+                    raise ValueError(
+                        "Security invariant violation: ToolContext requires a non-empty 'profile_id'. Fail-closed."
+                    )
+                ctx = raw_ctx
+            else:
+                has_pid_key = "profile_id" in configurable or "profile_id" in state
+                p_val = configurable.get("profile_id") if "profile_id" in configurable else state.get("profile_id")
+                u_val = configurable.get("user_id") if "user_id" in configurable else state.get("user_id")
+
+                if has_pid_key:
+                    if p_val is None or not str(p_val).strip():
+                        raise ValueError(
+                            "Security invariant violation: ToolContext requires a non-empty 'profile_id'. Fail-closed."
+                        )
+                    p_id = str(p_val).strip()
+                else:
+                    p_id = "default_profile"
+
+                u_id = str(u_val or "default_user").strip()
+                if not u_id:
+                    raise ValueError(
+                        "Security invariant violation: ToolContext requires a non-empty 'profile_id'. Fail-closed."
+                    )
+
+                ctx = ToolContext(
+                    user_id=u_id,
+                    profile_id=p_id,
+                    run_id=str(configurable.get("run_id") or configurable.get("thread_id") or state.get("thread_id") or ""),
+                    workspace_root=ws_root,
+                    skills_dir=skills_dir,
+                    agent=agent_obj,
+                    effective_tools=tuple(allowed),
+                    skills=tuple(skills_list),
+                )
 
         tool_messages: List[ToolMessage] = []
         tool_traces: List[Dict[str, Any]] = list(state.get("tool_traces", []))
@@ -104,7 +154,7 @@ class ToolNode(BaseNode):
         for call in tool_calls:
             call_id = call.get("id") or f"call_{len(tool_messages)}"
             name = call.get("name", "")
-            raw_args = call.get("args", {})
+            raw_args = call.get("args")
             if isinstance(raw_args, str):
                 try:
                     args = json.loads(raw_args)
@@ -116,10 +166,11 @@ class ToolNode(BaseNode):
             is_allowed = name in allowed
 
             if not is_allowed:
-                error_msg = f"Tool '{name}' execution denied: undeclared tool for agent '{agent_id}'."
+                error_msg = f"Tool '{name}' execution denied: undeclared tool for agent '{agent_id}'. Tool '{name}' is not permitted or undeclared for agent '{agent_id}'."
                 tool_traces.append({
                     "tool": name,
                     "allowed": False,
+                    "status": "denied",
                     "error": error_msg,
                     "duration_ms": 0.0,
                 })
@@ -133,8 +184,17 @@ class ToolNode(BaseNode):
                 )
                 last_tool_output = {"error": error_msg}
             else:
+                executor = TOOL_EXECUTORS.get(name)
+                tool_def = CLOSED_TOOL_DEFINITIONS.get(name, {})
+                spec = ToolSpec(
+                    name=name,
+                    description=tool_def.get("description", ""),
+                    parameters=tool_def.get("parameters", {}),
+                    executor=executor,
+                )
+
                 t0 = time.time()
-                res = await execute_tool(name, args, ctx)
+                res = await execute_tool_call(ctx, spec, args)
                 dur_ms = round((time.time() - t0) * 1000, 2)
 
                 tool_traces.append({
@@ -143,6 +203,7 @@ class ToolNode(BaseNode):
                     "success": res.success,
                     "duration_ms": dur_ms,
                     "output": res.output if res.success else {"error": res.error},
+                    "audit_logged": True,
                 })
 
                 output_val = res.output if res.success else {"error": res.error}

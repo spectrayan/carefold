@@ -123,7 +123,12 @@ def run() -> None:
     """Runs the server using uvicorn."""
     env_port = os.getenv("CAREFOLD_BACKEND_PORT") or os.getenv("PORT")
     port = int(env_port) if env_port and env_port.isdigit() else DEFAULT_PORT
-    host = os.getenv("CAREFOLD_BACKEND_HOST") or os.getenv("HOST") or DEFAULT_HOST
+    host = (
+        os.getenv("CAREFOLD_HOST")
+        or os.getenv("CAREFOLD_BACKEND_HOST")
+        or os.getenv("HOST")
+        or DEFAULT_HOST
+    )
     uvicorn.run(
         "carefold.main:app",
         host=host,
