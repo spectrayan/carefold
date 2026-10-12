@@ -159,7 +159,7 @@ jobs:
           echo "channel_tag=${CHANNEL_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Build & Push Image (${{ matrix.target }})
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/Dockerfile
