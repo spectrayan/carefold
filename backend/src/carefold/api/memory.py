@@ -22,11 +22,15 @@ import logging
 from typing import List, Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from carefold.api.deps import (
     get_current_memory_port,
     get_current_user,
     resolve_owner_user_id,
 )
+from carefold.api.profiles import get_user_profile_access
 from carefold.auth.ports import UserProfile
 from carefold.config import settings
 from carefold.constants.api import (
@@ -34,6 +38,8 @@ from carefold.constants.api import (
     HTTP_404_NOT_FOUND,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
+from carefold.db.models import Profile
+from carefold.db.session import get_db
 from carefold.logging import sanitize_log_value
 from carefold.memory.ports.memory_port import MemoryPort, MemoryTier
 from carefold.schemas.memory import (
@@ -116,6 +122,34 @@ def resolve_effective_namespace(
     return f"user_{owner_id}:{clean_ns}"
 
 
+async def _enforce_profile_memory_access(
+    profile_id: Optional[str],
+    user: UserProfile,
+    db: AsyncSession,
+    require_manage: bool = False,
+) -> str:
+    clean_id = (profile_id or "").strip()
+    if not clean_id:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail="profile_id is required",
+        )
+    p_stmt = select(Profile).where(Profile.id == clean_id)
+    p_res = await db.execute(p_stmt)
+    prof = p_res.scalar_one_or_none()
+    if prof is None:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Profile '{clean_id}' not found.")
+
+    access = await get_user_profile_access(prof, user, db)
+    if access is None:
+        raise HTTPException(status_code=403, detail=f"Access denied to profile '{clean_id}'.")
+    if access == "view_paperwork":
+        raise HTTPException(status_code=403, detail="Access denied: clinical permissions required for memory operations.")
+    if require_manage and access != "manage" and getattr(user, "role", "member") != "admin":
+        raise HTTPException(status_code=403, detail="Access denied: manage permissions required to mutate memories.")
+    return clean_id
+
+
 @router.get("", response_model=List[MemoryRecordResponse])
 @router.get("/", response_model=List[MemoryRecordResponse], include_in_schema=False)
 @router.get("/recall", response_model=List[MemoryRecordResponse], include_in_schema=False)
@@ -124,13 +158,15 @@ async def recall_memories(
     q: Optional[str] = Query(default=None, description="Alias for query parameter"),
     tier: Optional[str] = Query(default=None, description="Optional cognitive memory tier filter (working, episodic, semantic, procedural)"),
     namespace: str = Query(default="default", description="Memory isolation namespace"),
-    profile_id: Optional[str] = Query(default=None, description="Optional care profile ID for memory scoping"),
+    profile_id: Optional[str] = Query(default=None, description="Required care profile ID for memory scoping"),
     limit: int = Query(default=10, ge=1, le=100, description="Maximum number of memories to return"),
     port: MemoryPort = Depends(get_current_memory_port),
     user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> List[MemoryRecordResponse]:
     """Recalls or lists cognitive memories matching query, tier filter, namespace, and profile."""
-    effective_ns = resolve_effective_namespace(user, namespace, profile_id)
+    clean_pid = await _enforce_profile_memory_access(profile_id, user, db, require_manage=False)
+    effective_ns = resolve_effective_namespace(user, namespace, clean_pid)
     search_query = (q if q is not None else query) or ""
     parsed_tier: Optional[MemoryTier] = None
     if tier is not None and tier.strip():
@@ -215,12 +251,14 @@ async def get_memory_status(
 @router.delete("/", response_model=MemoryBulkDeleteResponse, include_in_schema=False)
 async def delete_all_memories(
     namespace: str = Query(default="default", description="Memory isolation namespace"),
-    profile_id: Optional[str] = Query(default=None, description="Optional care profile ID for memory scoping"),
+    profile_id: Optional[str] = Query(default=None, description="Required care profile ID for memory scoping"),
     port: MemoryPort = Depends(get_current_memory_port),
     user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> MemoryBulkDeleteResponse:
     """Bulk forgets/deletes all memories within the specified namespace."""
-    effective_ns = resolve_effective_namespace(user, namespace, profile_id)
+    clean_pid = await _enforce_profile_memory_access(profile_id, user, db, require_manage=True)
+    effective_ns = resolve_effective_namespace(user, namespace, clean_pid)
     try:
         res = port.forget_all(namespace=effective_ns)
         if inspect.isawaitable(res):
@@ -251,13 +289,15 @@ async def delete_all_memories(
 async def get_memory(
     key: str = Path(..., description="Unique key of the memory record to retrieve"),
     namespace: str = Query(default="default", description="Memory isolation namespace"),
-    profile_id: Optional[str] = Query(default=None, description="Optional care profile ID for memory scoping"),
+    profile_id: Optional[str] = Query(default=None, description="Required care profile ID for memory scoping"),
     port: MemoryPort = Depends(get_current_memory_port),
     user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> MemoryRecordResponse:
     """Retrieves a single memory record by key in the specified namespace."""
     clean_key = _validate_memory_key(key)
-    effective_ns = resolve_effective_namespace(user, namespace, profile_id)
+    clean_pid = await _enforce_profile_memory_access(profile_id, user, db, require_manage=False)
+    effective_ns = resolve_effective_namespace(user, namespace, clean_pid)
 
     try:
         res = port.get(key=clean_key, namespace=effective_ns)
@@ -294,15 +334,17 @@ async def update_memory(
     key: str = Path(..., description="Unique key of the memory record to update"),
     body: MemoryUpdateRequest = Body(..., description="Updated memory record payload"),
     namespace: Optional[str] = Query(default=None, description="Memory isolation namespace override"),
-    profile_id: Optional[str] = Query(default=None, description="Optional care profile ID for memory scoping"),
+    profile_id: Optional[str] = Query(default=None, description="Care profile ID for memory scoping"),
     port: MemoryPort = Depends(get_current_memory_port),
     user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> MemoryRecordResponse:
     """Updates or upserts a memory record in the specified namespace."""
     clean_key = _validate_memory_key(key)
-    raw_ns = body.namespace if body.namespace is not None else namespace
     effective_profile_id = body.profile_id or profile_id
-    effective_ns = resolve_effective_namespace(user, raw_ns, effective_profile_id)
+    clean_pid = await _enforce_profile_memory_access(effective_profile_id, user, db, require_manage=True)
+    raw_ns = body.namespace if body.namespace is not None else namespace
+    effective_ns = resolve_effective_namespace(user, raw_ns, clean_pid)
 
     parsed_tier: Optional[MemoryTier] = None
     if body.tier is not None and body.tier.strip():
@@ -379,13 +421,15 @@ async def update_memory(
 async def delete_memory(
     key: str = Path(..., description="Unique key of the memory record to forget"),
     namespace: str = Query(default="default", description="Memory isolation namespace"),
-    profile_id: Optional[str] = Query(default=None, description="Optional care profile ID for memory scoping"),
+    profile_id: Optional[str] = Query(default=None, description="Required care profile ID for memory scoping"),
     port: MemoryPort = Depends(get_current_memory_port),
     user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> MemoryDeleteResponse:
     """Forgets/deletes a memory record identified by key in the specified namespace."""
     clean_key = _validate_memory_key(key)
-    effective_ns = resolve_effective_namespace(user, namespace, profile_id)
+    clean_pid = await _enforce_profile_memory_access(profile_id, user, db, require_manage=True)
+    effective_ns = resolve_effective_namespace(user, namespace, clean_pid)
 
     try:
         res = port.forget(key=clean_key, namespace=effective_ns)

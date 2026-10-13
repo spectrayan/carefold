@@ -37,6 +37,7 @@ dependencies = [
     "cryptography>=43.0.0",
     "keyring>=24.0.0",
     "alembic>=1.13.0",
+    "pypdf>=4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -44,6 +45,10 @@ dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
     "licenseheaders>=0.8.8",
+]
+ocr = [
+    "pillow>=10.0.0",
+    "pytesseract>=0.3.10",
 ]
 
 [project.scripts]

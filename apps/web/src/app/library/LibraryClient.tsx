@@ -34,7 +34,8 @@ import {
   X,
   File,
   Bot,
-  RefreshCw
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 import type { AttachmentItem, WorkspaceNoteDetail, WorkspaceNoteSummary } from '@/types/api';
 import {
@@ -46,6 +47,7 @@ import {
   getFileFormat
 } from '@/lib/library';
 import { ChatMarkdown } from '@/components/chat/ChatMarkdown';
+import { RecordSearch } from '@/components/library/RecordSearch';
 
 interface LibraryClientProps {
   initialAttachments: AttachmentItem[];
@@ -57,8 +59,8 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
   const router = useRouter();
 
   const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState<'documents' | 'notes'>(
-    tabParam === 'notes' ? 'notes' : 'documents'
+  const [activeTab, setActiveTab] = useState<'documents' | 'notes' | 'search'>(
+    tabParam === 'notes' ? 'notes' : tabParam === 'search' ? 'search' : 'documents'
   );
 
   const [attachments, setAttachments] = useState<AttachmentItem[]>(initialAttachments);
@@ -81,7 +83,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
   } | null>(null);
 
   // Synchronize tab state with URL search param
-  const handleTabChange = (tab: 'documents' | 'notes') => {
+  const handleTabChange = (tab: 'documents' | 'notes' | 'search') => {
     setActiveTab(tab);
     setSearchQuery('');
     const newParams = new URLSearchParams(searchParams.toString());
@@ -245,10 +247,25 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
               {notes.length}
             </span>
           </button>
+
+          <button
+            type="button"
+            data-testid="tab-search"
+            onClick={() => handleTabChange('search')}
+            className={`flex items-center gap-2 py-4 px-1 text-sm font-semibold border-b-2 transition ${
+              activeTab === 'search'
+                ? 'border-emerald-700 text-emerald-700 dark:border-emerald-400 dark:text-emerald-400'
+                : 'border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:border-slate-300'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Search Records</span>
+          </button>
         </nav>
       </div>
 
-      {/* Search and Action Bar */}
+      {/* Search and Action Bar (Documents and Notes tabs) */}
+      {activeTab !== 'search' && (
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-500" />
@@ -292,6 +309,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
           </div>
         )}
       </div>
+      )}
 
       {/* Upload error alert */}
       {uploadError && (
@@ -356,6 +374,13 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* TAB CONTENT: SEARCH RECORDS */}
+      {activeTab === 'search' && (
+        <div data-testid="tab-search-content">
+          <RecordSearch onSelectNote={handleOpenNote} />
         </div>
       )}
 

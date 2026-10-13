@@ -207,8 +207,8 @@ async def execute_attach_read(params: Dict[str, Any], context: Any) -> ToolResul
         # 1. Enforce Fail-Closed Context: Non-empty user_id and profile_id are mandatory
         user_id = getattr(context, "user_id", None)
         profile_id = getattr(context, "profile_id", None)
-        uid_str = str(user_id).strip() if (user_id and str(user_id).strip()) else None
-        pid_str = str(profile_id).strip() if (profile_id and str(profile_id).strip()) else None
+        uid_str = user_id.strip() if (isinstance(user_id, str) and user_id.strip()) else None
+        pid_str = profile_id.strip() if (isinstance(profile_id, str) and profile_id.strip()) else None
 
         if not pid_str:
             return ToolResult(

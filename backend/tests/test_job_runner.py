@@ -32,11 +32,11 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 import uuid
 import pytest
-from sqlalchemy import select
+from sqlalchemy import event, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import NullPool, StaticPool
 
-from carefold.db.models import AuditEventRecord, Base, Job as DBJob, Profile, User
+from carefold.db.models import Attachment, AuditEventRecord, Base, Job as DBJob, Profile, User
 from carefold.engine.job_runner import (
     CLOCK_JUMP_THRESHOLD_SECONDS,
     DEFAULT_LEASE_DURATION,
@@ -44,7 +44,9 @@ from carefold.engine.job_runner import (
     REMINDER_OVERDUE_THRESHOLD_SECONDS,
     JobRunner,
     calculate_next_occurrence,
+    handle_extract_text_job,
 )
+from carefold.storage.cas import store_cas_file
 from carefold.engine.tool_exec import (
     PolicyDecision,
     ToolContext,
@@ -932,3 +934,641 @@ async def test_heartbeat_lease_renewal(
         res = await session.execute(select(DBJob).where(DBJob.id == "job-long-run-01"))
         persisted = res.scalar_one()
         assert persisted.lease_until > initial_until
+
+
+# =========================================================================
+# Suite 6: Handler Registry & Leased Job Dispatching (AU-22)
+# =========================================================================
+
+def test_job_runner_handler_registry():
+    """Verifies handler registration, query, and unregistration lifecycle."""
+    runner = JobRunner()
+
+    async def sample_handler(job):
+        pass
+
+    assert runner.has_handler("sample_kind") is False
+    assert runner.get_handler("sample_kind") is None
+
+    runner.register_handler("sample_kind", sample_handler)
+    assert runner.has_handler("sample_kind") is True
+    assert runner.get_handler("sample_kind") is sample_handler
+
+    runner.unregister_handler("sample_kind")
+    assert runner.has_handler("sample_kind") is False
+    assert runner.get_handler("sample_kind") is None
+
+
+@pytest.mark.asyncio
+async def test_process_leased_job_dispatches_to_registered_handler(
+    db_session_factory: async_sessionmaker[AsyncSession],
+    sample_profile_id: str,
+    db_job_runner: JobRunner,
+):
+    """Verifies that _process_leased_job routes job to registered handler and completes it."""
+    invoked_jobs = []
+
+    async def custom_handler(job):
+        invoked_jobs.append(job.id)
+
+    db_job_runner.register_handler("custom_kind", custom_handler)
+
+    now_dt = datetime.now(timezone.utc)
+    async with db_session_factory() as session:
+        job = DBJob(
+            id="job-dispatch-01",
+            profile_id=sample_profile_id,
+            kind="custom_kind",
+            status="active",
+            lease_owner=db_job_runner.worker_id,
+            lease_until=now_dt + timedelta(seconds=60),
+            next_run_at=now_dt,
+            attempts=0,
+        )
+        session.add(job)
+        await session.commit()
+
+    await db_job_runner._process_leased_job(job)
+
+    assert "job-dispatch-01" in invoked_jobs
+
+    async with db_session_factory() as session:
+        res = await session.execute(select(DBJob).where(DBJob.id == "job-dispatch-01"))
+        persisted = res.scalar_one()
+        assert persisted.status == "completed"
+        assert persisted.lease_owner is None
+        assert persisted.lease_until is None
+
+
+@pytest.mark.asyncio
+async def test_process_leased_job_unregistered_kind_releases_lease(
+    db_session_factory: async_sessionmaker[AsyncSession],
+    sample_profile_id: str,
+    db_job_runner: JobRunner,
+):
+    """Verifies that an unregistered job kind releases lease lock without modifying attempts."""
+    now_dt = datetime.now(timezone.utc)
+    async with db_session_factory() as session:
+        job = DBJob(
+            id="job-unregistered-01",
+            profile_id=sample_profile_id,
+            kind="unregistered_kind_xyz",
+            status="active",
+            lease_owner=db_job_runner.worker_id,
+            lease_until=now_dt + timedelta(seconds=60),
+            next_run_at=now_dt,
+            attempts=0,
+        )
+        session.add(job)
+        await session.commit()
+
+    await db_job_runner._process_leased_job(job)
+
+    assert job.lease_owner is None
+    assert job.lease_until is None
+
+
+@pytest.mark.asyncio
+async def test_process_leased_job_handler_failure_exponential_backoff(
+    db_session_factory: async_sessionmaker[AsyncSession],
+    sample_profile_id: str,
+    db_job_runner: JobRunner,
+):
+    """Verifies retry with exponential backoff on handler failure up to max_attempts."""
+    async def failing_handler(job):
+        raise RuntimeError("Transient handler network error")
+
+    db_job_runner.register_handler("failing_kind", failing_handler)
+    now_dt = datetime.now(timezone.utc)
+
+    # Attempt 1: attempts = 0 -> 1, backoff = 30.0s
+    async with db_session_factory() as session:
+        job = DBJob(
+            id="job-retry-01",
+            profile_id=sample_profile_id,
+            kind="failing_kind",
+            status="active",
+            lease_owner=db_job_runner.worker_id,
+            lease_until=now_dt + timedelta(seconds=60),
+            next_run_at=now_dt,
+            attempts=0,
+        )
+        session.add(job)
+        await session.commit()
+
+    await db_job_runner._process_leased_job(job)
+
+    async with db_session_factory() as session:
+        res = await session.execute(select(DBJob).where(DBJob.id == "job-retry-01"))
+        persisted = res.scalar_one()
+        assert persisted.status == "pending"
+        assert persisted.attempts == 1
+        assert persisted.lease_owner is None
+        assert persisted.next_run_at >= now_dt + timedelta(seconds=25)
+
+    # Attempt 2: attempts = 1 -> 2, backoff = 60.0s
+    persisted.lease_owner = db_job_runner.worker_id
+    persisted.status = "active"
+    await db_job_runner._process_leased_job(persisted)
+
+    async with db_session_factory() as session:
+        res = await session.execute(select(DBJob).where(DBJob.id == "job-retry-01"))
+        persisted2 = res.scalar_one()
+        assert persisted2.status == "pending"
+        assert persisted2.attempts == 2
+        assert persisted2.next_run_at >= now_dt + timedelta(seconds=55)
+
+    # Attempt 3: attempts = 2 -> 3 (max_attempts = 3), terminal failure
+    persisted2.lease_owner = db_job_runner.worker_id
+    persisted2.status = "active"
+    await db_job_runner._process_leased_job(persisted2)
+
+    async with db_session_factory() as session:
+        res = await session.execute(select(DBJob).where(DBJob.id == "job-retry-01"))
+        terminal_job = res.scalar_one()
+        assert terminal_job.status == "failed"
+        assert terminal_job.attempts == 3
+        assert terminal_job.lease_owner is None
+
+
+# =========================================================================
+# Suite 7: Adversarial Stress Tests (Milestone 2 / Challenger 2)
+# =========================================================================
+
+
+@pytest.mark.asyncio
+async def test_adversarial_concurrent_workers_no_double_execution(
+    tmp_path: Path,
+    sample_profile_id: str,
+):
+    """Stress test: 10 concurrent workers competing across 20 jobs with interleaving handlers.
+    Asserts: exactly 1 execution per job, 0 double executions, all 20 jobs reach 'completed'.
+    """
+    db_file = tmp_path / "carefold_stress_concurrency.db"
+    db_url = f"sqlite+aiosqlite:///{db_file}"
+
+    engine = create_async_engine(
+        db_url,
+        poolclass=NullPool,
+        connect_args={"check_same_thread": False, "timeout": 30.0},
+    )
+
+    @event.listens_for(engine.sync_engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode = WAL;")
+        cursor.execute("PRAGMA busy_timeout = 10000;")
+        cursor.execute("PRAGMA synchronous = NORMAL;")
+        cursor.close()
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    sf = async_sessionmaker(engine, expire_on_commit=False)
+
+    # Seed baseline User and Profile
+    async with sf() as session:
+        u = User(
+            id="user-stress-01",
+            email="stress@carefold.local",
+            username="stress_user",
+            hashed_password="pw-hash-stress",
+        )
+        p = Profile(
+            id=sample_profile_id,
+            user_id="user-stress-01",
+            name="Stress Profile",
+            relationship="self",
+        )
+        session.add_all([u, p])
+        await session.commit()
+
+    num_jobs = 20
+    num_workers = 10
+    now_dt = datetime.now(timezone.utc)
+
+    # Insert 20 pending jobs
+    async with sf() as session:
+        for i in range(num_jobs):
+            job = DBJob(
+                id=f"job-stress-{i:03d}",
+                profile_id=sample_profile_id,
+                kind="stress_concurrent_kind",
+                next_run_at=now_dt - timedelta(seconds=i + 1),
+                status="pending",
+            )
+            session.add(job)
+        await session.commit()
+
+    # Track execution count per job
+    job_executions: Dict[str, List[str]] = {f"job-stress-{i:03d}": [] for i in range(num_jobs)}
+    exec_lock = asyncio.Lock()
+
+    async def stress_handler(job: Any) -> None:
+        jid = job.id
+        w_id = getattr(job, "lease_owner", "unknown")
+        # Artificial sleep to induce concurrency collisions
+        await asyncio.sleep(0.01)
+        async with exec_lock:
+            job_executions[jid].append(w_id)
+
+    # Create 10 distinct JobRunner instances
+    workers = [
+        JobRunner(
+            session_factory=sf,
+            worker_id=f"stress-worker-{i}",
+            poll_interval=0.01,
+            lease_duration=30.0,
+            batch_size=5,
+        )
+        for i in range(num_workers)
+    ]
+    for w in workers:
+        w.register_handler("stress_concurrent_kind", stress_handler)
+
+    # Concurrently tick workers until all jobs are done (max 10 rounds)
+    for _ in range(10):
+        await asyncio.gather(*(w.tick() for w in workers))
+        total_executed = sum(len(v) for v in job_executions.values())
+        if total_executed >= num_jobs:
+            break
+
+    # Assertions
+    # 1. Total executions must equal num_jobs exactly
+    for jid, workers_ran in job_executions.items():
+        assert len(workers_ran) == 1, (
+            f"Job {jid} executed {len(workers_ran)} times! Expected exactly 1 (workers: {workers_ran})"
+        )
+
+    # 2. Verify DB states
+    async with sf() as session:
+        stmt = select(DBJob).where(DBJob.id.like("job-stress-%"))
+        res = await session.execute(stmt)
+        persisted_jobs = res.scalars().all()
+        assert len(persisted_jobs) == num_jobs
+        for pj in persisted_jobs:
+            assert pj.status == "completed", f"Job {pj.id} status is {pj.status}, expected completed"
+            assert pj.lease_owner is None
+            assert pj.lease_until is None
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_adversarial_heartbeat_loop_prevents_lease_stealing(
+    db_session_factory: async_sessionmaker[AsyncSession],
+    sample_profile_id: str,
+):
+    """Stress test: A handler takes 0.6s while lease_duration is 0.2s.
+    _heartbeat_loop extends lease_until in the background.
+    A competing worker polling at t=0.35s cannot steal the job.
+    """
+    now_dt = datetime.now(timezone.utc)
+    job_id = "job-heartbeat-stealing-01"
+
+    async with db_session_factory() as session:
+        job = DBJob(
+            id=job_id,
+            profile_id=sample_profile_id,
+            kind="long_running_kind",
+            next_run_at=now_dt - timedelta(seconds=5),
+            status="pending",
+        )
+        session.add(job)
+        await session.commit()
+
+    worker_holder = JobRunner(
+        session_factory=db_session_factory,
+        worker_id="worker-holder-legit",
+        lease_duration=0.2,  # Short 200ms lease
+        batch_size=1,
+    )
+    worker_thief = JobRunner(
+        session_factory=db_session_factory,
+        worker_id="worker-thief-competing",
+        lease_duration=10.0,
+        batch_size=1,
+    )
+
+    handler_started = asyncio.Event()
+    thief_attempted = asyncio.Event()
+    thief_leased: List[Any] = []
+
+    async def long_handler(job: Any) -> None:
+        handler_started.set()
+        # Sleep 0.6s, well beyond the 0.2s lease duration
+        # During this sleep, _heartbeat_loop will run every 0.1s
+        await asyncio.sleep(0.6)
+
+    worker_holder.register_handler("long_running_kind", long_handler)
+    worker_thief.register_handler("long_running_kind", long_handler)
+
+    async def run_holder():
+        await worker_holder.tick()
+
+    async def run_thief():
+        await handler_started.wait()
+        # Wait 350ms — by this time, without heartbeats the initial 200ms lease would be expired
+        await asyncio.sleep(0.35)
+        stolen = await worker_thief.lease_batch(
+            worker_id=worker_thief.worker_id,
+            now=datetime.now(timezone.utc),
+            batch_size=1,
+        )
+        thief_leased.extend(stolen)
+        thief_attempted.set()
+
+    await asyncio.gather(run_holder(), run_thief())
+
+    # Assertions
+    # 1. Competing worker failed to steal the lease
+    assert len(thief_leased) == 0, f"Thief worker stole lease: {[j.id for j in thief_leased]}"
+
+    # 2. Legitimate worker successfully completed the job
+    async with db_session_factory() as session:
+        res = await session.execute(select(DBJob).where(DBJob.id == job_id))
+        persisted = res.scalar_one()
+        assert persisted.status == "completed"
+        assert persisted.lease_owner is None
+
+
+@pytest.mark.asyncio
+async def test_adversarial_exception_backoff_and_terminal_failure_with_attachment(
+    db_session_factory: async_sessionmaker[AsyncSession],
+    sample_profile_id: str,
+    tmp_path: Path,
+):
+    """Stress test: A failing extract_text job verifies exponential backoff progression,
+    retry attempt counting, and terminal failure with attachment.extraction_status = 'failed'.
+    """
+    runner = JobRunner(
+        session_factory=db_session_factory,
+        worker_id="runner-fail-test",
+        max_attempts=3,
+        lease_duration=10.0,
+    )
+
+    att_id = f"att-fail-{uuid.uuid4().hex[:8]}"
+    nonexistent_hash = "0" * 64
+    now_dt = datetime.now(timezone.utc)
+
+    # Seed Attachment in pending state
+    async with db_session_factory() as session:
+        att = Attachment(
+            id=att_id,
+            user_id="user-runner-01",
+            profile_id=sample_profile_id,
+            filename="missing_blood_work.pdf",
+            original_name="missing_blood_work.pdf",
+            content_type="application/pdf",
+            size_bytes=500,
+            sha256_hash=nonexistent_hash,
+            storage_key=f"user-runner-01/{sample_profile_id}/missing.pdf",
+            extraction_status="pending",
+        )
+        session.add(att)
+        await session.commit()
+
+    # Seed extract_text job pointing to the missing file
+    job_id = f"job-extract-fail-{uuid.uuid4().hex[:8]}"
+    payload = {
+        "attachment_id": att_id,
+        "user_id": "user-runner-01",
+        "profile_id": sample_profile_id,
+        "sha256": nonexistent_hash,
+        "filename": "missing_blood_work.pdf",
+        "content_type": "application/pdf",
+    }
+    async with db_session_factory() as session:
+        job = DBJob(
+            id=job_id,
+            profile_id=sample_profile_id,
+            kind="extract_text",
+            payload=json.dumps(payload),
+            timezone="UTC",
+            next_run_at=now_dt - timedelta(seconds=10),
+            status="pending",
+            attempts=0,
+        )
+        session.add(job)
+        await session.commit()
+
+    # Attempt 1: failure -> attempts=1, status='pending', backoff=30.0s, attachment='failed'
+    await runner.tick()
+
+    async with db_session_factory() as session:
+        j1 = (await session.execute(select(DBJob).where(DBJob.id == job_id))).scalar_one()
+        a1 = (await session.execute(select(Attachment).where(Attachment.id == att_id))).scalar_one()
+        assert j1.status == "pending"
+        assert j1.attempts == 1
+        assert j1.lease_owner is None
+        # Backoff: 30 * 2^(1-1) = 30 seconds
+        assert j1.next_run_at >= now_dt + timedelta(seconds=20)
+        assert a1.extraction_status == "failed"
+
+    # Reset next_run_at to past to simulate retry 2
+    async with db_session_factory() as session:
+        await session.execute(
+            text("UPDATE jobs SET next_run_at = :past WHERE id = :id"),
+            {"past": datetime.now(timezone.utc) - timedelta(seconds=1), "id": job_id},
+        )
+        await session.commit()
+
+    # Attempt 2: failure -> attempts=2, status='pending', backoff=60.0s, attachment='failed'
+    t1 = datetime.now(timezone.utc)
+    await runner.tick()
+
+    async with db_session_factory() as session:
+        j2 = (await session.execute(select(DBJob).where(DBJob.id == job_id))).scalar_one()
+        a2 = (await session.execute(select(Attachment).where(Attachment.id == att_id))).scalar_one()
+        assert j2.status == "pending"
+        assert j2.attempts == 2
+        assert j2.lease_owner is None
+        # Backoff: 30 * 2^(2-1) = 60 seconds
+        assert j2.next_run_at >= t1 + timedelta(seconds=50)
+        assert a2.extraction_status == "failed"
+
+    # Reset next_run_at to past to simulate retry 3 (terminal)
+    async with db_session_factory() as session:
+        await session.execute(
+            text("UPDATE jobs SET next_run_at = :past WHERE id = :id"),
+            {"past": datetime.now(timezone.utc) - timedelta(seconds=1), "id": job_id},
+        )
+        await session.commit()
+
+    # Attempt 3: failure -> attempts=3 >= max_attempts, status='failed', attachment='failed'
+    await runner.tick()
+
+    async with db_session_factory() as session:
+        j3 = (await session.execute(select(DBJob).where(DBJob.id == job_id))).scalar_one()
+        a3 = (await session.execute(select(Attachment).where(Attachment.id == att_id))).scalar_one()
+        assert j3.status == "failed"
+        assert j3.attempts == 3
+        assert j3.lease_owner is None
+        assert j3.lease_until is None
+        assert a3.extraction_status == "failed"
+
+
+@pytest.mark.asyncio
+async def test_adversarial_idempotency_key_deduplication(
+    db_session_factory: async_sessionmaker[AsyncSession],
+    sample_profile_id: str,
+    tmp_path: Path,
+):
+    """Stress test: Rapid repeated triggers of handle_extract_text_job for the same attachment
+    and rapid repeated enqueuing with idempotency_key prevents duplicate extract_text or index_doc rows.
+    """
+    home_dir = tmp_path / "carefold_home"
+    user_id = "user-runner-01"
+    content_bytes = b"Clinical notes for patient 9876. Glucose normal."
+
+    _, sha256_hash, _ = store_cas_file(
+        content=content_bytes,
+        carefold_home=home_dir,
+        user_id=user_id,
+        profile_id=sample_profile_id,
+    )
+
+    att_id = f"att-idemp-{uuid.uuid4().hex[:8]}"
+
+    async with db_session_factory() as session:
+        att = Attachment(
+            id=att_id,
+            user_id=user_id,
+            profile_id=sample_profile_id,
+            filename="glucose.txt",
+            original_name="glucose.txt",
+            content_type="text/plain",
+            size_bytes=len(content_bytes),
+            sha256_hash=sha256_hash,
+            storage_key=f"{user_id}/{sample_profile_id}/glucose.txt",
+            extraction_status="pending",
+        )
+        session.add(att)
+        await session.commit()
+
+    # Part A: Test extract_text idempotency key deduplication pattern
+    extract_idemp_key = f"extract:{att_id}:{sha256_hash}"
+
+    async def try_enqueue_extract(seq: int):
+        async with db_session_factory() as session:
+            check_stmt = select(DBJob.id).where(
+                DBJob.idempotency_key == extract_idemp_key,
+                DBJob.status.in_(["pending", "active", "completed"]),
+            )
+            res = await session.execute(check_stmt)
+            if res.scalar_one_or_none() is None:
+                new_job = DBJob(
+                    id=f"job-extract-{seq}-{uuid.uuid4().hex[:6]}",
+                    profile_id=sample_profile_id,
+                    kind="extract_text",
+                    payload=json.dumps({"attachment_id": att_id, "user_id": user_id, "profile_id": sample_profile_id}),
+                    timezone="UTC",
+                    next_run_at=datetime.now(timezone.utc),
+                    idempotency_key=extract_idemp_key,
+                    status="pending",
+                )
+                session.add(new_job)
+                await session.commit()
+
+    # Rapid repeated enqueuing
+    for i in range(5):
+        await try_enqueue_extract(i)
+
+    async with db_session_factory() as session:
+        res = await session.execute(
+            select(DBJob).where(DBJob.idempotency_key == extract_idemp_key)
+        )
+        extract_jobs = res.scalars().all()
+        assert len(extract_jobs) == 1, f"Expected exactly 1 extract_text job, got {len(extract_jobs)}"
+
+    # Part B: Rapid repeated handle_extract_text_job execution prevents duplicate index_doc jobs
+    job_to_run = extract_jobs[0]
+    expected_index_idemp = f"index:attachment:{att_id}:{sha256_hash}"
+
+    # Run handler 5 times rapidly
+    for _ in range(5):
+        await handle_extract_text_job(
+            job=job_to_run,
+            session_factory=db_session_factory,
+            carefold_home=home_dir,
+        )
+
+    async with db_session_factory() as session:
+        res = await session.execute(
+            select(DBJob).where(DBJob.idempotency_key == expected_index_idemp)
+        )
+        index_jobs = res.scalars().all()
+        assert len(index_jobs) == 1, f"Expected exactly 1 index_doc job, got {len(index_jobs)}"
+        assert index_jobs[0].kind == "index_doc"
+        assert index_jobs[0].status == "pending"
+
+
+@pytest.mark.asyncio
+async def test_adversarial_unregistered_job_kind_releases_lease_without_crash(
+    db_session_factory: async_sessionmaker[AsyncSession],
+    sample_profile_id: str,
+):
+    """Stress test: A worker leases a job of completely unknown/unregistered kind.
+    Verifies that the lease is released without crashing the worker or incrementing attempts,
+    and the runner loop continues executing normally.
+    """
+    now_dt = datetime.now(timezone.utc)
+    job_id = "job-unregistered-adversarial-01"
+
+    async with db_session_factory() as session:
+        job = DBJob(
+            id=job_id,
+            profile_id=sample_profile_id,
+            kind="completely_unknown_quantum_compute_task",
+            next_run_at=now_dt - timedelta(seconds=10),
+            status="pending",
+            attempts=0,
+        )
+        session.add(job)
+        await session.commit()
+
+    runner = JobRunner(
+        session_factory=db_session_factory,
+        worker_id="runner-vanilla-node",
+        poll_interval=0.01,
+        lease_duration=15.0,
+    )
+    # Runner only has default extract_text handler, NOT the unknown kind
+
+    # Execute tick — should not raise any exception
+    await runner.tick()
+
+    async with db_session_factory() as session:
+        res = await session.execute(select(DBJob).where(DBJob.id == job_id))
+        persisted = res.scalar_one()
+        # Lease lock is safely released
+        assert persisted.lease_owner is None
+        assert persisted.lease_until is None
+        # Attempts must NOT be incremented (it was not a failure of the job itself)
+        assert persisted.attempts == 0
+        # Status is pending or active with no lease (eligible for other specialized workers)
+        assert persisted.status in ("pending", "active")
+
+    # Verify that a specialized worker registering the kind can subsequently lease and process it
+    specialized_runner = JobRunner(
+        session_factory=db_session_factory,
+        worker_id="runner-quantum-specialist",
+        lease_duration=15.0,
+    )
+    executed_quantum = []
+
+    async def quantum_handler(job: Any) -> None:
+        executed_quantum.append(job.id)
+
+    specialized_runner.register_handler("completely_unknown_quantum_compute_task", quantum_handler)
+
+    await specialized_runner.tick()
+
+    assert job_id in executed_quantum
+    async with db_session_factory() as session:
+        res = await session.execute(select(DBJob).where(DBJob.id == job_id))
+        completed_job = res.scalar_one()
+        assert completed_job.status == "completed"
+
+

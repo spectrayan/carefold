@@ -88,16 +88,21 @@ async def chat_stream(
         else:
             raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Agent '{agent_id}' not found.")
 
-    profile_id = request.get_profile_id()
-    if profile_id:
-        p_stmt = select(Profile).where(Profile.id == profile_id)
-        p_res = await db.execute(p_stmt)
-        profile_record = p_res.scalar_one_or_none()
-        if profile_record is None:
-            raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Profile '{profile_id}' not found.")
-        access = await get_user_profile_access(profile_record, user, db)
-        if access is None:
-            raise HTTPException(status_code=403, detail=f"Access denied to profile '{profile_id}'.")
+    raw_profile_id = request.get_profile_id()
+    profile_id = (raw_profile_id or "").strip()
+    if not profile_id:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="profile_id is required")
+
+    p_stmt = select(Profile).where(Profile.id == profile_id)
+    p_res = await db.execute(p_stmt)
+    profile_record = p_res.scalar_one_or_none()
+    if profile_record is None:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Profile '{profile_id}' not found.")
+    access = await get_user_profile_access(profile_record, user, db)
+    if access is None:
+        raise HTTPException(status_code=403, detail=f"Access denied to profile '{profile_id}'.")
+    if access == "view_paperwork":
+        raise HTTPException(status_code=403, detail="Access denied: clinical permissions required for chat.")
 
     # Resolve thread ID for session persistence
     thread_id = request.get_thread_id() or f"thread_{agent_id}_{uuid.uuid4().hex[:12]}"
@@ -209,8 +214,10 @@ async def get_thread_history(
             p_obj = p_res.scalar_one_or_none()
             if p_obj:
                 p_acc = await get_user_profile_access(p_obj, user, db)
-                if p_acc is None:
+                if p_acc is None or p_acc == "view_paperwork":
                     raise HTTPException(status_code=403, detail="Access denied to conversation thread profile.")
+            elif getattr(user, "role", "member") != "admin":
+                raise HTTPException(status_code=403, detail="Access denied to conversation thread profile.")
     elif owner_id and getattr(user, "role", "member") != "admin":
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
@@ -295,6 +302,16 @@ async def delete_thread_history(
                     status_code=403,
                     detail="Access denied: conversation thread belongs to another user.",
                 )
+        if thread_record.profile_id:
+            p_stmt = select(Profile).where(Profile.id == thread_record.profile_id)
+            p_res = await db.execute(p_stmt)
+            p_obj = p_res.scalar_one_or_none()
+            if p_obj:
+                p_acc = await get_user_profile_access(p_obj, user, db)
+                if p_acc != "manage" and getattr(user, "role", "member") != "admin":
+                    raise HTTPException(status_code=403, detail="Access denied: manage permissions required to delete conversation thread.")
+            elif getattr(user, "role", "member") != "admin":
+                raise HTTPException(status_code=403, detail="Access denied to conversation thread profile.")
         await db.delete(thread_record)
         await db.commit()
 

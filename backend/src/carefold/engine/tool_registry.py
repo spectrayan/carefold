@@ -454,6 +454,45 @@ def _make_builtin_specs() -> List[ToolSpec]:
         executor=_exec_extract_document_dossier,
     )
 
+    # 10. search_records (AU-26)
+    async def _exec_search_records(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.search_records import execute_search_records
+        return await execute_search_records(args or {}, ctx)
+
+    spec_search_records = ToolSpec(
+        name="search_records",
+        description="Search patient medical records, attachments, and clinical notes.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Natural language query or keywords to search across health records.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Maximum number of search results to retrieve (default: 5).",
+                    "default": 5,
+                },
+                "mode": {
+                    "type": "string",
+                    "description": "Search mode: 'hybrid', 'lexical', or 'semantic' (default: 'hybrid').",
+                    "default": "hybrid",
+                },
+                "source": {
+                    "type": "string",
+                    "description": "Optional filter by record source ('clinical_note', 'upload', 'note', 'connector', 'external').",
+                    "default": None,
+                },
+            },
+            "required": ["query"],
+        },
+        risk_tier="read",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_search_records,
+    )
+
     return [
         spec_attach_read,
         spec_workspace_note,
@@ -464,11 +503,12 @@ def _make_builtin_specs() -> List[ToolSpec]:
         spec_extract_structured_data,
         spec_validate_grounding,
         spec_extract_document_dossier,
+        spec_search_records,
     ]
 
 
 def create_default_registry() -> ToolSpecRegistry:
-    """Creates a ToolSpecRegistry populated with all 9 Carefold built-in tools."""
+    """Creates a ToolSpecRegistry populated with all 10 Carefold built-in tools."""
     registry = ToolSpecRegistry()
     for spec in _make_builtin_specs():
         registry.register(spec)

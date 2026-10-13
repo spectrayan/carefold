@@ -18,21 +18,42 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import inspect
 import secrets
+import shutil
 from typing import Any, Dict, List, Optional
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from carefold.api.deps import get_current_user, resolve_owner_user_id
 from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
 from carefold.auth.ports import UserProfile
-from carefold.db.models import Profile, ProfileAccess, ProfileConsent, User, ViewerInvite
+from carefold.config import settings
+from carefold.db.models import (
+    Approval,
+    Attachment,
+    AuditEventRecord,
+    ChatThread,
+    Connection,
+    Credential,
+    Job,
+    Note,
+    Profile,
+    ProfileAccess,
+    ProfileConsent,
+    ProfileKey,
+    User,
+    ViewerInvite,
+)
 from carefold.db.session import get_db
 from carefold.logging import get_logger
+from carefold.memory.factory import get_memory_port
+from carefold.storage.cas import sanitize_partition_segment
+from carefold.vault.dek import delete_profile_keys
 from carefold.schemas.profiles import (
     AccessLevel,
     ProfileAccessGrant,
@@ -868,8 +889,93 @@ async def delete_profile(
             detail="Cannot delete primary 'Me' profile.",
         )
 
-    await db.delete(profile)
-    await db.commit()
+    # -------------------------------------------------------------
+    # 5-Phase Deletion Cascade (AU-11)
+    # -------------------------------------------------------------
+    # Phase 1: Crypto-shredding (Drop DEK from profile_keys)
+    try:
+        shredded = await delete_profile_keys(db, profile.id)
+        logger.info("crypto_shredding_executed", profile_id=profile.id, shredded=shredded)
+    except Exception as vault_err:
+        logger.warning("crypto_shredding_warning", profile_id=profile.id, error=str(vault_err))
+
+    # Phase 2: CAS file storage directory deletion
+    clean_pid = sanitize_partition_segment(profile.id)
+    candidate_uids = {
+        sanitize_partition_segment(profile.user_id),
+        sanitize_partition_segment(owner_id),
+        "default",
+    }
+    carefold_home = settings.home_dir.resolve()
+    uploads_root = settings.get_uploads_dir().resolve()
+
+    for uid_seg in candidate_uids:
+        cas_dir = carefold_home / "data" / "files" / uid_seg / clean_pid
+        if cas_dir.is_dir():
+            shutil.rmtree(cas_dir, ignore_errors=True)
+            logger.info("cas_files_purged", path=str(cas_dir), profile_id=profile.id)
+
+        up_dir = uploads_root / uid_seg / clean_pid
+        if up_dir.is_dir():
+            shutil.rmtree(up_dir, ignore_errors=True)
+            logger.info("uploads_files_purged", path=str(up_dir), profile_id=profile.id)
+
+    # Phase 3: Purge Spector cognitive memory and search namespace
+    try:
+        memory_port = get_memory_port()
+        namespaces_to_purge = {
+            profile.id,
+            f"profile_{profile.id}",
+        }
+        if owner_id:
+            namespaces_to_purge.add(f"user_{owner_id}_profile_{profile.id}")
+        if profile.user_id and profile.user_id != owner_id:
+            namespaces_to_purge.add(f"user_{profile.user_id}_profile_{profile.id}")
+
+        for ns in namespaces_to_purge:
+            try:
+                res = memory_port.forget_all(namespace=ns)
+                if inspect.isawaitable(res):
+                    await res
+            except Exception as mem_err:
+                logger.warning("memory_namespace_purge_failed", namespace=ns, error=str(mem_err))
+    except Exception as mem_port_err:
+        logger.warning("memory_port_access_failed", error=str(mem_port_err))
+
+    # Optional search index purge hook
+    try:
+        from carefold.search.factory import get_search_index
+        search_idx = get_search_index()
+        if hasattr(search_idx, "purge_profile"):
+            await search_idx.purge_profile(profile.id)
+    except (ImportError, Exception):
+        pass
+
+    # Phase 4: Explicit database child row cascade deletion
+    try:
+        await db.execute(update(AuditEventRecord).where(AuditEventRecord.profile_id == profile.id).values(profile_id=None))
+        await db.execute(delete(Job).where(Job.profile_id == profile.id))
+        await db.execute(delete(Approval).where(Approval.profile_id == profile.id))
+        await db.execute(delete(Credential).where(Credential.profile_id == profile.id))
+        await db.execute(delete(Connection).where(Connection.profile_id == profile.id))
+        await db.execute(delete(ChatThread).where(ChatThread.profile_id == profile.id))
+        await db.execute(delete(Note).where(Note.profile_id == profile.id))
+        await db.execute(delete(Attachment).where(Attachment.profile_id == profile.id))
+        await db.execute(delete(ViewerInvite).where(ViewerInvite.profile_id == profile.id))
+        await db.execute(delete(ProfileAccess).where(ProfileAccess.profile_id == profile.id))
+        await db.execute(delete(ProfileConsent).where(ProfileConsent.profile_id == profile.id))
+        await db.execute(delete(ProfileKey).where(ProfileKey.profile_id == profile.id))
+
+        # Phase 5: Delete Profile row itself and commit
+        await db.execute(delete(Profile).where(Profile.id == profile.id))
+        await db.commit()
+    except Exception as db_err:
+        await db.rollback()
+        logger.exception("database_cascade_delete_failed", profile_id=profile.id, error=str(db_err))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to cascade delete profile database records: {str(db_err)}",
+        )
 
     logger.info("profile_deleted", profile_id=profile_id, user_id=owner_id)
     return {"deleted": True, "id": profile_id}

@@ -111,6 +111,26 @@ class UntrustedResult:
     def __post_init__(self) -> None:
         self.taint = bool(self.taint)
 
+    def __iter__(self):
+        if isinstance(self.data, (list, tuple, set)):
+            return iter(self.data)
+        return iter([self.data])
+
+    def __getitem__(self, index: Any) -> Any:
+        if isinstance(self.data, (list, tuple, dict)):
+            return self.data[index]
+        raise TypeError(f"'{type(self.data).__name__}' object is not subscriptable")
+
+    def __len__(self) -> int:
+        if isinstance(self.data, (list, tuple, dict, set)):
+            return len(self.data)
+        return 1
+
+    def __contains__(self, item: Any) -> bool:
+        if isinstance(self.data, (list, tuple, dict, set)):
+            return item in self.data
+        return item == self.data
+
 
 # ============================================================================
 # Section 2: Egress Firewall Exception & Anti-SSRF (AU-17 & AU-20)
@@ -254,12 +274,14 @@ class ToolContext:
 
     def __post_init__(self) -> None:
         """Enforce strict fail-closed security invariants."""
-        if not self.profile_id or not str(self.profile_id).strip():
+        if not self.profile_id or not isinstance(self.profile_id, str) or not self.profile_id.strip():
             raise ValueError(
+                "Security invariant violation: ToolContext requires a non-empty string 'profile_id'. Fail-closed. "
                 "Security invariant violation: ToolContext requires a non-empty 'profile_id'. Fail-closed."
             )
-        if not self.user_id or not str(self.user_id).strip():
+        if not self.user_id or not isinstance(self.user_id, str) or not self.user_id.strip():
             raise ValueError(
+                "Security invariant violation: ToolContext requires a non-empty string 'user_id'. Fail-closed. "
                 "Security invariant violation: ToolContext requires a non-empty 'user_id'. Fail-closed."
             )
 
@@ -546,14 +568,14 @@ async def execute_tool_call(
             error="Security violation: Tool execution denied. ToolContext instance is required.",
         )
 
-    if not ctx.profile_id or not str(ctx.profile_id).strip():
+    if not ctx.profile_id or not isinstance(ctx.profile_id, str) or not ctx.profile_id.strip():
         return ToolResult(
             success=False,
             output=None,
             error="Security violation: Tool execution denied. profile_id is missing or empty (fail-closed).",
         )
 
-    if not ctx.user_id or not str(ctx.user_id).strip():
+    if not ctx.user_id or not isinstance(ctx.user_id, str) or not ctx.user_id.strip():
         return ToolResult(
             success=False,
             output=None,
@@ -714,7 +736,13 @@ async def execute_tool_call(
     if isinstance(raw_res, BaseToolResult):
         result = raw_res
     elif isinstance(raw_res, UntrustedResult):
-        result = ToolResult(success=True, output=raw_res.data, error=None)
+        unwrapped = raw_res.data
+        if isinstance(unwrapped, list):
+            unwrapped = [x.data if isinstance(x, UntrustedResult) else x for x in unwrapped]
+        result = ToolResult(success=True, output=unwrapped, error=None)
+    elif isinstance(raw_res, (list, tuple)) and any(isinstance(x, UntrustedResult) for x in raw_res):
+        unwrapped = [x.data if isinstance(x, UntrustedResult) else x for x in raw_res]
+        result = ToolResult(success=True, output=unwrapped, error=None)
     elif isinstance(raw_res, dict) and "success" in raw_res:
         result = ToolResult(
             success=bool(raw_res.get("success")),
@@ -727,6 +755,7 @@ async def execute_tool_call(
     # 6. Untrusted Data Taint Tracking (Monotone propagation)
     if (
         isinstance(raw_res, UntrustedResult)
+        or (isinstance(raw_res, (list, tuple)) and any(isinstance(x, UntrustedResult) for x in raw_res))
         or getattr(spec, "trust", "trusted") == "untrusted"
     ):
         if getattr(ctx, "taint", None) is not None and hasattr(ctx.taint, "set"):

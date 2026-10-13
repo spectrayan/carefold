@@ -21,9 +21,7 @@ from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 from carefold.schemas.manifest import PHASE_0_REGISTRY
 from carefold.schemas.tool import ToolResult
-from carefold.tools.attach_read import execute_attach_read
-from carefold.tools.skill_docs import execute_skill_docs
-from carefold.tools.workspace_note import execute_workspace_note
+
 
 CLOSED_TOOL_DEFINITIONS: Dict[str, Dict[str, Any]] = {
     "attach-read": {
@@ -76,12 +74,46 @@ CLOSED_TOOL_DEFINITIONS: Dict[str, Dict[str, Any]] = {
             "required": ["skill_id", "doc"],
         },
     },
+    "search_records": {
+        "name": "search_records",
+        "description": "Search patient medical records, attachments, and clinical notes.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Natural language query or keywords to search across health records.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Maximum number of search results to retrieve (default: 5).",
+                    "default": 5,
+                },
+                "mode": {
+                    "type": "string",
+                    "description": "Search mode: 'hybrid', 'lexical', or 'semantic' (default: 'hybrid').",
+                    "default": "hybrid",
+                },
+                "source": {
+                    "type": "string",
+                    "description": "Optional filter by record source ('clinical_note', 'upload', 'note', 'connector', 'external').",
+                },
+            },
+            "required": ["query"],
+        },
+    },
 }
+
+from carefold.tools.attach_read import execute_attach_read
+from carefold.tools.search_records import execute_search_records
+from carefold.tools.skill_docs import execute_skill_docs
+from carefold.tools.workspace_note import execute_workspace_note
 
 TOOL_EXECUTORS: Dict[str, Callable[[Dict[str, Any], Any], Coroutine[Any, Any, ToolResult]]] = {
     "attach-read": execute_attach_read,
     "workspace-note": execute_workspace_note,
     "skill-docs": execute_skill_docs,
+    "search_records": execute_search_records,
 }
 
 

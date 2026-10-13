@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -37,7 +38,7 @@ from carefold.api.profiles import get_user_profile_access
 from carefold.auth.ports import UserProfile
 from carefold.config import settings
 from carefold.constants.api import ROUTE_NOTE_DETAIL, ROUTE_NOTES
-from carefold.db.models import Note, Profile, ProfileAccess
+from carefold.db.models import Job, Note, Profile, ProfileAccess
 from carefold.db.session import get_db
 from carefold.logging import get_logger
 from carefold.schemas.notes import (
@@ -314,30 +315,32 @@ async def create_note(
 
     owner_id = resolve_owner_user_id(user)
 
-    if payload.profile_id:
-        p_stmt = select(Profile).where(Profile.id == payload.profile_id)
-        p_res = await db.execute(p_stmt)
-        prof = p_res.scalar_one_or_none()
-        if prof is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found.")
+    clean_profile_id = (payload.profile_id or "").strip()
+    if not clean_profile_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="profile_id is required",
+        )
 
-        access = await get_user_profile_access(prof, user, db)
-        if access != "manage":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied: management permissions required to create notes for this profile.",
-            )
+    p_stmt = select(Profile).where(Profile.id == clean_profile_id)
+    p_res = await db.execute(p_stmt)
+    prof = p_res.scalar_one_or_none()
+    if prof is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found.")
+
+    access = await get_user_profile_access(prof, user, db)
+    if access != "manage":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: management permissions required to create notes for this profile.",
+        )
 
     # Concurrency-safe slug uniqueness resolution & persistence
     async with _get_note_creation_lock():
         base_slug = slug
         candidate_slug = base_slug
         while True:
-            stmt = select(Note.id).where(Note.slug == candidate_slug)
-            if payload.profile_id:
-                stmt = stmt.where(Note.profile_id == payload.profile_id)
-            elif owner_id:
-                stmt = stmt.where(Note.user_id == owner_id)
+            stmt = select(Note.id).where(Note.slug == candidate_slug).where(Note.profile_id == clean_profile_id)
 
             res = await db.execute(stmt)
             if res.scalar_one_or_none() is None:
@@ -357,7 +360,7 @@ async def create_note(
             id=str(uuid.uuid4()),
             type=payload.type or "scratchpad",
             user_id=owner_id,
-            profile_id=payload.profile_id,
+            profile_id=clean_profile_id,
             slug=slug,
             title=title,
             content=payload.content,
@@ -366,9 +369,30 @@ async def create_note(
             updated_at=now,
         )
         db.add(new_note)
+
+        # Enqueue index_doc job for search freshness (AU-27)
+        index_payload = {
+            "document_id": new_note.id,
+            "profile_id": clean_profile_id,
+            "doc_type": "note",
+        }
+        content_hash = hashlib.sha256((new_note.content or "").encode("utf-8")).hexdigest()[:12]
+        idempotency_key = f"index:note:{new_note.id}:{content_hash}"
+        index_job = Job(
+            id=str(uuid.uuid4()),
+            profile_id=clean_profile_id,
+            kind="index_doc",
+            payload=json.dumps(index_payload),
+            timezone="UTC",
+            next_run_at=now,
+            idempotency_key=idempotency_key,
+            status="pending",
+        )
+        db.add(index_job)
+
         await db.commit()
 
-    logger.info("note_created_in_db", slug=slug, profile_id=payload.profile_id, user_id=owner_id)
+    logger.info("note_created_in_db", slug=slug, profile_id=clean_profile_id, user_id=owner_id)
     return _build_note_detail_response(new_note)
 
 
@@ -479,19 +503,23 @@ async def update_note(
     note = await _find_note_for_user(clean_slug, user, owner_id, db, require_manage=True)
 
     # Validate target profile access if being reassigned
-    if payload.profile_id is not None and payload.profile_id != note.profile_id:
-        p_stmt = select(Profile).where(Profile.id == payload.profile_id)
-        p_res = await db.execute(p_stmt)
-        target_prof = p_res.scalar_one_or_none()
-        if target_prof is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target profile not found.")
-        target_access = await get_user_profile_access(target_prof, user, db)
-        if target_access != "manage":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied: management permissions required for target profile.",
-            )
-        note.profile_id = payload.profile_id
+    if payload.profile_id is not None:
+        clean_target_pid = payload.profile_id.strip()
+        if not clean_target_pid:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="profile_id cannot be null or empty.")
+        if clean_target_pid != note.profile_id:
+            p_stmt = select(Profile).where(Profile.id == clean_target_pid)
+            p_res = await db.execute(p_stmt)
+            target_prof = p_res.scalar_one_or_none()
+            if target_prof is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target profile not found.")
+            target_access = await get_user_profile_access(target_prof, user, db)
+            if target_access != "manage":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied: management permissions required for target profile.",
+                )
+            note.profile_id = clean_target_pid
 
     if payload.title is not None:
         note.title = payload.title
@@ -503,6 +531,27 @@ async def update_note(
         note.set_tags(payload.tags)
 
     note.updated_at = datetime.now(timezone.utc)
+
+    # Enqueue index_doc job for search reindexing (AU-27)
+    index_payload = {
+        "document_id": note.id,
+        "profile_id": note.profile_id,
+        "doc_type": "note",
+    }
+    content_hash = hashlib.sha256((note.content or "").encode("utf-8")).hexdigest()[:12]
+    idempotency_key = f"index:note:{note.id}:{content_hash}"
+    index_job = Job(
+        id=str(uuid.uuid4()),
+        profile_id=note.profile_id,
+        kind="index_doc",
+        payload=json.dumps(index_payload),
+        timezone="UTC",
+        next_run_at=datetime.now(timezone.utc),
+        idempotency_key=idempotency_key,
+        status="pending",
+    )
+    db.add(index_job)
+
     await db.commit()
     try:
         await db.refresh(note)
@@ -523,6 +572,22 @@ async def delete_note(
     clean_slug = _clean_and_validate_slug(slug)
     owner_id = resolve_owner_user_id(user)
     note = await _find_note_for_user(clean_slug, user, owner_id, db, require_manage=True)
+
+    # Enqueue delete_doc job for search index purge (AU-27)
+    delete_job = Job(
+        id=str(uuid.uuid4()),
+        profile_id=note.profile_id,
+        kind="delete_doc",
+        payload=json.dumps({
+            "document_id": note.id,
+            "profile_id": note.profile_id,
+        }),
+        timezone="UTC",
+        next_run_at=datetime.now(timezone.utc),
+        idempotency_key=f"delete:note:{note.id}",
+        status="pending",
+    )
+    db.add(delete_job)
 
     await db.delete(note)
     await db.commit()

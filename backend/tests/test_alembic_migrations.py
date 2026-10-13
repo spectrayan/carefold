@@ -134,6 +134,96 @@ def test_upgrade_head_fresh_sqlite():
         }
         assert expected_job_cols.issubset(job_cols)
 
+        # Assert head revision is 0004_autonomy_batch_2
+        curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        assert curr_ver == "0004_autonomy_batch_2"
+
+        # Assert notes.profile_id and chat_threads.profile_id are NOT NULL
+        notes_cols = {c["name"]: c for c in insp.get_columns("notes")}
+        assert notes_cols["profile_id"]["nullable"] is False
+
+        thread_cols = {c["name"]: c for c in insp.get_columns("chat_threads")}
+        assert thread_cols["profile_id"]["nullable"] is False
+
+
+def test_downgrade_to_0003_autonomy_batch_1():
+    """Tests downgrading from 0004_autonomy_batch_2 to 0003_autonomy_batch_1 and re-upgrading.
+
+    Asserts:
+    1. At 0004: notes.profile_id and chat_threads.profile_id are NOT NULL.
+    2. Downgrade to 0003: profile_id reverts to nullable=True on both tables.
+    3. Existing note and chat_thread data survive the batch alter rebuild.
+    4. Re-upgrade to head: profile_id is NOT NULL and version is 0004_autonomy_batch_2.
+    """
+    engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
+    with engine.connect() as conn:
+        cfg = get_alembic_config(conn)
+        alembic.command.upgrade(cfg, "head")
+
+        curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        assert curr_ver == "0004_autonomy_batch_2"
+
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+        # Seed profile, note, and chat_thread
+        conn.execute(
+            text("""
+                INSERT INTO profiles (id, name, relationship, role, avatar_color, is_primary, created_at, updated_at)
+                VALUES ('prof-m1-test', 'Alice', 'self', 'self', '1', 1, :now, :now)
+            """),
+            {"now": now},
+        )
+        conn.execute(
+            text("""
+                INSERT INTO notes (id, type, profile_id, slug, title, content, tags_json, created_at, updated_at)
+                VALUES ('note-m1-test', 'scratchpad', 'prof-m1-test', 'test-note', 'Test Note', 'Note content', '[]', :now, :now)
+            """),
+            {"now": now},
+        )
+        conn.execute(
+            text("""
+                INSERT INTO chat_threads (id, profile_id, agent_id, title, created_at, updated_at)
+                VALUES ('thread-m1-test', 'prof-m1-test', 'visit-steward', 'Consultation', :now, :now)
+            """),
+            {"now": now},
+        )
+        conn.commit()
+
+        # Downgrade to 0003_autonomy_batch_1
+        alembic.command.downgrade(cfg, "0003_autonomy_batch_1")
+
+        curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        assert curr_ver_down == "0003_autonomy_batch_1"
+
+        insp = inspect(conn)
+        notes_cols = {c["name"]: c for c in insp.get_columns("notes")}
+        assert notes_cols["profile_id"]["nullable"] is True
+
+        thread_cols = {c["name"]: c for c in insp.get_columns("chat_threads")}
+        assert thread_cols["profile_id"]["nullable"] is True
+
+        # Data must be preserved
+        n_row = conn.execute(text("SELECT id, profile_id, title FROM notes WHERE id = 'note-m1-test'")).fetchone()
+        assert n_row is not None
+        assert n_row[1] == "prof-m1-test"
+
+        t_row = conn.execute(text("SELECT id, profile_id, title FROM chat_threads WHERE id = 'thread-m1-test'")).fetchone()
+        assert t_row is not None
+        assert t_row[1] == "prof-m1-test"
+
+        # Re-upgrade to head
+        alembic.command.upgrade(cfg, "head")
+
+        curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        assert curr_ver_up == "0004_autonomy_batch_2"
+
+        insp_head = inspect(conn)
+        notes_cols_head = {c["name"]: c for c in insp_head.get_columns("notes")}
+        assert notes_cols_head["profile_id"]["nullable"] is False
+
+        thread_cols_head = {c["name"]: c for c in insp_head.get_columns("chat_threads")}
+        assert thread_cols_head["profile_id"]["nullable"] is False
+
 
 def test_downgrade_to_baseline_sqlite_batch_rebuild():
     """Tests downgrading from head to 0001_baseline_schema, verifying SQLite batch rebuild."""

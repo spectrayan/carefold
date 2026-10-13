@@ -1190,12 +1190,12 @@ class Note(Base):
         index=True,
         doc="Referenced User identifier (nullable for single-user offline mode)",
     )
-    profile_id: Mapped[Optional[str]] = mapped_column(
+    profile_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("profiles.id", ondelete="CASCADE"),
-        nullable=True,
+        nullable=False,
         index=True,
-        doc="Referenced Profile identifier (nullable for unassigned/legacy notes)",
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
     )
     slug: Mapped[str] = mapped_column(
         String(128),
@@ -1235,7 +1235,7 @@ class Note(Base):
     )
 
     user: Mapped[Optional[User]] = relationship("User", back_populates="notes")
-    profile: Mapped[Optional[Profile]] = relationship("Profile", back_populates="notes")
+    profile: Mapped[Profile] = relationship("Profile", back_populates="notes")
 
     @property
     def tags(self) -> List[str]:
@@ -1500,12 +1500,12 @@ class ChatThread(Base):
         index=True,
         doc="Owner user identifier; None for offline single-user mode",
     )
-    profile_id: Mapped[Optional[str]] = mapped_column(
+    profile_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("profiles.id", ondelete="CASCADE"),
-        nullable=True,
+        nullable=False,
         index=True,
-        doc="Owner profile identifier; None for unassigned/legacy threads",
+        doc="Owner profile identifier (strictly scoped, non-nullable)",
     )
     agent_id: Mapped[str] = mapped_column(
         String(64),
@@ -1534,7 +1534,7 @@ class ChatThread(Base):
     )
 
     user: Mapped[Optional[User]] = relationship("User", back_populates="chat_threads")
-    profile: Mapped[Optional[Profile]] = relationship("Profile", back_populates="chat_threads")
+    profile: Mapped[Profile] = relationship("Profile", back_populates="chat_threads")
 
     def __repr__(self) -> str:
         return f"<ChatThread id={self.id!r} agent_id={self.agent_id!r} user_id={self.user_id!r}>"

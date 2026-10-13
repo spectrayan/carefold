@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import io
+import json
 import os
 from pathlib import Path
 import re
@@ -42,7 +43,7 @@ from carefold.constants.api import (
     HTTP_400_BAD_REQUEST,
     ROUTE_ATTACHMENTS,
 )
-from carefold.db.models import Attachment, Profile, ProfileAccess
+from carefold.db.models import Attachment, Job, Profile, ProfileAccess
 from carefold.db.session import get_db
 from carefold.logging import get_logger
 from carefold.storage.cas import get_cas_path, read_cas_file, store_cas_file
@@ -171,19 +172,20 @@ async def upload_attachment(
             detail=f"Failed to save attachment to storage: {storage_err}",
         )
 
-    # 5. Extract plain text if applicable (for grounded recall without repeated parsing)
+    # 5. Determine extraction status and enqueue background extraction if applicable
+    extractable_extensions = {
+        ".txt", ".text", ".log", ".rst", ".md", ".markdown", ".json",
+        ".csv", ".tsv", ".yaml", ".yml", ".html", ".htm", ".xml",
+        ".pdf",
+        ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp", ".webp",
+    }
     extracted_text: Optional[str] = None
     extraction_status = "not_applicable"
-    if ext in (".txt", ".md", ".json", ".csv", ".tsv", ".yaml", ".yml"):
-        extracted_text = content.decode("utf-8", errors="replace")
-        extraction_status = "completed"
-    elif ext == ".pdf":
-        try:
-            extracted_text = extract_text_from_pdf_bytes(content)
-            extraction_status = "completed"
-        except Exception as pdf_err:
-            logger.debug("pdf_extraction_failed", error=str(pdf_err))
-            extraction_status = "failed"
+
+    if ext in extractable_extensions:
+        extraction_status = "pending"
+        if ext in (".txt", ".md", ".json", ".csv", ".tsv", ".yaml", ".yml", ".text", ".log", ".rst", ".html", ".htm", ".xml"):
+            extracted_text = content.decode("utf-8", errors="replace")
 
     # 6. Persist Attachment entity in relational database (carefold.db)
     now = meta.created_at or datetime.now(timezone.utc)
@@ -200,7 +202,7 @@ async def upload_attachment(
             content_type=meta.mime_type or file.content_type or "application/octet-stream",
             size_bytes=meta.byte_size,
             sha256_hash=meta.sha256_hash or cas_sha256,
-            extracted_text=extracted_text,
+            extracted_text=None,
             source="upload",
             source_ref=None,
             extraction_status=extraction_status,
@@ -208,6 +210,49 @@ async def upload_attachment(
             updated_at=now,
         )
         db.add(attachment_record)
+
+        # Enqueue background extract_text job for extractable documents
+        if extraction_status == "pending":
+            job_profile_id = profile_id
+            if not job_profile_id and owner_id:
+                try:
+                    p_stmt = select(Profile.id).where(Profile.user_id == owner_id).limit(1)
+                    p_res = await db.execute(p_stmt)
+                    job_profile_id = p_res.scalar_one_or_none()
+                except Exception:
+                    pass
+            if not job_profile_id:
+                try:
+                    p_stmt = select(Profile.id).limit(1)
+                    p_res = await db.execute(p_stmt)
+                    job_profile_id = p_res.scalar_one_or_none()
+                except Exception:
+                    pass
+
+            if job_profile_id:
+                valid_stmt = select(Profile.id).where(Profile.id == job_profile_id)
+                valid_res = await db.execute(valid_stmt)
+                if valid_res.scalar_one_or_none() is not None:
+                    extract_payload = {
+                        "attachment_id": attachment_id,
+                        "user_id": owner_id,
+                        "profile_id": job_profile_id,
+                        "sha256": meta.sha256_hash or cas_sha256,
+                        "filename": meta.filename,
+                        "content_type": meta.mime_type or file.content_type,
+                    }
+                    extract_job = Job(
+                        id=str(uuid.uuid4()),
+                        profile_id=job_profile_id,
+                        kind="extract_text",
+                        payload=json.dumps(extract_payload),
+                        timezone="UTC",
+                        next_run_at=now,
+                        idempotency_key=f"extract:{attachment_id}:{meta.sha256_hash or cas_sha256}",
+                        status="pending",
+                    )
+                    db.add(extract_job)
+
         await db.commit()
     except Exception as db_err:
         await db.rollback()
@@ -590,6 +635,22 @@ async def delete_attachment(
             logger.debug("cas_delete_skipped", error=str(cas_del_err))
 
     # 4. Remove record from carefold.db
+    if att.profile_id is not None:
+        delete_job = Job(
+            id=str(uuid.uuid4()),
+            profile_id=att.profile_id,
+            kind="delete_doc",
+            payload=json.dumps({
+                "document_id": att.id,
+                "profile_id": att.profile_id,
+            }),
+            timezone="UTC",
+            next_run_at=datetime.now(timezone.utc),
+            idempotency_key=f"delete:attachment:{att.id}",
+            status="pending",
+        )
+        db.add(delete_job)
+
     deleted_id = att.id
     deleted_filename = att.filename
     await db.delete(att)

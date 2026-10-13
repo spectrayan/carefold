@@ -53,6 +53,7 @@ PHASE_0_REGISTRY = frozenset({
     "attach-read",
     "workspace-note",
     "skill-docs",
+    "search_records",
     "delegate_to_agent",
     "list_agents",
     "sanitize_pii",

@@ -22,14 +22,16 @@ from datetime import datetime, timedelta, timezone
 import json
 import logging
 import os
+from pathlib import Path
 import time
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Set, Tuple, Union
 import uuid
 
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from carefold.db.models import Job as DBJob
+from carefold.config import settings
+from carefold.db.models import Attachment, Job as DBJob, Note
 from carefold.engine.tool_exec import ToolContext, ToolSpec, execute_tool_call
 from carefold.schemas.tool import ToolResult
 
@@ -174,6 +176,53 @@ class JobRunner:
         self._jobs: Dict[str, Any] = {}
         self._in_memory_lock: asyncio.Lock = asyncio.Lock()
 
+        # Handler registry mapping job.kind -> async handler coroutine
+        self._handlers: Dict[str, Callable[[Any], Coroutine[Any, Any, None]]] = {}
+        self.register_handler("extract_text", self._default_extract_text_handler)
+        self.register_handler("index_doc", self._default_index_doc_handler)
+        self.register_handler("delete_doc", self._default_delete_doc_handler)
+
+    def register_handler(self, kind: str, handler: Callable[..., Any]) -> None:
+        """Registers an asynchronous handler function for a specific job kind.
+
+        Args:
+            kind: The job kind identifier (e.g. 'extract_text', 'index_doc', 'delete_doc').
+            handler: An async callable accepting the leased Job object and returning a coroutine.
+        """
+        if not kind or not str(kind).strip():
+            raise ValueError("Job kind cannot be empty")
+        if not callable(handler):
+            raise ValueError(f"Handler for kind '{kind}' must be callable")
+        self._handlers[kind.strip()] = handler
+        logger.info("job_handler_registered: kind=%s worker=%s", kind.strip(), self.worker_id)
+
+    def unregister_handler(self, kind: str) -> bool:
+        """Unregisters the handler for a specific job kind. Returns True if removed."""
+        removed = self._handlers.pop(kind, None) is not None
+        if removed:
+            logger.info("job_handler_unregistered: kind=%s worker=%s", kind, self.worker_id)
+        return removed
+
+    def has_handler(self, kind: str) -> bool:
+        """Returns True if a handler is registered for the specified job kind."""
+        return kind in self._handlers
+
+    def get_handler(self, kind: str) -> Optional[Callable[..., Any]]:
+        """Returns the registered handler for the specified job kind, if any."""
+        return self._handlers.get(kind)
+
+    async def _default_extract_text_handler(self, job: Any) -> None:
+        """Default extract_text handler bound to JobRunner instance."""
+        await handle_extract_text_job(job=job, session_factory=self.session_factory)
+
+    async def _default_index_doc_handler(self, job: Any) -> None:
+        """Default index_doc handler bound to JobRunner instance."""
+        await handle_index_doc_job(job=job, session_factory=self.session_factory)
+
+    async def _default_delete_doc_handler(self, job: Any) -> None:
+        """Default delete_doc handler bound to JobRunner instance."""
+        await handle_delete_doc_job(job=job, session_factory=self.session_factory)
+
     @property
     def is_running(self) -> bool:
         """Returns True if the background polling loop is actively running."""
@@ -278,8 +327,184 @@ class JobRunner:
                 logger.error("job_execution_failed: job=%s error=%s", getattr(job, "id", None), exc)
 
     async def _process_leased_job(self, job: Any) -> None:
-        """Processes a leased job; placeholder hook for routine/sync dispatch."""
-        pass
+        """Dispatches a leased job to its registered kind handler with heartbeat and retry backoff."""
+        job_id = getattr(job, "id", None)
+        kind = getattr(job, "kind", None)
+        now_dt = datetime.now(timezone.utc)
+
+        if not kind or kind not in self._handlers:
+            logger.debug("no_handler_registered_for_job: kind=%s job_id=%s", kind, job_id)
+            await self._release_lease(job, now_dt)
+            return
+
+        handler = self._handlers[kind]
+        heartbeat_task = asyncio.create_task(self._heartbeat_loop(job_id))
+        handler_failed = False
+        error_exc: Optional[Exception] = None
+
+        try:
+            await handler(job)
+        except Exception as exc:
+            handler_failed = True
+            error_exc = exc
+            logger.error(
+                "job_handler_execution_failed: kind=%s job_id=%s error=%s",
+                kind,
+                job_id,
+                exc,
+                exc_info=True,
+            )
+        finally:
+            heartbeat_task.cancel()
+            try:
+                await heartbeat_task
+            except asyncio.CancelledError:
+                pass
+
+        if not handler_failed:
+            await self._mark_job_completed(job, now_dt)
+        else:
+            await self._handle_job_failure(job, now_dt, error_exc)
+
+    async def _mark_job_completed(self, job: Any, now_dt: datetime) -> None:
+        """Marks a job completed or reschedules it if it has an RFC 5545 rrule recurrence."""
+        job_id = getattr(job, "id", str(uuid.uuid4()))
+        rrule = getattr(job, "rrule", None)
+
+        if rrule:
+            next_run = calculate_next_occurrence(rrule, now_dt, getattr(job, "timezone", "UTC"))
+            if next_run:
+                next_run_val = next_run if isinstance(getattr(job, "next_run_at", None), datetime) else next_run.timestamp()
+                setattr(job, "status", "pending")
+                setattr(job, "next_run_at", next_run_val)
+                setattr(job, "attempts", 0)
+                setattr(job, "lease_owner", None)
+                setattr(job, "lease_until", None)
+
+                if self.session_factory is not None:
+                    async with self.session_factory() as session:
+                        stmt = text("""
+                            UPDATE jobs
+                            SET status = 'pending',
+                                next_run_at = :next_run,
+                                attempts = 0,
+                                lease_owner = NULL,
+                                lease_until = NULL,
+                                updated_at = :now
+                            WHERE id = :id;
+                        """)
+                        await session.execute(stmt, {"id": job_id, "next_run": next_run, "now": now_dt})
+                        await session.commit()
+                return
+
+        # Terminal completion for one-off jobs or exhausted recurrences
+        setattr(job, "status", "completed")
+        setattr(job, "lease_owner", None)
+        setattr(job, "lease_until", None)
+
+        if self.session_factory is not None:
+            async with self.session_factory() as session:
+                stmt = text("""
+                    UPDATE jobs
+                    SET status = 'completed',
+                        lease_owner = NULL,
+                        lease_until = NULL,
+                        updated_at = :now
+                    WHERE id = :id;
+                """)
+                await session.execute(stmt, {"id": job_id, "now": now_dt})
+                await session.commit()
+
+    async def _handle_job_failure(
+        self,
+        job: Any,
+        now_dt: datetime,
+        exc: Optional[Exception] = None,
+    ) -> None:
+        """Handles job failure: increments attempts, applies exponential backoff, or marks failed."""
+        job_id = getattr(job, "id", str(uuid.uuid4()))
+        attempts = getattr(job, "attempts", 0) + 1
+        setattr(job, "attempts", attempts)
+
+        if attempts < self.max_attempts:
+            backoff_sec = min(3600.0, 30.0 * (2 ** (attempts - 1)))
+            retry_dt = now_dt + timedelta(seconds=backoff_sec)
+            retry_val = retry_dt if isinstance(getattr(job, "next_run_at", None), datetime) else retry_dt.timestamp()
+
+            setattr(job, "status", "pending")
+            setattr(job, "next_run_at", retry_val)
+            setattr(job, "lease_owner", None)
+            setattr(job, "lease_until", None)
+
+            if self.session_factory is not None:
+                async with self.session_factory() as session:
+                    stmt = text("""
+                        UPDATE jobs
+                        SET status = 'pending',
+                            next_run_at = :next_run,
+                            attempts = :attempts,
+                            lease_owner = NULL,
+                            lease_until = NULL,
+                            updated_at = :now
+                        WHERE id = :id;
+                    """)
+                    await session.execute(
+                        stmt,
+                        {"id": job_id, "next_run": retry_dt, "attempts": attempts, "now": now_dt},
+                    )
+                    await session.commit()
+            logger.info(
+                "job_rescheduled_with_backoff: job_id=%s attempts=%d/%d next_run_at=%s backoff_sec=%.1f",
+                job_id,
+                attempts,
+                self.max_attempts,
+                retry_dt.isoformat(),
+                backoff_sec,
+            )
+        else:
+            setattr(job, "status", "failed")
+            setattr(job, "lease_owner", None)
+            setattr(job, "lease_until", None)
+
+            if self.session_factory is not None:
+                async with self.session_factory() as session:
+                    stmt = text("""
+                        UPDATE jobs
+                        SET status = 'failed',
+                            attempts = :attempts,
+                            lease_owner = NULL,
+                            lease_until = NULL,
+                            updated_at = :now
+                        WHERE id = :id;
+                    """)
+                    await session.execute(stmt, {"id": job_id, "attempts": attempts, "now": now_dt})
+                    await session.commit()
+            logger.error(
+                "job_permanently_failed_max_attempts_exceeded: job_id=%s attempts=%d/%d",
+                job_id,
+                attempts,
+                self.max_attempts,
+            )
+
+    async def _release_lease(self, job: Any, now_dt: datetime) -> None:
+        """Releases the lease lock without changing job status or attempts."""
+        job_id = getattr(job, "id", None)
+        if not job_id:
+            return
+        setattr(job, "lease_owner", None)
+        setattr(job, "lease_until", None)
+
+        if self.session_factory is not None:
+            async with self.session_factory() as session:
+                stmt = text("""
+                    UPDATE jobs
+                    SET lease_owner = NULL,
+                        lease_until = NULL,
+                        updated_at = :now
+                    WHERE id = :id AND lease_owner = :worker_id;
+                """)
+                await session.execute(stmt, {"id": job_id, "worker_id": self.worker_id, "now": now_dt})
+                await session.commit()
 
     async def _sweep_overdue_reminders(self, now: float) -> int:
         """Sweeps and marks reminders overdue by >24 hours as 'missed'."""
@@ -705,115 +930,364 @@ class JobRunner:
 
         # Handle Success
         if res.success:
-            rrule = getattr(job, "rrule", None)
-            if rrule:
-                next_run = calculate_next_occurrence(rrule, now_dt, getattr(job, "timezone", "UTC"))
-                if next_run:
-                    next_run_val = next_run if isinstance(getattr(job, "next_run_at", None), datetime) else next_run.timestamp()
-                    setattr(job, "status", "pending")
-                    setattr(job, "next_run_at", next_run_val)
-                    setattr(job, "attempts", 0)
-                    setattr(job, "lease_owner", None)
-                    setattr(job, "lease_until", None)
-                    if self.session_factory is not None:
-                        async with self.session_factory() as session:
-                            stmt = text("""
-                                UPDATE jobs
-                                SET status = 'pending',
-                                    next_run_at = :next_run,
-                                    attempts = 0,
-                                    lease_owner = NULL,
-                                    lease_until = NULL,
-                                    updated_at = :now
-                                WHERE id = :id;
-                            """)
-                            await session.execute(stmt, {"id": job_id, "next_run": next_run, "now": now_dt})
-                            await session.commit()
-                else:
-                    setattr(job, "status", "completed")
-                    setattr(job, "lease_owner", None)
-                    setattr(job, "lease_until", None)
-                    if self.session_factory is not None:
-                        async with self.session_factory() as session:
-                            stmt = text("""
-                                UPDATE jobs
-                                SET status = 'completed',
-                                    lease_owner = NULL,
-                                    lease_until = NULL,
-                                    updated_at = :now
-                                WHERE id = :id;
-                            """)
-                            await session.execute(stmt, {"id": job_id, "now": now_dt})
-                            await session.commit()
-            else:
-                setattr(job, "status", "completed")
-                setattr(job, "lease_owner", None)
-                setattr(job, "lease_until", None)
-                if self.session_factory is not None:
-                    async with self.session_factory() as session:
-                        stmt = text("""
-                            UPDATE jobs
-                            SET status = 'completed',
-                                lease_owner = NULL,
-                                lease_until = NULL,
-                                updated_at = :now
-                            WHERE id = :id;
-                        """)
-                        await session.execute(stmt, {"id": job_id, "now": now_dt})
-                        await session.commit()
+            await self._mark_job_completed(job, now_dt)
             return res
 
         # Handle Failure (Retry with Exponential Backoff or Terminal Failure)
-        attempts = getattr(job, "attempts", 0) + 1
-        setattr(job, "attempts", attempts)
-
-        if attempts < self.max_attempts:
-            backoff_sec = min(3600.0, 30.0 * (2 ** (attempts - 1)))
-            retry_dt = now_dt + timedelta(seconds=backoff_sec)
-            retry_val = retry_dt if isinstance(getattr(job, "next_run_at", None), datetime) else retry_dt.timestamp()
-
-            setattr(job, "status", "pending")
-            setattr(job, "next_run_at", retry_val)
-            setattr(job, "lease_owner", None)
-            setattr(job, "lease_until", None)
-
-            if self.session_factory is not None:
-                async with self.session_factory() as session:
-                    stmt = text("""
-                        UPDATE jobs
-                        SET status = 'pending',
-                            next_run_at = :next_run,
-                            attempts = :attempts,
-                            lease_owner = NULL,
-                            lease_until = NULL,
-                            updated_at = :now
-                        WHERE id = :id;
-                    """)
-                    await session.execute(
-                        stmt,
-                        {"id": job_id, "next_run": retry_dt, "attempts": attempts, "now": now_dt},
-                    )
-                    await session.commit()
-        else:
-            setattr(job, "status", "failed")
-            setattr(job, "lease_owner", None)
-            setattr(job, "lease_until", None)
-
-            if self.session_factory is not None:
-                async with self.session_factory() as session:
-                    stmt = text("""
-                        UPDATE jobs
-                        SET status = 'failed',
-                            attempts = :attempts,
-                            lease_owner = NULL,
-                            lease_until = NULL,
-                            updated_at = :now
-                        WHERE id = :id;
-                    """)
-                    await session.execute(stmt, {"id": job_id, "attempts": attempts, "now": now_dt})
-                    await session.commit()
-
+        await self._handle_job_failure(job, now_dt, exc=Exception(res.error) if res.error else None)
         return res
+
+
+
+async def handle_extract_text_job(
+    job: Any,
+    session_factory: Optional[Any] = None,
+    carefold_home: Optional[Path] = None,
+) -> None:
+    """Executes the extract_text lifecycle:
+    1. Parse payload.
+    2. Transition Attachment status to 'extracting'.
+    3. Read CAS file and extract text.
+    4. Transition Attachment status to 'completed' with extracted_text (or 'failed').
+    5. On completion, enqueue downstream 'index_doc' job.
+    """
+    home_dir = carefold_home or settings.home_dir
+
+    payload = getattr(job, "payload", {})
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except Exception:
+            payload = {}
+    elif hasattr(job, "payload_dict"):
+        payload = job.payload_dict
+
+    attachment_id = payload.get("attachment_id")
+    if not attachment_id:
+        raise ValueError(f"Job {getattr(job, 'id', None)} missing 'attachment_id' in payload")
+
+    sf = session_factory
+    if sf is None and hasattr(job, "_session_factory"):
+        sf = job._session_factory
+    if sf is None:
+        try:
+            from carefold.db.session import get_session_factory
+            sf = get_session_factory()
+        except Exception:
+            sf = None
+
+    user_id = payload.get("user_id")
+    profile_id = payload.get("profile_id") or getattr(job, "profile_id", None)
+    sha256_hash = payload.get("sha256")
+    filename = payload.get("filename")
+    content_type = payload.get("content_type")
+
+    # Step 1: Transition status to 'extracting'
+    if sf is not None:
+        async with sf() as session:
+            stmt = select(Attachment).where(Attachment.id == attachment_id)
+            res = await session.execute(stmt)
+            attachment = res.scalar_one_or_none()
+            if attachment is None:
+                raise ValueError(f"Attachment '{attachment_id}' not found in database")
+
+            attachment.extraction_status = "extracting"
+            attachment.updated_at = datetime.now(timezone.utc)
+            await session.commit()
+
+            user_id = user_id or attachment.user_id
+            profile_id = profile_id or attachment.profile_id
+            sha256_hash = sha256_hash or attachment.sha256_hash
+            filename = filename or attachment.filename
+            content_type = content_type or attachment.content_type
+
+    # Step 2: Read CAS file and extract text
+    extraction_success = False
+    extracted_text = ""
+    error_msg = None
+
+    try:
+        from carefold.storage.cas import read_cas_file
+        from carefold.storage.extract import extract_document_text
+
+        if not sha256_hash:
+            raise ValueError(f"Attachment '{attachment_id}' has no sha256_hash")
+
+        content = read_cas_file(
+            carefold_home=home_dir,
+            user_id=user_id,
+            profile_id=profile_id,
+            sha256_hash=sha256_hash,
+        )
+
+        result = extract_document_text(
+            content=content,
+            filename=filename or "attachment",
+            mime_type=content_type,
+        )
+
+        extracted_text = result.text
+        if result.status == "completed" or (result.status == "empty" and "error" not in result.metadata):
+            extraction_success = True
+        else:
+            extraction_success = False
+            error_msg = result.metadata.get("error", "Extraction failed")
+    except Exception as exc:
+        logger.error(
+            "extract_text_processing_failed: attachment_id=%s error=%s",
+            attachment_id,
+            exc,
+            exc_info=True,
+        )
+        extraction_success = False
+        error_msg = str(exc)
+
+    # Step 3: Update Attachment and enqueue index_doc job
+    if sf is not None:
+        async with sf() as session:
+            stmt = select(Attachment).where(Attachment.id == attachment_id)
+            res = await session.execute(stmt)
+            attachment = res.scalar_one_or_none()
+            if attachment is not None:
+                if extraction_success:
+                    attachment.extracted_text = extracted_text
+                    attachment.extraction_status = "completed"
+                    attachment.updated_at = datetime.now(timezone.utc)
+
+                    # Enqueue index_doc job
+                    index_payload = {
+                        "document_id": attachment.id,
+                        "profile_id": attachment.profile_id,
+                        "user_id": attachment.user_id,
+                        "doc_type": "attachment",
+                        "filename": attachment.filename,
+                        "sha256": attachment.sha256_hash,
+                        "source": attachment.source or "upload",
+                    }
+                    idempotency_key = f"index:attachment:{attachment.id}:{attachment.sha256_hash}"
+
+                    check_stmt = select(DBJob.id).where(
+                        DBJob.idempotency_key == idempotency_key,
+                        DBJob.status.in_(["pending", "active", "completed"]),
+                    )
+                    check_res = await session.execute(check_stmt)
+                    if check_res.scalar_one_or_none() is None:
+                        index_job = DBJob(
+                            id=str(uuid.uuid4()),
+                            profile_id=attachment.profile_id or "prof-default",
+                            kind="index_doc",
+                            payload=json.dumps(index_payload),
+                            timezone="UTC",
+                            next_run_at=datetime.now(timezone.utc),
+                            idempotency_key=idempotency_key,
+                            status="pending",
+                        )
+                        session.add(index_job)
+                        logger.info(
+                            "index_doc_job_enqueued: doc_id=%s profile_id=%s job_id=%s",
+                            attachment.id,
+                            attachment.profile_id,
+                            index_job.id,
+                        )
+                else:
+                    attachment.extraction_status = "failed"
+                    attachment.updated_at = datetime.now(timezone.utc)
+
+                await session.commit()
+
+    if not extraction_success:
+        raise RuntimeError(f"Text extraction failed for attachment {attachment_id}: {error_msg}")
+
+
+def create_extract_text_handler(
+    session_factory: Optional[Any] = None,
+    carefold_home: Optional[Path] = None,
+) -> Callable[[Any], Coroutine[Any, Any, None]]:
+    """Factory creating an extract_text job handler with injected dependencies."""
+    async def extract_text_job_handler(job: Any) -> None:
+        await handle_extract_text_job(
+            job=job,
+            session_factory=session_factory,
+            carefold_home=carefold_home,
+        )
+    return extract_text_job_handler
+
+
+async def handle_index_doc_job(
+    job: Any,
+    session_factory: Optional[Any] = None,
+) -> None:
+    """Executes the index_doc lifecycle:
+    1. Parse payload: document_id, profile_id, doc_type.
+    2. Load note or attachment from DB/CAS (if text not in payload).
+    3. Call get_search_index().index_document(...) with extracted/authored text and metadata.
+    """
+    if isinstance(job, dict):
+        payload = job
+    else:
+        payload = getattr(job, "payload", {})
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = {}
+        elif hasattr(job, "payload_dict"):
+            payload = job.payload_dict
+
+    document_id = payload.get("document_id")
+    if not document_id:
+        raise ValueError(f"Job missing 'document_id' in payload")
+
+    profile_id = payload.get("profile_id") or getattr(job, "profile_id", None)
+    if not profile_id or not str(profile_id).strip():
+        raise ValueError(f"Job missing 'profile_id'")
+    clean_profile_id = str(profile_id).strip()
+
+    doc_type = payload.get("doc_type")
+    user_id = payload.get("user_id")
+
+    sf = session_factory
+    if sf is None and hasattr(job, "_session_factory"):
+        sf = job._session_factory
+    if sf is None:
+        try:
+            from carefold.db.session import get_session_factory
+            sf = get_session_factory()
+        except Exception:
+            sf = None
+
+    text_to_index: Optional[str] = payload.get("text")
+    metadata: Dict[str, Any] = dict(payload.get("metadata") or {})
+
+    if text_to_index is None and sf is not None:
+        async with sf() as session:
+            # 1. Try loading as Note if doc_type is 'note' or unspecified
+            if doc_type in ("note", None):
+                n_stmt = select(Note).where(Note.id == document_id)
+                n_res = await session.execute(n_stmt)
+                note = n_res.scalar_one_or_none()
+                if note is not None:
+                    doc_type = "note"
+                    clean_profile_id = str(note.profile_id or clean_profile_id).strip()
+                    user_id = user_id or note.user_id
+                    title_prefix = f"# {note.title}\n\n" if note.title else ""
+                    text_to_index = f"{title_prefix}{note.content or ''}"
+                    metadata.update({
+                        "title": note.title or "",
+                        "slug": note.slug or "",
+                        "type": note.type or "scratchpad",
+                        "source": "clinical_note",
+                        "doc_type": "note",
+                        "created_at": note.created_at.isoformat() if hasattr(note.created_at, "isoformat") else str(note.created_at),
+                        "updated_at": note.updated_at.isoformat() if hasattr(note.updated_at, "isoformat") else str(note.updated_at),
+                    })
+
+            # 2. Try loading as Attachment if doc_type is 'attachment' or unspecified
+            if text_to_index is None and doc_type in ("attachment", None):
+                a_stmt = select(Attachment).where(Attachment.id == document_id)
+                a_res = await session.execute(a_stmt)
+                att = a_res.scalar_one_or_none()
+                if att is not None:
+                    doc_type = "attachment"
+                    clean_profile_id = str(att.profile_id or clean_profile_id).strip()
+                    user_id = user_id or att.user_id
+                    metadata.update({
+                        "filename": att.filename or att.original_name or "attachment",
+                        "sha256": att.sha256_hash or "",
+                        "source": att.source or "upload",
+                        "doc_type": "attachment",
+                        "content_type": att.content_type or "",
+                        "created_at": att.created_at.isoformat() if hasattr(att.created_at, "isoformat") else str(att.created_at),
+                    })
+                    if att.extracted_text and att.extracted_text.strip():
+                        text_to_index = att.extracted_text
+                    elif att.sha256_hash:
+                        try:
+                            from carefold.storage.cas import read_cas_file
+                            from carefold.storage.extract import extract_document_text
+                            raw_content = read_cas_file(
+                                carefold_home=settings.home_dir,
+                                user_id=att.user_id,
+                                profile_id=att.profile_id,
+                                sha256_hash=att.sha256_hash,
+                            )
+                            ext_res = extract_document_text(
+                                content=raw_content,
+                                filename=att.filename or "attachment",
+                                mime_type=att.content_type,
+                            )
+                            text_to_index = ext_res.text
+                        except Exception as cas_err:
+                            logger.debug("cas_read_fallback_failed: %s", cas_err)
+                            text_to_index = ""
+
+    if text_to_index is None or not text_to_index.strip():
+        logger.info(
+            "index_doc_skipped_no_content: doc_id=%s profile_id=%s doc_type=%s",
+            document_id,
+            clean_profile_id,
+            doc_type,
+        )
+        return
+
+    from carefold.search.factory import get_search_index
+    search_index = get_search_index()
+    await search_index.index_document(
+        document_id=document_id,
+        text=text_to_index,
+        metadata=metadata,
+        profile_id=clean_profile_id,
+        user_id=user_id,
+    )
+    logger.info(
+        "index_doc_completed: doc_id=%s profile_id=%s doc_type=%s",
+        document_id,
+        clean_profile_id,
+        doc_type,
+    )
+
+
+async def handle_delete_doc_job(
+    job: Any,
+    session_factory: Optional[Any] = None,
+) -> None:
+    """Executes the delete_doc lifecycle:
+    1. Parse payload: document_id, profile_id.
+    2. Call get_search_index().delete_document(document_id, profile_id).
+    """
+    if isinstance(job, dict):
+        payload = job
+    else:
+        payload = getattr(job, "payload", {})
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = {}
+        elif hasattr(job, "payload_dict"):
+            payload = job.payload_dict
+
+    document_id = payload.get("document_id")
+    if not document_id:
+        raise ValueError(f"Job missing 'document_id' in payload")
+
+    profile_id = payload.get("profile_id") or getattr(job, "profile_id", None)
+    if not profile_id or not str(profile_id).strip():
+        raise ValueError(f"Job missing 'profile_id'")
+    clean_profile_id = str(profile_id).strip()
+
+    from carefold.search.factory import get_search_index
+    search_index = get_search_index()
+    deleted = await search_index.delete_document(
+        document_id=document_id,
+        profile_id=clean_profile_id,
+    )
+    logger.info(
+        "delete_doc_completed: doc_id=%s profile_id=%s deleted=%s",
+        document_id,
+        clean_profile_id,
+        deleted,
+    )
 
 
 __all__ = [
@@ -826,4 +1300,9 @@ __all__ = [
     "AwaitableTuple",
     "JobRunner",
     "calculate_next_occurrence",
+    "extract_text_handler",
+    "handle_extract_text_job",
+    "create_extract_text_handler",
+    "handle_index_doc_job",
+    "handle_delete_doc_job",
 ]
