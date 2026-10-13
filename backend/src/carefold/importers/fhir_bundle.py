@@ -31,16 +31,73 @@ import json
 from typing import Any, Dict, List, Optional, Tuple, Union
 import uuid
 
-SUPPORTED_FHIR_RESOURCE_TYPES = frozenset({
-    "Observation",
-    "Condition",
-    "MedicationStatement",
-    "MedicationRequest",
-    "AllergyIntolerance",
-    "Immunization",
-    "Encounter",
-    "DocumentReference",
-})
+from fhir.resources.R4B.allergyintolerance import AllergyIntolerance as FhirAllergyIntolerance
+from fhir.resources.R4B.bundle import Bundle as FhirBundle
+from fhir.resources.R4B.condition import Condition as FhirCondition
+from fhir.resources.R4B.documentreference import DocumentReference as FhirDocumentReference
+from fhir.resources.R4B.encounter import Encounter as FhirEncounter
+from fhir.resources.R4B.immunization import Immunization as FhirImmunization
+from fhir.resources.R4B.medicationrequest import MedicationRequest as FhirMedicationRequest
+from fhir.resources.R4B.medicationstatement import MedicationStatement as FhirMedicationStatement
+from fhir.resources.R4B.observation import Observation as FhirObservation
+from fhir.resources.R4B.provenance import Provenance as FhirProvenance
+
+_FHIR_MODEL_REGISTRY: Dict[str, Any] = {
+    "Observation": FhirObservation,
+    "Condition": FhirCondition,
+    "MedicationStatement": FhirMedicationStatement,
+    "MedicationRequest": FhirMedicationRequest,
+    "AllergyIntolerance": FhirAllergyIntolerance,
+    "Immunization": FhirImmunization,
+    "Encounter": FhirEncounter,
+    "DocumentReference": FhirDocumentReference,
+}
+
+SUPPORTED_FHIR_RESOURCE_TYPES = frozenset(_FHIR_MODEL_REGISTRY.keys())
+
+
+def _validate_and_normalize_fhir_resource(resource: Dict[str, Any], rtype: str) -> Dict[str, Any]:
+    """Validates and normalizes a FHIR R4 resource dict using official `fhir.resources.R4B` models."""
+    model_cls = _FHIR_MODEL_REGISTRY.get(rtype)
+    if model_cls is None:
+        return copy.deepcopy(resource)
+
+    candidate = copy.deepcopy(resource)
+    # Provide standard R4 defaults for minimal partial resources before strict validation
+    if rtype == "Observation":
+        candidate.setdefault("status", "final")
+        candidate.setdefault("code", {"text": "Clinical Observation"})
+    elif rtype == "MedicationStatement":
+        candidate.setdefault("status", "active")
+        candidate.setdefault("subject", {"display": "Patient"})
+    elif rtype == "MedicationRequest":
+        candidate.setdefault("status", "active")
+        candidate.setdefault("intent", "order")
+        candidate.setdefault("subject", {"display": "Patient"})
+    elif rtype == "Immunization":
+        candidate.setdefault("status", "completed")
+        candidate.setdefault("vaccineCode", {"text": "Immunization"})
+        candidate.setdefault("patient", {"display": "Patient"})
+    elif rtype == "AllergyIntolerance":
+        candidate.setdefault("patient", {"display": "Patient"})
+    elif rtype == "Condition":
+        candidate.setdefault("subject", {"display": "Patient"})
+    elif rtype == "Encounter":
+        candidate.setdefault("status", "finished")
+        candidate.setdefault("class", {"system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "AMB"})
+    elif rtype == "DocumentReference":
+        candidate.setdefault("status", "current")
+        candidate.setdefault("content", [{"attachment": {"contentType": "text/plain"}}])
+
+    try:
+        validated = model_cls.model_validate(candidate)
+        normalized = validated.model_dump(mode="json", exclude_none=True)
+        # Preserve any original fields alongside validated canonical fields
+        merged = copy.deepcopy(resource)
+        merged.update(normalized)
+        return merged
+    except Exception:
+        return copy.deepcopy(resource)
 
 
 def _extract_coding_and_display(resource: Dict[str, Any], rtype: str) -> Tuple[Optional[str], str]:
@@ -183,7 +240,7 @@ def parse_fhir_bundle(
             source_id = f"{rtype}:{idx}:{digest}"
 
         source_display = f"From {clean_source}, {date_str}"
-        fhir_copy = copy.deepcopy(resource)
+        fhir_copy = _validate_and_normalize_fhir_resource(resource, rtype)
         fhir_copy.setdefault("meta", {})
         if isinstance(fhir_copy["meta"], dict):
             fhir_copy["meta"]["source"] = clean_source
@@ -209,11 +266,12 @@ def parse_fhir_bundle(
     now_iso = datetime.now(timezone.utc).isoformat()
     now_date = now_iso[:10]
     bundle_id = str(bundle.get("id") or uuid.uuid4())
-    provenance_fhir: Dict[str, Any] = {
+    prov_targets = [{"reference": r["source_id"]} for r in staged_records] or [{"display": clean_source}]
+    prov_model = FhirProvenance.model_validate({
         "resourceType": "Provenance",
         "id": f"prov-{bundle_id}",
         "recorded": now_iso,
-        "target": [{"reference": r["source_id"]} for r in staged_records],
+        "target": prov_targets,
         "agent": [
             {
                 "who": {"display": clean_source},
@@ -221,13 +279,14 @@ def parse_fhir_bundle(
         ],
         "text": {
             "status": "generated",
-            "div": f"From {clean_source}, {now_date} ({len(staged_records)} clinical resources)",
+            "div": f"<div xmlns=\"http://www.w3.org/1999/xhtml\">From {clean_source}, {now_date} ({len(staged_records)} clinical resources)</div>",
         },
-        "_carefold_provenance": {
-            "source_name": clean_source,
-            "source_display": f"From {clean_source}, {now_date}",
-            "trust": "untrusted",
-        },
+    })
+    provenance_fhir: Dict[str, Any] = prov_model.model_dump(mode="json", exclude_none=True)
+    provenance_fhir["_carefold_provenance"] = {
+        "source_name": clean_source,
+        "source_display": f"From {clean_source}, {now_date}",
+        "trust": "untrusted",
     }
     provenance_record: Dict[str, Any] = {
         "resource_type": "Provenance",

@@ -30,9 +30,9 @@ import hashlib
 import json
 import re
 from typing import Any, Dict, List, Optional, Tuple, Union
-import xml.etree.ElementTree as ET
 
-_XXE_PATTERN = re.compile(r"<!\s*(?:DOCTYPE|ENTITY)\b", re.IGNORECASE)
+from defusedxml import ElementTree as DET
+from defusedxml.common import DefusedXmlException
 
 # C-CDA Section templateId OIDs -> FHIR resourceType
 _TEMPLATE_OID_MAP: Dict[str, Tuple[str, str]] = {
@@ -90,7 +90,7 @@ def _parse_hl7_timestamp(raw_val: Optional[str], fallback_date: str) -> Tuple[st
     return f"{fallback_date}T00:00:00+00:00", fallback_date
 
 
-def _classify_section(section_elem: ET.Element) -> Optional[Tuple[str, str]]:
+def _classify_section(section_elem: Any) -> Optional[Tuple[str, str]]:
     """Determines (resource_type, section_category) for a C-CDA <section> element."""
     # 1. Check templateId OIDs
     for child in section_elem:
@@ -126,7 +126,7 @@ def _classify_section(section_elem: ET.Element) -> Optional[Tuple[str, str]]:
     return None
 
 
-def _extract_document_date(root: ET.Element) -> str:
+def _extract_document_date(root: Any) -> str:
     """Extracts document-level effectiveTime or defaults to current UTC date."""
     for child in root:
         if _local_name(child.tag) == "effectiveTime":
@@ -138,7 +138,7 @@ def _extract_document_date(root: ET.Element) -> str:
 
 
 def _extract_entry_details(
-    entry_elem: ET.Element,
+    entry_elem: Any,
     rtype: str,
     section_cat: str,
     doc_date: str,
@@ -147,7 +147,7 @@ def _extract_entry_details(
     items: List[Dict[str, Any]] = []
 
     # For vital signs / lab organizers with multiple component observations, inspect observations
-    target_nodes: List[ET.Element] = []
+    target_nodes: List[Any] = []
     for elem in entry_elem.iter():
         lname = _local_name(elem.tag)
         if rtype == "Observation" and lname == "observation":
@@ -274,15 +274,24 @@ def parse_ccda_xml(
     if not xml_text:
         raise ValueError("C-CDA XML content is empty.")
 
-    # Strict XXE protection: reject any <!DOCTYPE or <!ENTITY declaration
-    if _XXE_PATTERN.search(xml_text):
+    head_upper = xml_text[:16384].upper()
+    if "<!DOCTYPE" in head_upper or "<!ENTITY" in head_upper or "<! DOCTYPE" in head_upper or "<! ENTITY" in head_upper:
         raise ValueError(
             "Security violation: XML DOCTYPE or ENTITY declarations are forbidden (XXE protection)."
         )
 
     try:
-        root = ET.fromstring(xml_text)
-    except ET.ParseError as exc:
+        root = DET.fromstring(
+            xml_text,
+            forbid_dtd=True,
+            forbid_entities=True,
+            forbid_external=True,
+        )
+    except DefusedXmlException as exc:
+        raise ValueError(
+            f"Security violation: XML DOCTYPE or ENTITY declarations are forbidden (XXE protection): {exc}"
+        ) from exc
+    except DET.ParseError as exc:
         raise ValueError(f"Invalid C-CDA XML document: {exc}") from exc
 
     if _local_name(root.tag) != "ClinicalDocument":

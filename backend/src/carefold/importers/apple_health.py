@@ -34,14 +34,11 @@ from datetime import datetime, timezone
 import hashlib
 import io
 import json
-from pathlib import Path
-import re
-from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
-import xml.etree.ElementTree as ET
+from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 import zipfile
 
-_ENTITY_DECL_RE = re.compile(r"<!\s*ENTITY\b", re.IGNORECASE)
-_BENIGN_DOCTYPE_RE = re.compile(rb"<!DOCTYPE\s+HealthData(?:\s*\[[^\]]*\])?\s*>", re.IGNORECASE | re.DOTALL)
+from defusedxml import ElementTree as DET
+from defusedxml.common import DefusedXmlException
 
 HIGH_FREQUENCY_HK_TYPES = frozenset({
     "HKQuantityTypeIdentifierHeartRate",
@@ -92,15 +89,50 @@ def _parse_apple_timestamp(raw_ts: Optional[str]) -> Tuple[str, str]:
     return f"{date_part}T00:00:00+00:00", date_part
 
 
+def _strip_benign_apple_doctype(raw_bytes: bytes) -> bytes:
+    """Linear O(N) stripper for Apple Health's standard <!DOCTYPE HealthData [...]> prolog.
+
+    Rejects any <!ENTITY declarations or non-HealthData DOCTYPE blocks without regular expressions.
+    """
+    head_len = min(len(raw_bytes), 32768)
+    head_upper = raw_bytes[:head_len].upper()
+
+    if b"<!ENTITY" in head_upper or b"<! ENTITY" in head_upper:
+        raise ValueError("Security violation: XML ENTITY declarations are forbidden (XXE protection).")
+
+    doctype_idx = head_upper.find(b"<!DOCTYPE")
+    if doctype_idx == -1:
+        return raw_bytes
+
+    after_doctype = head_upper[doctype_idx + 9 :].lstrip()
+    if not after_doctype.startswith(b"HEALTHDATA"):
+        raise ValueError("Security violation: Unexpected XML DOCTYPE declaration rejected.")
+
+    # Locate closing '>' of <!DOCTYPE HealthData [ ... ]> or <!DOCTYPE HealthData>
+    bracket_open = head_upper.find(b"[", doctype_idx)
+    gt_pos = head_upper.find(b">", doctype_idx)
+    if gt_pos == -1:
+        raise ValueError("Security violation: Unterminated XML DOCTYPE declaration rejected.")
+
+    if bracket_open != -1 and bracket_open < gt_pos:
+        bracket_close = head_upper.find(b"]>", bracket_open)
+        if bracket_close == -1:
+            raise ValueError("Security violation: Unterminated XML DOCTYPE internal subset rejected.")
+        end_idx = bracket_close + 2
+    else:
+        end_idx = gt_pos + 1
+
+    cleaned = raw_bytes[:doctype_idx] + raw_bytes[end_idx:]
+    if b"<!DOCTYPE" in cleaned[:4096].upper():
+        raise ValueError("Security violation: Multiple XML DOCTYPE declarations rejected.")
+    return cleaned
+
+
 def _open_apple_xml_stream(file_or_bytes: Any) -> BinaryIO:
-    """Normalizes input (bytes, str, Path, zipfile, or stream) into a sanitized UTF-8 BytesIO stream."""
+    """Normalizes in-memory input (bytes, XML str, zipfile, or stream) into a sanitized UTF-8 BytesIO stream."""
     raw_bytes: bytes
-    if isinstance(file_or_bytes, (str, Path)):
-        text_or_path = str(file_or_bytes)
-        if not text_or_path.lstrip().startswith("<") and len(text_or_path) < 1024 and Path(text_or_path).exists():
-            raw_bytes = Path(text_or_path).read_bytes()
-        else:
-            raw_bytes = text_or_path.encode("utf-8")
+    if isinstance(file_or_bytes, str):
+        raw_bytes = file_or_bytes.encode("utf-8")
     elif isinstance(file_or_bytes, bytes):
         raw_bytes = file_or_bytes
     elif hasattr(file_or_bytes, "read"):
@@ -117,15 +149,7 @@ def _open_apple_xml_stream(file_or_bytes: Any) -> BinaryIO:
                 raise ValueError("Apple Health zip archive does not contain export.xml.")
             raw_bytes = zf.read(xml_names[0])
 
-    head_text = raw_bytes[:16384].decode("utf-8", errors="ignore")
-    if _ENTITY_DECL_RE.search(head_text):
-        raise ValueError("Security violation: XML ENTITY declarations are forbidden (XXE protection).")
-
-    # Strip benign Apple Health <!DOCTYPE HealthData [...]> header if present without <!ENTITY
-    cleaned_bytes = _BENIGN_DOCTYPE_RE.sub(b"", raw_bytes, count=1)
-    if re.search(rb"<!\s*DOCTYPE\b", cleaned_bytes[:4096], re.IGNORECASE):
-        raise ValueError("Security violation: Unexpected XML DOCTYPE declaration rejected.")
-
+    cleaned_bytes = _strip_benign_apple_doctype(raw_bytes)
     return io.BytesIO(cleaned_bytes)
 
 
@@ -136,7 +160,7 @@ def parse_apple_health_export(
     """Streams an Apple Health export and aggregates high-frequency metrics per calendar day.
 
     Args:
-        file_or_bytes: XML string, UTF-8 bytes, ZIP bytes, Path, or binary file-like object.
+        file_or_bytes: XML string, UTF-8 bytes, ZIP bytes, or binary file-like object.
         source_name: Human-readable origin label for provenance display.
 
     Returns:
@@ -159,7 +183,13 @@ def parse_apple_health_export(
     aggregated_raw_sample_count = 0
 
     try:
-        context = ET.iterparse(stream, events=("end",))
+        context = DET.iterparse(
+            stream,
+            events=("end",),
+            forbid_dtd=True,
+            forbid_entities=True,
+            forbid_external=True,
+        )
         for _event, elem in context:
             tag = elem.tag.split("}", 1)[-1] if "}" in elem.tag else elem.tag
             if tag != "Record":
@@ -288,7 +318,9 @@ def parse_apple_health_export(
 
             # Always clear element to keep memory O(1)
             elem.clear()
-    except ET.ParseError as exc:
+    except DefusedXmlException as exc:
+        raise ValueError(f"Security violation: XML ENTITY/DTD declarations are forbidden (XXE protection): {exc}") from exc
+    except DET.ParseError as exc:
         raise ValueError(f"Invalid Apple Health XML: {exc}") from exc
 
     staged_records: List[Dict[str, Any]] = []

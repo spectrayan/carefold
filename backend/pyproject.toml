@@ -38,6 +38,8 @@ dependencies = [
     "keyring>=24.0.0",
     "alembic>=1.13.0",
     "pypdf>=4.0.0",
+    "defusedxml>=0.7.1",
+    "fhir.resources>=8.0.0",
 ]
 
 [project.optional-dependencies]
