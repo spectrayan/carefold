@@ -145,17 +145,37 @@ def auth_users(client: TestClient, scoping_env):
     token_b = login_b.json()["token"]
     cookie_b = login_b.cookies.get("carefold_session")
 
+    # Create profile for User A
+    res_prof_a = client.post(
+        "/api/profiles",
+        json={"name": "Alice Profile", "relationship": "self"},
+        headers={"Authorization": f"Bearer {token_a}"},
+    )
+    assert res_prof_a.status_code == 201
+    profile_a_id = res_prof_a.json()["id"]
+
+    # Create profile for User B
+    res_prof_b = client.post(
+        "/api/profiles",
+        json={"name": "Bob Profile", "relationship": "self"},
+        headers={"Authorization": f"Bearer {token_b}"},
+    )
+    assert res_prof_b.status_code == 201
+    profile_b_id = res_prof_b.json()["id"]
+
     return {
         "user_a": user_a,
         "token_a": token_a,
         "cookie_a": cookie_a,
         "headers_a": {"Authorization": f"Bearer {token_a}"},
         "cookies_a": {"carefold_session": cookie_a},
+        "profile_a_id": profile_a_id,
         "user_b": user_b,
         "token_b": token_b,
         "cookie_b": cookie_b,
         "headers_b": {"Authorization": f"Bearer {token_b}"},
         "cookies_b": {"carefold_session": cookie_b},
+        "profile_b_id": profile_b_id,
     }
 
 
@@ -221,7 +241,8 @@ class TestNotesUserScoping:
                 "title": "Alice Blood Pressure Log",
                 "slug": "alice-bp-log",
                 "content": "Systolic 120, Diastolic 80.",
-                "type": "vital_log",
+                "type": "symptom",
+                "profile_id": auth_users["profile_a_id"],
                 "tags": ["vitals", "cardiology"],
             },
             headers=auth_users["headers_a"],
@@ -257,15 +278,18 @@ class TestNotesUserScoping:
     def test_notes_user_b_cannot_access_user_a_note(self, client: TestClient, auth_users):
         """User B cannot view or list User A's private notes."""
         # User A creates a note
-        client.post(
+        post_a = client.post(
             "/api/notes",
             json={
                 "title": "Alice Private Medical Diary",
                 "slug": "alice-diary",
                 "content": "Confidential patient symptom notes.",
+                "type": "general",
+                "profile_id": auth_users["profile_a_id"],
             },
             headers=auth_users["headers_a"],
         )
+        assert post_a.status_code == 201
 
         # User B lists notes -> must NOT see Alice's diary
         list_b = client.get("/api/notes", headers=auth_users["headers_b"])
@@ -279,11 +303,18 @@ class TestNotesUserScoping:
 
     def test_notes_user_b_cannot_update_or_delete_user_a_note(self, client: TestClient, auth_users):
         """User B cannot modify or delete User A's note."""
-        client.post(
+        post_a = client.post(
             "/api/notes",
-            json={"title": "Alice Labs", "slug": "alice-labs", "content": "Original content"},
+            json={
+                "title": "Alice Labs",
+                "slug": "alice-labs",
+                "content": "Original content",
+                "type": "general",
+                "profile_id": auth_users["profile_a_id"],
+            },
             headers=auth_users["headers_a"],
         )
+        assert post_a.status_code == 201
 
         # User B tries to update Alice's note
         put_b = client.put(
@@ -354,17 +385,15 @@ class TestMemoriesUserScoping:
 
     def test_memories_user_a_remember_and_recall(self, client: TestClient, auth_users):
         """User A can store and recall episodic memories under user-scoped namespace."""
-        user_a_id = auth_users["user_a"]["id"]
-        user_ns = f"user_{user_a_id}"
+        prof_a = auth_users["profile_a_id"]
 
         # Write memory for User A
         put_resp = client.put(
-            "/api/memory/medication_reminder",
-            params={"namespace": user_ns},
+            f"/api/memory/medication_reminder?profile_id={prof_a}",
             json={
                 "value": "Takes Lisinopril 10mg daily at 8am.",
                 "tier": "episodic",
-                "namespace": user_ns,
+                "profile_id": prof_a,
             },
             headers=auth_users["headers_a"],
         )
@@ -372,7 +401,7 @@ class TestMemoriesUserScoping:
 
         # Recall memory for User A
         get_resp = client.get(
-            f"/api/memory/medication_reminder?namespace={user_ns}",
+            f"/api/memory/medication_reminder?profile_id={prof_a}",
             headers=auth_users["headers_a"],
         )
         assert get_resp.status_code == 200
@@ -380,24 +409,23 @@ class TestMemoriesUserScoping:
 
     def test_memories_user_b_cannot_access_user_a_namespace(self, client: TestClient, auth_users):
         """User B cannot access or recall memories stored in User A's namespace."""
-        user_a_id = auth_users["user_a"]["id"]
-        user_b_id = auth_users["user_b"]["id"]
+        prof_a = auth_users["profile_a_id"]
+        prof_b = auth_users["profile_b_id"]
 
         # Alice stores private memory
         client.put(
-            "/api/memory/alice_allergy",
-            params={"namespace": f"user_{user_a_id}"},
+            f"/api/memory/alice_allergy?profile_id={prof_a}",
             json={
                 "value": "Severe penicillin allergy",
                 "tier": "semantic",
-                "namespace": f"user_{user_a_id}",
+                "profile_id": prof_a,
             },
             headers=auth_users["headers_a"],
         )
 
         # Bob recalls in Bob's namespace -> must be empty
         recall_b = client.get(
-            f"/api/memory?query=penicillin&namespace=user_{user_b_id}",
+            f"/api/memory?query=penicillin&profile_id={prof_b}",
             headers=auth_users["headers_b"],
         )
         assert recall_b.status_code == 200
@@ -434,29 +462,42 @@ class TestCrossFeatureDataScoping:
 
     def test_scenario_complete_user_isolation(self, client: TestClient, auth_users):
         """Validates that User A and User B maintain completely partitioned data domains."""
+        prof_a = auth_users["profile_a_id"]
+        prof_b = auth_users["profile_b_id"]
+
         # Alice creates a note and saves a memory
         client.post(
             "/api/notes",
-            json={"title": "Alice Cardiology Summary", "slug": "alice-cardio", "content": "Ejection fraction 60%."},
+            json={
+                "title": "Alice Cardiology Summary",
+                "slug": "alice-cardio",
+                "content": "Ejection fraction 60%.",
+                "type": "general",
+                "profile_id": prof_a,
+            },
             headers=auth_users["headers_a"],
         )
         client.put(
-            "/api/memory/cardio_pref",
-            params={"namespace": f"user_{auth_users['user_a']['id']}"},
-            json={"value": "Prefers morning appointments", "tier": "episodic"},
+            f"/api/memory/cardio_pref?profile_id={prof_a}",
+            json={"value": "Prefers morning appointments", "tier": "episodic", "profile_id": prof_a},
             headers=auth_users["headers_a"],
         )
 
         # Bob creates his own note and memory
         client.post(
             "/api/notes",
-            json={"title": "Bob Orthopedic Rehab", "slug": "bob-ortho", "content": "Physical therapy 3x/week."},
+            json={
+                "title": "Bob Orthopedic Rehab",
+                "slug": "bob-ortho",
+                "content": "Physical therapy 3x/week.",
+                "type": "general",
+                "profile_id": prof_b,
+            },
             headers=auth_users["headers_b"],
         )
         client.put(
-            "/api/memory/ortho_pref",
-            params={"namespace": f"user_{auth_users['user_b']['id']}"},
-            json={"value": "Left knee brace required", "tier": "episodic"},
+            f"/api/memory/ortho_pref?profile_id={prof_b}",
+            json={"value": "Left knee brace required", "tier": "episodic", "profile_id": prof_b},
             headers=auth_users["headers_b"],
         )
 

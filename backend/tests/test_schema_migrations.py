@@ -188,6 +188,8 @@ async def test_schema_migration_collision_note_and_empty_notes(tmp_path: Path):
         conn.execute("""
             CREATE TABLE note (
                 id VARCHAR(36) PRIMARY KEY,
+                user_id VARCHAR(36),
+                profile_id VARCHAR(36),
                 type VARCHAR(32) NOT NULL DEFAULT 'scratchpad',
                 slug VARCHAR(128) NOT NULL,
                 title VARCHAR(255) NOT NULL,
@@ -199,6 +201,8 @@ async def test_schema_migration_collision_note_and_empty_notes(tmp_path: Path):
         conn.execute("""
             CREATE TABLE notes (
                 id VARCHAR(36) PRIMARY KEY,
+                user_id VARCHAR(36),
+                profile_id VARCHAR(36),
                 type VARCHAR(32) NOT NULL DEFAULT 'scratchpad',
                 slug VARCHAR(128) NOT NULL,
                 title VARCHAR(255) NOT NULL,

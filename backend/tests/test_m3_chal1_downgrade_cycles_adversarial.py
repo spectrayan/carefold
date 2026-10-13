@@ -66,12 +66,25 @@ EXPECTED_AUTONOMY_BATCH_1_TABLES = {
     "jobs",
 }
 
-EXPECTED_HEAD_TABLES = EXPECTED_BASELINE_TABLES | {
-    "alembic_version",
-    "audit_events",
-    "connections",
-    "credentials",
-} | EXPECTED_AUTONOMY_BATCH_1_TABLES
+EXPECTED_AUTONOMY_BATCH_3_TABLES = {
+    "health_resources",
+    "appointments",
+    "reminders",
+}
+
+EXPECTED_HEAD_TABLES = (
+    EXPECTED_BASELINE_TABLES
+    | {
+        "alembic_version",
+        "audit_events",
+        "connections",
+        "credentials",
+    }
+    | EXPECTED_AUTONOMY_BATCH_1_TABLES
+    | EXPECTED_AUTONOMY_BATCH_3_TABLES
+)
+
+EXPECTED_HEAD_REVISION = "0005_autonomy_batch_3"
 
 EXPECTED_ATTACHMENT_CAS_COLUMNS = {
     "extracted_text",
@@ -106,14 +119,14 @@ def test_adversarial_downgrade_cycle_sqlite_memory_and_file(use_disk: bool):
         with engine.connect() as conn:
             cfg = get_alembic_config(conn)
 
-            # Step 1: upgrade head (0003_autonomy_batch_1)
+            # Step 1: upgrade head (0005_autonomy_batch_3)
             alembic.command.upgrade(cfg, "head")
             insp = inspect(conn)
             tables = set(insp.get_table_names())
             assert EXPECTED_HEAD_TABLES.issubset(tables), f"Missing head tables: {EXPECTED_HEAD_TABLES - tables}"
             assert not any(t.startswith("_alembic_tmp_") for t in tables), "Found lingering _alembic_tmp_ tables"
             rev = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert rev == "0003_autonomy_batch_1"
+            assert rev == EXPECTED_HEAD_REVISION
 
             # Check CAS columns on attachments
             att_cols = {c["name"] for c in insp.get_columns("attachments")}
@@ -126,6 +139,9 @@ def test_adversarial_downgrade_cycle_sqlite_memory_and_file(use_disk: bool):
             assert "profile_keys" not in tables_0002
             assert "approvals" not in tables_0002
             assert "jobs" not in tables_0002
+            assert "health_resources" not in tables_0002
+            assert "appointments" not in tables_0002
+            assert "reminders" not in tables_0002
             assert {"audit_events", "connections", "credentials"}.issubset(tables_0002)
             assert not any(t.startswith("_alembic_tmp_") for t in tables_0002)
             rev_0002 = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -142,6 +158,9 @@ def test_adversarial_downgrade_cycle_sqlite_memory_and_file(use_disk: bool):
             assert "profile_keys" not in tables_down
             assert "approvals" not in tables_down
             assert "jobs" not in tables_down
+            assert "health_resources" not in tables_down
+            assert "appointments" not in tables_down
+            assert "reminders" not in tables_down
             assert not any(t.startswith("_alembic_tmp_") for t in tables_down)
             rev_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
             assert rev_down == "0001_baseline_schema"
@@ -157,7 +176,7 @@ def test_adversarial_downgrade_cycle_sqlite_memory_and_file(use_disk: bool):
             tables_reup = set(insp_reup.get_table_names())
             assert EXPECTED_HEAD_TABLES.issubset(tables_reup)
             rev_reup = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert rev_reup == "0003_autonomy_batch_1"
+            assert rev_reup == EXPECTED_HEAD_REVISION
             att_cols_reup = {c["name"] for c in insp_reup.get_columns("attachments")}
             assert EXPECTED_ATTACHMENT_CAS_COLUMNS.issubset(att_cols_reup)
 
@@ -175,7 +194,7 @@ def test_adversarial_downgrade_cycle_sqlite_memory_and_file(use_disk: bool):
             tables_final = set(insp_final.get_table_names())
             assert EXPECTED_HEAD_TABLES.issubset(tables_final)
             rev_final = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert rev_final == "0003_autonomy_batch_1"
+            assert rev_final == EXPECTED_HEAD_REVISION
             att_cols_final = {c["name"] for c in insp_final.get_columns("attachments")}
             assert EXPECTED_ATTACHMENT_CAS_COLUMNS.issubset(att_cols_final)
     finally:
@@ -664,7 +683,7 @@ async def test_adversarial_session_init_db_post_downgrade(tmp_path: Path):
     verify_engine = create_engine(f"sqlite:///{db_file}", poolclass=NullPool)
     with verify_engine.connect() as conn:
         cur_rev = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert cur_rev == "0003_autonomy_batch_1"
+        assert cur_rev == EXPECTED_HEAD_REVISION
 
         insp = inspect(conn)
         tables = set(insp.get_table_names())

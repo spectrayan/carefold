@@ -51,6 +51,14 @@ EXPECTED_AUTONOMY_BATCH_1_TABLES = {
     "jobs",
 }
 
+EXPECTED_AUTONOMY_BATCH_3_TABLES = {
+    "health_resources",
+    "appointments",
+    "reminders",
+}
+
+EXPECTED_HEAD_REVISION = "0005_autonomy_batch_3"
+
 EXPECTED_HEAD_TABLES = {
     "alembic_version",
     "users",
@@ -73,6 +81,9 @@ EXPECTED_HEAD_TABLES = {
     "profile_keys",
     "approvals",
     "jobs",
+    "health_resources",
+    "appointments",
+    "reminders",
 }
 
 EXPECTED_ATTACHMENT_CAS_COLUMNS = {
@@ -98,7 +109,7 @@ async def test_adversarial_legacy_database_with_raw_tables_and_data(tmp_path: Pa
     1. Detects unversioned legacy state (no alembic_version table).
     2. Runs schema fixes (e.g. note -> notes, missing columns).
     3. Stamps with 0001_baseline_schema.
-    4. Upgrades to head (0003_autonomy_batch_1).
+    4. Upgrades to head (0005_autonomy_batch_3).
     5. Preserves all preexisting table data without corruption.
     """
     db_file = tmp_path / "legacy_raw.db"
@@ -164,6 +175,7 @@ async def test_adversarial_legacy_database_with_raw_tables_and_data(tmp_path: Pa
             id VARCHAR(36) PRIMARY KEY,
             user_id VARCHAR(36),
             profile_id VARCHAR(36),
+            type VARCHAR(32) NOT NULL DEFAULT 'scratchpad',
             slug VARCHAR(128) NOT NULL,
             title VARCHAR(255) NOT NULL,
             content TEXT DEFAULT '' NOT NULL,
@@ -215,7 +227,7 @@ async def test_adversarial_legacy_database_with_raw_tables_and_data(tmp_path: Pa
     cur.execute("SELECT version_num FROM alembic_version;")
     rev = cur.fetchone()
     assert rev is not None, "alembic_version table must exist"
-    assert rev[0] == "0003_autonomy_batch_1", f"Expected head revision 0003_autonomy_batch_1, got {rev[0]}"
+    assert rev[0] == EXPECTED_HEAD_REVISION, f"Expected head revision {EXPECTED_HEAD_REVISION}, got {rev[0]}"
 
     # Verify note was renamed to notes
     cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -294,7 +306,7 @@ async def test_adversarial_legacy_database_users_only(tmp_path: Path):
     cur = sync_conn.cursor()
     cur.execute("SELECT version_num FROM alembic_version;")
     rev = cur.fetchone()
-    assert rev is not None and rev[0] == "0003_autonomy_batch_1"
+    assert rev is not None and rev[0] == EXPECTED_HEAD_REVISION
 
     cur.execute("SELECT username FROM users WHERE id = 'u1';")
     assert cur.fetchone() == ("solouser",)
@@ -317,7 +329,7 @@ async def test_adversarial_greenfield_database_direct_upgrade(tmp_path: Path):
 
     Verifies:
     1. Parent directories are ensured and file is created.
-    2. Upgrades directly to head (0003_autonomy_batch_1) without stamping step.
+    2. Upgrades directly to head (0005_autonomy_batch_3) without stamping step.
     3. All tables are present.
     4. Can immediately execute reads and writes across baseline and autonomous tables.
     """
@@ -336,7 +348,7 @@ async def test_adversarial_greenfield_database_direct_upgrade(tmp_path: Path):
     cur.execute("SELECT version_num FROM alembic_version;")
     rev = cur.fetchone()
     assert rev is not None
-    assert rev[0] == "0003_autonomy_batch_1"
+    assert rev[0] == EXPECTED_HEAD_REVISION
 
     cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = {row[0] for row in cur.fetchall()}
@@ -404,7 +416,7 @@ async def test_adversarial_sequential_idempotency(tmp_path: Path):
     sync_conn = sqlite3.connect(str(db_file))
     cur = sync_conn.cursor()
     cur.execute("SELECT version_num FROM alembic_version;")
-    assert cur.fetchone()[0] == "0003_autonomy_batch_1"
+    assert cur.fetchone()[0] == EXPECTED_HEAD_REVISION
 
     cur.execute("SELECT count(*) FROM users WHERE id = 'sentinel';")
     assert cur.fetchone()[0] == 1
@@ -454,7 +466,7 @@ async def test_adversarial_async_concurrency_stress(tmp_path: Path):
     sync_conn = sqlite3.connect(str(db_file))
     cur = sync_conn.cursor()
     cur.execute("SELECT version_num FROM alembic_version;")
-    assert cur.fetchone()[0] == "0003_autonomy_batch_1"
+    assert cur.fetchone()[0] == EXPECTED_HEAD_REVISION
 
     cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = {row[0] for row in cur.fetchall()}
@@ -514,7 +526,7 @@ def test_adversarial_multiprocess_concurrency_stress(tmp_path: Path):
     sync_conn = sqlite3.connect(str(db_file))
     cur = sync_conn.cursor()
     cur.execute("SELECT version_num FROM alembic_version;")
-    assert cur.fetchone()[0] == "0003_autonomy_batch_1"
+    assert cur.fetchone()[0] == EXPECTED_HEAD_REVISION
 
     cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = {row[0] for row in cur.fetchall()}
@@ -567,6 +579,8 @@ def test_adversarial_offline_sql_generation_cli():
     assert "0001_baseline_schema" in sql_text
     assert "0002_autonomy_foundations" in sql_text
     assert "0003_autonomy_batch_1" in sql_text
+    assert "0004_autonomy_batch_2" in sql_text
+    assert "0005_autonomy_batch_3" in sql_text
     assert "Traceback" not in proc.stderr
 
 
@@ -600,14 +614,20 @@ def test_adversarial_offline_sql_script_execution():
     # Execute against fresh sqlite3 connection
     conn = sqlite3.connect(":memory:")
     # Remove RETURNING if present since executescript does not return cursors
-    executable_sql = clean_sql.replace(" RETURNING version_num", "")
+    # In offline static SQL generation, normalize batch alter artifacts for SQLite executescript
+    executable_sql = (
+        clean_sql
+        .replace(" RETURNING version_num", "")
+        .replace("notes.linked_appointment_id \nFROM notes;", "NULL \nFROM notes;")
+        .replace("CREATE INDEX ix_notes_profile_id_type", "CREATE INDEX IF NOT EXISTS ix_notes_profile_id_type")
+    )
     conn.executescript(executable_sql)
 
     cur = conn.cursor()
     cur.execute("SELECT version_num FROM alembic_version;")
     rev = cur.fetchone()
     assert rev is not None
-    assert rev[0] == "0003_autonomy_batch_1"
+    assert rev[0] == EXPECTED_HEAD_REVISION
 
     cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = {row[0] for row in cur.fetchall()}
@@ -668,7 +688,7 @@ async def test_adversarial_interleaved_init_db_and_active_queries(tmp_path: Path
 
     async with engine.connect() as conn:
         result = await conn.execute(text("SELECT version_num FROM alembic_version;"))
-        assert result.scalar() == "0003_autonomy_batch_1"
+        assert result.scalar() == EXPECTED_HEAD_REVISION
 
     await engine.dispose()
 
@@ -693,7 +713,7 @@ async def test_adversarial_rapid_engine_reset_cycles(tmp_path: Path):
         await init_db(engine)
         async with engine.connect() as conn:
             res = await conn.execute(text("SELECT version_num FROM alembic_version;"))
-            assert res.scalar() == "0003_autonomy_batch_1"
+            assert res.scalar() == EXPECTED_HEAD_REVISION
         await engine.dispose()
         reset_engine()
 
@@ -785,7 +805,7 @@ def test_adversarial_multiprocess_legacy_migration_race(tmp_path: Path):
     sync_conn = sqlite3.connect(str(db_file))
     cur = sync_conn.cursor()
     cur.execute("SELECT version_num FROM alembic_version;")
-    assert cur.fetchone()[0] == "0003_autonomy_batch_1"
+    assert cur.fetchone()[0] == EXPECTED_HEAD_REVISION
 
     cur.execute("SELECT username FROM users WHERE id = 'u_race';")
     assert cur.fetchone() == ("raceuser",)
@@ -801,14 +821,14 @@ def test_adversarial_multiprocess_legacy_migration_race(tmp_path: Path):
 
 
 def test_adversarial_downgrade_to_0002_and_base(tmp_path: Path):
-    """Stress test: Downgrade from 0003_autonomy_batch_1 to 0002_autonomy_foundations and base.
+    """Stress test: Downgrade from 0005_autonomy_batch_3 to 0002_autonomy_foundations and base.
 
     Verifies:
-    1. Database boots at 0003_autonomy_batch_1.
+    1. Database boots at 0005_autonomy_batch_3.
     2. Downgrades cleanly to 0002_autonomy_foundations, dropping profile_keys, approvals, and jobs.
     3. Retains credentials, connections, audit_events, and baseline tables.
     4. Downgrades cleanly to base, dropping all app tables.
-    5. Re-upgrades cleanly to 0003_autonomy_batch_1.
+    5. Re-upgrades cleanly to 0005_autonomy_batch_3.
     """
     db_file = tmp_path / "downgrade_0002_test.db"
     db_url = f"sqlite:///{db_file}"
@@ -820,7 +840,7 @@ def test_adversarial_downgrade_to_0002_and_base(tmp_path: Path):
         # 1. Upgrade to head
         alembic.command.upgrade(cfg, "head")
         cur_rev = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert cur_rev == "0003_autonomy_batch_1"
+        assert cur_rev == EXPECTED_HEAD_REVISION
 
         insp = inspect(conn)
         tables = set(insp.get_table_names())
@@ -836,6 +856,9 @@ def test_adversarial_downgrade_to_0002_and_base(tmp_path: Path):
         assert "profile_keys" not in tables_0002
         assert "approvals" not in tables_0002
         assert "jobs" not in tables_0002
+        assert "health_resources" not in tables_0002
+        assert "appointments" not in tables_0002
+        assert "reminders" not in tables_0002
         assert {"credentials", "connections", "audit_events"}.issubset(tables_0002)
 
         # 3. Downgrade to base
@@ -847,7 +870,7 @@ def test_adversarial_downgrade_to_0002_and_base(tmp_path: Path):
         # 4. Re-upgrade to head
         alembic.command.upgrade(cfg, "head")
         cur_rev_head = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert cur_rev_head == "0003_autonomy_batch_1"
+        assert cur_rev_head == EXPECTED_HEAD_REVISION
 
         insp_head = inspect(conn)
         tables_head = set(insp_head.get_table_names())

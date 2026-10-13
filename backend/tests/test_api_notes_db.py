@@ -22,7 +22,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from carefold.config import settings
-from carefold.db.models import Note, Profile
+from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
+from carefold.db.models import Note, Profile, User
 from carefold.db.session import create_db_engine, get_session_factory, init_db
 from carefold.main import app
 
@@ -31,10 +32,33 @@ from carefold.main import app
 async def setup_notes_db():
     """Initializes in-memory database and ensures test isolation."""
     await init_db()
+    factory = get_session_factory()
+    async with factory() as session:
+        user = await session.get(User, DEFAULT_STEWARD_USER.id)
+        if not user:
+            user = User(
+                id=DEFAULT_STEWARD_USER.id,
+                email="steward@carefold.ai",
+                username="steward",
+                hashed_password="mock",
+                role="steward",
+                status="active",
+                auth_provider="disabled",
+            )
+            session.add(user)
+            await session.commit()
     yield
 
 
-def test_notes_db_only_no_filesystem_write(client: TestClient, temp_workspace: Path):
+@pytest.fixture
+def test_profile_id(client: TestClient) -> str:
+    """Provisions an isolated care profile for notes persistence tests."""
+    resp = client.post("/api/profiles", json={"name": "Primary Patient", "relationship": "self"})
+    assert resp.status_code == 201
+    return resp.json()["id"]
+
+
+def test_notes_db_only_no_filesystem_write(client: TestClient, temp_workspace: Path, test_profile_id: str):
     """Verifies that creating a note writes strictly to carefold.db with zero loose files created on disk."""
     notes_dir = settings.get_notes_dir()
     initial_files = list(notes_dir.glob("**/*.md"))
@@ -44,6 +68,7 @@ def test_notes_db_only_no_filesystem_write(client: TestClient, temp_workspace: P
         "content": "Check BP daily at 8am and 8pm.\nBring log to cardiologist.",
         "type": "clinical_prep",
         "tags": ["cardiology", "hypertension"],
+        "profile_id": test_profile_id,
     }
     resp = client.post("/api/notes", json=payload)
     assert resp.status_code == 201
@@ -63,7 +88,7 @@ def test_notes_db_only_no_filesystem_write(client: TestClient, temp_workspace: P
     assert '["cardiology", "hypertension"]' in get_resp.json()["tags_json"]
 
 
-def test_list_notes_ignores_loose_filesystem_files(client: TestClient, temp_workspace: Path):
+def test_list_notes_ignores_loose_filesystem_files(client: TestClient, temp_workspace: Path, test_profile_id: str):
     """Verifies that list_notes queries only carefold.db and ignores unmanaged files on disk."""
     notes_dir = settings.get_notes_dir()
     notes_dir.mkdir(parents=True, exist_ok=True)
@@ -71,7 +96,7 @@ def test_list_notes_ignores_loose_filesystem_files(client: TestClient, temp_work
     loose_file.write_text("---\ntitle: 'Rogue Note'\n---\nDangerous content", encoding="utf-8")
 
     # DB note
-    resp = client.post("/api/notes", json={"title": "Official DB Note", "content": "Clean content"})
+    resp = client.post("/api/notes", json={"title": "Official DB Note", "content": "Clean content", "profile_id": test_profile_id})
     assert resp.status_code == 201
     db_slug = resp.json()["slug"]
 
@@ -83,7 +108,7 @@ def test_list_notes_ignores_loose_filesystem_files(client: TestClient, temp_work
     assert "untracked_rogue_note" not in slugs
 
 
-def test_notes_tags_json_and_list_support(client: TestClient):
+def test_notes_tags_json_and_list_support(client: TestClient, test_profile_id: str):
     """Verifies that tags are accepted as a list and returned in both tags and tags_json fields."""
     resp = client.post(
         "/api/notes",
@@ -91,6 +116,7 @@ def test_notes_tags_json_and_list_support(client: TestClient):
             "title": "Cardiology Prep",
             "content": "Bring recent ECG",
             "tags": ["heart", "ecg", "vitals"],
+            "profile_id": test_profile_id,
         },
     )
     assert resp.status_code == 201
@@ -109,10 +135,10 @@ def test_notes_tags_json_and_list_support(client: TestClient):
     assert updated["tags_json"] == '["heart", "annual-checkup"]'
 
 
-def test_notes_crud_lifecycle(client: TestClient):
+def test_notes_crud_lifecycle(client: TestClient, test_profile_id: str):
     """Verifies the complete CRUD lifecycle for clinical notes."""
     # 1. Create
-    c_resp = client.post("/api/notes", json={"title": "Visit Note", "content": "Initial"})
+    c_resp = client.post("/api/notes", json={"title": "Visit Note", "content": "Initial", "profile_id": test_profile_id})
     assert c_resp.status_code == 201
     slug = c_resp.json()["slug"]
 

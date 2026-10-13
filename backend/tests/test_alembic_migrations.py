@@ -60,12 +60,23 @@ EXPECTED_AUTONOMY_BATCH_1_TABLES = {
     "jobs",
 }
 
-EXPECTED_HEAD_TABLES = EXPECTED_BASELINE_TABLES | {
-    "alembic_version",
-    "audit_events",
-    "connections",
-    "credentials",
-} | EXPECTED_AUTONOMY_BATCH_1_TABLES
+EXPECTED_AUTONOMY_BATCH_3_TABLES = {
+    "health_resources",
+    "appointments",
+    "reminders",
+}
+
+EXPECTED_HEAD_TABLES = (
+    EXPECTED_BASELINE_TABLES
+    | {
+        "alembic_version",
+        "audit_events",
+        "connections",
+        "credentials",
+    }
+    | EXPECTED_AUTONOMY_BATCH_1_TABLES
+    | EXPECTED_AUTONOMY_BATCH_3_TABLES
+)
 
 EXPECTED_ATTACHMENT_CAS_COLUMNS = {
     "extracted_text",
@@ -134,9 +145,12 @@ def test_upgrade_head_fresh_sqlite():
         }
         assert expected_job_cols.issubset(job_cols)
 
-        # Assert head revision is 0004_autonomy_batch_2
+        # Assert 24 tables at head
+        assert len(EXPECTED_HEAD_TABLES) == 24
+
+        # Assert head revision is 0005_autonomy_batch_3
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0004_autonomy_batch_2"
+        assert curr_ver == "0005_autonomy_batch_3"
 
         # Assert notes.profile_id and chat_threads.profile_id are NOT NULL
         notes_cols = {c["name"]: c for c in insp.get_columns("notes")}
@@ -144,6 +158,141 @@ def test_upgrade_head_fresh_sqlite():
 
         thread_cols = {c["name"]: c for c in insp.get_columns("chat_threads")}
         assert thread_cols["profile_id"]["nullable"] is False
+
+        # Assert Autonomy Batch 3 tables and columns
+        hr_cols = {c["name"] for c in insp.get_columns("health_resources")}
+        expected_hr_cols = {
+            "id", "profile_id", "resource_type", "source_type", "source_ref",
+            "source_id", "content_hash", "data", "status", "effective_at",
+            "recorded_at", "created_at", "updated_at",
+        }
+        assert expected_hr_cols.issubset(hr_cols)
+
+        apt_cols = {c["name"] for c in insp.get_columns("appointments")}
+        expected_apt_cols = {
+            "id", "profile_id", "title", "provider_name", "specialty",
+            "location", "clinic_phone", "start_time", "end_time", "timezone",
+            "status", "reason", "preparation_notes", "created_at", "updated_at",
+        }
+        assert expected_apt_cols.issubset(apt_cols)
+
+        rem_cols = {c["name"] for c in insp.get_columns("reminders")}
+        expected_rem_cols = {
+            "id", "profile_id", "title", "description", "category",
+            "rrule", "timezone", "next_due_at", "status", "last_triggered_at",
+            "snooze_until", "created_at", "updated_at",
+        }
+        assert expected_rem_cols.issubset(rem_cols)
+
+        # Assert notes.linked_appointment_id column exists and is nullable
+        assert "linked_appointment_id" in notes_cols
+        assert notes_cols["linked_appointment_id"]["nullable"] is True
+
+
+def test_downgrade_to_0004_autonomy_batch_2():
+    """Tests downgrading from 0005_autonomy_batch_3 to 0004_autonomy_batch_2 and re-upgrading.
+
+    Asserts:
+    1. At 0005: Batch 3 tables exist, notes.linked_appointment_id exists.
+    2. Seed profile, appointment, note linked to appointment, health resource, reminder.
+    3. Downgrade to 0004: health_resources, appointments, reminders tables are dropped;
+       notes.linked_appointment_id column is dropped; note content is preserved.
+    4. alembic_version is 0004_autonomy_batch_2.
+    5. Re-upgrade to head (0005): Batch 3 tables and linked_appointment_id re-created,
+       existing note data remains intact.
+    """
+    engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
+    with engine.connect() as conn:
+        cfg = get_alembic_config(conn)
+        alembic.command.upgrade(cfg, "head")
+
+        curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        assert curr_ver == "0005_autonomy_batch_3"
+
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+        # Seed profile
+        conn.execute(
+            text("""
+                INSERT INTO profiles (id, name, relationship, role, avatar_color, is_primary, created_at, updated_at)
+                VALUES ('prof-b3-test', 'Bob', 'self', 'self', '1', 1, :now, :now)
+            """),
+            {"now": now},
+        )
+        # Seed appointment
+        conn.execute(
+            text("""
+                INSERT INTO appointments (id, profile_id, title, start_time, end_time, timezone, status, created_at, updated_at)
+                VALUES ('apt-b3-test', 'prof-b3-test', 'Cardiology Checkup', :now, :now, 'UTC', 'scheduled', :now, :now)
+            """),
+            {"now": now},
+        )
+        # Seed note linked to appointment
+        conn.execute(
+            text("""
+                INSERT INTO notes (id, type, profile_id, slug, title, content, tags_json, linked_appointment_id, created_at, updated_at)
+                VALUES ('note-b3-test', 'visit', 'prof-b3-test', 'cardio-prep', 'Cardio Prep', 'Review BP meds', '[]', 'apt-b3-test', :now, :now)
+            """),
+            {"now": now},
+        )
+        # Seed health resource
+        conn.execute(
+            text("""
+                INSERT INTO health_resources (id, profile_id, resource_type, source_type, data, status, effective_at, recorded_at, created_at, updated_at)
+                VALUES ('hr-b3-test', 'prof-b3-test', 'observation', 'manual', '{"resourceType": "Observation"}', 'active', :now, :now, :now, :now)
+            """),
+            {"now": now},
+        )
+        # Seed reminder
+        conn.execute(
+            text("""
+                INSERT INTO reminders (id, profile_id, title, category, timezone, next_due_at, status, created_at, updated_at)
+                VALUES ('rem-b3-test', 'prof-b3-test', 'Take BP meds', 'medication', 'UTC', :now, 'pending', :now, :now)
+            """),
+            {"now": now},
+        )
+        conn.commit()
+
+        # Downgrade to 0004_autonomy_batch_2
+        alembic.command.downgrade(cfg, "0004_autonomy_batch_2")
+
+        curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        assert curr_ver_down == "0004_autonomy_batch_2"
+
+        insp = inspect(conn)
+        tables_down = set(insp.get_table_names())
+        assert "health_resources" not in tables_down
+        assert "appointments" not in tables_down
+        assert "reminders" not in tables_down
+
+        notes_cols = {c["name"] for c in insp.get_columns("notes")}
+        assert "linked_appointment_id" not in notes_cols
+
+        # Verify note survived downgrade
+        note_row = conn.execute(text("SELECT id, title, content, profile_id FROM notes WHERE id = 'note-b3-test'")).fetchone()
+        assert note_row is not None
+        assert note_row[1] == "Cardio Prep"
+        assert note_row[2] == "Review BP meds"
+        assert note_row[3] == "prof-b3-test"
+
+        # Re-upgrade to head (0005_autonomy_batch_3)
+        alembic.command.upgrade(cfg, "head")
+        curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        assert curr_ver_up == "0005_autonomy_batch_3"
+
+        insp_up = inspect(conn)
+        tables_up = set(insp_up.get_table_names())
+        assert EXPECTED_AUTONOMY_BATCH_3_TABLES.issubset(tables_up)
+
+        notes_cols_up = {c["name"]: c for c in insp_up.get_columns("notes")}
+        assert "linked_appointment_id" in notes_cols_up
+        assert notes_cols_up["linked_appointment_id"]["nullable"] is True
+
+        # Note data still preserved with linked_appointment_id as NULL
+        note_row_up = conn.execute(text("SELECT id, title, linked_appointment_id FROM notes WHERE id = 'note-b3-test'")).fetchone()
+        assert note_row_up is not None
+        assert note_row_up[1] == "Cardio Prep"
+        assert note_row_up[2] is None
 
 
 def test_downgrade_to_0003_autonomy_batch_1():
@@ -158,7 +307,7 @@ def test_downgrade_to_0003_autonomy_batch_1():
     engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
     with engine.connect() as conn:
         cfg = get_alembic_config(conn)
-        alembic.command.upgrade(cfg, "head")
+        alembic.command.upgrade(cfg, "0004_autonomy_batch_2")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
         assert curr_ver == "0004_autonomy_batch_2"
@@ -211,8 +360,8 @@ def test_downgrade_to_0003_autonomy_batch_1():
         assert t_row is not None
         assert t_row[1] == "prof-m1-test"
 
-        # Re-upgrade to head
-        alembic.command.upgrade(cfg, "head")
+        # Re-upgrade to 0004
+        alembic.command.upgrade(cfg, "0004_autonomy_batch_2")
 
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
         assert curr_ver_up == "0004_autonomy_batch_2"
@@ -273,6 +422,9 @@ def test_downgrade_to_baseline_sqlite_batch_rebuild():
         assert "profile_keys" not in tables
         assert "approvals" not in tables
         assert "jobs" not in tables
+        assert "health_resources" not in tables
+        assert "appointments" not in tables
+        assert "reminders" not in tables
 
         # Baseline tables should still exist
         assert EXPECTED_BASELINE_TABLES.issubset(tables)

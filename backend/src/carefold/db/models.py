@@ -23,7 +23,7 @@ import json
 from typing import Any, Dict, List, Optional
 import uuid
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship as sa_relationship, relationship, synonym, validates
 
 
@@ -914,6 +914,24 @@ class Profile(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    health_resources: Mapped[List[HealthResource]] = sa_relationship(
+        "HealthResource",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    appointments: Mapped[List[Appointment]] = sa_relationship(
+        "Appointment",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    reminders: Mapped[List[Reminder]] = sa_relationship(
+        "Reminder",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __repr__(self) -> str:
         return f"<Profile id={self.id!r} name={self.name!r} relationship={self.relationship!r} role={self.role!r}>"
@@ -1169,6 +1187,9 @@ class Note(Base):
     """Note entity for user clinical visit notes, prep items, and summaries."""
 
     __tablename__ = "notes"
+    __table_args__ = (
+        Index("ix_notes_profile_id_type", "profile_id", "type"),
+    )
 
     id: Mapped[str] = mapped_column(
         String(36),
@@ -1234,8 +1255,22 @@ class Note(Base):
         doc="Last modification timestamp (UTC)",
     )
 
+    linked_appointment_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("appointments.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        doc="Referenced Appointment identifier (nullable foreign key)",
+    )
+
     user: Mapped[Optional[User]] = relationship("User", back_populates="notes")
     profile: Mapped[Profile] = relationship("Profile", back_populates="notes")
+    appointment: Mapped[Optional[Appointment]] = relationship(
+        "Appointment",
+        back_populates="notes",
+        foreign_keys=[linked_appointment_id],
+    )
+    linked_appointment = synonym("appointment")
 
     @property
     def tags(self) -> List[str]:
@@ -2182,6 +2217,346 @@ class Job(Base):
 
     def __repr__(self) -> str:
         return f"<Job id={self.id!r} kind={self.kind!r} status={self.status!r} next_run_at={self.next_run_at!s}>"
+
+
+# ---------------------------------------------------------------------------
+# Clinical and Temporal Foundations (Autonomy Batch 3)
+# ---------------------------------------------------------------------------
+
+
+class HealthResource(Base):
+    """Clinical health resource entity representing FHIR R4 Observations, vitals, and metrics."""
+
+    __tablename__ = "health_resources"
+    __table_args__ = (
+        UniqueConstraint(
+            "profile_id", "source_type", "source_ref", "source_id",
+            name="uq_health_resources_source",
+        ),
+        Index("ix_health_resources_profile_type_effective", "profile_id", "resource_type", "effective_at"),
+        Index("ix_health_resources_effective_at", "effective_at"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique health resource identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    resource_type: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        doc="FHIR resource category (e.g. observation)",
+    )
+    source_type: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        doc="Origin source type: manual, device, note_extracted",
+    )
+    source_ref: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="Source document reference identifier or external URI",
+    )
+    source_id: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="External identifier in source system for idempotency",
+    )
+    content_hash: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        doc="SHA-256 digest of clinical content",
+    )
+    data: Mapped[Dict[str, Any]] = mapped_column(
+        JSON,
+        nullable=False,
+        doc="Complete FHIR R4 JSON representation of the resource",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="active",
+        nullable=False,
+        doc="Status: active, amended, tombstone",
+    )
+    effective_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        doc="Clinically relevant observation timestamp (UTC)",
+    )
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="System ingestion or entry timestamp (UTC)",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    # Relationships
+    profile: Mapped[Profile] = relationship("Profile", back_populates="health_resources")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "status" not in kwargs:
+            kwargs["status"] = "active"
+        if "recorded_at" not in kwargs:
+            kwargs["recorded_at"] = utc_now()
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return f"<HealthResource id={self.id!r} profile_id={self.profile_id!r} type={self.resource_type!r} status={self.status!r}>"
+
+
+class Appointment(Base):
+    """Clinical appointment and scheduling navigation entity."""
+
+    __tablename__ = "appointments"
+    __table_args__ = (
+        Index("ix_appointments_start_time", "start_time"),
+        Index("ix_appointments_status", "status"),
+        Index("ix_appointments_profile_start", "profile_id", "start_time"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique appointment identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Appointment title or encounter description",
+    )
+    provider_name: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="Healthcare provider or clinic name",
+    )
+    specialty: Mapped[Optional[str]] = mapped_column(
+        String(128),
+        nullable=True,
+        doc="Medical specialty (e.g. Cardiology, Endocrinology)",
+    )
+    location: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="Physical clinic address, department, or telehealth URL",
+    )
+    clinic_phone: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        doc="Clinic or scheduler contact phone number",
+    )
+    start_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        doc="Scheduled appointment start timestamp (UTC)",
+    )
+    end_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        doc="Scheduled appointment end timestamp (UTC)",
+    )
+    timezone: Mapped[str] = mapped_column(
+        String(64),
+        default="UTC",
+        nullable=False,
+        doc="Local appointment IANA timezone identifier",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="scheduled",
+        nullable=False,
+        doc="Appointment status: requested, scheduled, confirmed, completed, cancelled",
+    )
+    reason: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Chief complaint or purpose of appointment",
+    )
+    preparation_notes: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Pre-visit preparation checklist or instructions",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    # Relationships
+    profile: Mapped[Profile] = relationship("Profile", back_populates="appointments")
+    notes: Mapped[List[Note]] = relationship(
+        "Note",
+        back_populates="appointment",
+        passive_deletes=True,
+    )
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "timezone" not in kwargs:
+            kwargs["timezone"] = "UTC"
+        if "status" not in kwargs:
+            kwargs["status"] = "scheduled"
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return f"<Appointment id={self.id!r} profile_id={self.profile_id!r} title={self.title!r} status={self.status!r}>"
+
+
+class Reminder(Base):
+    """Clinical and administrative reminder entity supporting RFC 5545 RRULE recurrence."""
+
+    __tablename__ = "reminders"
+    __table_args__ = (
+        Index("ix_reminders_next_due_at", "next_due_at"),
+        Index("ix_reminders_status", "status"),
+        Index("ix_reminders_category", "category"),
+        Index("ix_reminders_profile_status_due", "profile_id", "status", "next_due_at"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique reminder identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Reminder prompt or directive title",
+    )
+    description: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Detailed context, instructions, or medication dosage guidelines",
+    )
+    category: Mapped[str] = mapped_column(
+        String(64),
+        default="general",
+        nullable=False,
+        doc="Reminder category: medication, vitals, appointment, prep, general",
+    )
+    rrule: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="RFC 5545 recurrence rule specification string",
+    )
+    timezone: Mapped[str] = mapped_column(
+        String(64),
+        default="UTC",
+        nullable=False,
+        doc="Local profile IANA timezone for recurrence evaluation",
+    )
+    next_due_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        doc="Next scheduled trigger timestamp (UTC)",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="pending",
+        nullable=False,
+        doc="Status: pending, completed, snoozed, missed, cancelled",
+    )
+    last_triggered_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Timestamp of most recent execution (UTC)",
+    )
+    snooze_until: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Snoozed wake timestamp (UTC)",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    # Relationships
+    profile: Mapped[Profile] = relationship("Profile", back_populates="reminders")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "category" not in kwargs:
+            kwargs["category"] = "general"
+        if "timezone" not in kwargs:
+            kwargs["timezone"] = "UTC"
+        if "status" not in kwargs:
+            kwargs["status"] = "pending"
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return f"<Reminder id={self.id!r} profile_id={self.profile_id!r} title={self.title!r} status={self.status!r}>"
+
 
 
 

@@ -193,8 +193,8 @@ async def test_migration_collision_empty_notes_table(tmp_path: Path):
     db_file = tmp_path / "collision_empty_notes.db"
 
     with sqlite3.connect(str(db_file)) as conn:
-        conn.execute("CREATE TABLE note (id VARCHAR(36) PRIMARY KEY, slug VARCHAR(128), title VARCHAR(255), content TEXT);")
-        conn.execute("CREATE TABLE notes (id VARCHAR(36) PRIMARY KEY, slug VARCHAR(128), title VARCHAR(255), content TEXT);")
+        conn.execute("CREATE TABLE note (id VARCHAR(36) PRIMARY KEY, user_id VARCHAR(36), profile_id VARCHAR(36), type VARCHAR(32) NOT NULL DEFAULT 'scratchpad', slug VARCHAR(128), title VARCHAR(255), content TEXT);")
+        conn.execute("CREATE TABLE notes (id VARCHAR(36) PRIMARY KEY, user_id VARCHAR(36), profile_id VARCHAR(36), type VARCHAR(32) NOT NULL DEFAULT 'scratchpad', slug VARCHAR(128), title VARCHAR(255), content TEXT);")
         conn.execute("INSERT INTO note (id, slug, title, content) VALUES ('n-100', 'slug-100', 'Note 100', 'Content 100');")
         conn.execute("INSERT INTO note (id, slug, title, content) VALUES ('n-101', 'slug-101', 'Note 101', 'Content 101');")
         conn.commit()
@@ -228,16 +228,16 @@ async def test_migration_collision_both_populated_merges_safely(tmp_path: Path):
     db_file = tmp_path / "collision_both_populated.db"
 
     with sqlite3.connect(str(db_file)) as conn:
-        conn.execute("CREATE TABLE notes (id VARCHAR(36) PRIMARY KEY, slug VARCHAR(128), title VARCHAR(255), content TEXT);")
-        conn.execute("CREATE TABLE note (id VARCHAR(36) PRIMARY KEY, slug VARCHAR(128), title VARCHAR(255), content TEXT);")
+        conn.execute("CREATE TABLE notes (id VARCHAR(36) PRIMARY KEY, user_id VARCHAR(36), profile_id VARCHAR(36), type VARCHAR(32) NOT NULL DEFAULT 'scratchpad', slug VARCHAR(128), title VARCHAR(255), content TEXT);")
+        conn.execute("CREATE TABLE note (id VARCHAR(36) PRIMARY KEY, user_id VARCHAR(36), profile_id VARCHAR(36), type VARCHAR(32) NOT NULL DEFAULT 'scratchpad', slug VARCHAR(128), title VARCHAR(255), content TEXT);")
 
         # In notes: n-01, n-02
-        conn.execute("INSERT INTO notes VALUES ('n-01', 'slug-01', 'Title 01 in notes', 'Content 01');")
-        conn.execute("INSERT INTO notes VALUES ('n-02', 'slug-02', 'Title 02 in notes', 'Content 02');")
+        conn.execute("INSERT INTO notes (id, slug, title, content) VALUES ('n-01', 'slug-01', 'Title 01 in notes', 'Content 01');")
+        conn.execute("INSERT INTO notes (id, slug, title, content) VALUES ('n-02', 'slug-02', 'Title 02 in notes', 'Content 02');")
 
         # In note: n-01 (colliding id), n-03 (new id)
-        conn.execute("INSERT INTO note VALUES ('n-01', 'slug-01-collide', 'Title 01 in note', 'Collide');")
-        conn.execute("INSERT INTO note VALUES ('n-03', 'slug-03', 'Title 03 in note', 'Content 03');")
+        conn.execute("INSERT INTO note (id, slug, title, content) VALUES ('n-01', 'slug-01-collide', 'Title 01 in note', 'Collide');")
+        conn.execute("INSERT INTO note (id, slug, title, content) VALUES ('n-03', 'slug-03', 'Title 03 in note', 'Content 03');")
         conn.commit()
 
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"

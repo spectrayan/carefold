@@ -31,6 +31,37 @@ class DummyContext:
         self.agent = type("Agent", (), {"id": agent_id})()
 
 
+@pytest.fixture
+def test_profile_id(client: TestClient) -> str:
+    """Provisions a test profile for workspace notes tests."""
+    from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
+    from carefold.db.models import User
+    from carefold.db.session import get_session_factory
+    import asyncio
+
+    async def _ensure_steward():
+        factory = get_session_factory()
+        async with factory() as session:
+            user = await session.get(User, DEFAULT_STEWARD_USER.id)
+            if not user:
+                user = User(
+                    id=DEFAULT_STEWARD_USER.id,
+                    email="steward@carefold.ai",
+                    username="steward",
+                    hashed_password="mock",
+                    role="steward",
+                    status="active",
+                    auth_provider="disabled",
+                )
+                session.add(user)
+                await session.commit()
+
+    asyncio.run(_ensure_steward())
+    resp = client.post("/api/profiles", json={"name": "Test Patient", "relationship": "self"})
+    assert resp.status_code == 201
+    return resp.json()["id"]
+
+
 def test_workspace_note_preserves_human_readable_title(temp_workspace: Path):
     """Verifies that workspace-note tool preserves human-readable title in frontmatter while slugifying filename."""
     ctx = DummyContext(temp_workspace, agent_id="cardiology-guide")
@@ -96,7 +127,7 @@ def test_list_notes_empty_directory(client: TestClient, temp_workspace: Path):
     assert resp.json() == []
 
 
-def test_list_notes_3_tier_title_resolution(client: TestClient, temp_workspace: Path):
+def test_list_notes_3_tier_title_resolution(client: TestClient, temp_workspace: Path, test_profile_id: str):
     """Verifies 3-tier title resolution: frontmatter/explicit -> # heading -> title-cased slug."""
     # Note 1: Explicit title (Tier 1)
     res1 = client.post(
@@ -105,7 +136,8 @@ def test_list_notes_3_tier_title_resolution(client: TestClient, temp_workspace: 
             "slug": "note-one",
             "title": "Preserved Frontmatter Title",
             "content": "# Ignored Heading\nContent 1",
-            "type": "derma-guide",
+            "type": "visit",
+            "profile_id": test_profile_id,
         },
     )
     assert res1.status_code == 201
@@ -117,7 +149,8 @@ def test_list_notes_3_tier_title_resolution(client: TestClient, temp_workspace: 
             "slug": "note-two",
             "title": "note-two",
             "content": "# First Heading Title\nContent 2",
-            "type": "visit-steward",
+            "type": "general",
+            "profile_id": test_profile_id,
         },
     )
     assert res2.status_code == 201
@@ -129,7 +162,8 @@ def test_list_notes_3_tier_title_resolution(client: TestClient, temp_workspace: 
             "slug": "sarahs-diabetes-notes",
             "title": "sarahs-diabetes-notes",
             "content": "No headings here. Just advice.",
-            "type": "visit-steward",
+            "type": "general",
+            "profile_id": test_profile_id,
         },
     )
     assert res3.status_code == 201
@@ -141,16 +175,16 @@ def test_list_notes_3_tier_title_resolution(client: TestClient, temp_workspace: 
     assert len(items) == 3
     slug_map = {item["slug"]: item for item in items}
     assert slug_map["note-one"]["title"] == "Preserved Frontmatter Title"
-    assert slug_map["note-one"]["agent"] == "derma-guide"
+    assert slug_map["note-one"]["agent"] == "visit"
 
     assert slug_map["note-two"]["title"] == "First Heading Title"
-    assert slug_map["note-two"]["agent"] == "visit-steward"
+    assert slug_map["note-two"]["agent"] == "general"
 
     assert slug_map["sarahs-diabetes-notes"]["title"] == "Sarahs Diabetes Notes"
-    assert slug_map["sarahs-diabetes-notes"]["agent"] == "visit-steward"
+    assert slug_map["sarahs-diabetes-notes"]["agent"] == "general"
 
 
-def test_get_note_detail_success(client: TestClient, temp_workspace: Path):
+def test_get_note_detail_success(client: TestClient, temp_workspace: Path, test_profile_id: str):
     """Verifies reading note details by slug (with and without .md)."""
     create_res = client.post(
         "/api/notes",
@@ -158,7 +192,8 @@ def test_get_note_detail_success(client: TestClient, temp_workspace: Path):
             "slug": "visit-agenda",
             "title": "Clinic Visit Agenda",
             "content": "# Clinic Visit Agenda\n\n1. Review meds\n2. Discuss lab results\n",
-            "type": "cardiology-guide",
+            "type": "visit",
+            "profile_id": test_profile_id,
         },
     )
     assert create_res.status_code == 201
@@ -169,7 +204,7 @@ def test_get_note_detail_success(client: TestClient, temp_workspace: Path):
     data1 = resp1.json()
     assert data1["slug"] == "visit-agenda"
     assert data1["title"] == "Clinic Visit Agenda"
-    assert data1["agent"] == "cardiology-guide"
+    assert data1["agent"] == "visit"
     assert "1. Review meds" in data1["content"]
     assert "---" in data1["raw_content"]
     assert data1["metadata"]["title"] == "Clinic Visit Agenda"
@@ -229,7 +264,7 @@ def test_get_note_detail_rejects_symlink_escape(client: TestClient, temp_workspa
     assert "invalid note path" in resp.json()["detail"].lower()
 
 
-def test_list_notes_ignores_escaping_symlink(client: TestClient, temp_workspace: Path, tmp_path: Path):
+def test_list_notes_ignores_escaping_symlink(client: TestClient, temp_workspace: Path, tmp_path: Path, test_profile_id: str):
     """Verifies that symlinks escaping the notes directory are safely ignored by list_notes."""
     notes_dir = settings.get_notes_dir()
     for f in notes_dir.iterdir():
@@ -248,7 +283,7 @@ def test_list_notes_ignores_escaping_symlink(client: TestClient, temp_workspace:
     # Also add a valid note
     create_res = client.post(
         "/api/notes",
-        json={"slug": "valid_note", "title": "Valid Note", "content": "# Valid Note\nInside content"},
+        json={"slug": "valid_note", "title": "Valid Note", "content": "# Valid Note\nInside content", "profile_id": test_profile_id},
     )
     assert create_res.status_code == 201
 

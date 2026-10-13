@@ -51,12 +51,23 @@ EXPECTED_AUTONOMY_BATCH_1_TABLES = {
     "jobs",
 }
 
-EXPECTED_HEAD_TABLES = EXPECTED_BASELINE_TABLES | {
-    "alembic_version",
-    "audit_events",
-    "connections",
-    "credentials",
-} | EXPECTED_AUTONOMY_BATCH_1_TABLES
+EXPECTED_AUTONOMY_BATCH_3_TABLES = {
+    "health_resources",
+    "appointments",
+    "reminders",
+}
+
+EXPECTED_HEAD_TABLES = (
+    EXPECTED_BASELINE_TABLES
+    | {
+        "alembic_version",
+        "audit_events",
+        "connections",
+        "credentials",
+    }
+    | EXPECTED_AUTONOMY_BATCH_1_TABLES
+    | EXPECTED_AUTONOMY_BATCH_3_TABLES
+)
 
 EXPECTED_CAS_COLUMNS = {
     "extracted_text",
@@ -79,7 +90,7 @@ def test_repeated_upgrade_downgrade_cycles_sqlite():
         cfg = get_alembic_config(conn)
 
         for iteration in range(1, 4):
-            # 1. Upgrade to head (0003_autonomy_batch_1)
+            # 1. Upgrade to head (0005_autonomy_batch_3)
             alembic.command.upgrade(cfg, "head")
             insp = inspect(conn)
             tables = set(insp.get_table_names())
@@ -87,7 +98,7 @@ def test_repeated_upgrade_downgrade_cycles_sqlite():
             assert not any(t.startswith("_alembic_tmp_") for t in tables), f"Iteration {iteration}: Lingering tmp tables"
 
             curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert curr_ver == "0003_autonomy_batch_1", f"Iteration {iteration}: Expected 0003_autonomy_batch_1 at head, got {curr_ver}"
+            assert curr_ver == "0005_autonomy_batch_3", f"Iteration {iteration}: Expected 0005_autonomy_batch_3 at head, got {curr_ver}"
 
             # 1b. Downgrade to 0002_autonomy_foundations
             alembic.command.downgrade(cfg, "0002_autonomy_foundations")
@@ -96,6 +107,9 @@ def test_repeated_upgrade_downgrade_cycles_sqlite():
             assert "profile_keys" not in tables_0002, f"Iteration {iteration}: profile_keys not dropped on 0002 downgrade"
             assert "approvals" not in tables_0002, f"Iteration {iteration}: approvals not dropped on 0002 downgrade"
             assert "jobs" not in tables_0002, f"Iteration {iteration}: jobs not dropped on 0002 downgrade"
+            assert "health_resources" not in tables_0002, f"Iteration {iteration}: health_resources not dropped on 0002 downgrade"
+            assert "appointments" not in tables_0002, f"Iteration {iteration}: appointments not dropped on 0002 downgrade"
+            assert "reminders" not in tables_0002, f"Iteration {iteration}: reminders not dropped on 0002 downgrade"
             assert {"audit_events", "connections", "credentials"}.issubset(tables_0002), f"Iteration {iteration}: Missing 0002 tables"
             assert not any(t.startswith("_alembic_tmp_") for t in tables_0002), f"Iteration {iteration}: Lingering tmp tables"
             curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -112,6 +126,9 @@ def test_repeated_upgrade_downgrade_cycles_sqlite():
             assert "profile_keys" not in tables, f"Iteration {iteration}: profile_keys not dropped"
             assert "approvals" not in tables, f"Iteration {iteration}: approvals not dropped"
             assert "jobs" not in tables, f"Iteration {iteration}: jobs not dropped"
+            assert "health_resources" not in tables, f"Iteration {iteration}: health_resources not dropped"
+            assert "appointments" not in tables, f"Iteration {iteration}: appointments not dropped"
+            assert "reminders" not in tables, f"Iteration {iteration}: reminders not dropped"
             assert not any(t.startswith("_alembic_tmp_") for t in tables), f"Iteration {iteration}: Lingering tmp tables"
 
             curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -123,7 +140,7 @@ def test_repeated_upgrade_downgrade_cycles_sqlite():
             tables = set(insp.get_table_names())
             assert EXPECTED_HEAD_TABLES.issubset(tables), f"Iteration {iteration}: Missing head tables after re-upgrade"
             curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert curr_ver == "0003_autonomy_batch_1", f"Iteration {iteration}: Expected 0003_autonomy_batch_1 after re-upgrade, got {curr_ver}"
+            assert curr_ver == "0005_autonomy_batch_3", f"Iteration {iteration}: Expected 0005_autonomy_batch_3 after re-upgrade, got {curr_ver}"
 
             # 4. Downgrade to base
             alembic.command.downgrade(cfg, "base")
@@ -138,7 +155,7 @@ def test_repeated_upgrade_downgrade_cycles_sqlite():
             tables = set(insp.get_table_names())
             assert EXPECTED_HEAD_TABLES.issubset(tables), f"Iteration {iteration}: Missing head tables after base upgrade"
             curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-            assert curr_ver == "0003_autonomy_batch_1", f"Iteration {iteration}: Expected 0003_autonomy_batch_1 after base upgrade, got {curr_ver}"
+            assert curr_ver == "0005_autonomy_batch_3", f"Iteration {iteration}: Expected 0005_autonomy_batch_3 after base upgrade, got {curr_ver}"
 
 
 def test_batch_rebuild_data_preservation_and_cas_lifecycle():
@@ -741,12 +758,16 @@ def test_offline_sql_downgrade_generation_dialects():
 
     alembic.command.downgrade(cfg_pg_down, "head:0001_baseline_schema", sql=True)
     sql_pg_down = buf_pg_down.getvalue()
+    assert "DROP TABLE reminders;" in sql_pg_down
+    assert "DROP TABLE appointments;" in sql_pg_down
+    assert "DROP TABLE health_resources;" in sql_pg_down
     assert "DROP TABLE jobs;" in sql_pg_down
     assert "DROP TABLE approvals;" in sql_pg_down
     assert "DROP TABLE profile_keys;" in sql_pg_down
     assert "DROP TABLE credentials;" in sql_pg_down
     assert "DROP TABLE connections;" in sql_pg_down
     assert "DROP TABLE audit_events;" in sql_pg_down
+    assert "ALTER TABLE notes DROP COLUMN linked_appointment_id;" in sql_pg_down
     assert "ALTER TABLE attachments DROP COLUMN updated_at;" in sql_pg_down
     assert "ALTER TABLE attachments DROP COLUMN extracted_text;" in sql_pg_down
 

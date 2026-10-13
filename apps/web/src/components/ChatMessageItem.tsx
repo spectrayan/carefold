@@ -26,7 +26,8 @@ import { ThinkingIndicator } from './chat/ThinkingIndicator';
 import { EmergencyEscalationCard } from './chat/EmergencyEscalationCard';
 import { DossierCard } from './chat/DossierCard';
 import { ApprovalCard } from './chat/ApprovalCard';
-import type { ApprovalRecord } from '@/lib/types';
+import { ExecutionPlanCard } from './chat/ExecutionPlanCard';
+import type { ApprovalRecord, ExecutionPlan } from '@/lib/types';
 
 export interface ChatMessage {
   id: string;
@@ -44,6 +45,7 @@ export interface ChatMessage {
   traces?: ToolTraceItem[];
   attachments?: string[];
   approval?: ApprovalRecord;
+  plan?: ExecutionPlan;
 }
 
 export interface ChatMessageItemProps {
@@ -226,6 +228,13 @@ export function ChatMessageItem({
             onResume={onResume}
             disabled={disabled}
           />
+        </div>
+      )}
+
+      {/* Embedded Execution Plan Card */}
+      {message.plan && (
+        <div data-testid="embedded-execution-plan-card" className="mb-3">
+          <ExecutionPlanCard plan={message.plan} activeTraces={traces} />
         </div>
       )}
 

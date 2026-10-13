@@ -211,7 +211,12 @@ async def record_audit(
             detail_data["prompt"] = safe_event.prompt
         if safe_event.completion:
             detail_data["completion"] = safe_event.completion
-    detail_redacted = json.dumps({k: v for k, v in detail_data.items() if v is not None})
+    if raw_data.get("details") is not None:
+        detail_data["details"] = raw_data.get("details")
+    if raw_data.get("action") is not None:
+        detail_data["action"] = raw_data.get("action")
+    detail_redacted = json.dumps({k: v for k, v in detail_data.items() if v is not None}, default=str)
+
 
     # Timestamp parsing
     ts_val = raw_data.get("ts") or safe_event.ts

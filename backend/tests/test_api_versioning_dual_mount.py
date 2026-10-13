@@ -95,10 +95,40 @@ def test_auth_status_dual_mount(client: TestClient):
 
 def test_notes_crud_dual_mount(client: TestClient):
     """Verifies creating via v1 and reading/updating/deleting via legacy /api and vice-versa."""
+    import asyncio
+    from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
+    from carefold.db.models import User
+    from carefold.db.session import get_session_factory
+
+    async def _ensure_steward():
+        factory = get_session_factory()
+        async with factory() as session:
+            user = await session.get(User, DEFAULT_STEWARD_USER.id)
+            if not user:
+                user = User(
+                    id=DEFAULT_STEWARD_USER.id,
+                    email="steward@carefold.ai",
+                    username="steward",
+                    hashed_password="mock",
+                    role="steward",
+                    status="active",
+                    auth_provider="disabled",
+                )
+                session.add(user)
+                await session.commit()
+
+    asyncio.run(_ensure_steward())
+
+    # Provision profile via canonical v1 profiles endpoint
+    p_resp = client.post(API_V1_PROFILES, json={"name": "Dual Mount Profile", "relationship": "self"})
+    assert p_resp.status_code == 201
+    profile_id = p_resp.json()["id"]
+
     note_payload = {
         "title": "Dual Mount Integration Note",
         "content": "Content verifying v1 and legacy API interoperability.",
         "tags": ["v1", "dual-mount"],
+        "profile_id": profile_id,
     }
 
     # Create note via /api/v1/notes

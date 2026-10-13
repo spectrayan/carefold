@@ -344,13 +344,45 @@ def test_api_chat_validation_errors(client: TestClient):
 # Enhanced SSE Streaming & Session Tests (M7 Requirements)
 # ============================================================================
 
-def test_api_chat_stream_mock_success(client: TestClient):
+@pytest.fixture
+def test_profile(client: TestClient) -> str:
+    """Provides a valid care profile for deep entity scoping."""
+    from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
+    from carefold.db.models import User
+    from carefold.db.session import get_session_factory
+    import asyncio
+
+    async def _ensure_steward():
+        factory = get_session_factory()
+        async with factory() as session:
+            user = await session.get(User, DEFAULT_STEWARD_USER.id)
+            if not user:
+                user = User(
+                    id=DEFAULT_STEWARD_USER.id,
+                    email="steward@carefold.ai",
+                    username="steward",
+                    hashed_password="mock",
+                    role="steward",
+                    status="active",
+                    auth_provider="disabled",
+                )
+                session.add(user)
+                await session.commit()
+
+    asyncio.run(_ensure_steward())
+    res = client.post("/api/profiles", json={"name": "Test Chat Patient", "relationship": "self"})
+    assert res.status_code == 201
+    return res.json()["id"]
+
+
+def test_api_chat_stream_mock_success(client: TestClient, test_profile: str):
     """Verifies baseline SSE streaming with token chunks, audit event ID, and suggestions."""
     payload = {
         "agentId": "visit-steward",
         "prompt": "Hello! Can you help me prepare for a doctor visit?",
         "mock": True,
         "allow_clinical": True,
+        "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
         assert response.status_code == 200
@@ -371,13 +403,14 @@ def test_api_chat_stream_mock_success(client: TestClient):
         assert len(suggestions) >= 2
 
 
-def test_api_chat_stream_safety_refusal(client: TestClient):
+def test_api_chat_stream_safety_refusal(client: TestClient, test_profile: str):
     """Verifies pre-generation clinical refusal emits refusal and done events over SSE."""
     payload = {
         "agentId": "visit-steward",
         "prompt": "Please diagnose if my rash is shingles.",
         "mock": True,
         "allow_clinical": True,
+        "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
         assert response.status_code == 200
@@ -396,7 +429,7 @@ def test_api_chat_stream_safety_refusal(client: TestClient):
         assert done_ev["data"]["refused"] is True
 
 
-def test_api_chat_stream_multi_turn_with_thread_id(client: TestClient):
+def test_api_chat_stream_multi_turn_with_thread_id(client: TestClient, test_profile: str):
     """Verifies conversation history continuity across consecutive POST /api/chat calls."""
     thread_id = "test-api-thread-continuity-1"
 
@@ -407,6 +440,7 @@ def test_api_chat_stream_multi_turn_with_thread_id(client: TestClient):
         "threadId": thread_id,
         "mock": True,
         "allow_clinical": True,
+        "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=t1_payload) as r1:
         assert r1.status_code == 200
@@ -422,6 +456,7 @@ def test_api_chat_stream_multi_turn_with_thread_id(client: TestClient):
         "threadId": thread_id,
         "mock": True,
         "allow_clinical": True,
+        "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=t2_payload) as r2:
         assert r2.status_code == 200
@@ -432,7 +467,7 @@ def test_api_chat_stream_multi_turn_with_thread_id(client: TestClient):
         assert len(done2["data"]["fullText"]) > 0
 
 
-def test_api_chat_stream_with_model_provider_selection(client: TestClient):
+def test_api_chat_stream_with_model_provider_selection(client: TestClient, test_profile: str):
     """Verifies that provider and model fields are accepted in request payload."""
     payload = {
         "agentId": "visit-steward",
@@ -441,6 +476,7 @@ def test_api_chat_stream_with_model_provider_selection(client: TestClient):
         "model": "carefold-mock",
         "mock": True,
         "allow_clinical": True,
+        "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
         assert response.status_code == 200
@@ -453,16 +489,44 @@ def test_api_chat_stream_with_model_provider_selection(client: TestClient):
 def test_api_chat_stream_server_restart_simulation(temp_workspace: Path):
     """Simulates an API client connecting across server restart with persisted threadId."""
     thread_id = "api-restart-thread-42"
+    from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
+    from carefold.db.models import User
+    from carefold.db.session import get_session_factory
     from carefold.main import app
+    import asyncio
+
+    async def _ensure_steward():
+        factory = get_session_factory()
+        async with factory() as session:
+            user = await session.get(User, DEFAULT_STEWARD_USER.id)
+            if not user:
+                user = User(
+                    id=DEFAULT_STEWARD_USER.id,
+                    email="steward@carefold.ai",
+                    username="steward",
+                    hashed_password="mock",
+                    role="steward",
+                    status="active",
+                    auth_provider="disabled",
+                )
+                session.add(user)
+                await session.commit()
+
+    asyncio.run(_ensure_steward())
 
     # Instance 1
     client1 = TestClient(app)
+    prof_res = client1.post("/api/profiles", json={"name": "Restart Patient", "relationship": "self"})
+    assert prof_res.status_code == 201
+    profile_id = prof_res.json()["id"]
+
     t1_payload = {
         "agentId": "visit-steward",
         "prompt": "My preferred pharmacy is Walgreens on 5th Ave.",
         "threadId": thread_id,
         "mock": True,
         "allow_clinical": True,
+        "profile_id": profile_id,
     }
     with client1.stream("POST", "/api/chat", json=t1_payload) as r1:
         assert r1.status_code == 200
@@ -479,6 +543,7 @@ def test_api_chat_stream_server_restart_simulation(temp_workspace: Path):
         "threadId": thread_id,
         "mock": True,
         "allow_clinical": True,
+        "profile_id": profile_id,
     }
     with client2.stream("POST", "/api/chat", json=t2_payload) as r2:
         assert r2.status_code == 200
@@ -488,16 +553,20 @@ def test_api_chat_stream_server_restart_simulation(temp_workspace: Path):
         assert done2["data"]["refused"] is False
 
 
-def test_api_chat_stream_tool_execution_events(client: TestClient, temp_workspace: Path):
+def test_api_chat_stream_tool_execution_events(client: TestClient, temp_workspace: Path, test_profile: str):
     """Verifies tool_start and tool_end events appear in SSE stream."""
     attachments_dir = temp_workspace / "attachments"
     (attachments_dir / "blood_work.txt").write_text("WBC: 6.5, RBC: 4.8", encoding="utf-8")
+    scoped_dir = temp_workspace / "attachments" / "default_user" / test_profile
+    scoped_dir.mkdir(parents=True, exist_ok=True)
+    (scoped_dir / "blood_work.txt").write_text("WBC: 6.5, RBC: 4.8", encoding="utf-8")
 
     payload = {
         "agentId": "visit-steward",
         "prompt": "Review my attached blood_work.txt report please.",
         "mock": True,
         "allow_clinical": True,
+        "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
         assert response.status_code == 200
@@ -513,7 +582,7 @@ def test_api_chat_stream_tool_execution_events(client: TestClient, temp_workspac
         assert tool_end_ev["data"]["allowed"] is True
 
 
-def test_api_chat_get_thread_history(client: TestClient, temp_workspace: Path):
+def test_api_chat_get_thread_history(client: TestClient, temp_workspace: Path, test_profile: str):
     """Verifies GET /api/chat/threads/{thread_id} retrieves persisted thread history."""
     thread_id = "test-history-thread-endpoint"
 
@@ -524,6 +593,7 @@ def test_api_chat_get_thread_history(client: TestClient, temp_workspace: Path):
         "threadId": thread_id,
         "mock": True,
         "allow_clinical": True,
+        "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=payload) as r:
         assert r.status_code == 200

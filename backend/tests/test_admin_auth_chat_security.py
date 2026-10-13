@@ -563,9 +563,18 @@ def test_api_chat_disabled_user_returns_403_immediately(client: TestClient, m3_c
 def test_api_chat_authenticated_streams_unbuffered_sse(client: TestClient, m3_challenge_env):
     """Adversarial Probe 4D: POST /api/chat with valid token streams SSE events without proxy buffering."""
     member_token = m3_challenge_env["member1_token"]
+    prof_res = client.post(
+        "/api/profiles",
+        json={"name": "Member Profile", "relationship": "self"},
+        cookies={"carefold_session": member_token},
+    )
+    assert prof_res.status_code == 201
+    profile_id = prof_res.json()["id"]
+
     chat_payload = {
         "agentId": "visit-steward",
         "prompt": "Can you help me prepare for a general health checkup?",
+        "profile_id": profile_id,
         "mock": True,
         "allow_clinical": True,
     }
@@ -607,9 +616,18 @@ def test_api_chat_authenticated_streams_unbuffered_sse(client: TestClient, m3_ch
 def test_api_chat_authenticated_via_bearer_header(client: TestClient, m3_challenge_env):
     """Adversarial Probe 4E: POST /api/chat with Authorization Bearer header streams properly."""
     admin_token = m3_challenge_env["admin1_token"]
+    prof_res = client.post(
+        "/api/profiles",
+        json={"name": "Admin Profile", "relationship": "self"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert prof_res.status_code == 201
+    profile_id = prof_res.json()["id"]
+
     chat_payload = {
         "agentId": "visit-steward",
         "prompt": "What documents should I bring to an appointment?",
+        "profile_id": profile_id,
         "mock": True,
         "allow_clinical": True,
     }

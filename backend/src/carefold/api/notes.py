@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncSession
 import yaml
@@ -36,14 +36,25 @@ import yaml
 from carefold.api.deps import get_current_user, resolve_owner_user_id
 from carefold.api.profiles import get_user_profile_access
 from carefold.auth.ports import UserProfile
+from carefold.clinical.notes import (
+    VALID_NOTE_TYPES,
+    extract_after_visit_summary,
+    validate_note_type,
+)
 from carefold.config import settings
 from carefold.constants.api import ROUTE_NOTE_DETAIL, ROUTE_NOTES
-from carefold.db.models import Job, Note, Profile, ProfileAccess
+from carefold.db.models import Appointment, Job, Note, Profile, ProfileAccess
 from carefold.db.session import get_db
 from carefold.logging import get_logger
 from carefold.schemas.notes import (
+    AfterVisitExtractionResponse,
     NoteCreateRequest,
     NoteUpdateRequest,
+    TypedNoteCreateRequest,
+    TypedNoteDetailResponse,
+    TypedNoteListResponse,
+    TypedNoteSummaryResponse,
+    TypedNoteUpdateRequest,
     WorkspaceNoteDetail,
     WorkspaceNoteSummary,
 )
@@ -184,7 +195,9 @@ def _build_note_detail_response(note: Note) -> WorkspaceNoteDetail:
         slug=note.slug,
         title=note.title,
         agent=note.type or None,
+        type=note.type or None,
         profile_id=note.profile_id,
+        linked_appointment_id=note.linked_appointment_id,
         created_at=created_iso,
         size_bytes=len(note.content.encode("utf-8")),
         content=note.content,
@@ -194,12 +207,95 @@ def _build_note_detail_response(note: Note) -> WorkspaceNoteDetail:
             "created_at": created_iso,
             "agent_id": note.type,
             "profile_id": note.profile_id,
+            "linked_appointment_id": note.linked_appointment_id,
             "tags": tags,
         },
         path=rel_path,
         tags=tags,
         tags_json=note.tags_json or "[]",
     )
+
+
+def _build_typed_note_detail(note: Note) -> TypedNoteDetailResponse:
+    """Builds a TypedNoteDetailResponse."""
+    created_iso = note.created_at.isoformat() if note.created_at else datetime.now(timezone.utc).isoformat()
+    updated_iso = note.updated_at.isoformat() if note.updated_at else datetime.now(timezone.utc).isoformat()
+    return TypedNoteDetailResponse(
+        id=note.id,
+        profile_id=note.profile_id,
+        slug=note.slug,
+        title=note.title,
+        type=note.type,
+        content=note.content,
+        linked_appointment_id=note.linked_appointment_id,
+        tags=note.get_tags(),
+        tags_json=note.tags_json or "[]",
+        created_at=created_iso,
+        updated_at=updated_iso,
+    )
+
+
+def _build_typed_note_summary(note: Note) -> TypedNoteSummaryResponse:
+    """Builds a TypedNoteSummaryResponse."""
+    created_iso = note.created_at.isoformat() if note.created_at else datetime.now(timezone.utc).isoformat()
+    updated_iso = note.updated_at.isoformat() if note.updated_at else datetime.now(timezone.utc).isoformat()
+    return TypedNoteSummaryResponse(
+        id=note.id,
+        profile_id=note.profile_id,
+        slug=note.slug,
+        title=note.title,
+        type=note.type,
+        linked_appointment_id=note.linked_appointment_id,
+        tags=note.get_tags(),
+        size_bytes=len(note.content.encode("utf-8")),
+        created_at=created_iso,
+        updated_at=updated_iso,
+    )
+
+
+async def _verify_profile_access(
+    profile_id: str,
+    user: UserProfile,
+    db: AsyncSession,
+    required_level: str = "manage",
+) -> Profile:
+    """Helper verifying that the profile exists and the user has appropriate permissions."""
+    clean_id = (profile_id or "").strip()
+    if not clean_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="profile_id is required",
+        )
+
+    stmt = select(Profile).where(Profile.id == clean_id)
+    res = await db.execute(stmt)
+    prof = res.scalar_one_or_none()
+    if prof is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Profile not found.",
+        )
+
+    access = await get_user_profile_access(prof, user, db)
+    if access is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: no permissions for requested profile.",
+        )
+
+    if access == "view_paperwork":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: clinical view permissions required to inspect clinical notes.",
+        )
+
+    if required_level == "manage" and access != "manage":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: management permissions required to modify clinical notes for this profile.",
+        )
+
+    return prof
 
 
 @router.get(ROUTE_NOTES, response_model=List[WorkspaceNoteSummary])
@@ -214,25 +310,8 @@ async def list_notes(
     is_admin = getattr(user, "role", "member") == "admin"
 
     if profile_id:
-        p_stmt = select(Profile).where(Profile.id == profile_id)
-        p_res = await db.execute(p_stmt)
-        prof = p_res.scalar_one_or_none()
-        if prof is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found.")
-
-        access = await get_user_profile_access(prof, user, db)
-        if access is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied: no permissions for requested profile.",
-            )
-        if access == "view_paperwork":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied: clinical view permissions required to inspect clinical notes.",
-            )
-
-        stmt = select(Note).where(Note.profile_id == profile_id).order_by(Note.updated_at.desc())
+        prof = await _verify_profile_access(profile_id, user, db, required_level="view_clinical")
+        stmt = select(Note).where(Note.profile_id == prof.id).order_by(Note.updated_at.desc())
     else:
         if is_admin or owner_id is None:
             # Admin or offline desktop single-user mode sees all notes
@@ -270,7 +349,9 @@ async def list_notes(
             slug=n.slug,
             title=n.title,
             agent=n.type or None,
+            type=n.type or None,
             profile_id=n.profile_id,
+            linked_appointment_id=n.linked_appointment_id,
             created_at=n.created_at.isoformat() if n.created_at else datetime.now(timezone.utc).isoformat(),
             size_bytes=len(n.content.encode("utf-8")),
             tags=n.get_tags(),
@@ -298,7 +379,7 @@ async def create_note(
     if not SAFE_SLUG_PATTERN.match(slug):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid note slug.")
 
-    # 3-tier title resolution: if title matches slug or is empty, resolve from # heading or title-case slug
+    # 3-tier title resolution
     if title == slug:
         resolved_heading: Optional[str] = None
         for line in payload.content.splitlines():
@@ -314,26 +395,34 @@ async def create_note(
             title = slug.replace("-", " ").replace("_", " ").title()
 
     owner_id = resolve_owner_user_id(user)
-
     clean_profile_id = (payload.profile_id or "").strip()
-    if not clean_profile_id:
+    prof = await _verify_profile_access(clean_profile_id, user, db, required_level="manage")
+
+    # Validate note category
+    raw_type = (payload.type or "scratchpad").strip()
+    try:
+        note_type = validate_note_type(raw_type, allow_legacy=True)
+    except ValueError as type_err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="profile_id is required",
+            detail=str(type_err),
         )
 
-    p_stmt = select(Profile).where(Profile.id == clean_profile_id)
-    p_res = await db.execute(p_stmt)
-    prof = p_res.scalar_one_or_none()
-    if prof is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found.")
-
-    access = await get_user_profile_access(prof, user, db)
-    if access != "manage":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied: management permissions required to create notes for this profile.",
-        )
+    # Validate linked appointment if present
+    linked_appt_id = payload.linked_appointment_id
+    if linked_appt_id:
+        linked_appt_id = linked_appt_id.strip() or None
+        if linked_appt_id:
+            appt_stmt = select(Appointment).where(
+                Appointment.id == linked_appt_id,
+                Appointment.profile_id == clean_profile_id,
+            )
+            appt_res = await db.execute(appt_stmt)
+            if appt_res.scalar_one_or_none() is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Security violation: Linked appointment does not exist or does not belong to profile.",
+                )
 
     # Concurrency-safe slug uniqueness resolution & persistence
     async with _get_note_creation_lock():
@@ -341,30 +430,27 @@ async def create_note(
         candidate_slug = base_slug
         while True:
             stmt = select(Note.id).where(Note.slug == candidate_slug).where(Note.profile_id == clean_profile_id)
-
             res = await db.execute(stmt)
             if res.scalar_one_or_none() is None:
                 break
-
-            # Collision detected: append unique timestamp-uuid suffix
             ts = int(datetime.now(timezone.utc).timestamp())
             unique_suffix = f"{ts}-{uuid.uuid4().hex[:6]}"
             candidate_slug = f"{base_slug[:105]}-{unique_suffix}"
 
         slug = candidate_slug
-
         now = datetime.now(timezone.utc)
         tags_list = payload.tags or []
 
         new_note = Note(
             id=str(uuid.uuid4()),
-            type=payload.type or "scratchpad",
+            type=note_type,
             user_id=owner_id,
             profile_id=clean_profile_id,
             slug=slug,
             title=title,
             content=payload.content,
             tags_json=json.dumps(tags_list),
+            linked_appointment_id=linked_appt_id,
             created_at=now,
             updated_at=now,
         )
@@ -391,6 +477,28 @@ async def create_note(
         db.add(index_job)
 
         await db.commit()
+
+        # Audit event
+        try:
+            from carefold.audit.logger import record_audit
+            await record_audit(
+                {
+                    "profile_id": clean_profile_id,
+                    "action": "create",
+                    "tool": "api_notes",
+                    "risk": "write_local",
+                    "external_ref": f"note:{new_note.id}",
+                    "details": {
+                        "title": new_note.title,
+                        "type": new_note.type,
+                        "linked_appointment_id": new_note.linked_appointment_id,
+                    },
+                },
+                actor_user_id=getattr(user, "id", "user"),
+                risk="write_local",
+            )
+        except Exception as audit_err:
+            logger.debug("Audit logging failed in create_note: %s", audit_err)
 
     logger.info("note_created_in_db", slug=slug, profile_id=clean_profile_id, user_id=owner_id)
     return _build_note_detail_response(new_note)
@@ -508,25 +616,34 @@ async def update_note(
         if not clean_target_pid:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="profile_id cannot be null or empty.")
         if clean_target_pid != note.profile_id:
-            p_stmt = select(Profile).where(Profile.id == clean_target_pid)
-            p_res = await db.execute(p_stmt)
-            target_prof = p_res.scalar_one_or_none()
-            if target_prof is None:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target profile not found.")
-            target_access = await get_user_profile_access(target_prof, user, db)
-            if target_access != "manage":
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Access denied: management permissions required for target profile.",
-                )
+            await _verify_profile_access(clean_target_pid, user, db, required_level="manage")
             note.profile_id = clean_target_pid
+
+    if payload.type is not None:
+        try:
+            note.type = validate_note_type(payload.type, allow_legacy=True)
+        except ValueError as err:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
+
+    if payload.linked_appointment_id is not None:
+        clean_aid = payload.linked_appointment_id.strip() or None
+        if clean_aid:
+            appt_stmt = select(Appointment).where(
+                Appointment.id == clean_aid,
+                Appointment.profile_id == note.profile_id,
+            )
+            appt_res = await db.execute(appt_stmt)
+            if appt_res.scalar_one_or_none() is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Security violation: Linked appointment does not exist or does not belong to profile.",
+                )
+        note.linked_appointment_id = clean_aid
 
     if payload.title is not None:
         note.title = payload.title
     if payload.content is not None:
         note.content = payload.content
-    if payload.type is not None:
-        note.type = payload.type
     if payload.tags is not None:
         note.set_tags(payload.tags)
 
@@ -557,6 +674,28 @@ async def update_note(
         await db.refresh(note)
     except (InvalidRequestError, Exception) as exc:
         logger.debug("note_refresh_skipped_on_update", slug=clean_slug, error=str(exc))
+
+    # Audit event
+    try:
+        from carefold.audit.logger import record_audit
+        await record_audit(
+            {
+                "profile_id": note.profile_id,
+                "action": "update",
+                "tool": "api_notes",
+                "risk": "write_local",
+                "external_ref": f"note:{note.id}",
+                "details": {
+                    "title": note.title,
+                    "type": note.type,
+                    "linked_appointment_id": note.linked_appointment_id,
+                },
+            },
+            actor_user_id=getattr(user, "id", "user"),
+            risk="write_local",
+        )
+    except Exception as audit_err:
+        logger.debug("Audit logging failed in update_note: %s", audit_err)
 
     logger.info("note_updated_in_db", slug=clean_slug)
     return _build_note_detail_response(note)
@@ -589,6 +728,24 @@ async def delete_note(
     )
     db.add(delete_job)
 
+    # Audit event before delete
+    try:
+        from carefold.audit.logger import record_audit
+        await record_audit(
+            {
+                "profile_id": note.profile_id,
+                "action": "delete",
+                "tool": "api_notes",
+                "risk": "write_local",
+                "external_ref": f"note:{note.id}",
+                "details": {"title": note.title, "slug": note.slug},
+            },
+            actor_user_id=getattr(user, "id", "user"),
+            risk="write_local",
+        )
+    except Exception as audit_err:
+        logger.debug("Audit logging failed in delete_note: %s", audit_err)
+
     await db.delete(note)
     await db.commit()
 
@@ -596,13 +753,474 @@ async def delete_note(
     return {"deleted": True, "slug": clean_slug}
 
 
+@router.post("/notes/{slug}/extract", response_model=AfterVisitExtractionResponse)
+async def extract_note_by_slug(
+    slug: str,
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AfterVisitExtractionResponse:
+    """Extracts after-visit clinical entities with citations and disclaimer by slug."""
+    clean_slug = _clean_and_validate_slug(slug)
+    owner_id = resolve_owner_user_id(user)
+    note = await _find_note_for_user(clean_slug, user, owner_id, db, require_manage=False)
+    res = extract_after_visit_summary(note.content)
+    return AfterVisitExtractionResponse(
+        note_id=note.id,
+        diagnoses=res.get("diagnoses", []),
+        medication_adjustments=res.get("medication_adjustments", []),
+        ordered_tests=res.get("ordered_tests", []),
+        follow_up_timeline=res.get("follow_up_timeline", []),
+        recommended_reminders=res.get("recommended_reminders", []),
+        disclaimer=res.get("disclaimer", "Extracted from your notes, not formal medical advice."),
+        extracted_items_count=res.get("extracted_items_count", 0),
+    )
+
+
+# ============================================================================
+# Profile-Scoped REST Endpoints (AU-35)
+# ============================================================================
+
+@router.post(
+    "/profiles/{profile_id}/notes",
+    response_model=TypedNoteDetailResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_profile_typed_note(
+    profile_id: str,
+    payload: TypedNoteCreateRequest,
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> TypedNoteDetailResponse:
+    """Creates a typed note scoped to a specific profile with category and appointment validation."""
+    clean_pid = profile_id.strip()
+    await _verify_profile_access(clean_pid, user, db, required_level="manage")
+    owner_id = resolve_owner_user_id(user)
+
+    note_type = validate_note_type(payload.type)
+
+    linked_appt_id = payload.linked_appointment_id
+    if linked_appt_id:
+        clean_aid = linked_appt_id.strip()
+        appt_stmt = select(Appointment).where(
+            Appointment.id == clean_aid,
+            Appointment.profile_id == clean_pid,
+        )
+        appt_res = await db.execute(appt_stmt)
+        if appt_res.scalar_one_or_none() is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Security violation: Linked appointment does not exist or does not belong to profile.",
+            )
+
+    # Compute slug
+    if payload.slug:
+        slug = _clean_and_validate_slug(payload.slug)
+    else:
+        raw_slug = re.sub(r"[^a-zA-Z0-9_\-\s]", "", payload.title.strip())
+        slug = re.sub(r"\s+", "-", raw_slug).lower()[:64] or "note"
+
+    async with _get_note_creation_lock():
+        base_slug = slug
+        candidate_slug = base_slug
+        while True:
+            stmt = select(Note.id).where(Note.slug == candidate_slug, Note.profile_id == clean_pid)
+            res = await db.execute(stmt)
+            if res.scalar_one_or_none() is None:
+                break
+            ts = int(datetime.now(timezone.utc).timestamp())
+            candidate_slug = f"{base_slug[:105]}-{ts}-{uuid.uuid4().hex[:6]}"
+
+        slug = candidate_slug
+        now = datetime.now(timezone.utc)
+        note_id = str(uuid.uuid4())
+        tags_list = payload.tags or []
+
+        new_note = Note(
+            id=note_id,
+            type=note_type,
+            user_id=owner_id,
+            profile_id=clean_pid,
+            slug=slug,
+            title=payload.title,
+            content=payload.content,
+            tags_json=json.dumps(tags_list),
+            linked_appointment_id=linked_appt_id,
+            created_at=now,
+            updated_at=now,
+        )
+        db.add(new_note)
+
+        # Enqueue index_doc
+        content_hash = hashlib.sha256((new_note.content or "").encode("utf-8")).hexdigest()[:12]
+        index_job = Job(
+            id=str(uuid.uuid4()),
+            profile_id=clean_pid,
+            kind="index_doc",
+            payload=json.dumps({
+                "document_id": new_note.id,
+                "profile_id": clean_pid,
+                "doc_type": "note",
+            }),
+            timezone="UTC",
+            next_run_at=now,
+            idempotency_key=f"index:note:{new_note.id}:{content_hash}",
+            status="pending",
+        )
+        db.add(index_job)
+
+        await db.commit()
+
+        # Audit event
+        try:
+            from carefold.audit.logger import record_audit
+            await record_audit(
+                {
+                    "profile_id": clean_pid,
+                    "action": "create",
+                    "tool": "api_notes",
+                    "risk": "write_local",
+                    "external_ref": f"note:{new_note.id}",
+                    "details": {
+                        "title": new_note.title,
+                        "type": new_note.type,
+                        "linked_appointment_id": new_note.linked_appointment_id,
+                    },
+                },
+                actor_user_id=getattr(user, "id", "user"),
+                risk="write_local",
+            )
+        except Exception as audit_err:
+            logger.debug("Audit logging failed in create_profile_typed_note: %s", audit_err)
+
+    return _build_typed_note_detail(new_note)
+
+
+@router.get(
+    "/profiles/{profile_id}/notes",
+    response_model=TypedNoteListResponse,
+)
+async def list_profile_typed_notes(
+    profile_id: str,
+    type: Optional[str] = Query(default=None, description="Optional note category filter"),
+    linked_appointment_id: Optional[str] = Query(default=None, description="Optional appointment link filter"),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> TypedNoteListResponse:
+    """Lists typed notes for a profile with filtering by type, linked appointment, and pagination."""
+    clean_pid = profile_id.strip()
+    await _verify_profile_access(clean_pid, user, db, required_level="view_clinical")
+
+    query = select(Note).where(Note.profile_id == clean_pid)
+    count_query = select(func.count(Note.id)).where(Note.profile_id == clean_pid)
+
+    if type is not None:
+        clean_type = type.strip().lower()
+        query = query.where(Note.type == clean_type)
+        count_query = count_query.where(Note.type == clean_type)
+
+    if linked_appointment_id is not None:
+        clean_aid = linked_appointment_id.strip()
+        query = query.where(Note.linked_appointment_id == clean_aid)
+        count_query = count_query.where(Note.linked_appointment_id == clean_aid)
+
+    query = query.order_by(Note.updated_at.desc()).offset(offset).limit(limit)
+
+    total_res = await db.execute(count_query)
+    total_count = total_res.scalar_one() or 0
+
+    res = await db.execute(query)
+    notes = res.scalars().all()
+
+    return TypedNoteListResponse(
+        notes=[_build_typed_note_summary(n) for n in notes],
+        total=total_count,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/profiles/{profile_id}/notes/{note_id}",
+    response_model=TypedNoteDetailResponse,
+)
+async def get_profile_note_detail(
+    profile_id: str,
+    note_id: str,
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> TypedNoteDetailResponse:
+    """Retrieves full detail of a typed note by ID or slug within a profile."""
+    clean_pid = profile_id.strip()
+    await _verify_profile_access(clean_pid, user, db, required_level="view_clinical")
+
+    clean_target = note_id.strip()
+    stmt = select(Note).where(
+        Note.profile_id == clean_pid,
+        (Note.id == clean_target) | (Note.slug == clean_target),
+    )
+    res = await db.execute(stmt)
+    note = res.scalar_one_or_none()
+    if note is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Note '{clean_target}' not found in profile '{clean_pid}'.",
+        )
+
+    return _build_typed_note_detail(note)
+
+
+@router.patch(
+    "/profiles/{profile_id}/notes/{note_id}",
+    response_model=TypedNoteDetailResponse,
+)
+async def patch_profile_note(
+    profile_id: str,
+    note_id: str,
+    payload: TypedNoteUpdateRequest,
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> TypedNoteDetailResponse:
+    """Updates fields of an existing note within a profile."""
+    clean_pid = profile_id.strip()
+    await _verify_profile_access(clean_pid, user, db, required_level="manage")
+
+    clean_target = note_id.strip()
+    stmt = select(Note).where(
+        Note.profile_id == clean_pid,
+        (Note.id == clean_target) | (Note.slug == clean_target),
+    )
+    res = await db.execute(stmt)
+    note = res.scalar_one_or_none()
+    if note is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Note '{clean_target}' not found in profile '{clean_pid}'.",
+        )
+
+    if payload.type is not None:
+        try:
+            note.type = validate_note_type(payload.type, allow_legacy=True)
+        except ValueError as err:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
+
+    if payload.linked_appointment_id is not None:
+        clean_aid = payload.linked_appointment_id.strip() or None
+        if clean_aid:
+            appt_stmt = select(Appointment).where(
+                Appointment.id == clean_aid,
+                Appointment.profile_id == clean_pid,
+            )
+            appt_res = await db.execute(appt_stmt)
+            if appt_res.scalar_one_or_none() is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Security violation: Linked appointment does not exist or does not belong to profile.",
+                )
+        note.linked_appointment_id = clean_aid
+
+    if payload.title is not None:
+        note.title = payload.title
+    if payload.content is not None:
+        note.content = payload.content
+    if payload.tags is not None:
+        note.set_tags(payload.tags)
+
+    note.updated_at = datetime.now(timezone.utc)
+
+    # Re-enqueue index_doc
+    content_hash = hashlib.sha256((note.content or "").encode("utf-8")).hexdigest()[:12]
+    index_job = Job(
+        id=str(uuid.uuid4()),
+        profile_id=clean_pid,
+        kind="index_doc",
+        payload=json.dumps({
+            "document_id": note.id,
+            "profile_id": clean_pid,
+            "doc_type": "note",
+        }),
+        timezone="UTC",
+        next_run_at=datetime.now(timezone.utc),
+        idempotency_key=f"index:note:{note.id}:{content_hash}",
+        status="pending",
+    )
+    db.add(index_job)
+
+    await db.commit()
+
+    # Audit event
+    try:
+        from carefold.audit.logger import record_audit
+        await record_audit(
+            {
+                "profile_id": clean_pid,
+                "action": "update",
+                "tool": "api_notes",
+                "risk": "write_local",
+                "external_ref": f"note:{note.id}",
+                "details": {
+                    "title": note.title,
+                    "type": note.type,
+                    "linked_appointment_id": note.linked_appointment_id,
+                },
+            },
+            actor_user_id=getattr(user, "id", "user"),
+            risk="write_local",
+        )
+    except Exception as audit_err:
+        logger.debug("Audit logging failed in patch_profile_note: %s", audit_err)
+
+    return _build_typed_note_detail(note)
+
+
+@router.delete("/profiles/{profile_id}/notes/{note_id}")
+async def delete_profile_note(
+    profile_id: str,
+    note_id: str,
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Deletes a note by ID or slug within a profile, queuing search index purge."""
+    clean_pid = profile_id.strip()
+    await _verify_profile_access(clean_pid, user, db, required_level="manage")
+
+    clean_target = note_id.strip()
+    stmt = select(Note).where(
+        Note.profile_id == clean_pid,
+        (Note.id == clean_target) | (Note.slug == clean_target),
+    )
+    res = await db.execute(stmt)
+    note = res.scalar_one_or_none()
+    if note is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Note '{clean_target}' not found in profile '{clean_pid}'.",
+        )
+
+    # Queue delete_doc job
+    delete_job = Job(
+        id=str(uuid.uuid4()),
+        profile_id=clean_pid,
+        kind="delete_doc",
+        payload=json.dumps({
+            "document_id": note.id,
+            "profile_id": clean_pid,
+        }),
+        timezone="UTC",
+        next_run_at=datetime.now(timezone.utc),
+        idempotency_key=f"delete:note:{note.id}",
+        status="pending",
+    )
+    db.add(delete_job)
+
+    # Audit event before delete
+    try:
+        from carefold.audit.logger import record_audit
+        await record_audit(
+            {
+                "profile_id": clean_pid,
+                "action": "delete",
+                "tool": "api_notes",
+                "risk": "write_local",
+                "external_ref": f"note:{note.id}",
+                "details": {"title": note.title, "slug": note.slug},
+            },
+            actor_user_id=getattr(user, "id", "user"),
+            risk="write_local",
+        )
+    except Exception as audit_err:
+        logger.debug("Audit logging failed in delete_profile_note: %s", audit_err)
+
+    await db.delete(note)
+    await db.commit()
+
+    return {"deleted": True, "id": note.id, "profile_id": clean_pid}
+
+
+@router.post(
+    "/profiles/{profile_id}/notes/{note_id}/extract",
+    response_model=AfterVisitExtractionResponse,
+)
+async def extract_profile_note(
+    profile_id: str,
+    note_id: str,
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AfterVisitExtractionResponse:
+    """Extracts after-visit clinical entities with citations and disclaimer from a profile note."""
+    clean_pid = profile_id.strip()
+    await _verify_profile_access(clean_pid, user, db, required_level="manage")
+
+    clean_target = note_id.strip()
+    stmt = select(Note).where(
+        Note.profile_id == clean_pid,
+        (Note.id == clean_target) | (Note.slug == clean_target),
+    )
+    res = await db.execute(stmt)
+    note = res.scalar_one_or_none()
+    if note is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Note '{clean_target}' not found in profile '{clean_pid}'.",
+        )
+
+    res_dict = extract_after_visit_summary(note.content)
+    return AfterVisitExtractionResponse(
+        note_id=note.id,
+        diagnoses=res_dict.get("diagnoses", []),
+        medication_adjustments=res_dict.get("medication_adjustments", []),
+        ordered_tests=res_dict.get("ordered_tests", []),
+        follow_up_timeline=res_dict.get("follow_up_timeline", []),
+        recommended_reminders=res_dict.get("recommended_reminders", []),
+        disclaimer=res_dict.get("disclaimer", "Extracted from your notes, not formal medical advice."),
+        extracted_items_count=res_dict.get("extracted_items_count", 0),
+    )
+
+
+@router.post(
+    "/profiles/{profile_id}/notes/extract",
+    response_model=AfterVisitExtractionResponse,
+)
+async def extract_profile_adhoc_note(
+    profile_id: str,
+    payload: Dict[str, Any],
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AfterVisitExtractionResponse:
+    """Ad-hoc extraction from raw text payload for a profile."""
+    clean_pid = profile_id.strip()
+    await _verify_profile_access(clean_pid, user, db, required_level="manage")
+
+    content = str(payload.get("content", ""))
+    res_dict = extract_after_visit_summary(content)
+    return AfterVisitExtractionResponse(
+        note_id="adhoc",
+        diagnoses=res_dict.get("diagnoses", []),
+        medication_adjustments=res_dict.get("medication_adjustments", []),
+        ordered_tests=res_dict.get("ordered_tests", []),
+        follow_up_timeline=res_dict.get("follow_up_timeline", []),
+        recommended_reminders=res_dict.get("recommended_reminders", []),
+        disclaimer=res_dict.get("disclaimer", "Extracted from your notes, not formal medical advice."),
+        extracted_items_count=res_dict.get("extracted_items_count", 0),
+    )
+
+
 __all__ = [
-    "router",
-    "list_notes",
     "create_note",
-    "get_note_detail",
-    "update_note",
+    "create_profile_typed_note",
     "delete_note",
-    "parse_note_file",
+    "delete_profile_note",
+    "extract_note_by_slug",
+    "extract_profile_adhoc_note",
+    "extract_profile_note",
+    "get_note_detail",
+    "get_profile_note_detail",
     "get_user_notes_dir",
+    "list_notes",
+    "list_profile_typed_notes",
+    "parse_note_file",
+    "patch_profile_note",
+    "router",
+    "update_note",
 ]

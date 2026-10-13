@@ -44,6 +44,22 @@ export function EmergencyEscalationCard({
     message.emergencyCategory === 'suicide_crisis' ||
     (Boolean(message.refusalReason) && message.refusalReason!.includes('suicide'));
 
+  const RED_FLAG_TITLES: Record<string, string> = {
+    bp_crisis_symptomatic: 'Hypertensive Crisis with Symptoms',
+    bp_crisis_asymptomatic: 'Severe Blood Pressure Elevation',
+    severe_hypoxemia: 'Severe Hypoxemia (Low Oxygen)',
+    severe_hypoglycemia: 'Severe Hypoglycemia (Low Blood Sugar)',
+    symptomatic_hypotension: 'Symptomatic Hypotension',
+    suicide_crisis: 'Suicide & Crisis Support',
+    cardiac: 'Acute Symptoms Detected',
+    stroke: 'Acute Symptoms Detected',
+  };
+
+  const categoryKey = message.emergencyCategory ||
+    (message.refusalReason?.replace(/^emergency_red_flag:/, ''));
+  const categoryTitle = (categoryKey && RED_FLAG_TITLES[categoryKey]) ||
+    (message.refusalReason ? Object.entries(RED_FLAG_TITLES).find(([k]) => message.refusalReason!.includes(k))?.[1] : null);
+
   return (
     <div
       ref={cardRef}
@@ -62,6 +78,14 @@ export function EmergencyEscalationCard({
         </span>
       </div>
 
+      {/* Red-Flag Category Badge */}
+      {categoryTitle && (
+        <div data-testid="emergency-category-badge" className="text-xs font-semibold text-red-700 dark:text-red-300 flex items-center gap-1.5">
+          <span className="inline-block w-2 h-2 rounded-full bg-red-600 animate-ping" />
+          <span>Category: {categoryTitle}</span>
+        </div>
+      )}
+
       {/* Verbatim Backend Message Callout */}
       <div
         data-testid="emergency-backend-message"
@@ -75,7 +99,7 @@ export function EmergencyEscalationCard({
         <a
           data-testid="emergency-call-911-btn"
           href={config.primaryEmergency.telUri}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-sm shadow-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-sm shadow-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
         >
           <PhoneCall className="w-4 h-4 shrink-0" aria-hidden="true" />
           <span>{config.primaryEmergency.actionText}</span>
@@ -86,7 +110,7 @@ export function EmergencyEscalationCard({
           href={config.erFinderUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-600 dark:border-red-400 bg-white dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-zinc-700 text-red-700 dark:text-red-300 font-semibold text-sm shadow-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl border border-red-600 dark:border-red-400 bg-white dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-zinc-700 text-red-700 dark:text-red-300 font-semibold text-sm shadow-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
         >
           <MapPin className="w-4 h-4 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
           <span>{config.erFinderLabel}</span>
@@ -96,7 +120,7 @@ export function EmergencyEscalationCard({
           <a
             data-testid="emergency-call-988-btn"
             href={config.crisisLifeline.telUri}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-sm shadow-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+            className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-sm shadow-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
           >
             <PhoneCall className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span>{config.crisisLifeline.actionText}</span>

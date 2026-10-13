@@ -21,6 +21,11 @@
  */
 
 export * from '../types/api.js';
+export * from '../types/vitals.js';
+export * from '../types/schedule.js';
+export * from '../types/activity.js';
+
+import type { ExecutionPlan } from '../types/activity.js';
 
 // ---------------------------------------------------------------------------
 // Tool Trace Types (Canonical Domain Definitions)
@@ -64,6 +69,7 @@ export interface ChatMessage {
   attachments?: string[];
   approval?: ApprovalRecord;
   contextSources?: ContextSourceItem[];
+  plan?: ExecutionPlan;
 }
 
 // ---------------------------------------------------------------------------

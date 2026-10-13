@@ -181,6 +181,7 @@ class JobRunner:
         self.register_handler("extract_text", self._default_extract_text_handler)
         self.register_handler("index_doc", self._default_index_doc_handler)
         self.register_handler("delete_doc", self._default_delete_doc_handler)
+        self.register_handler("reminder", self._default_reminder_handler)
 
     def register_handler(self, kind: str, handler: Callable[..., Any]) -> None:
         """Registers an asynchronous handler function for a specific job kind.
@@ -222,6 +223,11 @@ class JobRunner:
     async def _default_delete_doc_handler(self, job: Any) -> None:
         """Default delete_doc handler bound to JobRunner instance."""
         await handle_delete_doc_job(job=job, session_factory=self.session_factory)
+
+    async def _default_reminder_handler(self, job: Any) -> None:
+        """Default reminder handler bound to JobRunner instance."""
+        from carefold.clinical.reminders import handle_reminder_job
+        await handle_reminder_job(job=job, session_factory=self.session_factory)
 
     @property
     def is_running(self) -> bool:
@@ -539,8 +545,22 @@ class JobRunner:
                 """)
                 res = await session.execute(stmt, {"now": now_dt, "cutoff": cutoff_dt})
                 rows = res.fetchall()
-                await session.commit()
                 missed_count += len(rows)
+
+                # Sync reminders table
+                stmt_rem = text("""
+                    UPDATE reminders
+                    SET status = 'missed',
+                        updated_at = :now
+                    WHERE status IN ('pending', 'snoozed')
+                      AND (
+                        (status = 'pending' AND next_due_at <= :cutoff)
+                        OR
+                        (status = 'snoozed' AND COALESCE(snooze_until, next_due_at) <= :cutoff)
+                      );
+                """)
+                await session.execute(stmt_rem, {"now": now_dt, "cutoff": cutoff_dt})
+                await session.commit()
 
         return missed_count
 
@@ -611,6 +631,20 @@ class JobRunner:
             """)
             res_m = await session.execute(stmt_missed, {"now": now_dt, "cutoff": cutoff_dt})
             missed_count = len(res_m.fetchall())
+
+            # Sync reminders table
+            stmt_rem_wake = text("""
+                UPDATE reminders
+                SET status = 'missed',
+                    updated_at = :now
+                WHERE status IN ('pending', 'snoozed')
+                  AND (
+                    (status = 'pending' AND next_due_at <= :cutoff)
+                    OR
+                    (status = 'snoozed' AND COALESCE(snooze_until, next_due_at) <= :cutoff)
+                  );
+            """)
+            await session.execute(stmt_rem_wake, {"now": now_dt, "cutoff": cutoff_dt})
 
             # Rule 2: Coalesce duplicate connector syncs
             stmt_syncs = text("""

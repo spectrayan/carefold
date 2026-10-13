@@ -16,10 +16,15 @@
  */
 
 import React from 'react';
-import ActivityPage from '@/app/activity/page';
+import { ProfileActivityClient } from './ProfileActivityClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ProfileActivityPage() {
-  return <ActivityPage />;
+interface ProfileActivityPageProps {
+  params: Promise<{ profileId: string }>;
+}
+
+export default async function ProfileActivityPage({ params }: ProfileActivityPageProps) {
+  const { profileId } = await params;
+  return <ProfileActivityClient profileId={profileId} />;
 }

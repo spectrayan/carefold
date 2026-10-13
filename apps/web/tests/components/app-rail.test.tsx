@@ -93,10 +93,14 @@ describe('Navigation Shell (AppRail, MobileTopBar, MobileTabBar)', () => {
 
       expect(screen.getByRole('link', { name: /home/i })).toHaveAttribute('href', '/p/rosa');
       expect(screen.getByRole('link', { name: /chats/i })).toHaveAttribute('href', '/p/rosa/chat');
+      expect(screen.getByRole('link', { name: /vitals/i })).toHaveAttribute('href', '/p/rosa/vitals');
+      expect(screen.getByRole('link', { name: /schedule/i })).toHaveAttribute('href', '/p/rosa/appointments');
+      expect(screen.getByRole('link', { name: /activity/i })).toHaveAttribute('href', '/p/rosa/activity');
       expect(screen.getByRole('link', { name: /agents/i })).toHaveAttribute('href', '/agents');
       expect(screen.getByRole('link', { name: /family & profiles/i })).toHaveAttribute('href', '/family');
       expect(screen.getByRole('link', { name: /settings/i })).toHaveAttribute('href', '/settings');
     });
+
 
     it('renders safety disclaimer and data residency status badge', () => {
       render(

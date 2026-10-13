@@ -25,7 +25,9 @@ from __future__ import annotations
 
 from enum import Enum
 from typing import Any, Dict, List, Optional
+import uuid
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
 
 
 class ExecutionMode(str, Enum):
@@ -104,6 +106,26 @@ class AgentTask(BaseModel):
 class ExecutionPlan(BaseModel):
     """Typed execution plan produced by Orchestrator for multi-agent coordination."""
 
+    id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        description="Unique identifier for the execution plan.",
+    )
+    intent: Optional[str] = Field(
+        default=None,
+        description="Optional high-level user intent (e.g. visit_prep, log_vitals, remind_me).",
+    )
+    parameters: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Input parameters associated with the template intent.",
+    )
+    steps: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Step-by-step pipeline execution breakdown.",
+    )
+    status: str = Field(
+        default="compiled",
+        description="Lifecycle status of the plan (e.g. draft, compiled, executed).",
+    )
     mode: ExecutionMode = Field(
         default=ExecutionMode.SINGLE,
         description="Topological execution mode: single, parallel, or pipeline.",
@@ -121,6 +143,28 @@ class ExecutionPlan(BaseModel):
         description="Rationale explaining topology selection and agent delegation.",
     )
 
+    def __getitem__(self, item: str) -> Any:
+        """Enables dictionary-style subscripting for plan['intent'], plan['steps'], etc."""
+        if hasattr(self, item):
+            val = getattr(self, item)
+            if isinstance(val, Enum):
+                return val.value
+            return val
+        raise KeyError(item)
+
+    def __contains__(self, item: str) -> bool:
+        """Enables 'intent in plan' checks."""
+        return hasattr(self, item) or item in self.__dict__
+
+    def get(self, item: str, default: Any = None) -> Any:
+        """Enables dict-like .get(key, default) access."""
+        if hasattr(self, item):
+            val = getattr(self, item)
+            if isinstance(val, Enum):
+                return val.value
+            return val
+        return default
+
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the ExecutionPlan into a JSON-compatible dictionary."""
         d = self.model_dump()
@@ -134,3 +178,4 @@ __all__ = [
     "ExecutionMode",
     "ExecutionPlan",
 ]
+

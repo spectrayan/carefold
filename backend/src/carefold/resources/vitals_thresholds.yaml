@@ -1,0 +1,112 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: "1.0.0"
+description: "Non-clinical boundary thresholds and acute red-flag rules for physiological observations"
+
+# Acute and red-flag symptom dictionaries
+symptoms:
+  acute_end_organ:
+    description: "Acute red-flag symptoms indicating end-organ dysfunction or hypertensive crisis"
+    terms:
+      - "chest pain"
+      - "chest pressure"
+      - "chest tightness"
+      - "crushing chest pain"
+      - "crushing chest pressure"
+      - "shortness of breath"
+      - "difficulty breathing"
+      - "dyspnea"
+      - "severe back pain"
+      - "unilateral numbness"
+      - "unilateral weakness"
+      - "arm weakness"
+      - "facial droop"
+      - "facial drooping"
+      - "numbness on one side"
+      - "acute vision loss"
+      - "sudden vision loss"
+      - "vision loss"
+      - "dysarthria"
+      - "difficulty speaking"
+      - "slurred speech"
+
+  hypotension_hemodynamic:
+    description: "Hemodynamic insufficiency symptoms accompanying low blood pressure"
+    terms:
+      - "dizziness"
+      - "lightheadedness"
+      - "syncope"
+      - "fainting"
+      - "feeling faint"
+      - "presyncope"
+
+# Threshold definitions and directives
+thresholds:
+  blood_pressure:
+    hypertensive_crisis:
+      systolic_gte: 180.0
+      diastolic_gte: 120.0
+      unit: "mmHg"
+      symptomatic:
+        category: "bp_crisis_symptomatic"
+        severity: "emergency"
+        directive: "Call 911 immediately. Hypertensive crisis with acute symptoms requires emergency care."
+        action_directive: "Call 911 now"
+        prompt_recheck: false
+        escalation_ref: "flag:bp_crisis_symptomatic"
+      asymptomatic:
+        category: "bp_crisis_asymptomatic"
+        severity: "urgent"
+        directive: "Rest quietly for 5 minutes and recheck blood pressure. If still >=180/120, contact your clinician promptly today."
+        action_directive: "Contact your clinician promptly today"
+        prompt_recheck: true
+        escalation_ref: "flag:bp_crisis_asymptomatic"
+
+    hypotension:
+      systolic_lt: 90.0
+      diastolic_lt: 60.0
+      unit: "mmHg"
+      requires_symptoms: true
+      category: "symptomatic_hypotension"
+      severity: "urgent"
+      directive: "Low blood pressure accompanied by dizziness or syncope. Sit or lie down immediately and seek medical evaluation."
+      action_directive: "Sit or lie down immediately and seek medical evaluation"
+      prompt_recheck: false
+      escalation_ref: "flag:symptomatic_hypotension"
+
+  oxygen_saturation:
+    severe_hypoxemia:
+      spo2_lt: 90.0
+      unit: "%"
+      category: "severe_hypoxemia"
+      severity: "emergency"
+      directive: "SpO2 is below 90%, indicating severe hypoxemia. Seek urgent medical evaluation immediately."
+      action_directive: "Seek urgent medical evaluation immediately"
+      prompt_recheck: false
+      escalation_ref: "flag:severe_hypoxemia"
+
+  blood_glucose:
+    severe_hypoglycemia:
+      glucose_mgdl_lt: 54.0
+      unit_mgdl: "mg/dL"
+      unit_mmol_threshold: 3.0
+      conversion_factor_mmol_to_mgdl: 18.0182
+      category: "severe_hypoglycemia"
+      severity: "urgent"
+      directive: "Severe hypoglycemia (<54 mg/dL). Apply Rule of 15: consume 15g fast-acting carbs and recheck in 15 minutes."
+      action_directive: "Apply Rule of 15 immediately"
+      prompt_recheck: true
+      escalation_ref: "flag:severe_hypoglycemia"

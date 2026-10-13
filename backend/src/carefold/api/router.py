@@ -17,8 +17,10 @@
 
 from fastapi import APIRouter
 
+from carefold.api.activity import router as activity_router
 from carefold.api.admin import router as admin_router
 from carefold.api.agents import router as agents_router
+from carefold.api.appointments import router as appointments_router
 from carefold.api.approvals import router as approvals_router
 from carefold.api.attachments import router as attachments_router
 from carefold.api.audit import router as audit_router
@@ -28,12 +30,20 @@ from carefold.api.health import router as health_router
 from carefold.api.memory import router as memory_router
 from carefold.api.models import router as models_router
 from carefold.api.notes import router as notes_router
+from carefold.api.prep_pack import router as prep_pack_router
 from carefold.api.profiles import router as profiles_router
+from carefold.api.reminders import router as reminders_router
 from carefold.api.search import router as search_router
 from carefold.api.skills import router as skills_router
+from carefold.api.vitals import router as vitals_router
 
 api_router = APIRouter()
 api_router.include_router(health_router)
+api_router.include_router(vitals_router)
+api_router.include_router(appointments_router)
+api_router.include_router(reminders_router)
+api_router.include_router(activity_router)
+
 api_router.include_router(agents_router)
 api_router.include_router(skills_router)
 api_router.include_router(audit_router)
@@ -48,6 +58,7 @@ api_router.include_router(chat_router)
 api_router.include_router(models_router)
 api_router.include_router(attachments_router)
 api_router.include_router(notes_router)
+api_router.include_router(prep_pack_router)
 api_router.include_router(profiles_router, prefix="/profiles", tags=["profiles"])
 api_router.include_router(search_router)
 api_router.include_router(search_router, prefix="/profiles", tags=["search"], include_in_schema=False)

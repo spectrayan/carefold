@@ -38,13 +38,44 @@ def setup_db_for_notes():
     asyncio.run(cleanup())
 
 
-def test_create_and_get_note(client: TestClient):
+@pytest.fixture
+def test_profile_id(client: TestClient) -> str:
+    """Provisions a test profile for CRUD notes tests."""
+    from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
+    from carefold.db.models import User
+    from carefold.db.session import get_session_factory
+
+    async def _ensure_steward():
+        factory = get_session_factory()
+        async with factory() as session:
+            user = await session.get(User, DEFAULT_STEWARD_USER.id)
+            if not user:
+                user = User(
+                    id=DEFAULT_STEWARD_USER.id,
+                    email="steward@carefold.ai",
+                    username="steward",
+                    hashed_password="mock",
+                    role="steward",
+                    status="active",
+                    auth_provider="disabled",
+                )
+                session.add(user)
+                await session.commit()
+
+    asyncio.run(_ensure_steward())
+    resp = client.post("/api/profiles", json={"name": "Patient", "relationship": "self"})
+    assert resp.status_code == 201
+    return resp.json()["id"]
+
+
+def test_create_and_get_note(client: TestClient, test_profile_id: str):
     """Verifies creating a note and retrieving its detail."""
     payload = {
         "title": "Hypertension Log & Medication Checklist",
         "content": "Check BP daily at 8am and 8pm.\nBring log to cardiologist.",
         "type": "clinical_prep",
         "tags": ["cardiology", "hypertension"],
+        "profile_id": test_profile_id,
     }
     create_resp = client.post("/api/notes", json=payload)
     assert create_resp.status_code == 201
@@ -61,11 +92,11 @@ def test_create_and_get_note(client: TestClient):
     assert "Check BP daily" in detail["content"]
 
 
-def test_list_and_update_notes(client: TestClient):
+def test_list_and_update_notes(client: TestClient, test_profile_id: str):
     """Verifies listing notes and updating a note."""
     create_resp = client.post(
         "/api/notes",
-        json={"title": "Blood Sugar Chart", "content": "Fasting glucose targets."},
+        json={"title": "Blood Sugar Chart", "content": "Fasting glucose targets.", "profile_id": test_profile_id},
     )
     assert create_resp.status_code == 201
     slug = create_resp.json()["slug"]
@@ -85,12 +116,13 @@ def test_list_and_update_notes(client: TestClient):
     assert "80-130 mg/dL" in put_resp.json()["content"]
 
 
-def test_delete_note(client: TestClient):
+def test_delete_note(client: TestClient, test_profile_id: str):
     """Verifies deleting a note."""
     create_resp = client.post(
         "/api/notes",
-        json={"title": "To Delete Note", "content": "Ephemeral content."},
+        json={"title": "To Delete Note", "content": "Ephemeral content.", "profile_id": test_profile_id},
     )
+    assert create_resp.status_code == 201
     slug = create_resp.json()["slug"]
 
     del_resp = client.delete(f"/api/notes/{slug}")

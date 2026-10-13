@@ -103,6 +103,37 @@ def parse_sse_events(raw_text: str) -> List[Dict[str, Any]]:
     return events
 
 
+@pytest.fixture
+def test_profile(client: TestClient) -> str:
+    """Provides a valid care profile for deep entity scoping."""
+    from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
+    from carefold.db.models import User
+    from carefold.db.session import get_session_factory
+    import asyncio
+
+    async def _ensure_steward():
+        factory = get_session_factory()
+        async with factory() as session:
+            user = await session.get(User, DEFAULT_STEWARD_USER.id)
+            if not user:
+                user = User(
+                    id=DEFAULT_STEWARD_USER.id,
+                    email="steward@carefold.ai",
+                    username="steward",
+                    hashed_password="mock",
+                    role="steward",
+                    status="active",
+                    auth_provider="disabled",
+                )
+                session.add(user)
+                await session.commit()
+
+    asyncio.run(_ensure_steward())
+    res = client.post("/api/profiles", json={"name": "Test SSE Patient", "relationship": "self"})
+    assert res.status_code == 201
+    return res.json()["id"]
+
+
 # ============================================================================
 # 1. Server Restart Simulation & Multi-Turn Checkpoint Persistence
 # ============================================================================
@@ -238,14 +269,43 @@ async def test_server_restart_multi_turn_persistence(temp_workspace: Path):
 
 def test_fastapi_server_reboot_simulation(temp_workspace: Path):
     """Simulates realistic server reboot by dropping TestClient, restarting app client, and querying checkpoints."""
+    from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
+    from carefold.db.models import User
+    from carefold.db.session import get_session_factory
+    import asyncio
+
     thread_id = "reboot-simulation-thread-777"
 
     # Server Boot 1
     client_boot1 = TestClient(app)
+
+    async def _ensure_steward():
+        factory = get_session_factory()
+        async with factory() as session:
+            user = await session.get(User, DEFAULT_STEWARD_USER.id)
+            if not user:
+                user = User(
+                    id=DEFAULT_STEWARD_USER.id,
+                    email="steward@carefold.ai",
+                    username="steward",
+                    hashed_password="mock",
+                    role="steward",
+                    status="active",
+                    auth_provider="disabled",
+                )
+                session.add(user)
+                await session.commit()
+
+    asyncio.run(_ensure_steward())
+    prof_res = client_boot1.post("/api/profiles", json={"name": "Reboot Patient", "relationship": "self"})
+    assert prof_res.status_code == 201
+    profile_id = prof_res.json()["id"]
+
     t1_payload = {
         "agentId": "visit-steward",
         "prompt": "Remember that I am allergic to Penicillin.",
         "threadId": thread_id,
+        "profile_id": profile_id,
         "mock": True,
         "allow_clinical": True,
     }
@@ -269,6 +329,7 @@ def test_fastapi_server_reboot_simulation(temp_workspace: Path):
         "agentId": "visit-steward",
         "prompt": "What allergy did I disclose?",
         "threadId": thread_id,
+        "profile_id": profile_id,
         "mock": True,
         "allow_clinical": True,
     }
@@ -384,13 +445,14 @@ async def test_thread_id_special_characters(temp_workspace: Path, adversarial_th
 # 3. SSE Streaming Event Sequencing & Payload Integrity
 # ============================================================================
 
-def test_sse_event_sequencing_without_tools(client: TestClient):
+def test_sse_event_sequencing_without_tools(client: TestClient, test_profile: str):
     """Verifies exact event sequencing for conversational runs without tools:
     Sequence: [token, token, ..., token] -> suggestions -> done
     """
     payload = {
         "agentId": "visit-steward",
         "prompt": "Hello! I am preparing questions for my upcoming annual wellness check.",
+        "profile_id": test_profile,
         "mock": True,
         "allow_clinical": True,
     }
@@ -433,17 +495,18 @@ def test_sse_event_sequencing_without_tools(client: TestClient):
         assert "threadId" in done_data
 
 
-def test_sse_event_sequencing_with_tools(client: TestClient, temp_workspace: Path):
+def test_sse_event_sequencing_with_tools(client: TestClient, temp_workspace: Path, test_profile: str):
     """Verifies exact event sequencing for tool-executing turns:
     Sequence: tool_start -> tool_end -> [token*] -> suggestions -> done
     """
-    attachments_dir = temp_workspace / "attachments" / "default_user" / "default_profile"
+    attachments_dir = temp_workspace / "attachments" / "default_user" / test_profile
     attachments_dir.mkdir(parents=True, exist_ok=True)
     (attachments_dir / "blood_work.txt").write_text("WBC: 6.5, RBC: 4.8", encoding="utf-8")
 
     payload = {
         "agentId": "visit-steward",
         "prompt": "Review my attached blood_work.txt report please.",
+        "profile_id": test_profile,
         "mock": True,
         "allow_clinical": True,
     }
@@ -486,7 +549,7 @@ def test_sse_event_sequencing_with_tools(client: TestClient, temp_workspace: Pat
         assert any("results" in c.lower() or "document" in c.lower() or "symptoms" in c.lower() for c in sug_chips)
 
 
-def test_sse_safety_refusal_sequencing(client: TestClient):
+def test_sse_safety_refusal_sequencing(client: TestClient, test_profile: str):
     """Verifies that refusal events sequence properly:
     Sequence: refusal -> done
     Zero tokens, zero tools, zero suggestions.
@@ -494,6 +557,7 @@ def test_sse_safety_refusal_sequencing(client: TestClient):
     payload = {
         "agentId": "visit-steward",
         "prompt": "Can you prescribe me 500mg amoxicillin for this infection?",
+        "profile_id": test_profile,
         "mock": True,
         "allow_clinical": True,
     }
@@ -519,7 +583,7 @@ def test_sse_safety_refusal_sequencing(client: TestClient):
         assert done_ev["data"]["followUpSuggestions"] == []
 
 
-def test_sse_raw_wire_formatting(client: TestClient):
+def test_sse_raw_wire_formatting(client: TestClient, test_profile: str):
     """Verifies raw wire-level SSE compliance:
     - Content-Type is text/event-stream
     - Every event block starts with 'event: <name>\\n'
@@ -529,6 +593,7 @@ def test_sse_raw_wire_formatting(client: TestClient):
     payload = {
         "agentId": "visit-steward",
         "prompt": "Hello world from SSE formatting check.",
+        "profile_id": test_profile,
         "mock": True,
         "allow_clinical": True,
     }

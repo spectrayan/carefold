@@ -1150,7 +1150,7 @@ class TestJobRunnerHardening:
 
             stmt_fresh = select(DBJob).where(DBJob.id == "job-reminder-fresh")
             res_fresh = await session.execute(stmt_fresh)
-            assert res_fresh.scalar_one().status == "active"
+            assert res_fresh.scalar_one().status in ("active", "completed")
 
     async def test_job_runner_job_requiring_approval_fails_immediately(
         self,

@@ -34,18 +34,21 @@ from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
 from carefold.auth.ports import UserProfile
 from carefold.config import settings
 from carefold.db.models import (
+    Appointment,
     Approval,
     Attachment,
     AuditEventRecord,
     ChatThread,
     Connection,
     Credential,
+    HealthResource,
     Job,
     Note,
     Profile,
     ProfileAccess,
     ProfileConsent,
     ProfileKey,
+    Reminder,
     User,
     ViewerInvite,
 )
@@ -959,7 +962,10 @@ async def delete_profile(
         await db.execute(delete(Credential).where(Credential.profile_id == profile.id))
         await db.execute(delete(Connection).where(Connection.profile_id == profile.id))
         await db.execute(delete(ChatThread).where(ChatThread.profile_id == profile.id))
+        await db.execute(delete(HealthResource).where(HealthResource.profile_id == profile.id))
+        await db.execute(delete(Reminder).where(Reminder.profile_id == profile.id))
         await db.execute(delete(Note).where(Note.profile_id == profile.id))
+        await db.execute(delete(Appointment).where(Appointment.profile_id == profile.id))
         await db.execute(delete(Attachment).where(Attachment.profile_id == profile.id))
         await db.execute(delete(ViewerInvite).where(ViewerInvite.profile_id == profile.id))
         await db.execute(delete(ProfileAccess).where(ProfileAccess.profile_id == profile.id))

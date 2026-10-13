@@ -24,7 +24,9 @@ import {
   Home,
   MessageSquare,
   BookOpen,
-  Activity,
+  HeartPulse,
+  Calendar,
+  History,
   Sparkles,
   Users,
   Settings,
@@ -74,6 +76,10 @@ export interface AppRailProps extends React.HTMLAttributes<HTMLElement> {
     family?: number;
     helpers?: number;
     agents?: number;
+    vitals?: number;
+    schedule?: number;
+    appointments?: number;
+    activity?: number;
   };
   isCollapsed?: boolean;
   collapsed?: boolean;
@@ -204,6 +210,20 @@ export function AppRail({
       badge: counts?.chat
     },
     {
+      href: profilePath(derivedProfile.id, '/vitals'),
+      label: 'Vitals',
+      icon: HeartPulse,
+      badge: counts?.vitals,
+      aliasPrefixes: [`/p/${derivedProfile.id}/vitals`]
+    },
+    {
+      href: profilePath(derivedProfile.id, '/appointments'),
+      label: 'Schedule',
+      icon: Calendar,
+      badge: counts?.schedule ?? counts?.appointments,
+      aliasPrefixes: [`/p/${derivedProfile.id}/appointments`, `/p/${derivedProfile.id}/schedule`]
+    },
+    {
       href: profilePath(derivedProfile.id, '/library'),
       label: 'Library',
       icon: BookOpen,
@@ -212,7 +232,8 @@ export function AppRail({
     {
       href: profilePath(derivedProfile.id, '/activity'),
       label: 'Activity',
-      icon: Activity
+      icon: History,
+      badge: counts?.activity
     }
   ];
 

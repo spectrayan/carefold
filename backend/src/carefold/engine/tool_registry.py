@@ -493,6 +493,442 @@ def _make_builtin_specs() -> List[ToolSpec]:
         executor=_exec_search_records,
     )
 
+    # 11. record_vitals (AU-30, AU-31, AU-32)
+    async def _exec_record_vitals(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.record_vitals import execute_record_vitals
+        return await execute_record_vitals(args or {}, ctx)
+
+    spec_record_vitals = ToolSpec(
+        name="record_vitals",
+        description=(
+            "Record vital signs observations (blood pressure, heart rate, blood glucose, "
+            "SpO2, weight, height) for a patient profile with automated red-flag safety screening, "
+            "adult BMI computation, and CDC pediatric percentiles."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "vitals_data": {
+                    "type": "object",
+                    "description": "Key-value dictionary containing vital sign measurements.",
+                },
+                "reported_symptoms": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional list of patient-reported concurrent acute or neurological symptoms.",
+                },
+                "recorded_at": {
+                    "type": "string",
+                    "description": "Optional ISO-8601 observation timestamp.",
+                },
+                "source_type": {
+                    "type": "string",
+                    "enum": ["manual", "device", "note_extracted"],
+                    "default": "manual",
+                },
+                "source_ref": {
+                    "type": "string",
+                },
+                "source_id": {
+                    "type": "string",
+                },
+            },
+            "required": ["vitals_data"],
+        },
+        risk_tier="write_local",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_record_vitals,
+        metadata={
+            "action": "record_vitals",
+            "entity": "health_resource",
+            "undoable": True,
+            "risk": "write_local",
+        },
+    )
+
+    # 12. create_appointment
+    async def _exec_create_appointment(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.appointments import execute_create_appointment
+        return await execute_create_appointment(args or {}, ctx)
+
+    spec_create_appointment = ToolSpec(
+        name="create_appointment",
+        description=(
+            "Schedule and record a clinical or administrative healthcare appointment for a patient "
+            "profile with validated start/end timestamps, provider specialty, clinic location, "
+            "and pre-visit preparation notes."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Appointment title or encounter description (e.g. 'Cardiology Consultation').",
+                },
+                "start_time": {
+                    "type": "string",
+                    "description": "Scheduled start timestamp in ISO-8601 format (UTC or with timezone offset).",
+                },
+                "end_time": {
+                    "type": "string",
+                    "description": "Scheduled end timestamp in ISO-8601 format (must be strictly after start_time).",
+                },
+                "provider_name": {
+                    "type": "string",
+                    "description": "Optional name of clinician, physician, or practice (e.g. 'Dr. Sarah Connor').",
+                },
+                "specialty": {
+                    "type": "string",
+                    "description": "Medical specialty (e.g. 'Cardiology', 'Dermatology', 'Endocrinology').",
+                },
+                "location": {
+                    "type": "string",
+                    "description": "Physical clinic address, room/suite number, or telehealth URL.",
+                },
+                "clinic_phone": {
+                    "type": "string",
+                    "description": "Clinic or scheduling office phone number (e.g. '555-0144').",
+                },
+                "timezone": {
+                    "type": "string",
+                    "description": "Local appointment IANA timezone identifier (default: 'UTC').",
+                    "default": "UTC",
+                },
+                "status": {
+                    "type": "string",
+                    "enum": ["requested", "scheduled", "confirmed"],
+                    "default": "scheduled",
+                    "description": "Initial appointment status (default: 'scheduled').",
+                },
+                "reason": {
+                    "type": "string",
+                    "description": "Chief complaint or primary purpose of appointment.",
+                },
+                "preparation_notes": {
+                    "type": "string",
+                    "description": "Pre-visit instructions (e.g. fasting requirement, records to bring).",
+                },
+            },
+            "required": ["title", "start_time", "end_time"],
+        },
+        risk_tier="write_local",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_create_appointment,
+        metadata={
+            "action": "create_appointment",
+            "entity": "appointment",
+            "undoable": True,
+            "risk": "write_local",
+        },
+    )
+
+    # 13. list_appointments
+    async def _exec_list_appointments(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.appointments import execute_list_appointments
+        return await execute_list_appointments(args or {}, ctx)
+
+    spec_list_appointments = ToolSpec(
+        name="list_appointments",
+        description=(
+            "List upcoming or historical healthcare appointments for a patient profile with optional "
+            "filtering by status, start date range, and pagination."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": ["requested", "scheduled", "confirmed", "completed", "cancelled"],
+                    "description": "Filter by appointment lifecycle status.",
+                },
+                "start_after": {
+                    "type": "string",
+                    "description": "Filter appointments starting on or after this ISO-8601 timestamp.",
+                },
+                "start_before": {
+                    "type": "string",
+                    "description": "Filter appointments starting on or before this ISO-8601 timestamp.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "default": 20,
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "Maximum number of appointments to return (default: 20).",
+                },
+                "offset": {
+                    "type": "integer",
+                    "default": 0,
+                    "minimum": 0,
+                    "description": "Number of records to skip for pagination (default: 0).",
+                },
+            },
+        },
+        risk_tier="read",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_list_appointments,
+        metadata={
+            "action": "list_appointments",
+            "entity": "appointment",
+            "risk": "read",
+        },
+    )
+
+    # 14. update_appointment_status
+    async def _exec_update_appointment_status(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.appointments import execute_update_appointment_status
+        return await execute_update_appointment_status(args or {}, ctx)
+
+    spec_update_appointment_status = ToolSpec(
+        name="update_appointment_status",
+        description=(
+            "Update the status of an existing patient appointment (e.g. from 'requested' to 'confirmed', "
+            "or mark 'completed' or 'cancelled') with audit event tracking."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "appointment_id": {
+                    "type": "string",
+                    "description": "Unique UUID of the appointment to update.",
+                },
+                "status": {
+                    "type": "string",
+                    "enum": ["requested", "scheduled", "confirmed", "completed", "cancelled"],
+                    "description": "Target status transition.",
+                },
+                "cancellation_reason": {
+                    "type": "string",
+                    "description": "Optional explanation if cancelling the appointment.",
+                },
+            },
+            "required": ["appointment_id", "status"],
+        },
+        risk_tier="write_local",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_update_appointment_status,
+        metadata={
+            "action": "update_appointment_status",
+            "entity": "appointment",
+            "undoable": True,
+            "risk": "write_local",
+        },
+    )
+
+    # 15. create_reminder
+    async def _exec_create_reminder(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.reminders import execute_create_reminder
+        return await execute_create_reminder(args or {}, ctx)
+
+    spec_create_reminder = ToolSpec(
+        name="create_reminder",
+        description=(
+            "Create a scheduled clinical or administrative reminder with optional RFC 5545 recurrence "
+            "and enqueue corresponding wall-clock Job execution."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Reminder prompt or directive title.",
+                },
+                "next_due_at": {
+                    "type": "string",
+                    "description": "Scheduled ISO-8601 due timestamp.",
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Detailed clinical context, instructions, or medication guidelines.",
+                },
+                "category": {
+                    "type": "string",
+                    "enum": ["medication", "vitals", "appointment", "prep", "general"],
+                    "default": "general",
+                    "description": "Reminder category (default: 'general').",
+                },
+                "rrule": {
+                    "type": "string",
+                    "description": "Optional RFC 5545 recurrence rule string (e.g. 'FREQ=DAILY;INTERVAL=1').",
+                },
+                "timezone": {
+                    "type": "string",
+                    "default": "UTC",
+                    "description": "Local profile IANA timezone identifier (default: 'UTC').",
+                },
+            },
+            "required": ["title", "next_due_at"],
+        },
+        risk_tier="write_local",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_create_reminder,
+        metadata={
+            "action": "create_reminder",
+            "entity": "reminder",
+            "undoable": True,
+            "risk": "write_local",
+        },
+    )
+
+    # 16. list_reminders
+    async def _exec_list_reminders(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.reminders import execute_list_reminders
+        return await execute_list_reminders(args or {}, ctx)
+
+    spec_list_reminders = ToolSpec(
+        name="list_reminders",
+        description=(
+            "List active or filtered clinical reminders for a patient profile with optional status, "
+            "category, and due date filters."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": ["pending", "snoozed", "completed", "missed", "cancelled"],
+                    "description": "Optional status filter.",
+                },
+                "category": {
+                    "type": "string",
+                    "enum": ["medication", "vitals", "appointment", "prep", "general"],
+                    "description": "Optional category filter.",
+                },
+                "due_before": {
+                    "type": "string",
+                    "description": "Filter reminders due on or before this ISO-8601 timestamp.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "Maximum number of reminders to retrieve (default: 50).",
+                },
+                "offset": {
+                    "type": "integer",
+                    "default": 0,
+                    "minimum": 0,
+                    "description": "Pagination offset.",
+                },
+            },
+        },
+        risk_tier="read",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_list_reminders,
+        metadata={
+            "action": "list_reminders",
+            "entity": "reminder",
+            "risk": "read",
+        },
+    )
+
+    # 17. generate_prep_pack (AU-33, AU-34)
+    async def _exec_generate_prep_pack(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.prep_pack import execute_generate_prep_pack
+        return await execute_generate_prep_pack(args or {}, ctx)
+
+    spec_generate_prep_pack = ToolSpec(
+        name="generate_prep_pack",
+        description=(
+            "Compile a comprehensive clinical visit preparation pack for an upcoming or planned "
+            "consultation, synthesizing chief visit reasons, recent symptoms timeline, 30/90-day vitals "
+            "trends, active medications, allergies, and prior clinical records into a structured Markdown "
+            "dossier and persisted clinical note."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "appointment_id": {
+                    "type": "string",
+                    "description": "Optional UUID of the linked clinical appointment.",
+                },
+                "specialty": {
+                    "type": "string",
+                    "description": "Medical specialty of the encounter (e.g. 'Cardiology', 'Endocrinology').",
+                },
+                "visit_reason": {
+                    "type": "string",
+                    "description": "Primary complaint or purpose of visit (e.g. 'Hypertension follow-up').",
+                },
+                "doctor_questions": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional prioritized list of clinical questions to include (max 5).",
+                },
+            },
+        },
+        risk_tier="write_local",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_generate_prep_pack,
+        metadata={
+            "action": "generate_prep_pack",
+            "entity": "note",
+            "undoable": True,
+            "risk": "write_local",
+        },
+    )
+
+    # 18. create_typed_note (AU-35)
+    async def _exec_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.notes import execute_create_typed_note
+        return await execute_create_typed_note(args or {}, ctx)
+
+    spec_create_typed_note = ToolSpec(
+        name="create_typed_note",
+        description=(
+            "Create and persist a typed clinical or navigation note across 7 canonical categories "
+            "('visit', 'symptom', 'question', 'after_visit', 'school', 'scratchpad', 'general') "
+            "with optional appointment linking, tag categorization, search indexing, and audit logging."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Human-readable title for the note (min 1, max 255 chars).",
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Markdown formatted note body content.",
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["visit", "symptom", "question", "after_visit", "school", "scratchpad", "general"],
+                    "default": "general",
+                    "description": "Standardized note classification type.",
+                },
+                "linked_appointment_id": {
+                    "type": "string",
+                    "description": "Optional UUID of an appointment to associate with this note.",
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional list of tag strings for categorization.",
+                },
+            },
+            "required": ["title", "content"],
+        },
+        risk_tier="write_local",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_create_typed_note,
+        metadata={
+            "action": "create_typed_note",
+            "entity": "note",
+            "undoable": True,
+            "risk": "write_local",
+        },
+    )
+
     return [
         spec_attach_read,
         spec_workspace_note,
@@ -504,11 +940,20 @@ def _make_builtin_specs() -> List[ToolSpec]:
         spec_validate_grounding,
         spec_extract_document_dossier,
         spec_search_records,
+        spec_record_vitals,
+        spec_create_appointment,
+        spec_list_appointments,
+        spec_update_appointment_status,
+        spec_create_reminder,
+        spec_list_reminders,
+        spec_generate_prep_pack,
+        spec_create_typed_note,
     ]
 
 
+
 def create_default_registry() -> ToolSpecRegistry:
-    """Creates a ToolSpecRegistry populated with all 10 Carefold built-in tools."""
+    """Creates a ToolSpecRegistry populated with Carefold built-in tools."""
     registry = ToolSpecRegistry()
     for spec in _make_builtin_specs():
         registry.register(spec)

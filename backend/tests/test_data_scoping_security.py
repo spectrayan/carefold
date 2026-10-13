@@ -149,17 +149,37 @@ def auth_users(client: TestClient, scoping_env):
     token_b = login_b.json()["token"]
     cookie_b = login_b.cookies.get("carefold_session")
 
+    # Create profile for User A
+    res_prof_a = client.post(
+        "/api/profiles",
+        json={"name": "Alice Profile", "relationship": "self"},
+        headers={"Authorization": f"Bearer {token_a}"},
+    )
+    assert res_prof_a.status_code == 201
+    profile_a_id = res_prof_a.json()["id"]
+
+    # Create profile for User B
+    res_prof_b = client.post(
+        "/api/profiles",
+        json={"name": "Bob Profile", "relationship": "self"},
+        headers={"Authorization": f"Bearer {token_b}"},
+    )
+    assert res_prof_b.status_code == 201
+    profile_b_id = res_prof_b.json()["id"]
+
     return {
         "user_a": user_a,
         "token_a": token_a,
         "cookie_a": cookie_a,
         "headers_a": {"Authorization": f"Bearer {token_a}"},
         "cookies_a": {"carefold_session": cookie_a},
+        "profile_a_id": profile_a_id,
         "user_b": user_b,
         "token_b": token_b,
         "cookie_b": cookie_b,
         "headers_b": {"Authorization": f"Bearer {token_b}"},
         "cookies_b": {"carefold_session": cookie_b},
+        "profile_b_id": profile_b_id,
     }
 
 
@@ -215,6 +235,8 @@ class TestProbeNotesCrossTenant:
                 "title": "Alice Confidential Medical Plan",
                 "slug": "alice-confidential",
                 "content": "Secret oncology medication schedule: 50mg daily.",
+                "type": "general",
+                "profile_id": auth_users["profile_a_id"],
             },
             headers=auth_users["headers_a"],
         )
@@ -229,7 +251,13 @@ class TestProbeNotesCrossTenant:
         # Alice creates note
         client.post(
             "/api/notes",
-            json={"title": "Alice Vitals", "slug": "alice-vitals", "content": "BP 120/80"},
+            json={
+                "title": "Alice Vitals",
+                "slug": "alice-vitals",
+                "content": "BP 120/80",
+                "type": "general",
+                "profile_id": auth_users["profile_a_id"],
+            },
             headers=auth_users["headers_a"],
         )
 
@@ -250,7 +278,13 @@ class TestProbeNotesCrossTenant:
         # Alice creates note
         client.post(
             "/api/notes",
-            json={"title": "Alice Labs", "slug": "alice-labs", "content": "Normal fasting glucose"},
+            json={
+                "title": "Alice Labs",
+                "slug": "alice-labs",
+                "content": "Normal fasting glucose",
+                "type": "general",
+                "profile_id": auth_users["profile_a_id"],
+            },
             headers=auth_users["headers_a"],
         )
 
@@ -266,7 +300,13 @@ class TestProbeNotesCrossTenant:
         # Alice creates note
         client.post(
             "/api/notes",
-            json={"title": "Alice Only Note", "slug": "alice-only", "content": "Private notes"},
+            json={
+                "title": "Alice Only Note",
+                "slug": "alice-only",
+                "content": "Private notes",
+                "type": "general",
+                "profile_id": auth_users["profile_a_id"],
+            },
             headers=auth_users["headers_a"],
         )
 
@@ -288,7 +328,13 @@ class TestProbeNotesCrossTenant:
         # Alice creates note with slug 'treatment-plan'
         res_a = client.post(
             "/api/notes",
-            json={"title": "Treatment Plan", "slug": "treatment-plan", "content": "Alice Chemo Schedule"},
+            json={
+                "title": "Treatment Plan",
+                "slug": "treatment-plan",
+                "content": "Alice Chemo Schedule",
+                "type": "general",
+                "profile_id": auth_users["profile_a_id"],
+            },
             headers=auth_users["headers_a"],
         )
         assert res_a.status_code == 201
@@ -296,7 +342,13 @@ class TestProbeNotesCrossTenant:
         # Bob creates note with same slug 'treatment-plan'
         res_b = client.post(
             "/api/notes",
-            json={"title": "Treatment Plan", "slug": "treatment-plan", "content": "Bob Physical Therapy"},
+            json={
+                "title": "Treatment Plan",
+                "slug": "treatment-plan",
+                "content": "Bob Physical Therapy",
+                "type": "general",
+                "profile_id": auth_users["profile_b_id"],
+            },
             headers=auth_users["headers_b"],
         )
         assert res_b.status_code == 201
@@ -383,41 +435,43 @@ class TestProbeMemoryCrossTenant:
     def test_memory_namespace_spoofing_prevention(self, client: TestClient, auth_users):
         user_a_id = auth_users["user_a"]["id"]
         user_b_id = auth_users["user_b"]["id"]
+        prof_a = auth_users["profile_a_id"]
+        prof_b = auth_users["profile_b_id"]
 
-        # Alice stores memory under default namespace
+        # Alice stores memory under Alice's profile
         client.put(
-            "/api/memory/alice_allergy",
-            json={"value": "Anaphylaxis to Sulfa drugs", "tier": "episodic"},
+            f"/api/memory/alice_allergy?profile_id={prof_a}",
+            json={"value": "Anaphylaxis to Sulfa drugs", "tier": "episodic", "profile_id": prof_a},
             headers=auth_users["headers_a"],
         )
 
-        # Bob attempts to recall memory specifying Alice's raw namespace f"user_{user_a_id}"
+        # Bob attempts to recall memory specifying Alice's raw namespace f"user_{user_a_id}" with Bob's profile
         recall_spoof = client.get(
-            f"/api/memory?query=Sulfa&namespace=user_{user_a_id}",
+            f"/api/memory?query=Sulfa&namespace=user_{user_a_id}&profile_id={prof_b}",
             headers=auth_users["headers_b"],
         )
         assert recall_spoof.status_code == 200
-        # The server should have derived namespace f"user_{user_b_id}:user_{user_a_id}", which is empty!
+        # The server should have derived namespace for Bob, which is empty!
         assert len(recall_spoof.json()) == 0
 
-        # Bob attempts to get Alice's specific key using Alice's namespace
+        # Bob attempts to get Alice's specific key using Alice's namespace with Bob's profile
         get_spoof = client.get(
-            f"/api/memory/alice_allergy?namespace=user_{user_a_id}",
+            f"/api/memory/alice_allergy?namespace=user_{user_a_id}&profile_id={prof_b}",
             headers=auth_users["headers_b"],
         )
         assert get_spoof.status_code == 404
 
-        # Bob attempts to overwrite Alice's memory using Alice's namespace
+        # Bob attempts to overwrite Alice's memory using Alice's namespace with Bob's profile
         put_spoof = client.put(
-            f"/api/memory/alice_allergy?namespace=user_{user_a_id}",
-            json={"value": "Tampered allergy data", "tier": "episodic"},
+            f"/api/memory/alice_allergy?namespace=user_{user_a_id}&profile_id={prof_b}",
+            json={"value": "Tampered allergy data", "tier": "episodic", "profile_id": prof_b},
             headers=auth_users["headers_b"],
         )
         assert put_spoof.status_code == 200  # Saved into Bob's isolated namespace
 
         # Verify Alice's original memory is completely uncorrupted
         get_alice = client.get(
-            "/api/memory/alice_allergy",
+            f"/api/memory/alice_allergy?profile_id={prof_a}",
             headers=auth_users["headers_a"],
         )
         assert get_alice.status_code == 200
@@ -425,24 +479,26 @@ class TestProbeMemoryCrossTenant:
 
     def test_memory_bulk_delete_cross_tenant_isolation(self, client: TestClient, auth_users):
         user_a_id = auth_users["user_a"]["id"]
+        prof_a = auth_users["profile_a_id"]
+        prof_b = auth_users["profile_b_id"]
 
         # Alice stores a critical memory
         client.put(
-            "/api/memory/alice_insulin_dose",
-            json={"value": "20 units Lantus bedtime", "tier": "episodic"},
+            f"/api/memory/alice_insulin_dose?profile_id={prof_a}",
+            json={"value": "20 units Lantus bedtime", "tier": "episodic", "profile_id": prof_a},
             headers=auth_users["headers_a"],
         )
 
-        # Bob calls bulk delete targeting Alice's namespace
+        # Bob calls bulk delete targeting Alice's namespace with Bob's profile
         del_b = client.delete(
-            f"/api/memory?namespace=user_{user_a_id}",
+            f"/api/memory?namespace=user_{user_a_id}&profile_id={prof_b}",
             headers=auth_users["headers_b"],
         )
         assert del_b.status_code == 200
 
         # Verify Alice's memory was NOT wiped
         get_alice = client.get(
-            "/api/memory/alice_insulin_dose",
+            f"/api/memory/alice_insulin_dose?profile_id={prof_a}",
             headers=auth_users["headers_a"],
         )
         assert get_alice.status_code == 200
@@ -472,6 +528,7 @@ class TestProbeChatThreadsCrossTenant:
             thread = ChatThread(
                 id=alice_thread_id,
                 user_id=auth_users["user_a"]["id"],
+                profile_id=auth_users["profile_a_id"],
                 agent_id="cardiology-guide",
                 title="Alice Cardiology Consultation",
             )
@@ -492,6 +549,7 @@ class TestProbeChatThreadsCrossTenant:
             json={
                 "agent_id": "cardiology-guide",
                 "thread_id": alice_thread_id,
+                "profile_id": auth_users["profile_b_id"],
                 "prompt": "Tell me what we talked about earlier",
             },
             headers=auth_users["headers_b"],
@@ -507,7 +565,36 @@ class TestProbeDisabledAuthBackwardCompatibility:
     """Probe 6: Verifies all backend endpoints remain fully operable in single-user offline mode."""
 
     def test_disabled_auth_full_suite_flow(self, client: TestClient, monkeypatch, scoping_env):
+        from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
+        from carefold.db.models import User
+        from carefold.db.session import get_session_factory
+        import asyncio
+
         monkeypatch.setattr(settings, "auth_provider", "disabled")
+
+        async def _ensure_steward():
+            factory = scoping_env["session_factory"]
+            async with factory() as session:
+                user = await session.get(User, DEFAULT_STEWARD_USER.id)
+                if not user:
+                    user = User(
+                        id=DEFAULT_STEWARD_USER.id,
+                        email="steward@carefold.ai",
+                        username="steward",
+                        hashed_password="mock",
+                        role="steward",
+                        status="active",
+                        auth_provider="disabled",
+                    )
+                    session.add(user)
+                    await session.commit()
+
+        asyncio.run(_ensure_steward())
+
+        # Create profile for disabled auth single-user mode
+        prof_res = client.post("/api/profiles", json={"name": "Offline Patient", "relationship": "self"})
+        assert prof_res.status_code == 201
+        offline_profile_id = prof_res.json()["id"]
 
         # 1. Audit log
         resp_audit = client.get("/api/audit")
@@ -516,7 +603,13 @@ class TestProbeDisabledAuthBackwardCompatibility:
         # 2. Notes CRUD
         create_note = client.post(
             "/api/notes",
-            json={"title": "Offline Note", "slug": "offline-note", "content": "Working offline"},
+            json={
+                "title": "Offline Note",
+                "slug": "offline-note",
+                "content": "Working offline",
+                "type": "general",
+                "profile_id": offline_profile_id,
+            },
         )
         assert create_note.status_code == 201
 
@@ -544,11 +637,11 @@ class TestProbeDisabledAuthBackwardCompatibility:
 
         # 4. Memory
         put_mem = client.put(
-            "/api/memory/offline_key",
-            json={"value": "Offline memory value", "tier": "episodic"},
+            f"/api/memory/offline_key?profile_id={offline_profile_id}",
+            json={"value": "Offline memory value", "tier": "episodic", "profile_id": offline_profile_id},
         )
         assert put_mem.status_code == 200
 
-        get_mem = client.get("/api/memory/offline_key")
+        get_mem = client.get(f"/api/memory/offline_key?profile_id={offline_profile_id}")
         assert get_mem.status_code == 200
         assert get_mem.json()["value"] == "Offline memory value"

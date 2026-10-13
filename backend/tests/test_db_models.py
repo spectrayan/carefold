@@ -404,7 +404,13 @@ async def test_note_model_table_name_and_tags_property(db_session: AsyncSession)
     """Verifies Note.__tablename__ is 'notes' and tags property maps to tags_json."""
     assert Note.__tablename__ == "notes"
 
+    profile = Profile(name="Test Patient", is_primary=True)
+    db_session.add(profile)
+    await db_session.commit()
+    await db_session.refresh(profile)
+
     note = Note(
+        profile_id=profile.id,
         slug="visit-checklist-dr-smith",
         title="Dr. Smith Visit Checklist",
         content="# Prep Notes\nReview BP and lipids.",
@@ -414,6 +420,7 @@ async def test_note_model_table_name_and_tags_property(db_session: AsyncSession)
     await db_session.commit()
     await db_session.refresh(note)
 
+    assert note.profile_id == profile.id
     assert note.tags == ["cardiology", "visit-prep"]
     assert note.tags_json == '["cardiology", "visit-prep"]'
 
