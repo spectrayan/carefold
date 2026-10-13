@@ -929,6 +929,312 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
     )
 
+    # 19. check_preventive_care (AU-36)
+    async def _exec_check_preventive_care(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.preventive import execute_check_preventive_care
+        return await execute_check_preventive_care(args or {}, ctx)
+
+    spec_check_preventive_care = ToolSpec(
+        name="check_preventive_care",
+        description=(
+            "Evaluate preventive care screenings and immunisations for a patient profile "
+            "against cited USPSTF Grade A/B and AAP/CDC pediatric schedules."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "schedule_source": {
+                    "type": "string",
+                    "enum": ["aap_2026", "cdc"],
+                    "description": "Optional pediatric immunisation schedule source ('aap_2026' or 'cdc').",
+                },
+                "sex": {
+                    "type": "string",
+                    "enum": ["any", "female", "male"],
+                    "description": "Optional biological sex filter for adult screening rules.",
+                },
+                "category": {
+                    "type": "string",
+                    "enum": ["screening", "immunisation", "well_visit"],
+                    "description": "Optional category filter.",
+                },
+            },
+        },
+        risk_tier="read",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_check_preventive_care,
+        metadata={
+            "action": "check_preventive_care",
+            "entity": "preventive_record",
+            "risk": "read",
+        },
+    )
+
+    # 20. update_preventive_status (AU-36)
+    async def _exec_update_preventive_status(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.preventive import execute_update_preventive_status
+        return await execute_update_preventive_status(args or {}, ctx)
+
+    spec_update_preventive_status = ToolSpec(
+        name="update_preventive_status",
+        description=(
+            "Update the status of a preventive care screening or immunisation item "
+            "('due', 'completed', 'not_applicable', 'declined') for the active profile."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "rule_id": {
+                    "type": "string",
+                    "description": "Preventive rule ID from the cited YAML rule pack.",
+                },
+                "status": {
+                    "type": "string",
+                    "enum": ["due", "completed", "not_applicable", "declined"],
+                    "description": "Updated preventive item status.",
+                },
+                "notes": {
+                    "type": "string",
+                    "description": "Optional clinical or patient notes.",
+                },
+                "completed_at": {
+                    "type": "string",
+                    "description": "Optional ISO-8601 completion timestamp.",
+                },
+            },
+            "required": ["rule_id", "status"],
+        },
+        risk_tier="write_local",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_update_preventive_status,
+        metadata={
+            "action": "update_preventive_status",
+            "entity": "preventive_record",
+            "undoable": True,
+            "risk": "write_local",
+        },
+    )
+
+    # 21. web_search (AU-37)
+    async def _exec_web_search(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.web_search import execute_web_search
+        return await execute_web_search(args or {}, ctx)
+
+    spec_web_search = ToolSpec(
+        name="web_search",
+        description=(
+            "Execute a privacy-preserving, PHI-sanitised web search via allowlisted SearXNG "
+            "or Brave Search endpoints. Automatically strips patient names, DOB, SSN, MRN, "
+            "phone, email, and address before any outbound request and marks results untrusted."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Search query string (will be sanitised of PHI/PII before sending).",
+                },
+                "provider": {
+                    "type": "string",
+                    "enum": ["searxng", "brave"],
+                    "default": "searxng",
+                    "description": "Search provider ('searxng' or 'brave').",
+                },
+                "limit": {
+                    "type": "integer",
+                    "default": 5,
+                    "minimum": 1,
+                    "maximum": 10,
+                    "description": "Maximum number of search results to return.",
+                },
+                "preview_only": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "If true, returns only the sanitised query preview without network I/O.",
+                },
+            },
+            "required": ["query"],
+        },
+        risk_tier="read",
+        trust="untrusted",
+        data_flows=DataFlows(
+            allowed_hosts=("api.search.brave.com", "localhost", "127.0.0.1", "searx.be"),
+            data_sensitivity="public",
+        ),
+        executor=_exec_web_search,
+        metadata={
+            "action": "web_search",
+            "risk": "read",
+            "taints_context": True,
+        },
+    )
+
+    # 22. stage_clinical_import (AU-38)
+    async def _exec_stage_clinical_import(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.imports import execute_stage_clinical_import
+        return await execute_stage_clinical_import(args or {}, ctx)
+
+    spec_stage_clinical_import = ToolSpec(
+        name="stage_clinical_import",
+        description=(
+            "Parse and stage a clinical or wearable export file (FHIR R4 Bundle JSON, "
+            "C-CDA XML, or Apple Health export.xml with daily summary aggregation) into "
+            "an ImportBatch for Review-Before-Save."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string",
+                    "description": "Uploaded file name (e.g. 'bundle.json', 'ccda.xml', 'export.xml').",
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Raw JSON or XML content to parse and stage.",
+                },
+                "format": {
+                    "type": "string",
+                    "enum": ["fhir_r4", "ccda", "apple_health"],
+                    "description": "Optional explicit file format override.",
+                },
+                "source_name": {
+                    "type": "string",
+                    "description": "Human-readable provenance origin (e.g. 'Epic MyChart', 'Apple Health').",
+                },
+            },
+            "required": ["filename", "content"],
+        },
+        risk_tier="write_local",
+        trust="untrusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_stage_clinical_import,
+        metadata={
+            "action": "stage_clinical_import",
+            "entity": "import_batch",
+            "risk": "write_local",
+        },
+    )
+
+    # 23. commit_clinical_import (AU-38)
+    async def _exec_commit_clinical_import(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.imports import execute_commit_clinical_import
+        return await execute_commit_clinical_import(args or {}, ctx)
+
+    spec_commit_clinical_import = ToolSpec(
+        name="commit_clinical_import",
+        description=(
+            "Commit a user-reviewed staged ImportBatch into profile health_resources "
+            "with provenance attribution, idempotency, and search indexing."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "batch_id": {
+                    "type": "string",
+                    "description": "UUID of the staged ImportBatch to commit.",
+                },
+                "selected_indices": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "Optional 0-based indices of staged records to commit; commits all if omitted.",
+                },
+            },
+            "required": ["batch_id"],
+        },
+        risk_tier="write_local",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_commit_clinical_import,
+        metadata={
+            "action": "commit_clinical_import",
+            "entity": "import_batch",
+            "undoable": True,
+            "risk": "write_local",
+        },
+    )
+
+    # 24. create_school_form (AU-39)
+    async def _exec_create_school_form(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.school_forms import execute_create_school_form
+        return await execute_create_school_form(args or {}, ctx)
+
+    spec_create_school_form = ToolSpec(
+        name="create_school_form",
+        description=(
+            "Create a pediatric school or camp health form with compiled draft prefill "
+            "from profile immunisations, allergies, medications, and vitals, plus automatic "
+            "30-day renewal reminder scheduling when expires_at is set."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Form title (e.g. 'Annual School Physical & Immunisation Form').",
+                },
+                "school_or_camp_name": {
+                    "type": "string",
+                    "description": "Name of school, daycare, or camp institution.",
+                },
+                "form_type": {
+                    "type": "string",
+                    "enum": ["physical", "immunization", "medication_authorization", "sports_clearance", "general"],
+                    "default": "general",
+                },
+                "expires_at": {
+                    "type": "string",
+                    "description": "Optional ISO-8601 expiration or renewal date.",
+                },
+                "attachment_id": {
+                    "type": "string",
+                    "description": "Optional linked CAS attachment ID.",
+                },
+            },
+            "required": ["title"],
+        },
+        risk_tier="write_local",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_create_school_form,
+        metadata={
+            "action": "create_school_form",
+            "entity": "school_form",
+            "undoable": True,
+            "risk": "write_local",
+        },
+    )
+
+    # 25. list_school_forms (AU-39)
+    async def _exec_list_school_forms(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.tools.school_forms import execute_list_school_forms
+        return await execute_list_school_forms(args or {}, ctx)
+
+    spec_list_school_forms = ToolSpec(
+        name="list_school_forms",
+        description="List tracked pediatric school and camp health forms and their draft prefill data.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": ["draft", "active", "expired", "archived"],
+                    "description": "Optional status filter.",
+                },
+            },
+        },
+        risk_tier="read",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_list_school_forms,
+        metadata={
+            "action": "list_school_forms",
+            "entity": "school_form",
+            "risk": "read",
+        },
+    )
+
     return [
         spec_attach_read,
         spec_workspace_note,
@@ -948,6 +1254,13 @@ def _make_builtin_specs() -> List[ToolSpec]:
         spec_list_reminders,
         spec_generate_prep_pack,
         spec_create_typed_note,
+        spec_check_preventive_care,
+        spec_update_preventive_status,
+        spec_web_search,
+        spec_stage_clinical_import,
+        spec_commit_clinical_import,
+        spec_create_school_form,
+        spec_list_school_forms,
     ]
 
 

@@ -224,6 +224,52 @@ def execute_single_click_undo(
                 "INSERT INTO jobs (id, kind, profile_id, payload) VALUES (?, ?, ?, ?)",
                 (job_id, "delete_doc", profile_id, payload_str),
             )
+    elif entity_type == "preventive_record":
+        cur.execute(
+            "UPDATE preventive_records SET status = 'due', completed_at = NULL WHERE id = ? AND profile_id = ?",
+            (entity_id, profile_id),
+        )
+    elif entity_type == "import_batch":
+        cur.execute(
+            "SELECT attachment_id, committed_resource_ids_json FROM import_batches WHERE id = ? AND profile_id = ?",
+            (entity_id, profile_id),
+        )
+        b_row = cur.fetchone()
+        cur.execute(
+            "UPDATE import_batches SET status = 'discarded' WHERE id = ? AND profile_id = ?",
+            (entity_id, profile_id),
+        )
+        if b_row:
+            att_id, res_ids_json = b_row
+            source_ref_val = att_id or entity_id
+            cur.execute(
+                "UPDATE health_resources SET status = 'tombstone' WHERE profile_id = ? AND source_ref = ?",
+                (profile_id, source_ref_val),
+            )
+            if res_ids_json:
+                try:
+                    for rid in json.loads(res_ids_json):
+                        cur.execute(
+                            "UPDATE health_resources SET status = 'tombstone' WHERE id = ? AND profile_id = ?",
+                            (rid, profile_id),
+                        )
+                except Exception:
+                    pass
+    elif entity_type == "school_form":
+        cur.execute(
+            "SELECT reminder_id FROM school_forms WHERE id = ? AND profile_id = ?",
+            (entity_id, profile_id),
+        )
+        sf_row = cur.fetchone()
+        cur.execute(
+            "UPDATE school_forms SET status = 'archived' WHERE id = ? AND profile_id = ?",
+            (entity_id, profile_id),
+        )
+        if sf_row and sf_row[0]:
+            cur.execute(
+                "UPDATE reminders SET status = 'cancelled' WHERE id = ? AND profile_id = ?",
+                (sf_row[0], profile_id),
+            )
     else:
         raise ValueError(f"Unknown entity type for rollback: '{entity_type}'")
 
@@ -421,6 +467,72 @@ async def execute_single_click_undo_async(
             updated_at=current_time,
         )
         db.add(del_job)
+
+    elif entity_type == "preventive_record":
+        from carefold.db.models import PreventiveRecord
+
+        stmt_prev = (
+            update(PreventiveRecord)
+            .where(PreventiveRecord.id == entity_id, PreventiveRecord.profile_id == profile_id)
+            .values(status="due", completed_at=None, updated_at=current_time)
+        )
+        await db.execute(stmt_prev)
+
+    elif entity_type == "import_batch":
+        from carefold.db.models import ImportBatch
+
+        stmt_batch = select(ImportBatch).where(
+            ImportBatch.id == entity_id,
+            ImportBatch.profile_id == profile_id,
+        )
+        batch_res = await db.execute(stmt_batch)
+        batch = batch_res.scalar_one_or_none()
+        if batch:
+            batch.status = "discarded"
+            batch.updated_at = current_time
+            source_ref_val = batch.attachment_id or batch.id
+            await db.execute(
+                update(HealthResource)
+                .where(
+                    HealthResource.profile_id == profile_id,
+                    HealthResource.source_ref == source_ref_val,
+                )
+                .values(status="tombstone", updated_at=current_time)
+            )
+            if batch.committed_resource_ids_json:
+                try:
+                    res_ids = json.loads(batch.committed_resource_ids_json)
+                    if res_ids:
+                        await db.execute(
+                            update(HealthResource)
+                            .where(
+                                HealthResource.profile_id == profile_id,
+                                HealthResource.id.in_(res_ids),
+                            )
+                            .values(status="tombstone", updated_at=current_time)
+                        )
+                except Exception:
+                    pass
+
+    elif entity_type == "school_form":
+        from carefold.db.models import SchoolForm
+
+        stmt_sf = select(SchoolForm).where(
+            SchoolForm.id == entity_id,
+            SchoolForm.profile_id == profile_id,
+        )
+        sf_res = await db.execute(stmt_sf)
+        sf = sf_res.scalar_one_or_none()
+        if sf:
+            sf.status = "archived"
+            sf.updated_at = current_time
+            if sf.reminder_id:
+                await db.execute(
+                    update(Reminder)
+                    .where(Reminder.id == sf.reminder_id, Reminder.profile_id == profile_id)
+                    .values(status="cancelled", updated_at=current_time)
+                )
+
     else:
         raise ValueError(f"Unknown entity type for rollback: '{entity_type}'")
 

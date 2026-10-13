@@ -42,13 +42,16 @@ from carefold.db.models import (
     Connection,
     Credential,
     HealthResource,
+    ImportBatch,
     Job,
     Note,
+    PreventiveRecord,
     Profile,
     ProfileAccess,
     ProfileConsent,
     ProfileKey,
     Reminder,
+    SchoolForm,
     User,
     ViewerInvite,
 )
@@ -962,6 +965,9 @@ async def delete_profile(
         await db.execute(delete(Credential).where(Credential.profile_id == profile.id))
         await db.execute(delete(Connection).where(Connection.profile_id == profile.id))
         await db.execute(delete(ChatThread).where(ChatThread.profile_id == profile.id))
+        await db.execute(delete(PreventiveRecord).where(PreventiveRecord.profile_id == profile.id))
+        await db.execute(delete(SchoolForm).where(SchoolForm.profile_id == profile.id))
+        await db.execute(delete(ImportBatch).where(ImportBatch.profile_id == profile.id))
         await db.execute(delete(HealthResource).where(HealthResource.profile_id == profile.id))
         await db.execute(delete(Reminder).where(Reminder.profile_id == profile.id))
         await db.execute(delete(Note).where(Note.profile_id == profile.id))

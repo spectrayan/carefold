@@ -1,0 +1,177 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: "2026.1"
+pack_id: "adult_uspstf"
+description: "USPSTF Grade A and B Preventive Screening Guidelines for Adults"
+rules:
+  - id: "uspstf-colorectal-screening"
+    title: "Colorectal Cancer Screening"
+    category: "screening"
+    target_age_min_months: 540
+    target_age_max_months: 900
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 120
+    codes:
+      - "45378"
+      - "29783-8"
+      - "77353-1"
+    clinical_summary: "USPSTF Grade A/B recommendation for colorectal cancer screening in adults aged 45 to 75 years via colonoscopy, FIT, or stool DNA testing. Discuss with your clinician."
+    source: "USPSTF"
+    citation_url: "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "uspstf-cervical-cancer-screening"
+    title: "Cervical Cancer Screening"
+    category: "screening"
+    target_age_min_months: 252
+    target_age_max_months: 780
+    sex: "female"
+    schedule_variant: "all"
+    interval_months: 36
+    codes:
+      - "88141"
+      - "10524-7"
+      - "21440-3"
+    clinical_summary: "USPSTF Grade A recommendation for cervical cytology every 3 years (ages 21–29) or hrHPV / co-testing every 5 years (ages 30–65). Discuss with your clinician."
+    source: "USPSTF"
+    citation_url: "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/cervical-cancer-screening"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "uspstf-breast-cancer-mammography"
+    title: "Breast Cancer Screening Mammography"
+    category: "screening"
+    target_age_min_months: 480
+    target_age_max_months: 888
+    sex: "female"
+    schedule_variant: "all"
+    interval_months: 24
+    codes:
+      - "77067"
+      - "24606-6"
+    clinical_summary: "USPSTF Grade B recommendation for biennial screening mammography for women aged 40 to 74 years. Discuss with your clinician."
+    source: "USPSTF"
+    citation_url: "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/breast-cancer-screening"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "uspstf-hypertension-screening"
+    title: "Hypertension Blood Pressure Screening"
+    category: "screening"
+    target_age_min_months: 216
+    target_age_max_months: 1440
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 12
+    codes:
+      - "85354-9"
+      - "8480-6"
+      - "8462-4"
+    clinical_summary: "USPSTF Grade A recommendation for annual office blood pressure screening in adults aged 18 years and older. Discuss with your clinician."
+    source: "USPSTF"
+    citation_url: "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/hypertension-in-adults-screening"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "uspstf-diabetes-screening"
+    title: "Prediabetes and Type 2 Diabetes Screening"
+    category: "screening"
+    target_age_min_months: 420
+    target_age_max_months: 840
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 36
+    codes:
+      - "4548-4"
+      - "1558-6"
+      - "83036"
+    clinical_summary: "USPSTF Grade B recommendation for screening for prediabetes and type 2 diabetes (HbA1c or fasting plasma glucose) in adults aged 35 to 70 years. Discuss with your clinician."
+    source: "USPSTF"
+    citation_url: "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/screening-for-prediabetes-and-type-2-diabetes"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "uspstf-lipid-statin-prevention"
+    title: "Cardiovascular Risk & Lipid Panel Screening"
+    category: "screening"
+    target_age_min_months: 480
+    target_age_max_months: 900
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 60
+    codes:
+      - "24331-1"
+      - "2093-3"
+      - "13457-7"
+      - "80061"
+    clinical_summary: "USPSTF Grade B recommendation for lipid screening and cardiovascular disease prevention assessment in adults aged 40 to 75 years. Discuss with your clinician."
+    source: "USPSTF"
+    citation_url: "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/statin-use-in-adults-preventive-medication"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "uspstf-lung-cancer-ldct"
+    title: "Lung Cancer Low-Dose CT Screening"
+    category: "screening"
+    target_age_min_months: 600
+    target_age_max_months: 960
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 12
+    codes:
+      - "71271"
+      - "87279-6"
+    clinical_summary: "USPSTF Grade B recommendation for annual low-dose computed tomography (LDCT) screening in adults aged 50 to 80 years with a 20 pack-year smoking history. Discuss with your clinician."
+    source: "USPSTF"
+    citation_url: "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/lung-cancer-screening"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "uspstf-osteoporosis-dexa"
+    title: "Osteoporosis Bone Density Screening (DEXA)"
+    category: "screening"
+    target_age_min_months: 780
+    target_age_max_months: 1440
+    sex: "female"
+    schedule_variant: "all"
+    interval_months: 24
+    codes:
+      - "77080"
+      - "38269-7"
+    clinical_summary: "USPSTF Grade B recommendation for bone measurement testing (central DEXA) to prevent osteoporotic fractures in women aged 65 years and older. Discuss with your clinician."
+    source: "USPSTF"
+    citation_url: "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/osteoporosis-to-prevent-fractures-screening"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "uspstf-hepatitis-c-screening"
+    title: "Hepatitis C Virus Infection Screening"
+    category: "screening"
+    target_age_min_months: 216
+    target_age_max_months: 948
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: null
+    codes:
+      - "86803"
+      - "16128-1"
+    clinical_summary: "USPSTF Grade B recommendation for one-time screening for hepatitis C virus (HCV) infection in adults aged 18 to 79 years. Discuss with your clinician."
+    source: "USPSTF"
+    citation_url: "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/hepatitis-c-screening"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"

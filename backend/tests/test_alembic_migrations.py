@@ -66,6 +66,12 @@ EXPECTED_AUTONOMY_BATCH_3_TABLES = {
     "reminders",
 }
 
+EXPECTED_AUTONOMY_BATCH_4_TABLES = {
+    "preventive_records",
+    "import_batches",
+    "school_forms",
+}
+
 EXPECTED_HEAD_TABLES = (
     EXPECTED_BASELINE_TABLES
     | {
@@ -76,6 +82,7 @@ EXPECTED_HEAD_TABLES = (
     }
     | EXPECTED_AUTONOMY_BATCH_1_TABLES
     | EXPECTED_AUTONOMY_BATCH_3_TABLES
+    | EXPECTED_AUTONOMY_BATCH_4_TABLES
 )
 
 EXPECTED_ATTACHMENT_CAS_COLUMNS = {
@@ -145,12 +152,12 @@ def test_upgrade_head_fresh_sqlite():
         }
         assert expected_job_cols.issubset(job_cols)
 
-        # Assert 24 tables at head
-        assert len(EXPECTED_HEAD_TABLES) == 24
+        # Assert 27 tables at head
+        assert len(EXPECTED_HEAD_TABLES) == 27
 
-        # Assert head revision is 0005_autonomy_batch_3
+        # Assert head revision is 0006_autonomy_batch_4
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0005_autonomy_batch_3"
+        assert curr_ver == "0006_autonomy_batch_4"
 
         # Assert notes.profile_id and chat_threads.profile_id are NOT NULL
         notes_cols = {c["name"]: c for c in insp.get_columns("notes")}
@@ -184,9 +191,62 @@ def test_upgrade_head_fresh_sqlite():
         }
         assert expected_rem_cols.issubset(rem_cols)
 
+        # Assert Autonomy Batch 4 tables and columns
+        prev_cols = {c["name"] for c in insp.get_columns("preventive_records")}
+        expected_prev_cols = {
+            "id", "profile_id", "rule_id", "schedule_source", "status",
+            "completed_at", "notes", "created_at", "updated_at",
+        }
+        assert expected_prev_cols.issubset(prev_cols)
+
+        imp_cols = {c["name"] for c in insp.get_columns("import_batches")}
+        expected_imp_cols = {
+            "id", "profile_id", "attachment_id", "format", "source_name",
+            "status", "summary_json", "staged_records_json",
+            "committed_resource_ids_json", "created_at", "committed_at",
+        }
+        assert expected_imp_cols.issubset(imp_cols)
+
+        sf_cols = {c["name"] for c in insp.get_columns("school_forms")}
+        expected_sf_cols = {
+            "id", "profile_id", "attachment_id", "title", "school_or_camp_name",
+            "form_type", "status", "expires_at", "reminder_id",
+            "prefill_draft_json", "notes", "created_at", "updated_at",
+        }
+        assert expected_sf_cols.issubset(sf_cols)
+
         # Assert notes.linked_appointment_id column exists and is nullable
         assert "linked_appointment_id" in notes_cols
         assert notes_cols["linked_appointment_id"]["nullable"] is True
+
+
+def test_downgrade_to_0005_autonomy_batch_3():
+    """Tests downgrading from 0006_autonomy_batch_4 to 0005_autonomy_batch_3 and re-upgrading."""
+    engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
+    with engine.connect() as conn:
+        cfg = get_alembic_config(conn)
+        alembic.command.upgrade(cfg, "head")
+
+        curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        assert curr_ver == "0006_autonomy_batch_4"
+
+        alembic.command.downgrade(cfg, "0005_autonomy_batch_3")
+        curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        assert curr_ver_down == "0005_autonomy_batch_3"
+
+        insp = inspect(conn)
+        tables_down = set(insp.get_table_names())
+        assert "preventive_records" not in tables_down
+        assert "import_batches" not in tables_down
+        assert "school_forms" not in tables_down
+        assert EXPECTED_AUTONOMY_BATCH_3_TABLES.issubset(tables_down)
+
+        alembic.command.upgrade(cfg, "head")
+        curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        assert curr_ver_up == "0006_autonomy_batch_4"
+        insp_up = inspect(conn)
+        tables_up = set(insp_up.get_table_names())
+        assert EXPECTED_AUTONOMY_BATCH_4_TABLES.issubset(tables_up)
 
 
 def test_downgrade_to_0004_autonomy_batch_2():
@@ -198,13 +258,13 @@ def test_downgrade_to_0004_autonomy_batch_2():
     3. Downgrade to 0004: health_resources, appointments, reminders tables are dropped;
        notes.linked_appointment_id column is dropped; note content is preserved.
     4. alembic_version is 0004_autonomy_batch_2.
-    5. Re-upgrade to head (0005): Batch 3 tables and linked_appointment_id re-created,
+    5. Re-upgrade to head (0006): Batch 3 and 4 tables and linked_appointment_id re-created,
        existing note data remains intact.
     """
     engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
     with engine.connect() as conn:
         cfg = get_alembic_config(conn)
-        alembic.command.upgrade(cfg, "head")
+        alembic.command.upgrade(cfg, "0005_autonomy_batch_3")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
         assert curr_ver == "0005_autonomy_batch_3"
@@ -275,14 +335,15 @@ def test_downgrade_to_0004_autonomy_batch_2():
         assert note_row[2] == "Review BP meds"
         assert note_row[3] == "prof-b3-test"
 
-        # Re-upgrade to head (0005_autonomy_batch_3)
+        # Re-upgrade to head (0006_autonomy_batch_4)
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0005_autonomy_batch_3"
+        assert curr_ver_up == "0006_autonomy_batch_4"
 
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_3_TABLES.issubset(tables_up)
+        assert EXPECTED_AUTONOMY_BATCH_4_TABLES.issubset(tables_up)
 
         notes_cols_up = {c["name"]: c for c in insp_up.get_columns("notes")}
         assert "linked_appointment_id" in notes_cols_up
@@ -425,6 +486,9 @@ def test_downgrade_to_baseline_sqlite_batch_rebuild():
         assert "health_resources" not in tables
         assert "appointments" not in tables
         assert "reminders" not in tables
+        assert "preventive_records" not in tables
+        assert "import_batches" not in tables
+        assert "school_forms" not in tables
 
         # Baseline tables should still exist
         assert EXPECTED_BASELINE_TABLES.issubset(tables)

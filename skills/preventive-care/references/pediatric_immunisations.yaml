@@ -1,0 +1,303 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: "2026.1"
+pack_id: "pediatric_immunisations"
+description: "AAP Bright Futures 2026 and CDC ACIP Pediatric Immunisations & Well-Child Schedule"
+rules:
+  - id: "peds-hepb-birth"
+    title: "Hepatitis B (HepB) Birth & Infant Series"
+    category: "immunisation"
+    target_age_min_months: 0
+    target_age_max_months: 18
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 6
+    codes:
+      - "08"
+      - "90744"
+    clinical_summary: "Hepatitis B 3-dose infant series initiated at birth, 1–2 months, and 6–18 months. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.aap.org/en/practice-management/care-delivery-approaches/periodicity-schedule/"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-dtap-primary"
+    title: "DTaP (Diphtheria, Tetanus, & Acellular Pertussis) Series"
+    category: "immunisation"
+    target_age_min_months: 2
+    target_age_max_months: 72
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 6
+    codes:
+      - "20"
+      - "106"
+      - "90700"
+    clinical_summary: "5-dose DTaP series recommended at 2, 4, 6, 15–18 months, and 4–6 years. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent-age.html"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-ipv-primary"
+    title: "Inactivated Poliovirus (IPV) Series"
+    category: "immunisation"
+    target_age_min_months: 2
+    target_age_max_months: 72
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 6
+    codes:
+      - "10"
+      - "90713"
+    clinical_summary: "4-dose IPV series recommended at 2, 4, 6–18 months, and 4–6 years. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent-age.html"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-hib-series"
+    title: "Haemophilus influenzae type b (Hib) Series"
+    category: "immunisation"
+    target_age_min_months: 2
+    target_age_max_months: 15
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 2
+    codes:
+      - "48"
+      - "49"
+      - "90648"
+    clinical_summary: "Hib conjugate vaccine primary series at 2, 4, 6 months and booster at 12–15 months. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent-age.html"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-pcv-series"
+    title: "Pneumococcal Conjugate (PCV15 / PCV20) Series"
+    category: "immunisation"
+    target_age_min_months: 2
+    target_age_max_months: 15
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 2
+    codes:
+      - "215"
+      - "216"
+      - "133"
+      - "90671"
+      - "90677"
+    clinical_summary: "4-dose pneumococcal conjugate series at 2, 4, 6, and 12–15 months. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent-age.html"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-rotavirus-series"
+    title: "Rotavirus (RV) Oral Series"
+    category: "immunisation"
+    target_age_min_months: 2
+    target_age_max_months: 8
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 2
+    codes:
+      - "116"
+      - "119"
+      - "90680"
+      - "90681"
+    clinical_summary: "Rotavirus oral vaccine series at 2, 4, and (if 3-dose series) 6 months. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent-age.html"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-mmr-series"
+    title: "Measles, Mumps, and Rubella (MMR) Series"
+    category: "immunisation"
+    target_age_min_months: 12
+    target_age_max_months: 72
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 36
+    codes:
+      - "03"
+      - "90707"
+    clinical_summary: "2-dose MMR series at 12–15 months and 4–6 years. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent-age.html"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-varicella-series"
+    title: "Varicella (Chickenpox) Series"
+    category: "immunisation"
+    target_age_min_months: 12
+    target_age_max_months: 72
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 36
+    codes:
+      - "21"
+      - "90716"
+    clinical_summary: "2-dose Varicella series at 12–15 months and 4–6 years. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent-age.html"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-hepa-series"
+    title: "Hepatitis A (HepA) 2-Dose Series"
+    category: "immunisation"
+    target_age_min_months: 12
+    target_age_max_months: 23
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 6
+    codes:
+      - "83"
+      - "90633"
+    clinical_summary: "2-dose Hepatitis A series initiated between 12 and 23 months of age, separated by at least 6 months. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent-age.html"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-influenza-annual"
+    title: "Annual Seasonal Influenza Immunisation"
+    category: "immunisation"
+    target_age_min_months: 6
+    target_age_max_months: 215
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 12
+    codes:
+      - "141"
+      - "150"
+      - "90686"
+    clinical_summary: "Annual seasonal influenza vaccination for all children and adolescents aged 6 months and older. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent-age.html"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-tdap-adolescent"
+    title: "Adolescent Tdap Booster"
+    category: "immunisation"
+    target_age_min_months: 132
+    target_age_max_months: 156
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: null
+    codes:
+      - "115"
+      - "90715"
+    clinical_summary: "Single adolescent booster dose of Tdap recommended at 11 to 12 years of age. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent-age.html"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-menacwy-adolescent"
+    title: "Meningococcal Conjugate (MenACWY) Series"
+    category: "immunisation"
+    target_age_min_months: 132
+    target_age_max_months: 192
+    sex: "any"
+    schedule_variant: "all"
+    interval_months: 60
+    codes:
+      - "114"
+      - "136"
+      - "90734"
+    clinical_summary: "MenACWY primary dose at 11–12 years with a booster dose at 16 years. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent-age.html"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-hpv-aap-early"
+    title: "HPV Vaccination — AAP Age 9 Initiation"
+    category: "immunisation"
+    target_age_min_months: 108
+    target_age_max_months: 156
+    sex: "any"
+    schedule_variant: "aap_2026"
+    interval_months: 6
+    codes:
+      - "165"
+      - "90651"
+    clinical_summary: "AAP Bright Futures 2026 recommends starting the 2-dose HPV vaccination series between ages 9 and 12 years for stronger immune response and on-time completion. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.aap.org/en/patient-care/immunizations/human-papillomavirus-vaccines/"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-hpv-cdc-routine"
+    title: "HPV Vaccination — CDC Age 11–12 Routine Schedule"
+    category: "immunisation"
+    target_age_min_months: 132
+    target_age_max_months: 156
+    sex: "any"
+    schedule_variant: "cdc"
+    interval_months: 6
+    codes:
+      - "165"
+      - "90651"
+    clinical_summary: "CDC ACIP routine schedule recommends initiating the 2-dose HPV series at age 11–12 years (permissible starting at age 9). Possibly due, confirm with your pediatrician."
+    source: "CDC ACIP"
+    citation_url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent-age.html"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-well-visit-aap-periodicity"
+    title: "AAP Bright Futures Well-Child & Developmental Visit"
+    category: "well_visit"
+    target_age_min_months: 0
+    target_age_max_months: 215
+    sex: "any"
+    schedule_variant: "aap_2026"
+    interval_months: 12
+    codes:
+      - "99391"
+      - "99392"
+      - "99393"
+      - "99394"
+    clinical_summary: "AAP Bright Futures 2026 periodicity schedule preventive pediatric health care visit with developmental, vision, hearing, and behavioral screening. Possibly due, confirm with your pediatrician."
+    source: "AAP Bright Futures 2026"
+    citation_url: "https://www.aap.org/en/practice-management/care-delivery-approaches/periodicity-schedule/"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"
+
+  - id: "peds-rsv-infant-cdc"
+    title: "Infant RSV Monoclonal Antibody (Nirsevimab) — CDC ACIP"
+    category: "immunisation"
+    target_age_min_months: 0
+    target_age_max_months: 8
+    sex: "any"
+    schedule_variant: "cdc"
+    interval_months: null
+    codes:
+      - "306"
+      - "307"
+      - "90380"
+      - "90381"
+    clinical_summary: "CDC ACIP recommends 1 dose of nirsevimab for infants younger than 8 months born during or entering their first RSV season. Possibly due, confirm with your pediatrician."
+    source: "CDC ACIP"
+    citation_url: "https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent-age.html"
+    reviewed_by: "Carefold Clinical Safety Working Group"
+    reviewed_at: "2026-10-13"

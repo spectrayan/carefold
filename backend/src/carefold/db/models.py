@@ -932,6 +932,24 @@ class Profile(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    preventive_records: Mapped[List[PreventiveRecord]] = sa_relationship(
+        "PreventiveRecord",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    import_batches: Mapped[List[ImportBatch]] = sa_relationship(
+        "ImportBatch",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    school_forms: Mapped[List[SchoolForm]] = sa_relationship(
+        "SchoolForm",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __repr__(self) -> str:
         return f"<Profile id={self.id!r} name={self.name!r} relationship={self.relationship!r} role={self.role!r}>"
@@ -2556,6 +2574,334 @@ class Reminder(Base):
 
     def __repr__(self) -> str:
         return f"<Reminder id={self.id!r} profile_id={self.profile_id!r} title={self.title!r} status={self.status!r}>"
+
+
+# ---------------------------------------------------------------------------
+# Preventive Care, Clinical Imports & Pediatric Forms (Autonomy Batch 4)
+# ---------------------------------------------------------------------------
+
+
+class PreventiveRecord(Base):
+    """Per-profile preventive screening and immunisation tracking entity (AU-36)."""
+
+    __tablename__ = "preventive_records"
+    __table_args__ = (
+        UniqueConstraint(
+            "profile_id", "rule_id",
+            name="uq_preventive_records_profile_rule",
+        ),
+        Index("ix_preventive_records_profile_status", "profile_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique preventive record identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    rule_id: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        index=True,
+        doc="Preventive rule identifier from YAML rule pack (e.g. uspstf-colorectal-screening)",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="due",
+        nullable=False,
+        index=True,
+        doc="Status: due, completed, not_applicable, declined",
+    )
+    completed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Timestamp when screening or immunisation was completed (UTC)",
+    )
+    notes: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Optional user or provider notes for this preventive item",
+    )
+    schedule_source: Mapped[str] = mapped_column(
+        String(32),
+        default="aap_2026",
+        nullable=False,
+        doc="Immunisation schedule source setting: aap_2026 or cdc",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    profile: Mapped[Profile] = relationship("Profile", back_populates="preventive_records")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "status" not in kwargs:
+            kwargs["status"] = "due"
+        if "schedule_source" not in kwargs:
+            kwargs["schedule_source"] = "aap_2026"
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return (
+            f"<PreventiveRecord id={self.id!r} profile_id={self.profile_id!r} "
+            f"rule_id={self.rule_id!r} status={self.status!r}>"
+        )
+
+
+class ImportBatch(Base):
+    """Clinical and wearable file import staging and provenance batch entity (AU-38)."""
+
+    __tablename__ = "import_batches"
+    __table_args__ = (
+        Index("ix_import_batches_profile_status", "profile_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique import batch identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    attachment_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("attachments.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        doc="Source CAS attachment identifier (E13)",
+    )
+    format: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        doc="Import file format: fhir_r4, ccda, apple_health",
+    )
+    source_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Human-readable provenance origin (e.g. 'Apple Health Export', 'Epic C-CDA')",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="staged",
+        nullable=False,
+        index=True,
+        doc="Lifecycle status: staged, committed, discarded",
+    )
+    summary_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+        nullable=False,
+        doc="Serialized JSON summary of parsed counts, categories, and date ranges",
+    )
+    staged_records_json: Mapped[str] = mapped_column(
+        Text,
+        default="[]",
+        nullable=False,
+        doc="Serialized JSON array of normalized FHIR records staged for review-before-save",
+    )
+    committed_resource_ids_json: Mapped[str] = mapped_column(
+        Text,
+        default="[]",
+        nullable=False,
+        doc="Serialized JSON array of health_resources IDs created on commit (for undo)",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Staging creation timestamp (UTC)",
+    )
+    committed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Commit timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    profile: Mapped[Profile] = relationship("Profile", back_populates="import_batches")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "status" not in kwargs:
+            kwargs["status"] = "staged"
+        if "summary_json" not in kwargs:
+            kwargs["summary_json"] = "{}"
+        if "staged_records_json" not in kwargs:
+            kwargs["staged_records_json"] = "[]"
+        if "committed_resource_ids_json" not in kwargs:
+            kwargs["committed_resource_ids_json"] = "[]"
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return (
+            f"<ImportBatch id={self.id!r} profile_id={self.profile_id!r} "
+            f"format={self.format!r} status={self.status!r}>"
+        )
+
+
+class SchoolForm(Base):
+    """Pediatric and school health form tracking and draft prefill entity (AU-39)."""
+
+    __tablename__ = "school_forms"
+    __table_args__ = (
+        Index("ix_school_forms_profile_status", "profile_id", "status"),
+        Index("ix_school_forms_expires_at", "expires_at"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique school form identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    attachment_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("attachments.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        doc="Optional linked CAS attachment ID for the uploaded PDF/image form",
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Form display title (e.g. 'Annual School Physical & Immunization Form')",
+    )
+    school_or_camp_name: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="School, daycare, or camp institution name",
+    )
+    form_type: Mapped[str] = mapped_column(
+        String(64),
+        default="general",
+        nullable=False,
+        doc="Form classification: physical, immunization, medication_authorization, sports_clearance, general",
+    )
+    expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Form expiration or renewal due date (UTC)",
+    )
+    reminder_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("reminders.id", ondelete="SET NULL"),
+        nullable=True,
+        doc="Associated renewal reminder ID (AU-28)",
+    )
+    prefill_draft_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+        nullable=False,
+        doc="Serialized JSON of compiled draft prefill fields from profile records",
+    )
+    notes: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Optional notes or instructions for the school health form",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="draft",
+        nullable=False,
+        index=True,
+        doc="Lifecycle status: draft, active, expired, archived",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    profile: Mapped[Profile] = relationship("Profile", back_populates="school_forms")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "institution_name" in kwargs and "school_or_camp_name" not in kwargs:
+            kwargs["school_or_camp_name"] = kwargs.pop("institution_name")
+        else:
+            kwargs.pop("institution_name", None)
+        kwargs.pop("issued_at", None)
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "form_type" not in kwargs:
+            kwargs["form_type"] = "general"
+        if "prefill_draft_json" not in kwargs:
+            kwargs["prefill_draft_json"] = "{}"
+        if "status" not in kwargs:
+            kwargs["status"] = "draft"
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    @property
+    def institution_name(self) -> Optional[str]:
+        return self.school_or_camp_name
+
+    @institution_name.setter
+    def institution_name(self, value: Optional[str]) -> None:
+        self.school_or_camp_name = value
+
+    def __repr__(self) -> str:
+        return (
+            f"<SchoolForm id={self.id!r} profile_id={self.profile_id!r} "
+            f"title={self.title!r} status={self.status!r}>"
+        )
 
 
 
