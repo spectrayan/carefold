@@ -1235,6 +1235,171 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
     )
 
+    # 26. withings_latest_vitals (AU-54)
+    async def _exec_withings_latest_vitals(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from connectors.starters.withings import WithingsConnector
+        connector = WithingsConnector()
+        for t in connector.tools():
+            if t.name == "withings_latest_vitals" and t.handler is not None:
+                return await t.handler(args or {}, ctx)
+        return {"status": "ok", "records": []}
+
+    spec_withings_latest_vitals = ToolSpec(
+        name="withings_latest_vitals",
+        description=(
+            "Retrieve latest synchronized Withings blood pressure, heart rate, SpO2, "
+            "and weight observations for the active profile."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "default": 10,
+                    "minimum": 1,
+                    "maximum": 50,
+                },
+            },
+        },
+        risk_tier="read",
+        trust="trusted",
+        data_flows=DataFlows(
+            allowed_hosts=("wbsapi.withings.net", "account.withings.com"),
+            data_sensitivity="phi",
+        ),
+        executor=_exec_withings_latest_vitals,
+        metadata={
+            "action": "withings_latest_vitals",
+            "connector_id": "withings",
+            "risk": "read",
+        },
+    )
+
+    # 27. calendar_suggest_slots (AU-55 / E4.3, E5.2)
+    async def _exec_calendar_suggest_slots(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from connectors.starters.calendar import GoogleCalendarConnector
+        connector = GoogleCalendarConnector()
+        for t in connector.tools():
+            if t.name == "calendar_suggest_slots" and t.handler is not None:
+                return await t.handler(args or {}, ctx)
+        return {"slots": []}
+
+    spec_calendar_suggest_slots = ToolSpec(
+        name="calendar_suggest_slots",
+        description=(
+            "Query connected Google Calendar or CalDAV free/busy windows and suggest "
+            "conflict-free candidate appointment times without booking anything."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "window_start": {"type": "string", "description": "ISO-8601 window start."},
+                "window_end": {"type": "string", "description": "ISO-8601 window end."},
+                "duration_minutes": {"type": "integer", "default": 30},
+            },
+        },
+        risk_tier="read",
+        trust="trusted",
+        data_flows=DataFlows(
+            allowed_hosts=("www.googleapis.com", "caldav.icloud.com", "caldav.fastmail.com", "localhost"),
+            data_sensitivity="pii",
+        ),
+        executor=_exec_calendar_suggest_slots,
+        metadata={
+            "action": "calendar_suggest_slots",
+            "connector_id": "google-calendar",
+            "risk": "read",
+        },
+    )
+
+    # 28. calendar_create_event (AU-55 / E4.3)
+    async def _exec_calendar_create_event(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from connectors.starters.calendar import GoogleCalendarConnector
+        connector = GoogleCalendarConnector()
+        for t in connector.tools():
+            if t.name == "calendar_create_event" and t.handler is not None:
+                return await t.handler(args or {}, ctx)
+        return {"status": "created"}
+
+    spec_calendar_create_event = ToolSpec(
+        name="calendar_create_event",
+        description=(
+            "Create an external calendar event on Google Calendar or CalDAV. "
+            "Always requires human approval in A0/A1 autonomy modes and strips PHI from titles by default."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "title": {"type": "string", "description": "Event title (PHI stripped by default)."},
+                "start_time": {"type": "string", "description": "ISO-8601 start timestamp."},
+                "end_time": {"type": "string", "description": "ISO-8601 end timestamp."},
+                "location": {"type": "string", "description": "Optional clinic address."},
+                "strip_phi": {"type": "boolean", "default": True},
+            },
+            "required": ["title", "start_time", "end_time"],
+        },
+        risk_tier="write_external",
+        trust="trusted",
+        data_flows=DataFlows(
+            allowed_hosts=("www.googleapis.com", "caldav.icloud.com", "caldav.fastmail.com", "localhost"),
+            data_sensitivity="pii",
+        ),
+        executor=_exec_calendar_create_event,
+        metadata={
+            "action": "calendar_create_event",
+            "connector_id": "google-calendar",
+            "risk": "write_external",
+        },
+    )
+
+    # 29. epic_smart_search_records (AU-56 / E10.3)
+    async def _exec_epic_smart_search_records(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from connectors.starters.epic_smart import EpicSmartConnector
+        connector = EpicSmartConnector()
+        for t in connector.tools():
+            if t.name == "epic_smart_search_records" and t.handler is not None:
+                return await t.handler(args or {}, ctx)
+        return {"records": [], "trust": "untrusted"}
+
+    spec_epic_smart_search_records = ToolSpec(
+        name="epic_smart_search_records",
+        description=(
+            "Search read-only USCDI FHIR R4 clinical records synchronized from Epic MyChart "
+            "(SMART on FHIR). Results carry provenance attribution and untrusted taint."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "resource_type": {
+                    "type": "string",
+                    "enum": [
+                        "Condition",
+                        "MedicationRequest",
+                        "AllergyIntolerance",
+                        "Immunization",
+                        "Observation",
+                        "Encounter",
+                        "DocumentReference",
+                    ],
+                },
+                "query": {"type": "string"},
+            },
+        },
+        risk_tier="read",
+        trust="untrusted",
+        data_flows=DataFlows(
+            allowed_hosts=("fhir.epic.com",),
+            data_sensitivity="phi",
+        ),
+        executor=_exec_epic_smart_search_records,
+        metadata={
+            "action": "epic_smart_search_records",
+            "connector_id": "epic-smart",
+            "risk": "read",
+            "taints_context": True,
+        },
+    )
+
     return [
         spec_attach_read,
         spec_workspace_note,
@@ -1261,6 +1426,10 @@ def _make_builtin_specs() -> List[ToolSpec]:
         spec_commit_clinical_import,
         spec_create_school_form,
         spec_list_school_forms,
+        spec_withings_latest_vitals,
+        spec_calendar_suggest_slots,
+        spec_calendar_create_event,
+        spec_epic_smart_search_records,
     ]
 
 

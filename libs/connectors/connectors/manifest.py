@@ -73,6 +73,22 @@ class AuthConfig(BaseModel):
         default=True,
         description="Whether refresh tokens rotate on exchange",
     )
+    pkce: bool = Field(
+        default=True,
+        description="Whether PKCE (S256) is required for OAuth2 authorization code flows",
+    )
+    client_source: Literal["byo", "bundled"] = Field(
+        default="byo",
+        description="Source of OAuth client credentials ('byo' or 'bundled')",
+    )
+    rotating_refresh: bool = Field(
+        default=True,
+        description="Whether refresh tokens rotate on each token refresh exchange",
+    )
+    scope_details: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Human-readable metadata for requested OAuth scopes",
+    )
 
 
 class ToolDeclaration(BaseModel):
@@ -89,11 +105,15 @@ class ToolDeclaration(BaseModel):
 class TrustConfig(BaseModel):
     """Trust and provenance verification metadata."""
 
-    publisher: str = Field(..., description="Publishing organization or author")
+    publisher: str = Field(..., min_length=1, description="Publishing organization or author")
     verified: bool = Field(default=False, description="Whether publisher signature has been verified")
     sandbox_level: Literal["strict", "standard"] = Field(
         default="strict",
         description="Sandbox isolation level",
+    )
+    trust_level: Literal["trusted", "untrusted"] = Field(
+        default="trusted",
+        description="Data taint and provenance trust level ('trusted' or 'untrusted')",
     )
 
 
@@ -111,6 +131,10 @@ class TermsConfig(BaseModel):
     license: str = Field(default="Apache-2.0", description="Software license identifier")
     privacy_policy_url: Optional[str] = Field(default=None, description="URL of privacy policy")
     terms_of_service_url: Optional[str] = Field(default=None, description="URL of terms of service")
+    ai_use_allowed: bool = Field(
+        default=True,
+        description="Whether external API terms allow local AI agent processing",
+    )
 
 
 class ConnectorManifest(BaseModel):
@@ -119,11 +143,22 @@ class ConnectorManifest(BaseModel):
     id: str = Field(..., description="Unique connector identifier (e.g. 'epic-mychart')")
     version: str = Field(..., description="Semantic version string (e.g. '1.0.0')")
     name: str = Field(..., description="Human display name")
-    description: str = Field(..., description="Detailed description of connector functionality")
+    description: str = Field(default="", description="Detailed description of connector functionality")
+    categories: List[str] = Field(
+        default_factory=list,
+        description="Clinical or administrative categories provided by this connector",
+    )
+    entrypoint: Optional[str] = Field(
+        default=None,
+        description="Optional dotted entrypoint path for the connector implementation class",
+    )
     data_flows: DataFlowSpec = Field(..., description="Outbound host and network flow declarations")
     auth: AuthConfig = Field(..., description="Authentication requirements and endpoints")
     tools: List[ToolDeclaration] = Field(default_factory=list, description="Exposed agent tools")
-    trust: TrustConfig = Field(..., description="Provenance and trust verification")
+    trust: TrustConfig = Field(
+        default_factory=lambda: TrustConfig(publisher="Spectrayan"),
+        description="Provenance and trust verification",
+    )
     policy: PolicyConfig = Field(default_factory=PolicyConfig, description="Rate limits and timeouts")
     terms: TermsConfig = Field(default_factory=TermsConfig, description="License and terms")
 
@@ -139,10 +174,8 @@ class ConnectorManifest(BaseModel):
     def from_yaml(cls, path_or_content: Union[str, Path]) -> ConnectorManifest:
         """Loads and validates a ConnectorManifest from a YAML file path or YAML string."""
         content: str
-        if isinstance(path_or_content, Path) or (
-            isinstance(path_or_content, str) and "\n" not in path_or_content and Path(path_or_content).is_file()
-        ):
-            content = Path(path_or_content).read_text(encoding="utf-8")
+        if isinstance(path_or_content, Path):
+            content = path_or_content.read_text(encoding="utf-8")
         else:
             content = str(path_or_content)
 

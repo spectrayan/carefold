@@ -1,0 +1,101 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+id: epic-smart
+version: 0.1.0
+name: Epic MyChart (SMART on FHIR)
+description: Patient-facing SMART on FHIR R4 read-only clinical records connector for Epic MyChart.
+categories:
+  - clinical_records
+  - medications
+  - allergies
+  - immunisations
+  - vitals
+  - labs
+entrypoint: connectors.starters.epic_smart:EpicSmartConnector
+data_flows:
+  allowed_hosts:
+    - fhir.epic.com
+  allowed_schemes:
+    - https
+  allowed_ports:
+    - 443
+  egress_direction: egress_only
+  pii_types_transferred:
+    - clinical_records
+    - medications
+    - allergies
+    - immunisations
+    - vitals
+    - labs
+auth:
+  type: oauth2
+  pkce: true
+  client_source: byo
+  token_rotation: false
+  rotating_refresh: false
+  scopes:
+    - openid
+    - fhirUser
+    - launch/patient
+    - patient/Patient.read
+    - patient/Condition.read
+    - patient/MedicationRequest.read
+    - patient/AllergyIntolerance.read
+    - patient/Immunization.read
+    - patient/Observation.read
+    - patient/Encounter.read
+    - patient/DocumentReference.read
+  scope_details:
+    - scope: openid
+      description: OpenID Connect identity verification
+    - scope: fhirUser
+      description: Read authenticated patient FHIR resource reference
+    - scope: launch/patient
+      description: Standalone SMART on FHIR patient launch context
+    - scope: patient/Patient.read
+      description: Read patient demographics
+    - scope: patient/Condition.read
+      description: Read clinical problem list and diagnoses
+    - scope: patient/MedicationRequest.read
+      description: Read prescribed medications
+    - scope: patient/AllergyIntolerance.read
+      description: Read recorded allergies and intolerances
+    - scope: patient/Immunization.read
+      description: Read immunization history
+    - scope: patient/Observation.read
+      description: Read laboratory results and vital signs
+    - scope: patient/Encounter.read
+      description: Read clinical visit encounters
+    - scope: patient/DocumentReference.read
+      description: Read clinical notes and discharge summaries
+  authorization_url: https://fhir.epic.com/interconnect-fhir-oauth/oauth2/authorize
+  token_url: https://fhir.epic.com/interconnect-fhir-oauth/oauth2/token
+tools:
+  - name: epic_smart_search_records
+    description: Searches normalized USCDI FHIR R4 clinical records imported from Epic MyChart.
+    risk_class: read_only
+trust:
+  publisher: Spectrayan
+  verified: true
+  sandbox_level: strict
+  trust_level: untrusted
+policy:
+  rate_limit_rpm: 60
+  timeout_seconds: 30.0
+  retry_max_attempts: 3
+terms:
+  license: Apache-2.0
+  ai_use_allowed: true

@@ -17,6 +17,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+import sys
+
 import httpx
 import pytest
 
@@ -30,7 +33,12 @@ from connectors.base import (
 )
 from connectors.http import ScopedHttp
 from connectors.manifest import ConnectorManifest
-from .fixtures.dummy_connector import DummyClinicalConnector
+
+_TESTS_DIR = str(Path(__file__).resolve().parent)
+if _TESTS_DIR not in sys.path:
+    sys.path.insert(0, _TESTS_DIR)
+
+from fixtures.dummy_connector import DummyClinicalConnector  # noqa: E402
 
 
 def test_connector_protocol_runtime_checkable():

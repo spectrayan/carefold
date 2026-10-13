@@ -1,0 +1,70 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+id: google-calendar
+version: 0.1.0
+name: Google Calendar
+description: Syncs busy blocks, suggests conflict-free clinic appointment slots, and creates sanitized appointment events.
+categories:
+  - scheduling
+  - calendar
+entrypoint: connectors.starters.calendar:GoogleCalendarConnector
+data_flows:
+  allowed_hosts:
+    - www.googleapis.com
+    - oauth2.googleapis.com
+    - accounts.google.com
+  allowed_schemes:
+    - https
+  allowed_ports:
+    - 443
+  egress_direction: bidirectional
+  pii_types_transferred:
+    - appointment_schedule
+auth:
+  type: oauth2
+  pkce: true
+  client_source: byo
+  token_rotation: false
+  rotating_refresh: false
+  scopes:
+    - https://www.googleapis.com/auth/calendar.readonly
+    - https://www.googleapis.com/auth/calendar.events
+  scope_details:
+    - scope: https://www.googleapis.com/auth/calendar.readonly
+      description: Read calendar events and free/busy availability blocks
+    - scope: https://www.googleapis.com/auth/calendar.events
+      description: Create sanitized medical appointment calendar events upon user approval
+  authorization_url: https://accounts.google.com/o/oauth2/v2/auth
+  token_url: https://oauth2.googleapis.com/token
+tools:
+  - name: calendar_suggest_slots
+    description: Suggests conflict-free appointment slots during clinic hours (09:00-17:00).
+    risk_class: read_only
+  - name: calendar_create_event
+    description: Creates a sanitized external calendar event for a confirmed appointment.
+    risk_class: admin
+trust:
+  publisher: Spectrayan
+  verified: true
+  sandbox_level: strict
+  trust_level: trusted
+policy:
+  rate_limit_rpm: 60
+  timeout_seconds: 30.0
+  retry_max_attempts: 3
+terms:
+  license: Apache-2.0
+  ai_use_allowed: true

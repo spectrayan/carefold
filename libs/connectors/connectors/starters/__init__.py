@@ -13,4 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for carefold-connectors package."""
+"""Built-in starter connectors for Carefold (Withings, Google Calendar, CalDAV, Epic SMART)."""
+
+from connectors.starters.calendar import (
+    CalDavConnector,
+    GoogleCalendarConnector,
+    sanitize_calendar_event_title,
+    suggest_free_slots,
+)
+from connectors.starters.epic_smart import EpicSmartConnector
+from connectors.starters.withings import WithingsConnector
+
+__all__ = [
+    "CalDavConnector",
+    "EpicSmartConnector",
+    "GoogleCalendarConnector",
+    "WithingsConnector",
+    "sanitize_calendar_event_title",
+    "suggest_free_slots",
+]

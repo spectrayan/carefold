@@ -950,6 +950,18 @@ class Profile(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    consent_grants: Mapped[List[ConsentGrant]] = sa_relationship(
+        "ConsentGrant",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    sync_runs: Mapped[List[SyncRun]] = sa_relationship(
+        "SyncRun",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __repr__(self) -> str:
         return f"<Profile id={self.id!r} name={self.name!r} relationship={self.relationship!r} role={self.role!r}>"
@@ -1765,6 +1777,18 @@ class Connection(Base):
         nullable=False,
         doc="Serialized connector configuration JSON",
     )
+    consecutive_failures: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default="0",
+        nullable=False,
+        doc="Consecutive sync failures counter (3 failures transition active -> degraded)",
+    )
+    consented_version: Mapped[Optional[str]] = mapped_column(
+        String(32),
+        nullable=True,
+        doc="Connector manifest version under which active consent was granted",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,
@@ -1788,12 +1812,26 @@ class Connection(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    consent_grants: Mapped[List[ConsentGrant]] = relationship(
+        "ConsentGrant",
+        back_populates="connection",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    sync_runs: Mapped[List[SyncRun]] = relationship(
+        "SyncRun",
+        back_populates="connection",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __init__(self, **kwargs: Any) -> None:
         if "id" not in kwargs:
             kwargs["id"] = str(uuid.uuid4())
         if "state" in kwargs and "status" not in kwargs:
             kwargs["status"] = kwargs.pop("state")
+        if "consecutive_failures" not in kwargs:
+            kwargs["consecutive_failures"] = 0
         if "created_at" not in kwargs:
             kwargs["created_at"] = utc_now()
         if "updated_at" not in kwargs:
@@ -2901,6 +2939,308 @@ class SchoolForm(Base):
         return (
             f"<SchoolForm id={self.id!r} profile_id={self.profile_id!r} "
             f"title={self.title!r} status={self.status!r}>"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Connector Consent Matrix & Sync Runs Health (Autonomy Batch 5: AU-52, AU-53)
+# ---------------------------------------------------------------------------
+
+
+class ConsentGrant(Base):
+    """Granular connector × profile × data category × purpose consent grant entity (AU-53)."""
+
+    __tablename__ = "consent_grants"
+    __table_args__ = (
+        Index("ix_consent_grants_profile_connector_status", "profile_id", "connector_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique consent grant identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    connection_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("connections.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+        doc="Optional bound Connection identifier",
+    )
+    connector_id: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        index=True,
+        doc="Connector manifest identifier (e.g. withings, google-calendar, caldav, epic-smart)",
+    )
+    granted_by_user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        doc="Authenticated user or guardian who granted consent",
+    )
+    categories_json: Mapped[str] = mapped_column(
+        Text,
+        default="[]",
+        nullable=False,
+        doc="Serialized JSON array of consented data categories (e.g. ['vitals', 'calendar'])",
+    )
+    scopes_json: Mapped[str] = mapped_column(
+        Text,
+        default="[]",
+        nullable=False,
+        doc="Serialized JSON array of consented OAuth/API scopes",
+    )
+    allowed_hosts_json: Mapped[str] = mapped_column(
+        Text,
+        default="[]",
+        nullable=False,
+        doc="Serialized JSON array of consented outbound network hosts",
+    )
+    purpose: Mapped[str] = mapped_column(
+        String(64),
+        default="sync_and_assist",
+        nullable=False,
+        doc="Purpose of consent grant (e.g. sync_and_assist, read_only, calendar_write)",
+    )
+    terms_version: Mapped[str] = mapped_column(
+        String(32),
+        default="1.0.0",
+        nullable=False,
+        doc="Consent terms text version string",
+    )
+    connector_version: Mapped[str] = mapped_column(
+        String(32),
+        default="0.1.0",
+        nullable=False,
+        doc="Connector manifest version at the time consent was granted",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="active",
+        nullable=False,
+        index=True,
+        doc="Lifecycle status: active, revoked",
+    )
+    granted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Timestamp when consent was granted (UTC)",
+    )
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Timestamp when consent was revoked (UTC)",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    profile: Mapped[Profile] = relationship("Profile", back_populates="consent_grants")
+    connection: Mapped[Optional[Connection]] = relationship("Connection", back_populates="consent_grants")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "categories" in kwargs and "categories_json" not in kwargs:
+            kwargs["categories_json"] = json.dumps(list(kwargs.pop("categories")))
+        if "scopes" in kwargs and "scopes_json" not in kwargs:
+            kwargs["scopes_json"] = json.dumps(list(kwargs.pop("scopes")))
+        if "allowed_hosts" in kwargs and "allowed_hosts_json" not in kwargs:
+            kwargs["allowed_hosts_json"] = json.dumps(list(kwargs.pop("allowed_hosts")))
+        if "categories_json" not in kwargs:
+            kwargs["categories_json"] = "[]"
+        if "scopes_json" not in kwargs:
+            kwargs["scopes_json"] = "[]"
+        if "allowed_hosts_json" not in kwargs:
+            kwargs["allowed_hosts_json"] = "[]"
+        if "purpose" not in kwargs:
+            kwargs["purpose"] = "sync_and_assist"
+        if "terms_version" not in kwargs:
+            kwargs["terms_version"] = "1.0.0"
+        if "connector_version" not in kwargs:
+            kwargs["connector_version"] = "0.1.0"
+        if "status" not in kwargs:
+            kwargs["status"] = "active"
+        if "granted_at" not in kwargs:
+            kwargs["granted_at"] = utc_now()
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    @property
+    def categories(self) -> List[str]:
+        try:
+            return json.loads(self.categories_json or "[]")
+        except Exception:
+            return []
+
+    @property
+    def scopes(self) -> List[str]:
+        try:
+            return json.loads(self.scopes_json or "[]")
+        except Exception:
+            return []
+
+    @property
+    def allowed_hosts(self) -> List[str]:
+        try:
+            return json.loads(self.allowed_hosts_json or "[]")
+        except Exception:
+            return []
+
+    def __repr__(self) -> str:
+        return (
+            f"<ConsentGrant id={self.id!r} profile_id={self.profile_id!r} "
+            f"connector_id={self.connector_id!r} status={self.status!r}>"
+        )
+
+
+class SyncRun(Base):
+    """Per-connection synchronization run telemetry and health record (AU-52)."""
+
+    __tablename__ = "sync_runs"
+    __table_args__ = (
+        Index("ix_sync_runs_connection_started", "connection_id", "started_at"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique sync run identifier (UUID v4 string)",
+    )
+    connection_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("connections.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Connection identifier",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier",
+    )
+    connector_id: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        index=True,
+        doc="Connector manifest identifier",
+    )
+    stream: Mapped[str] = mapped_column(
+        String(128),
+        default="all",
+        nullable=False,
+        doc="Synchronized stream name (e.g. measures, events, uscdi)",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="running",
+        nullable=False,
+        index=True,
+        doc="Execution status: running, succeeded, partial, failed",
+    )
+    records_fetched: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+        doc="Number of raw records fetched from upstream source",
+    )
+    records_upserted: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+        doc="Number of normalized records persisted/updated in health_resources",
+    )
+    records_quarantined: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+        doc="Number of malformed records quarantined without aborting batch",
+    )
+    error_code: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        doc="Machine-readable error classification (e.g. invalid_grant, rate_limited, network_error)",
+    )
+    error_message: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Redacted error message details",
+    )
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Sync run start timestamp (UTC)",
+    )
+    completed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Sync run completion timestamp (UTC)",
+    )
+    duration_ms: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        doc="Total sync run duration in milliseconds",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+
+    connection: Mapped[Connection] = relationship("Connection", back_populates="sync_runs")
+    profile: Mapped[Profile] = relationship("Profile", back_populates="sync_runs")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "stream" not in kwargs:
+            kwargs["stream"] = "all"
+        if "status" not in kwargs:
+            kwargs["status"] = "running"
+        if "records_fetched" not in kwargs:
+            kwargs["records_fetched"] = 0
+        if "records_upserted" not in kwargs:
+            kwargs["records_upserted"] = 0
+        if "records_quarantined" not in kwargs:
+            kwargs["records_quarantined"] = 0
+        if "started_at" not in kwargs:
+            kwargs["started_at"] = utc_now()
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return (
+            f"<SyncRun id={self.id!r} connection_id={self.connection_id!r} "
+            f"status={self.status!r} upserted={self.records_upserted}>"
         )
 
 

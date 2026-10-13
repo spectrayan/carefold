@@ -30,6 +30,12 @@ from connectors.errors import (
     ManifestValidationError,
 )
 from connectors.http import ScopedHttp
+from connectors.loader import (
+    ConnectorRegistry,
+    get_connector_registry,
+    list_starter_manifests,
+    load_connector,
+)
 from connectors.manifest import (
     AuthConfig,
     ConnectorManifest,
@@ -46,6 +52,7 @@ __all__ = [
     "Connector",
     "ConnectorError",
     "ConnectorManifest",
+    "ConnectorRegistry",
     "DataFlowSpec",
     "EgressBlockedError",
     "ManifestValidationError",
@@ -59,4 +66,7 @@ __all__ = [
     "ToolDeclaration",
     "ToolSpec",
     "TrustConfig",
+    "get_connector_registry",
+    "list_starter_manifests",
+    "load_connector",
 ]

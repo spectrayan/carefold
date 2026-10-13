@@ -40,6 +40,7 @@ from carefold.db.models import (
     AuditEventRecord,
     ChatThread,
     Connection,
+    ConsentGrant,
     Credential,
     HealthResource,
     ImportBatch,
@@ -52,6 +53,7 @@ from carefold.db.models import (
     ProfileKey,
     Reminder,
     SchoolForm,
+    SyncRun,
     User,
     ViewerInvite,
 )
@@ -962,6 +964,8 @@ async def delete_profile(
         await db.execute(update(AuditEventRecord).where(AuditEventRecord.profile_id == profile.id).values(profile_id=None))
         await db.execute(delete(Job).where(Job.profile_id == profile.id))
         await db.execute(delete(Approval).where(Approval.profile_id == profile.id))
+        await db.execute(delete(SyncRun).where(SyncRun.profile_id == profile.id))
+        await db.execute(delete(ConsentGrant).where(ConsentGrant.profile_id == profile.id))
         await db.execute(delete(Credential).where(Credential.profile_id == profile.id))
         await db.execute(delete(Connection).where(Connection.profile_id == profile.id))
         await db.execute(delete(ChatThread).where(ChatThread.profile_id == profile.id))

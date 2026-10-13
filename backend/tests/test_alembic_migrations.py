@@ -72,6 +72,11 @@ EXPECTED_AUTONOMY_BATCH_4_TABLES = {
     "school_forms",
 }
 
+EXPECTED_AUTONOMY_BATCH_5_TABLES = {
+    "consent_grants",
+    "sync_runs",
+}
+
 EXPECTED_HEAD_TABLES = (
     EXPECTED_BASELINE_TABLES
     | {
@@ -83,6 +88,7 @@ EXPECTED_HEAD_TABLES = (
     | EXPECTED_AUTONOMY_BATCH_1_TABLES
     | EXPECTED_AUTONOMY_BATCH_3_TABLES
     | EXPECTED_AUTONOMY_BATCH_4_TABLES
+    | EXPECTED_AUTONOMY_BATCH_5_TABLES
 )
 
 EXPECTED_ATTACHMENT_CAS_COLUMNS = {
@@ -119,7 +125,8 @@ def test_upgrade_head_fresh_sqlite():
         conn_cols = {c["name"] for c in insp.get_columns("connections")}
         expected_conn_cols = {
             "id", "user_id", "profile_id", "connector_id", "status",
-            "config_json", "created_at", "updated_at",
+            "config_json", "consecutive_failures", "consented_version",
+            "created_at", "updated_at",
         }
         assert expected_conn_cols.issubset(conn_cols)
 
@@ -152,12 +159,12 @@ def test_upgrade_head_fresh_sqlite():
         }
         assert expected_job_cols.issubset(job_cols)
 
-        # Assert 27 tables at head
-        assert len(EXPECTED_HEAD_TABLES) == 27
+        # Assert 29 tables at head
+        assert len(EXPECTED_HEAD_TABLES) == 29
 
-        # Assert head revision is 0006_autonomy_batch_4
+        # Assert head revision is 0007_autonomy_batch_5
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0006_autonomy_batch_4"
+        assert curr_ver == "0007_autonomy_batch_5"
 
         # Assert notes.profile_id and chat_threads.profile_id are NOT NULL
         notes_cols = {c["name"]: c for c in insp.get_columns("notes")}
@@ -215,20 +222,71 @@ def test_upgrade_head_fresh_sqlite():
         }
         assert expected_sf_cols.issubset(sf_cols)
 
+        # Assert Autonomy Batch 5 tables and columns
+        cg_cols = {c["name"] for c in insp.get_columns("consent_grants")}
+        expected_cg_cols = {
+            "id", "profile_id", "connection_id", "connector_id",
+            "granted_by_user_id", "categories_json", "scopes_json",
+            "allowed_hosts_json", "purpose", "terms_version",
+            "connector_version", "status", "granted_at", "revoked_at",
+            "created_at", "updated_at",
+        }
+        assert expected_cg_cols.issubset(cg_cols)
+
+        sr_cols = {c["name"] for c in insp.get_columns("sync_runs")}
+        expected_sr_cols = {
+            "id", "connection_id", "profile_id", "connector_id", "stream",
+            "status", "records_fetched", "records_upserted", "records_quarantined",
+            "error_code", "error_message", "started_at", "completed_at",
+            "duration_ms", "created_at",
+        }
+        assert expected_sr_cols.issubset(sr_cols)
+
         # Assert notes.linked_appointment_id column exists and is nullable
         assert "linked_appointment_id" in notes_cols
         assert notes_cols["linked_appointment_id"]["nullable"] is True
 
 
-def test_downgrade_to_0005_autonomy_batch_3():
-    """Tests downgrading from 0006_autonomy_batch_4 to 0005_autonomy_batch_3 and re-upgrading."""
+def test_downgrade_to_0006_autonomy_batch_4():
+    """Tests downgrading from 0007_autonomy_batch_5 to 0006_autonomy_batch_4 and re-upgrading."""
     engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
     with engine.connect() as conn:
         cfg = get_alembic_config(conn)
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0006_autonomy_batch_4"
+        assert curr_ver == "0007_autonomy_batch_5"
+
+        alembic.command.downgrade(cfg, "0006_autonomy_batch_4")
+        curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        assert curr_ver_down == "0006_autonomy_batch_4"
+
+        insp = inspect(conn)
+        tables_down = set(insp.get_table_names())
+        assert "consent_grants" not in tables_down
+        assert "sync_runs" not in tables_down
+        conn_cols_down = {c["name"] for c in insp.get_columns("connections")}
+        assert "consecutive_failures" not in conn_cols_down
+        assert "consented_version" not in conn_cols_down
+        assert EXPECTED_AUTONOMY_BATCH_4_TABLES.issubset(tables_down)
+
+        alembic.command.upgrade(cfg, "head")
+        curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        assert curr_ver_up == "0007_autonomy_batch_5"
+        insp_up = inspect(conn)
+        tables_up = set(insp_up.get_table_names())
+        assert EXPECTED_AUTONOMY_BATCH_5_TABLES.issubset(tables_up)
+
+
+def test_downgrade_to_0005_autonomy_batch_3():
+    """Tests downgrading from head to 0005_autonomy_batch_3 and re-upgrading."""
+    engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
+    with engine.connect() as conn:
+        cfg = get_alembic_config(conn)
+        alembic.command.upgrade(cfg, "head")
+
+        curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        assert curr_ver == "0007_autonomy_batch_5"
 
         alembic.command.downgrade(cfg, "0005_autonomy_batch_3")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -239,14 +297,17 @@ def test_downgrade_to_0005_autonomy_batch_3():
         assert "preventive_records" not in tables_down
         assert "import_batches" not in tables_down
         assert "school_forms" not in tables_down
+        assert "consent_grants" not in tables_down
+        assert "sync_runs" not in tables_down
         assert EXPECTED_AUTONOMY_BATCH_3_TABLES.issubset(tables_down)
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0006_autonomy_batch_4"
+        assert curr_ver_up == "0007_autonomy_batch_5"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_4_TABLES.issubset(tables_up)
+        assert EXPECTED_AUTONOMY_BATCH_5_TABLES.issubset(tables_up)
 
 
 def test_downgrade_to_0004_autonomy_batch_2():
@@ -335,15 +396,16 @@ def test_downgrade_to_0004_autonomy_batch_2():
         assert note_row[2] == "Review BP meds"
         assert note_row[3] == "prof-b3-test"
 
-        # Re-upgrade to head (0006_autonomy_batch_4)
+        # Re-upgrade to head (0007_autonomy_batch_5)
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0006_autonomy_batch_4"
+        assert curr_ver_up == "0007_autonomy_batch_5"
 
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_3_TABLES.issubset(tables_up)
         assert EXPECTED_AUTONOMY_BATCH_4_TABLES.issubset(tables_up)
+        assert EXPECTED_AUTONOMY_BATCH_5_TABLES.issubset(tables_up)
 
         notes_cols_up = {c["name"]: c for c in insp_up.get_columns("notes")}
         assert "linked_appointment_id" in notes_cols_up
