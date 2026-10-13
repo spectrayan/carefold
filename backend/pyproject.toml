@@ -62,7 +62,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-addopts = "-ra -q --asyncio-mode=auto"
+addopts = "-ra -q --asyncio-mode=auto -n auto --disable-warnings"
 testpaths = ["tests"]
 pythonpath = ["src", "../libs/connectors"]
 markers = [

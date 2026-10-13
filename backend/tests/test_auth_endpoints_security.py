@@ -58,7 +58,7 @@ async def challenge_env(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_challenge_registration_password_length_boundary(client: TestClient, challenge_env):
+def test_registration_password_length_boundary(client: TestClient, challenge_env):
     """Stress tests password length boundary: 9-char password vs exact 10-char password."""
     client.cookies.clear()
     # 9-character password: Aa1!bbbbb (len 9) -> Must fail with HTTP 400
@@ -100,7 +100,7 @@ def test_challenge_registration_password_length_boundary(client: TestClient, cha
     assert res_11.status_code == 201, f"Expected 201 for 11-char password, got {res_11.status_code}: {res_11.text}"
 
 
-def test_challenge_registration_password_character_classes(client: TestClient, challenge_env):
+def test_registration_password_character_classes(client: TestClient, challenge_env):
     """Stress tests password complexity: uppercase, lowercase, digit, and special character requirements."""
     client.cookies.clear()
     # Missing uppercase: aa1!bbbbbb (len 10) -> HTTP 400
@@ -142,7 +142,7 @@ def test_challenge_registration_password_character_classes(client: TestClient, c
     assert res_special_only.status_code == 201
 
 
-def test_challenge_registration_duplicate_username_case_insensitive(client: TestClient, challenge_env):
+def test_registration_duplicate_username_case_insensitive(client: TestClient, challenge_env):
     """Stress tests case-insensitive duplicate username collision."""
     client.cookies.clear()
     # Initial registration: CamelCase username
@@ -174,7 +174,7 @@ def test_challenge_registration_duplicate_username_case_insensitive(client: Test
     assert res4.status_code == 409, f"Expected 409 for duplicate mixed case username, got {res4.status_code}"
 
 
-def test_challenge_registration_duplicate_email_case_insensitive(client: TestClient, challenge_env):
+def test_registration_duplicate_email_case_insensitive(client: TestClient, challenge_env):
     """Stress tests case-insensitive duplicate email collision."""
     client.cookies.clear()
     # Initial registration: Mixed case email
@@ -204,7 +204,7 @@ def test_challenge_registration_duplicate_email_case_insensitive(client: TestCli
 # ---------------------------------------------------------------------------
 
 
-def test_challenge_cookie_and_bearer_session_flow(client: TestClient, challenge_env):
+def test_cookie_and_bearer_session_flow(client: TestClient, challenge_env):
     """Stress tests cookie generation, Bearer header access, logout cookie removal, and session DB revocation."""
     client.cookies.clear()
     _, session_factory = challenge_env
@@ -275,7 +275,7 @@ def test_challenge_cookie_and_bearer_session_flow(client: TestClient, challenge_
 # ---------------------------------------------------------------------------
 
 
-def test_challenge_disabled_user_login_rejection(client: TestClient, challenge_env):
+def test_disabled_user_login_rejection(client: TestClient, challenge_env):
     """Stress tests disabled user trying to login: must return 403 Forbidden.
 
     Specification:
@@ -314,7 +314,7 @@ def test_challenge_disabled_user_login_rejection(client: TestClient, challenge_e
     assert "disabled" in login_resp.json()["detail"].lower()
 
 
-def test_challenge_active_user_patched_to_disabled_rejects_session(client: TestClient, challenge_env):
+def test_active_user_patched_to_disabled_rejects_session(client: TestClient, challenge_env):
     """Stress tests active user session rejection: user active who gets patched to disabled
 
     immediately has active session rejected with 403 on subsequent requests.
@@ -372,7 +372,7 @@ def test_challenge_active_user_patched_to_disabled_rejects_session(client: TestC
 # ---------------------------------------------------------------------------
 
 
-def test_challenge_password_reset_flow_and_session_revocation(client: TestClient, challenge_env):
+def test_password_reset_flow_and_session_revocation(client: TestClient, challenge_env):
     """Stress tests password reset flow:
 
     1. Forgot password issues single-use token.

@@ -272,7 +272,7 @@ def test_mismatched_cloud_provider_hosts_blocked(provider: str, malicious_url: s
 # Group 5: Ollama Loopback & Container Permitted, Remote LAN Blocked
 # ============================================================================
 
-@pytest.mark.parametrize("host", list(DEFAULT_OLLAMA_HOSTS))
+@pytest.mark.parametrize("host", sorted(DEFAULT_OLLAMA_HOSTS))
 def test_ollama_default_hosts_permitted(host: str):
     """Verify loopback and Docker DNS hosts are permitted for Ollama."""
     url = f"http://[{host}]:11434" if ":" in host else f"http://{host}:11434"

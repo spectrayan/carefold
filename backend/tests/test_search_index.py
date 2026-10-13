@@ -68,7 +68,7 @@ class TestSearchPortAndModels:
 class TestSqliteSearchIndexLifecycle:
     """Tests SqliteSearchIndex indexing, search, BM25 ranking, deletion, and reindexing."""
 
-    async def test_indexing_and_bm25_search_happy_path(self, tmp_path):
+    async def test_indexing_and_lexical_search_happy_path(self, tmp_path):
         db_file = tmp_path / "search.db"
         idx = SqliteSearchIndex(db_path=db_file)
 

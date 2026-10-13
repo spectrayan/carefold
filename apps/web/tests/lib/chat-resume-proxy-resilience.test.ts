@@ -18,7 +18,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { POST } from '@/app/api/chat/resume/route';
 
-describe('Adversarial Stress Suite: POST /api/chat/resume Proxy Route', () => {
+describe('Resilience Suite: POST /api/chat/resume Proxy Route', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();

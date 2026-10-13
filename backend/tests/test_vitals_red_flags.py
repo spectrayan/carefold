@@ -494,7 +494,7 @@ def test_malformed_input_graceful_handling(
         ("T15", {"systolic": 91, "diastolic": 61}, ["dizziness"], False, None, "normal"),
     ],
 )
-def test_challenger_t01_t15_boundary_controls(
+def test_vitals_t01_t15_boundary_controls(
     test_id: str,
     vitals: Dict[str, Any],
     symptoms: List[str],
@@ -502,7 +502,7 @@ def test_challenger_t01_t15_boundary_controls(
     expected_category: Optional[str],
     expected_severity: str,
 ):
-    """Verifies all 15 challenge boundary controls T01 through T15 from Challenger Report."""
+    """Verifies all 15 clinical boundary controls T01 through T15."""
     flag = check_vitals_red_flags(vitals, reported_symptoms=symptoms)
     assert flag.triggered is expected_triggered, f"{test_id} triggered mismatch"
     assert flag.category == expected_category, f"{test_id} category mismatch"

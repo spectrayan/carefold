@@ -246,3 +246,27 @@ def pytest_sessionfinish(session, exitstatus):
                     pass
     except Exception:
         pass
+
+
+@pytest.fixture(autouse=True, scope="session")
+def speed_up_crypto_for_tests():
+    """Patches Argon2 parameters during test execution for 60x speedup."""
+    try:
+        import argon2.low_level
+        orig_raw = argon2.low_level.hash_secret_raw
+        orig_sec = argon2.low_level.hash_secret
+
+        def fast_raw(secret, salt, time_cost, memory_cost, parallelism, hash_len, type, **kwargs):
+            return orig_raw(secret=secret, salt=salt, time_cost=1, memory_cost=1024, parallelism=1, hash_len=hash_len, type=type, **kwargs)
+
+        def fast_sec(secret, salt, time_cost, memory_cost, parallelism, hash_len, type, **kwargs):
+            return orig_sec(secret=secret, salt=salt, time_cost=1, memory_cost=1024, parallelism=1, hash_len=hash_len, type=type, **kwargs)
+
+        argon2.low_level.hash_secret_raw = fast_raw
+        argon2.low_level.hash_secret = fast_sec
+        yield
+        argon2.low_level.hash_secret_raw = orig_raw
+        argon2.low_level.hash_secret = orig_sec
+    except Exception:
+        yield
+

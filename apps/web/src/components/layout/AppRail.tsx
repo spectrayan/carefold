@@ -87,6 +87,13 @@ export interface AppRailProps extends React.HTMLAttributes<HTMLElement> {
   onOpenProfileSwitcher?: () => void;
 }
 
+function formatRelationship(relationship?: string): string {
+  if (!relationship) return 'Self';
+  const trimmed = relationship.trim();
+  if (trimmed.toLowerCase() === 'self') return 'Self';
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
 export function AppRail({
   activeProfile: activeProfileProp,
   counts,
@@ -151,7 +158,7 @@ export function AppRail({
         id: household.id,
         name: resolvedName,
         shortName: resolvedShortName,
-        relationship: household.relationship,
+        relationship: isSelf ? 'Self' : formatRelationship(household.relationship),
         age: household.age,
         role: household.role === 'self' ? 'Personal care' : 'You manage',
         colorSlot: household.colorSlot
@@ -368,7 +375,7 @@ export function AppRail({
               {derivedProfile.name}
             </span>
             <span className="text-xs text-[var(--cf-fg-subtle)] truncate" suppressHydrationWarning>
-              <span>{derivedProfile.relationship || 'Self'}</span>
+              <span suppressHydrationWarning>{derivedProfile.relationship || 'Self'}</span>
               {derivedProfile.age ? ` · ${derivedProfile.age}` : ''}
               {derivedProfile.role ? ` · ${derivedProfile.role}` : ''}
             </span>

@@ -29,7 +29,7 @@ import { exportSingleAppointmentIcs, humanizeRrule } from '@/lib/scheduleApi';
 import type { LatestVitalsState } from '@/types/vitals';
 import type { AppointmentItem, ReminderItem } from '@/types/schedule';
 
-describe('Milestone 6 Empirical Stress Suite (Challenger 1)', () => {
+describe('Vitals and Schedule Components Suite', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -37,7 +37,7 @@ describe('Milestone 6 Empirical Stress Suite (Challenger 1)', () => {
   // =========================================================================
   // 1. Vitals Summary Cards & Chart
   // =========================================================================
-  describe('1. Vitals Summary Cards & Chart Empirical Stress', () => {
+  describe('1. Vitals Summary Cards & Chart Component Tests', () => {
     it('1.1 Empty state: renders all 5 cards with empty CTAs when no readings are recorded', () => {
       const onLogVital = vi.fn();
       render(<VitalsSummaryCards vitals={{}} onLogVital={onLogVital} />);
@@ -206,7 +206,7 @@ describe('Milestone 6 Empirical Stress Suite (Challenger 1)', () => {
   // =========================================================================
   // 2. Log Vitals Modal
   // =========================================================================
-  describe('2. Log Vitals Modal Empirical Stress', () => {
+  describe('2. Log Vitals Modal Component Tests', () => {
     it('2.1 Form validation: missing fields, negative numbers, and incomplete blood pressure', () => {
       render(
         <LogVitalsModal
@@ -337,7 +337,7 @@ describe('Milestone 6 Empirical Stress Suite (Challenger 1)', () => {
   // =========================================================================
   // 3. Appointments & Schedule
   // =========================================================================
-  describe('3. Appointments & Schedule Empirical Stress', () => {
+  describe('3. Appointments & Schedule Component Tests', () => {
     const mockAppointments: AppointmentItem[] = [
       {
         id: 'apt-late',

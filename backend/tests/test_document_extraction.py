@@ -685,7 +685,7 @@ async def test_handle_extract_text_job_missing_attachment_in_db(
 # 7. Adversarial Stress Tests (Empirical Challenge Suite)
 # =========================================================================
 
-def test_adversarial_malformed_truncated_pdf_streams():
+def test_malformed_truncated_pdf_streams():
     """Adversarially tests malformed and truncated PDF byte streams.
 
     Verifies fallback to regex stream parser and safe handling without crashes
@@ -750,7 +750,7 @@ def test_adversarial_malformed_truncated_pdf_streams():
         assert res_trunc.format == "pdf"
 
 
-def test_adversarial_zero_byte_files_all_formats():
+def test_zero_byte_files_all_formats():
     """Adversarially verifies handling of zero-byte files across all supported formats."""
     # Text formats should return status="empty"
     text_extensions = [
@@ -779,7 +779,7 @@ def test_adversarial_zero_byte_files_all_formats():
         assert res.metadata.get("byte_size") == 0
 
 
-def test_adversarial_encrypted_password_protected_pdfs():
+def test_encrypted_password_protected_pdfs():
     """Adversarially tests password-protected and encrypted PDFs across algorithms."""
     import pypdf
 
@@ -821,7 +821,7 @@ def test_adversarial_encrypted_password_protected_pdfs():
     assert res_unlocked.metadata.get("encrypted") is not True
 
 
-def test_adversarial_high_entropy_binary_junk():
+def test_high_entropy_binary_junk():
     """Adversarially passes high-entropy random binary junk across all format extensions."""
     import os
     junk = os.urandom(1024)
@@ -866,7 +866,7 @@ def test_adversarial_high_entropy_binary_junk():
     assert res_yaml.status == "completed"
 
 
-def test_adversarial_missing_ocr_environment_and_tesseract_errors():
+def test_missing_ocr_environment_and_tesseract_errors():
     """Adversarially tests missing OCR environment and TesseractNotFoundError handling."""
     # 1. OCR completely unavailable (libraries missing)
     fake_png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4"
@@ -915,7 +915,7 @@ def test_adversarial_missing_ocr_environment_and_tesseract_errors():
         assert res_sparse.ocr_applied is False
 
 
-def test_adversarial_cas_path_traversal_and_partition_escapes(tmp_path: Path):
+def test_cas_path_traversal_and_partition_escapes(tmp_path: Path):
     """Adversarially tests path traversal and partition escape attempts through extract_cas_document."""
     home_dir = tmp_path / "cas_test_home"
     valid_sha = "e" * 64

@@ -29,7 +29,7 @@ import * as activityApi from '@/lib/activity';
 import type { ActivityItemResponse, ActivityUndoResponse, ExecutionPlan } from '@/types/activity';
 import type { ChatMessage, ToolTraceItem } from '@/lib/types';
 
-describe('Milestone 6 Challenger 2: Activity Undo & Chat Cards Stress Suite', () => {
+describe('Activity and Chat Components Suite', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     localStorage.clear();
@@ -42,9 +42,9 @@ describe('Milestone 6 Challenger 2: Activity Undo & Chat Cards Stress Suite', ()
   });
 
   // =========================================================================
-  // 1. Activity Timeline & Single-Click Undo Stress Tests
+  // 1. Activity Timeline & Single-Click Undo
   // =========================================================================
-  describe('1. Activity Timeline & Single-Click Undo Stress Tests', () => {
+  describe('1. Activity Timeline & Single-Click Undo Tests', () => {
     const baseItem: ActivityItemResponse = {
       id: 'evt-base',
       profile_id: 'prof-test',
@@ -334,7 +334,7 @@ describe('Milestone 6 Challenger 2: Activity Undo & Chat Cards Stress Suite', ()
   // =========================================================================
   // 2. Inline Chat Cards Stress Tests
   // =========================================================================
-  describe('2. Inline Chat Cards Stress Tests', () => {
+  describe('2. Inline Chat Cards Component Tests', () => {
     describe('2.1 ExecutionPlanCard', () => {
       it('renders all template intent titles correctly', () => {
         const intents: Array<[string | undefined, string]> = [
@@ -510,7 +510,7 @@ describe('Milestone 6 Challenger 2: Activity Undo & Chat Cards Stress Suite', ()
   // =========================================================================
   // 3. AppRail Navigation Route Links Stress Tests
   // =========================================================================
-  describe('3. AppRail Navigation Route Links Stress Tests', () => {
+  describe('3. AppRail Navigation Route Links Tests', () => {
     it('verifies route links for /p/[profileId]/vitals, /p/[profileId]/appointments, and /p/[profileId]/activity', async () => {
       const customProfile = {
         id: 'patient-42',

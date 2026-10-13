@@ -111,7 +111,7 @@ def _register_user(client: TestClient, email: str, password: str, name: str) -> 
 # ==============================================================================
 
 @pytest.mark.asyncio
-async def test_challenge_cross_user_identical_slug_isolation(notes_challenge_env):
+async def test_cross_user_identical_slug_isolation(notes_challenge_env):
     """Stress-test: User A and User B create notes with identical slugs in their respective profiles.
     
     Verifies:
@@ -209,7 +209,7 @@ async def test_challenge_cross_user_identical_slug_isolation(notes_challenge_env
 
 
 @pytest.mark.asyncio
-async def test_challenge_same_user_cross_profile_slug_behavior(notes_challenge_env):
+async def test_same_user_cross_profile_slug_behavior(notes_challenge_env):
     """Stress-test: Same user creating identical slugs across two different profiles they own.
     
     Verifies how the system resolves or scopes notes when the same user has two profiles.
@@ -252,7 +252,7 @@ async def test_challenge_same_user_cross_profile_slug_behavior(notes_challenge_e
 # ==============================================================================
 
 @pytest.mark.asyncio
-async def test_challenge_permission_scoping_clinical_vs_paperwork(notes_challenge_env):
+async def test_permission_scoping_clinical_vs_paperwork(notes_challenge_env):
     """Stress-test: Comprehensive verification of access levels on clinical notes.
     
     - 'manage': create, read, update, delete
@@ -386,7 +386,7 @@ async def test_challenge_permission_scoping_clinical_vs_paperwork(notes_challeng
 # ==============================================================================
 
 @pytest.mark.asyncio
-async def test_challenge_unauthorized_and_nonexistent_profiles(notes_challenge_env):
+async def test_unauthorized_and_nonexistent_profiles(notes_challenge_env):
     """Stress-test: 403 and 404 responses for unauthorized and non-existent profiles."""
     with TestClient(app) as client:
         user_a = _register_user(client, "alice_unauth@test.local", "Password123!", "Alice Unauth")
@@ -485,7 +485,7 @@ async def test_challenge_unauthorized_and_nonexistent_profiles(notes_challenge_e
         "slug;rm -rf /",
     ],
 )
-def test_challenge_path_traversal_in_slug(client: TestClient, malicious_slug: str):
+def test_path_traversal_in_slug(client: TestClient, malicious_slug: str):
     """Stress-test: Reject traversal payloads and invalid slug characters with 400 or 404."""
     # GET
     try:
@@ -505,7 +505,7 @@ def test_challenge_path_traversal_in_slug(client: TestClient, malicious_slug: st
         assert "InvalidURL" in type(exc).__name__ or "invalid" in str(exc).lower()
 
 
-def test_challenge_traversal_in_title_and_symlink_defense(client: TestClient, tmp_path: Path):
+def test_traversal_in_title_and_symlink_defense(client: TestClient, tmp_path: Path):
     """Stress-test: Path traversal in note title and symlink defense on disk."""
     from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
     from carefold.db.models import User
@@ -569,7 +569,7 @@ def test_challenge_traversal_in_title_and_symlink_defense(client: TestClient, tm
 # ==============================================================================
 
 @pytest.mark.asyncio
-async def test_challenge_concurrent_note_creation_identical_slugs(notes_challenge_env):
+async def test_concurrent_note_creation_identical_slugs(notes_challenge_env):
     """Stress-test: Simultaneous creation of notes with identical slugs."""
     from httpx import ASGITransport, AsyncClient
 
@@ -636,7 +636,7 @@ async def test_challenge_concurrent_note_creation_identical_slugs(notes_challeng
 
 
 @pytest.mark.asyncio
-async def test_challenge_concurrent_note_updates(notes_challenge_env):
+async def test_concurrent_note_updates(notes_challenge_env):
     """Stress-test: Simultaneous updating of the same note."""
     from httpx import ASGITransport, AsyncClient
 
@@ -700,7 +700,7 @@ async def test_challenge_concurrent_note_updates(notes_challenge_env):
 # ==============================================================================
 
 @pytest.mark.asyncio
-async def test_challenge_zero_loose_md_files(notes_challenge_env):
+async def test_zero_loose_md_files(notes_challenge_env):
     """Stress-test: Zero .md files created during CRUD operations."""
     notes_dir = settings.get_notes_dir()
     initial_mds = list(notes_dir.glob("**/*.md"))

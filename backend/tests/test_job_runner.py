@@ -1097,7 +1097,7 @@ async def test_process_leased_job_handler_failure_exponential_backoff(
 
 
 @pytest.mark.asyncio
-async def test_adversarial_concurrent_workers_no_double_execution(
+async def test_concurrent_workers_no_double_execution(
     tmp_path: Path,
     sample_profile_id: str,
 ):
@@ -1215,7 +1215,7 @@ async def test_adversarial_concurrent_workers_no_double_execution(
 
 
 @pytest.mark.asyncio
-async def test_adversarial_heartbeat_loop_prevents_lease_stealing(
+async def test_heartbeat_loop_prevents_lease_stealing(
     db_session_factory: async_sessionmaker[AsyncSession],
     sample_profile_id: str,
 ):
@@ -1293,7 +1293,7 @@ async def test_adversarial_heartbeat_loop_prevents_lease_stealing(
 
 
 @pytest.mark.asyncio
-async def test_adversarial_exception_backoff_and_terminal_failure_with_attachment(
+async def test_exception_backoff_and_terminal_failure_with_attachment(
     db_session_factory: async_sessionmaker[AsyncSession],
     sample_profile_id: str,
     tmp_path: Path,
@@ -1410,7 +1410,7 @@ async def test_adversarial_exception_backoff_and_terminal_failure_with_attachmen
 
 
 @pytest.mark.asyncio
-async def test_adversarial_idempotency_key_deduplication(
+async def test_idempotency_key_deduplication(
     db_session_factory: async_sessionmaker[AsyncSession],
     sample_profile_id: str,
     tmp_path: Path,
@@ -1505,7 +1505,7 @@ async def test_adversarial_idempotency_key_deduplication(
 
 
 @pytest.mark.asyncio
-async def test_adversarial_unregistered_job_kind_releases_lease_without_crash(
+async def test_unregistered_job_kind_releases_lease_without_crash(
     db_session_factory: async_sessionmaker[AsyncSession],
     sample_profile_id: str,
 ):
