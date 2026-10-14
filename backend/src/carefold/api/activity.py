@@ -130,8 +130,8 @@ async def get_activity_timeline(
             event=event,
             tool=tool,
         )
-    except Exception as err:
-        logger.exception("Failed to retrieve activity timeline for profile %s: %s", profile_id, err)
+    except Exception:
+        logger.exception("Failed to retrieve activity timeline")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve activity timeline.",

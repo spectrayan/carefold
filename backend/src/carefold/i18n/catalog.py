@@ -84,23 +84,28 @@ MULTILINGUAL_RED_FLAG_PATTERNS: Dict[str, List[Tuple[str, str]]] = {
 }
 
 
-@lru_cache(maxsize=16)
-def _load_raw_catalog(locale: str) -> Dict[str, Any]:
-    """Reads and caches a locale JSON catalog from resources/locales/{locale}.json."""
-    safe_locale = locale if locale in SUPPORTED_LOCALES else negotiate_locale(profile_locale=locale, default=DEFAULT_LOCALE)
-    if safe_locale not in SUPPORTED_LOCALES:
-        safe_locale = DEFAULT_LOCALE
+@lru_cache(maxsize=1)
+def _load_all_raw_catalogs() -> Dict[str, Dict[str, Any]]:
+    """Reads and caches all built-in locale JSON catalogs from constant filenames."""
     base_dir = LOCALES_DIR.resolve()
-    target_path = (base_dir / f"{safe_locale}.json").resolve()
-    try:
-        target_path.relative_to(base_dir)
-    except ValueError:
-        target_path = (base_dir / f"{DEFAULT_LOCALE}.json").resolve()
-    if not target_path.is_file():
-        target_path = (base_dir / f"{DEFAULT_LOCALE}.json").resolve()
-    raw = target_path.read_text(encoding="utf-8")
-    data = json.loads(raw)
-    return data if isinstance(data, dict) else {}
+    catalogs: Dict[str, Dict[str, Any]] = {}
+    for code in ("en-US", "es-ES", "fr-FR", "hi-IN", "ar-SA"):
+        target_path = base_dir / f"{code}.json"
+        if target_path.is_file():
+            raw = target_path.read_text(encoding="utf-8")
+            data = json.loads(raw)
+            catalogs[code] = data if isinstance(data, dict) else {}
+    return catalogs
+
+
+def _load_raw_catalog(locale: str) -> Dict[str, Any]:
+    """Returns a cached locale JSON catalog for the negotiated BCP 47 tag."""
+    catalogs = _load_all_raw_catalogs()
+    safe_locale = locale if locale in catalogs else negotiate_locale(profile_locale=locale, default=DEFAULT_LOCALE)
+    return dict(catalogs.get(safe_locale) or catalogs.get(DEFAULT_LOCALE, {}))
+
+
+_load_raw_catalog.cache_clear = _load_all_raw_catalogs.cache_clear  # type: ignore[attr-defined]
 
 
 def get_catalog(locale: str = DEFAULT_LOCALE) -> Dict[str, Any]:

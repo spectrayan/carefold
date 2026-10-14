@@ -101,7 +101,7 @@ async def get_locale_catalog(locale: str) -> LocaleCatalogResponse:
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
+            detail="Invalid or malformed BCP 47 locale tag.",
         ) from exc
 
     resolved_locale = negotiate_locale(profile_locale=canonical_req, default=DEFAULT_LOCALE)

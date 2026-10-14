@@ -1178,9 +1178,9 @@ class AgentExecutionService:
                             if name == SSE_EVENT_SUGGESTIONS:
                                 suggestions = data.get("suggestions", [])
 
-            except Exception as err:
-                logger.exception("resume_stream_error", error=str(err), thread_id=thread_id)
-                yield self.format_error_event(f"Resume error: {err}")
+            except Exception:
+                logger.exception("resume_stream_error", thread_id=thread_id)
+                yield self.format_error_event("Resume error: an unexpected error occurred during execution.")
                 return
 
             yield self.format_done_event(
