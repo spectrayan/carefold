@@ -25,6 +25,10 @@ from carefold.importers.fhir_bundle import (
     SUPPORTED_FHIR_RESOURCE_TYPES,
     parse_fhir_bundle,
 )
+from carefold.importers.fhir_converter import (
+    convert_clinical_payload_to_fhir,
+    parse_hl7v2_to_fhir,
+)
 from carefold.importers.iis_pdf import (
     SUPPORTED_IIS_VACCINES,
     parse_iis_immunisation_text,
@@ -38,6 +42,13 @@ from carefold.importers.service import (
     list_import_batches,
     stage_import,
 )
+from carefold.importers.smart_health_card import (
+    create_signed_shc_jws,
+    decode_shc_qr_uri,
+    encode_shc_qr_uri,
+    export_public_jwk,
+    verify_and_parse_smart_health_card,
+)
 
 __all__ = [
     "HIGH_FREQUENCY_HK_TYPES",
@@ -46,13 +57,20 @@ __all__ = [
     "SUPPORTED_IIS_VACCINES",
     "SUPPORTED_IMPORT_FORMATS",
     "commit_import_batch",
+    "convert_clinical_payload_to_fhir",
+    "create_signed_shc_jws",
+    "decode_shc_qr_uri",
     "detect_import_format",
     "discard_import_batch",
+    "encode_shc_qr_uri",
+    "export_public_jwk",
     "get_import_batch",
     "list_import_batches",
     "parse_apple_health_export",
     "parse_ccda_xml",
     "parse_fhir_bundle",
+    "parse_hl7v2_to_fhir",
     "parse_iis_immunisation_text",
     "stage_import",
+    "verify_and_parse_smart_health_card",
 ]

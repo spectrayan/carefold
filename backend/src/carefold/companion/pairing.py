@@ -29,7 +29,7 @@ import hashlib
 import hmac
 import json
 import secrets
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 import uuid
 
 from sqlalchemy import select
@@ -45,6 +45,7 @@ from carefold.db.models import (
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
 DEFAULT_COMPANION_CATEGORIES = ("vitals", "clinical_records", "reminders")
 VALID_COMPANION_CATEGORIES = frozenset({"vitals", "clinical_records", "reminders"})
+VALID_COMPANION_PLATFORMS = frozenset({"ios", "android"})
 PAIRING_CODE_TTL_MINUTES = 10
 DEVICE_TOKEN_TTL_DAYS = 90
 
@@ -99,8 +100,9 @@ async def initiate_companion_pairing(
     auth_provider: str = "local",
     bind_host: str = "127.0.0.1",
     explicit_lan_opt_in: bool = False,
+    platform: Literal["ios", "android"] = "ios",
 ) -> Dict[str, Any]:
-    """Initiates QR-based iOS companion pairing and persists a `pending_pair` `CompanionDevice` (`E8.1`)."""
+    """Initiates QR-based iOS or Android companion pairing and persists a `pending_pair` `CompanionDevice` (`E8.1`, `E8.2`)."""
     check_companion_mode_guard(
         auth_provider=auth_provider,
         bind_host=bind_host,
@@ -112,6 +114,7 @@ async def initiate_companion_pairing(
     clean_device_name = (device_name or "").strip()
     clean_host = (host or "").strip() or "127.0.0.1"
     clean_fingerprint = (cert_fingerprint_sha256 or "").strip()
+    clean_platform = (platform or "ios").strip().lower()
 
     if not clean_user_id:
         raise ValueError("user_id is required to initiate companion pairing.")
@@ -119,6 +122,10 @@ async def initiate_companion_pairing(
         raise ValueError("profile_id is required to initiate companion pairing.")
     if not clean_device_name:
         raise ValueError("device_name is required to initiate companion pairing.")
+    if clean_platform not in VALID_COMPANION_PLATFORMS:
+        raise ValueError(
+            f"Invalid companion platform '{platform}'. Allowed: {sorted(VALID_COMPANION_PLATFORMS)}"
+        )
     if not clean_fingerprint or not _normalize_fingerprint(clean_fingerprint):
         raise ValueError("cert_fingerprint_sha256 is required for pinned TLS companion pairing.")
     if int(port) < 1 or int(port) > 65535:
@@ -141,13 +148,14 @@ async def initiate_companion_pairing(
     expires_at = now + timedelta(minutes=PAIRING_CODE_TTL_MINUTES)
     pairing_code = f"cf-pair-{secrets.token_urlsafe(16)}"
     pairing_code_hash = _sha256_hex(pairing_code)
+    consent_connector_id = "android-companion" if clean_platform == "android" else "ios-companion"
 
     device = CompanionDevice(
         id=str(uuid.uuid4()),
         user_id=clean_user_id,
         profile_id=clean_profile_id,
         device_name=clean_device_name,
-        platform="ios",
+        platform=clean_platform,
         pairing_code_hash=pairing_code_hash,
         token_hash=None,
         cert_fingerprint_sha256=clean_fingerprint,
@@ -167,6 +175,7 @@ async def initiate_companion_pairing(
                 "device_id": device.id,
                 "profile_id": clean_profile_id,
                 "device_name": clean_device_name,
+                "platform": clean_platform,
                 "allowed_categories": categories,
             },
             sort_keys=True,
@@ -187,6 +196,8 @@ async def initiate_companion_pairing(
         detail_redacted=json.dumps({
             "device_id": device.id,
             "device_name": clean_device_name,
+            "platform": clean_platform,
+            "connector_id": consent_connector_id,
             "allowed_categories": categories,
             "expires_at": expires_at.isoformat(),
         }),
@@ -199,6 +210,8 @@ async def initiate_companion_pairing(
         "device_id": device.id,
         "profile_id": clean_profile_id,
         "device_name": device.device_name,
+        "platform": device.platform,
+        "connector_id": consent_connector_id,
         "host": clean_host,
         "port": int(port),
         "pairing_code": pairing_code,
@@ -215,7 +228,7 @@ async def complete_companion_pairing(
     pairing_code: str,
     client_cert_fingerprint_sha256: str,
 ) -> Dict[str, Any]:
-    """Completes companion pairing after verifying the one-time code and pinned TLS certificate fingerprint (`E8.1`)."""
+    """Completes companion pairing after verifying the one-time code and pinned TLS certificate fingerprint (`E8.1`, `E8.2`)."""
     clean_device_id = (device_id or "").strip()
     clean_code = (pairing_code or "").strip()
     clean_client_fp = (client_cert_fingerprint_sha256 or "").strip()
@@ -263,7 +276,11 @@ async def complete_companion_pairing(
             "Pinned TLS certificate fingerprint verification failed: client fingerprint does not match server certificate."
         )
 
-    device_token = f"cf-ios-{secrets.token_urlsafe(32)}"
+    platform = (device.platform or "ios").strip().lower()
+    token_prefix = "cf-android-" if platform == "android" else "cf-ios-"
+    consent_connector_id = "android-companion" if platform == "android" else "ios-companion"
+
+    device_token = f"{token_prefix}{secrets.token_urlsafe(32)}"
     device.token_hash = _sha256_hex(device_token)
     device.pairing_code_hash = None
     device.status = "active"
@@ -276,7 +293,7 @@ async def complete_companion_pairing(
         id=str(uuid.uuid4()),
         profile_id=device.profile_id,
         connection_id=None,
-        connector_id="ios-companion",
+        connector_id=consent_connector_id,
         granted_by_user_id=device.user_id,
         categories=device.allowed_categories,
         scopes=["companion:sync"],
@@ -296,6 +313,7 @@ async def complete_companion_pairing(
             {
                 "device_id": device.id,
                 "profile_id": device.profile_id,
+                "platform": platform,
                 "allowed_categories": device.allowed_categories,
             },
             sort_keys=True,
@@ -316,6 +334,8 @@ async def complete_companion_pairing(
         detail_redacted=json.dumps({
             "device_id": device.id,
             "device_name": device.device_name,
+            "platform": platform,
+            "connector_id": consent_connector_id,
             "allowed_categories": device.allowed_categories,
             "consent_grant_id": consent_grant.id,
         }),
@@ -328,6 +348,8 @@ async def complete_companion_pairing(
         "device_id": device.id,
         "profile_id": device.profile_id,
         "device_name": device.device_name,
+        "platform": device.platform,
+        "connector_id": consent_connector_id,
         "device_token": device_token,
         "status": device.status,
         "allowed_categories": device.allowed_categories,
@@ -401,6 +423,7 @@ async def revoke_companion_device(
         )
 
     now = utc_now()
+    consent_connector_id = "android-companion" if device.platform == "android" else "ios-companion"
     device.status = "revoked"
     device.token_hash = None
     device.pairing_code_hash = None
@@ -408,7 +431,7 @@ async def revoke_companion_device(
 
     consent_stmt = select(ConsentGrant).where(
         ConsentGrant.profile_id == clean_profile_id,
-        ConsentGrant.connector_id == "ios-companion",
+        ConsentGrant.connector_id == consent_connector_id,
         ConsentGrant.status == "active",
     )
     consent_res = await session.execute(consent_stmt)
@@ -441,6 +464,7 @@ async def revoke_companion_device(
         detail_redacted=json.dumps({
             "device_id": device.id,
             "device_name": device.device_name,
+            "platform": device.platform,
             "status": "revoked",
         }),
     )

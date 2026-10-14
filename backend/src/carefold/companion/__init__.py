@@ -19,6 +19,7 @@ from carefold.companion.pairing import (
     DEFAULT_COMPANION_CATEGORIES,
     LOOPBACK_HOSTS,
     VALID_COMPANION_CATEGORIES,
+    VALID_COMPANION_PLATFORMS,
     CompanionPairingError,
     authenticate_companion_device,
     check_companion_mode_guard,
@@ -28,6 +29,7 @@ from carefold.companion.pairing import (
 )
 from carefold.companion.sync import (
     SUPPORTED_CLINICAL_RECORD_TYPES,
+    SUPPORTED_HEALTH_CONNECT_RECORD_TYPES,
     evaluate_vitals_red_flags,
     ingest_companion_sync,
     list_companion_reminders,
@@ -37,7 +39,9 @@ __all__ = [
     "LOOPBACK_HOSTS",
     "DEFAULT_COMPANION_CATEGORIES",
     "VALID_COMPANION_CATEGORIES",
+    "VALID_COMPANION_PLATFORMS",
     "SUPPORTED_CLINICAL_RECORD_TYPES",
+    "SUPPORTED_HEALTH_CONNECT_RECORD_TYPES",
     "CompanionPairingError",
     "check_companion_mode_guard",
     "initiate_companion_pairing",

@@ -16,7 +16,7 @@
 id: google-workspace-gmail
 version: 0.1.0
 name: Google Workspace Gmail (Curated Remote MCP)
-description: Curated remote HTTPS MCP bridge for read-only label-filtered Gmail appointment confirmations and school notices.
+description: Curated remote HTTPS MCP bridge for label-filtered Gmail appointment confirmations, school notices, and irreversible approved email dispatch.
 kind: mcp
 mcp_endpoint: https://workspace-mcp.spectrayan.com/mcp
 categories:
@@ -33,9 +33,10 @@ data_flows:
     - https
   allowed_ports:
     - 443
-  egress_direction: egress_only
+  egress_direction: bidirectional
   pii_types_transferred:
     - email_metadata
+    - email_content
 auth:
   type: oauth2
   pkce: true
@@ -44,6 +45,7 @@ auth:
   rotating_refresh: false
   scopes:
     - https://www.googleapis.com/auth/gmail.readonly
+    - https://www.googleapis.com/auth/gmail.send
   authorization_url: https://accounts.google.com/o/oauth2/v2/auth
   token_url: https://oauth2.googleapis.com/token
 mcp_tools:
@@ -57,6 +59,24 @@ mcp_tools:
           type: string
         max_results:
           type: integer
+  - name: gmail_send_message
+    description: Send a reviewed local EmailDraft via curated Gmail MCP (irreversible action requiring human approval)
+    risk_tier: irreversible
+    input_schema:
+      type: object
+      properties:
+        draft_id:
+          type: string
+        recipient:
+          type: string
+        subject:
+          type: string
+        body_sha256:
+          type: string
+      required:
+        - draft_id
+        - recipient
+        - subject
 trust:
   publisher: Spectrayan
   verified: true

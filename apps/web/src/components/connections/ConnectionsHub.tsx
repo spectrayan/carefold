@@ -42,6 +42,7 @@ import { DataFlowsPanel } from './DataFlowsPanel';
 import { McpPinsAndRoutinesPanel } from './McpPinsAndRoutinesPanel';
 import { EmailDraftsAndSchoolFeedsPanel } from './EmailDraftsAndSchoolFeedsPanel';
 import { CompanionAndHandoverPanel } from './CompanionAndHandoverPanel';
+import { CoordinatedV2Panel } from './CoordinatedV2Panel';
 import type {
   ConnectionItem,
   ConnectorManifestSummary,
@@ -64,13 +65,27 @@ import type {
   TeenHandoverResponse,
   ViewerSectionKey,
 } from '@/types/autonomyBatch6';
+import type {
+  AuditChainVerificationResponse,
+  OsServiceDescriptorItem,
+  SmartHealthCardVerificationResult,
+  SmartSchedulingSlotItem,
+  V2ConnectorSummary,
+  ZocdocBookingPreview,
+} from '@/types/autonomyBatch7';
+import type {
+  DiscoverSmartSchedulingSlotsPayload,
+  PreviewZocdocBookingPayload,
+  VerifySmartHealthCardPayload,
+} from '@/lib/autonomyBatch7Client';
 
 export type ConnectionsHubTab =
   | 'connections'
   | 'data_flows'
   | 'mcp_routines'
   | 'email_school'
-  | 'companion_handover';
+  | 'companion_handover'
+  | 'coordinated_v2';
 
 export interface ConnectionsHubProps {
   connectors: ConnectorManifestSummary[];
@@ -85,6 +100,12 @@ export interface ConnectionsHubProps {
   companionDevices?: CompanionDeviceItem[];
   pairingQr?: CompanionPairingQrPayload | null;
   handoverResult?: TeenHandoverResponse | null;
+  shcResult?: SmartHealthCardVerificationResult | null;
+  smartSlots?: SmartSchedulingSlotItem[];
+  zocdocPreview?: ZocdocBookingPreview | null;
+  v2Connectors?: V2ConnectorSummary[];
+  auditVerification?: AuditChainVerificationResponse | null;
+  serviceDescriptors?: OsServiceDescriptorItem[];
   isLoading?: boolean;
   onCreateConnection?: (payload: CreateConnectionPayload) => void | Promise<void>;
   onSyncNow?: (connectionId: string) => void | Promise<void>;
@@ -121,6 +142,16 @@ export interface ConnectionsHubProps {
   onExecuteTeenHandover?: (
     payload: TeenHandoverPayload
   ) => void | Promise<void>;
+  onVerifySmartHealthCard?: (
+    payload: VerifySmartHealthCardPayload
+  ) => void | Promise<void>;
+  onDiscoverSmartSlots?: (
+    payload: DiscoverSmartSchedulingSlotsPayload
+  ) => void | Promise<void>;
+  onRequestZocdocApproval?: (
+    payload: PreviewZocdocBookingPayload
+  ) => void | Promise<void>;
+  onVerifyAuditChain?: () => void | Promise<void>;
   className?: string;
 }
 
@@ -153,6 +184,12 @@ export function ConnectionsHub({
   companionDevices = [],
   pairingQr = null,
   handoverResult = null,
+  shcResult = null,
+  smartSlots = [],
+  zocdocPreview = null,
+  v2Connectors = [],
+  auditVerification = null,
+  serviceDescriptors = [],
   isLoading = false,
   onCreateConnection,
   onSyncNow,
@@ -172,6 +209,10 @@ export function ConnectionsHub({
   onRevokeCompanionDevice,
   onSaveViewerSections,
   onExecuteTeenHandover,
+  onVerifySmartHealthCard,
+  onDiscoverSmartSlots,
+  onRequestZocdocApproval,
+  onVerifyAuditChain,
   className,
 }: ConnectionsHubProps) {
   const [activeTab, setActiveTab] = useState<ConnectionsHubTab>('connections');
@@ -267,6 +308,15 @@ export function ConnectionsHub({
           </Button>
           <Button
             size="sm"
+            variant={activeTab === 'coordinated_v2' ? 'primary' : 'ghost'}
+            data-testid="hub-tab-coordinated-v2"
+            leftIcon={<ShieldCheck className="w-3.5 h-3.5" />}
+            onClick={() => setActiveTab('coordinated_v2')}
+          >
+            Coordinated v2 (SHC, Scheduling &amp; Audit)
+          </Button>
+          <Button
+            size="sm"
             variant={activeTab === 'data_flows' ? 'primary' : 'ghost'}
             data-testid="hub-tab-data-flows"
             leftIcon={<Network className="w-3.5 h-3.5" />}
@@ -325,6 +375,19 @@ export function ConnectionsHub({
           onRevokeCompanionDevice={onRevokeCompanionDevice}
           onSaveViewerSections={onSaveViewerSections}
           onExecuteTeenHandover={onExecuteTeenHandover}
+        />
+      ) : activeTab === 'coordinated_v2' ? (
+        <CoordinatedV2Panel
+          shcResult={shcResult}
+          smartSlots={smartSlots}
+          zocdocPreview={zocdocPreview}
+          v2Connectors={v2Connectors}
+          auditVerification={auditVerification}
+          serviceDescriptors={serviceDescriptors}
+          onVerifySmartHealthCard={onVerifySmartHealthCard}
+          onDiscoverSmartSlots={onDiscoverSmartSlots}
+          onRequestZocdocApproval={onRequestZocdocApproval}
+          onVerifyAuditChain={onVerifyAuditChain}
         />
       ) : (
         <div className="space-y-6">

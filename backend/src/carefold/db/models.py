@@ -1730,6 +1730,17 @@ class AuditEventRecord(Base):
         nullable=True,
         doc="Serialized JSON dictionary containing sanitized metadata and durations",
     )
+    prev_hash: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        doc="Previous audit event SHA-256 entry_hash in the profile chain ('GENESIS' for first event)",
+    )
+    entry_hash: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        doc="Tamper-evident SHA-256 hash chaining this audit record to prev_hash",
+    )
 
     profile: Mapped[Optional[Profile]] = relationship("Profile")
     actor: Mapped[Optional[User]] = relationship("User")
@@ -3594,7 +3605,17 @@ class EmailDraft(Base):
         default="draft",
         nullable=False,
         index=True,
-        doc="Lifecycle status: draft, exported, archived",
+        doc="Lifecycle status: draft, exported, sent_via_approved_mcp, archived",
+    )
+    sent_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Timestamp when draft was sent via approved gmail_send_message (UTC)",
+    )
+    external_message_id: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="External Gmail message ID when sent via approved gmail_send_message",
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

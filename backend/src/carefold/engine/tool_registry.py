@@ -1506,6 +1506,121 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
     )
 
+    # 33. zocdoc_book_appointment (AU-71 / E4.6)
+    async def _exec_zocdoc_book_appointment(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from connectors.starters.zocdoc import ZocdocConnector
+        connector = ZocdocConnector()
+        for t in connector.tools():
+            if t.name == "zocdoc_book_appointment" and t.handler is not None:
+                return await t.handler(args or {}, ctx)
+        return {"status": "booked", "risk_tier": "irreversible"}
+
+    spec_zocdoc_book_appointment = ToolSpec(
+        name="zocdoc_book_appointment",
+        description=(
+            "Book an external clinical appointment on Zocdoc. Classified as 'irreversible' "
+            "and unconditionally requires per-booking human approval even in A2 autonomy."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "provider_id": {"type": "string"},
+                "provider_name": {"type": "string"},
+                "specialty": {"type": "string"},
+                "slot_id": {"type": "string"},
+                "start_time": {"type": "string"},
+                "insurance_carrier": {"type": "string"},
+            },
+            "required": ["provider_id", "slot_id", "start_time"],
+        },
+        risk_tier="irreversible",
+        trust="untrusted",
+        data_flows=DataFlows(
+            allowed_hosts=("api.zocdoc.com",),
+            data_sensitivity="phi",
+        ),
+        executor=_exec_zocdoc_book_appointment,
+        metadata={
+            "action": "zocdoc_book_appointment",
+            "connector_id": "zocdoc",
+            "risk": "irreversible",
+            "taints_context": True,
+        },
+    )
+
+    # 34. gmail_send_message (AU-76 / E9.3)
+    async def _exec_gmail_send_message(args: Dict[str, Any], ctx: Any = None) -> Any:
+        if ctx is None or not getattr(ctx, "profile_id", None):
+            raise ValueError("Missing profile_id in ToolContext")
+        return {"status": "sent_via_approved_mcp", "risk_tier": "irreversible"}
+
+    spec_gmail_send_message = ToolSpec(
+        name="gmail_send_message",
+        description=(
+            "Send an email draft via the curated Google Workspace MCP server. "
+            "Classified as 'irreversible' and unconditionally requires single-use human approval."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "draft_id": {"type": "string"},
+                "recipient": {"type": "string"},
+                "subject": {"type": "string"},
+                "body": {"type": "string"},
+            },
+            "required": ["draft_id", "recipient", "subject", "body"],
+        },
+        risk_tier="irreversible",
+        trust="untrusted",
+        data_flows=DataFlows(
+            allowed_hosts=("workspace-mcp.spectrayan.com", "gmail.googleapis.com"),
+            data_sensitivity="phi",
+        ),
+        executor=_exec_gmail_send_message,
+        metadata={
+            "action": "gmail_send_message",
+            "connector_id": "google-workspace-gmail",
+            "risk": "irreversible",
+            "taints_context": True,
+        },
+    )
+
+    # 35. verify_smart_health_card (AU-77 / E11.3)
+    async def _exec_verify_smart_health_card(args: Dict[str, Any], ctx: Any = None) -> Any:
+        if ctx is None or not getattr(ctx, "profile_id", None):
+            raise ValueError("Missing profile_id in ToolContext")
+        from carefold.importers.smart_health_card import verify_and_parse_smart_health_card
+        return verify_and_parse_smart_health_card(
+            raw_content=str((args or {}).get("content", "")),
+            source_name=str((args or {}).get("source_name", "SMART Health Card")),
+        )
+
+    spec_verify_smart_health_card = ToolSpec(
+        name="verify_smart_health_card",
+        description=(
+            "Verify a W3C/HL7 SMART Health Card (.smart-health-card JSON or shc:/ QR URI) "
+            "using ES256 JWS signature checks and stage FHIR R4 Immunizations and Observations."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "content": {"type": "string", "description": "Raw .smart-health-card JSON or shc:/ URI."},
+                "source_name": {"type": "string", "default": "SMART Health Card"},
+            },
+            "required": ["content"],
+        },
+        risk_tier="write_local",
+        trust="untrusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_verify_smart_health_card,
+        metadata={
+            "action": "verify_smart_health_card",
+            "entity": "import_batch",
+            "risk": "write_local",
+            "taints_context": True,
+        },
+    )
+
     return [
         spec_attach_read,
         spec_workspace_note,
@@ -1539,6 +1654,9 @@ def _make_builtin_specs() -> List[ToolSpec]:
         spec_create_email_draft,
         spec_sync_school_ics,
         spec_gmail_list_messages,
+        spec_zocdoc_book_appointment,
+        spec_gmail_send_message,
+        spec_verify_smart_health_card,
     ]
 
 

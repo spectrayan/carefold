@@ -50,9 +50,13 @@ router = APIRouter(tags=["companion"])
 
 
 class InitiateCompanionPairingRequest(BaseModel):
-    """Request payload for initiating QR-based iOS companion pairing."""
+    """Request payload for initiating QR-based iOS or Android companion pairing."""
 
-    device_name: str = Field(..., min_length=1, max_length=255, description="Human-readable iOS device name")
+    device_name: str = Field(..., min_length=1, max_length=255, description="Human-readable companion device name")
+    platform: Literal["ios", "android"] = Field(
+        "ios",
+        description="Companion device platform ('ios' or 'android')",
+    )
     host: str = Field("127.0.0.1", min_length=1, max_length=255, description="Carefold host/IP encoded in QR")
     port: int = Field(8000, ge=1, le=65535, description="Carefold port encoded in QR")
     cert_fingerprint_sha256: str = Field(
@@ -70,30 +74,37 @@ class InitiateCompanionPairingRequest(BaseModel):
     explicit_lan_opt_in: bool = Field(False, description="Whether Mode L LAN opt-in is explicitly enabled")
 
 
+PairInitiateRequest = InitiateCompanionPairingRequest
+
+
 class CompleteCompanionPairingRequest(BaseModel):
-    """Request payload sent by the iOS companion app to complete QR pairing."""
+    """Request payload sent by the iOS or Android companion app to complete QR pairing."""
 
     device_id: str = Field(..., min_length=1, description="CompanionDevice UUID from QR payload")
     pairing_code: str = Field(..., min_length=1, description="One-time pairing code from QR payload")
     client_cert_fingerprint_sha256: str = Field(
         ...,
         min_length=1,
-        description="Observed TLS server certificate SHA-256 fingerprint verified by the iOS client",
+        description="Observed TLS server certificate SHA-256 fingerprint verified by the companion client",
     )
 
 
 class CompanionSyncRequest(BaseModel):
-    """Request payload for syncing aggregated HealthKit Observations and HKClinicalRecords."""
+    """Request payload for syncing aggregated HealthKit Observations, HKClinicalRecords, and Android Health Connect records."""
 
     device_id: Optional[str] = Field(None, description="CompanionDevice ID when authenticated via user session")
     device_token: Optional[str] = Field(None, description="Optional companion bearer token")
     observations: List[Dict[str, Any]] = Field(
         default_factory=list,
-        description="Aggregated HealthKit Observation payloads",
+        description="Aggregated HealthKit / companion Observation payloads",
     )
     clinical_records: List[Dict[str, Any]] = Field(
         default_factory=list,
         description="HKClinicalRecord FHIR R4 resources (Condition, MedicationRequest, AllergyIntolerance, Immunization, Observation)",
+    )
+    health_connect_records: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Android Health Connect records (StepsRecord, HeartRateRecord, BloodPressureRecord, WeightRecord, BloodGlucoseRecord, OxygenSaturationRecord, SleepSessionRecord, MedicalResource)",
     )
 
 
@@ -176,7 +187,7 @@ def _extract_companion_bearer_token(
     request: Request,
     explicit_token: Optional[str] = None,
 ) -> Optional[str]:
-    """Extracts a `cf-ios-...` companion bearer token from headers or explicit payload parameter."""
+    """Extracts a `cf-ios-...` or `cf-android-...` companion bearer token from headers or explicit payload parameter."""
     if explicit_token and explicit_token.strip():
         return explicit_token.strip()
 
@@ -187,7 +198,7 @@ def _extract_companion_bearer_token(
     auth_header = request.headers.get("Authorization") or request.headers.get("authorization")
     if auth_header:
         raw = auth_header[7:].strip() if auth_header.lower().startswith("bearer ") else auth_header.strip()
-        if raw.startswith("cf-ios-"):
+        if raw.startswith(("cf-ios-", "cf-android-")):
             return raw
 
     return None
@@ -201,7 +212,7 @@ async def _resolve_sync_companion_device(
     device_id: Optional[str] = None,
     explicit_token: Optional[str] = None,
 ) -> CompanionDevice:
-    """Resolves an active `CompanionDevice` via either its `cf-ios-...` bearer token or an authenticated steward session."""
+    """Resolves an active `CompanionDevice` via either its `cf-ios-...` / `cf-android-...` bearer token or an authenticated steward session."""
     clean_profile_id = (profile_id or "").strip()
     comp_token = _extract_companion_bearer_token(request, explicit_token=explicit_token)
     if comp_token:
@@ -258,7 +269,7 @@ async def _resolve_sync_companion_device(
 @router.post(
     "/profiles/{profile_id}/companion/pair/initiate",
     status_code=status.HTTP_201_CREATED,
-    summary="Initiate QR-based iOS companion pairing with Mode S guard and pinned TLS fingerprint",
+    summary="Initiate QR-based iOS or Android companion pairing with Mode S guard and pinned TLS fingerprint",
 )
 async def initiate_companion_pairing_endpoint(
     profile_id: str,
@@ -285,6 +296,7 @@ async def initiate_companion_pairing_endpoint(
             auth_provider=active_auth_provider,
             bind_host=active_bind_host,
             explicit_lan_opt_in=payload.explicit_lan_opt_in,
+            platform=payload.platform,
         )
     except PermissionError as exc:
         raise HTTPException(
@@ -300,14 +312,14 @@ async def initiate_companion_pairing_endpoint(
 
 @router.post(
     "/profiles/{profile_id}/companion/pair/complete",
-    summary="Complete iOS companion pairing by verifying one-time code and pinned TLS certificate fingerprint",
+    summary="Complete iOS or Android companion pairing by verifying one-time code and pinned TLS certificate fingerprint",
 )
 async def complete_companion_pairing_endpoint(
     profile_id: str,
     payload: CompleteCompanionPairingRequest,
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
-    """Verifies the one-time pairing code and pinned TLS fingerprint, issuing a scoped `cf-ios-...` token."""
+    """Verifies the one-time pairing code and pinned TLS fingerprint, issuing a scoped companion token."""
     clean_profile_id = (profile_id or "").strip()
     dev_res = await db.execute(
         select(CompanionDevice).where(CompanionDevice.id == payload.device_id.strip())
@@ -335,7 +347,7 @@ async def complete_companion_pairing_endpoint(
 
 @router.get(
     "/profiles/{profile_id}/companion/devices",
-    summary="List paired and pending iOS companion devices for a care profile",
+    summary="List paired and pending companion devices for a care profile",
 )
 async def list_profile_companion_devices(
     profile_id: str,
@@ -359,7 +371,7 @@ async def list_profile_companion_devices(
 
 @router.delete(
     "/profiles/{profile_id}/companion/devices/{device_id}",
-    summary="Revoke a paired iOS companion device and invalidate its bearer token",
+    summary="Revoke a paired companion device and invalidate its bearer token",
 )
 async def revoke_profile_companion_device(
     profile_id: str,
@@ -391,7 +403,7 @@ async def revoke_profile_companion_device(
 
 @router.post(
     "/profiles/{profile_id}/companion/sync",
-    summary="Ingest aggregated HealthKit Observations and HKClinicalRecord FHIR R4 resources from iOS companion",
+    summary="Ingest aggregated HealthKit / Android Health Connect Observations and clinical records",
 )
 async def sync_companion_records_endpoint(
     profile_id: str,
@@ -400,7 +412,7 @@ async def sync_companion_records_endpoint(
     db: AsyncSession = Depends(get_db),
     auth: AuthPort = Depends(get_auth),
 ) -> Dict[str, Any]:
-    """Validates and ingests HealthKit `Observation` readings and `HKClinicalRecord` resources."""
+    """Validates and ingests HealthKit / Android Health Connect `Observation` readings and clinical resources."""
     device = await _resolve_sync_companion_device(
         request=request,
         profile_id=profile_id,
@@ -416,6 +428,7 @@ async def sync_companion_records_endpoint(
             device=device,
             observations=payload.observations,
             clinical_records=payload.clinical_records,
+            health_connect_records=payload.health_connect_records,
         )
     except CompanionPairingError as exc:
         raise HTTPException(
@@ -431,7 +444,7 @@ async def sync_companion_records_endpoint(
 
 @router.get(
     "/profiles/{profile_id}/companion/reminders",
-    summary="Poll PHI-safe reminder notification schedules for iOS companion local notifications",
+    summary="Poll PHI-safe reminder notification schedules for companion local notifications",
 )
 async def list_companion_reminders_endpoint(
     profile_id: str,
@@ -440,7 +453,7 @@ async def list_companion_reminders_endpoint(
     db: AsyncSession = Depends(get_db),
     auth: AuthPort = Depends(get_auth),
 ) -> Dict[str, Any]:
-    """Returns PHI-redacted local notification schedules (`E4.5`) for a paired iOS companion device."""
+    """Returns PHI-redacted local notification schedules (`E4.5`) for a paired companion device."""
     device = await _resolve_sync_companion_device(
         request=request,
         profile_id=profile_id,
@@ -464,4 +477,10 @@ async def list_companion_reminders_endpoint(
     }
 
 
-__all__ = ["router"]
+__all__ = [
+    "CompanionSyncRequest",
+    "CompleteCompanionPairingRequest",
+    "InitiateCompanionPairingRequest",
+    "PairInitiateRequest",
+    "router",
+]

@@ -140,7 +140,7 @@ async def test_get_db_rolls_back_on_unhandled_exception(tmp_path: Path, monkeypa
 
 @pytest.mark.asyncio
 async def test_get_db_rolls_back_on_commit_integrity_error(tmp_path: Path, monkeypatch):
-    """Empirical probe: verify get_db() properly rolls back when commit() raises an IntegrityError."""
+    """Verify get_db() properly rolls back when commit() raises an IntegrityError."""
     db_file = tmp_path / "test_get_db_integrity.db"
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"
     monkeypatch.setenv("CAREFOLD_DATABASE_URL", url)

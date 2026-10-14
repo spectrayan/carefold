@@ -33,5 +33,9 @@ export type { EmailDraftsAndSchoolFeedsPanelProps } from './EmailDraftsAndSchool
 export { CompanionAndHandoverPanel } from './CompanionAndHandoverPanel';
 export type { CompanionAndHandoverPanelProps } from './CompanionAndHandoverPanel';
 
+export { CoordinatedV2Panel } from './CoordinatedV2Panel';
+export type { CoordinatedV2PanelProps } from './CoordinatedV2Panel';
+
 export { ConnectionsHub } from './ConnectionsHub';
 export type { ConnectionsHubProps, ConnectionsHubTab } from './ConnectionsHub';
+

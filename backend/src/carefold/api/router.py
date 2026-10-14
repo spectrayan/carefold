@@ -28,6 +28,7 @@ from carefold.api.auth import router as auth_router
 from carefold.api.chat import router as chat_router
 from carefold.api.companion import router as companion_router
 from carefold.api.connections import router as connections_router
+from carefold.api.coordinated import router as coordinated_router
 from carefold.api.email_drafts import router as email_drafts_router
 from carefold.api.handover import router as handover_router
 from carefold.api.health import router as health_router
@@ -59,6 +60,7 @@ api_router.include_router(routines_router)
 api_router.include_router(email_drafts_router)
 api_router.include_router(companion_router)
 api_router.include_router(handover_router)
+api_router.include_router(coordinated_router)
 
 api_router.include_router(agents_router)
 api_router.include_router(skills_router)

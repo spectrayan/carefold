@@ -1,0 +1,60 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+id: oura
+version: 0.1.0
+name: Oura Ring (Daily Sleep, Readiness & HRV)
+description: Ingests daily aggregated sleep, readiness, resting heart rate, and HRV observations from Oura Ring v2 API.
+categories:
+  - vitals
+  - wellness
+entrypoint: connectors.starters.wearables_v2:OuraConnector
+data_flows:
+  allowed_hosts:
+    - api.ouraring.com
+  allowed_schemes:
+    - https
+  allowed_ports:
+    - 443
+  egress_direction: egress_only
+  pii_types_transferred:
+    - vitals
+auth:
+  type: oauth2
+  pkce: true
+  client_source: byo
+  token_rotation: true
+  rotating_refresh: true
+  scopes:
+    - daily
+    - heartrate
+  authorization_url: https://cloud.ouraring.com/oauth/authorize
+  token_url: https://api.ouraring.com/oauth/token
+tools:
+  - name: oura_latest_metrics
+    description: Retrieves the most recent normalized daily Oura Ring sleep, readiness, RHR, and HRV observations.
+    risk_class: read_only
+trust:
+  publisher: Spectrayan
+  verified: true
+  sandbox_level: strict
+  trust_level: trusted
+policy:
+  rate_limit_rpm: 60
+  timeout_seconds: 30.0
+  retry_max_attempts: 3
+terms:
+  license: Apache-2.0
+  ai_use_allowed: true

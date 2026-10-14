@@ -24,8 +24,19 @@ from connectors.base import Connector
 from connectors.errors import ConnectorError
 from connectors.manifest import ConnectorManifest
 from connectors.starters.calendar import CalDavConnector, GoogleCalendarConnector
+from connectors.starters.ehr_smart_v2 import (
+    AthenahealthConnector,
+    CmsBlueButtonConnector,
+    OracleHealthConnector,
+)
 from connectors.starters.epic_smart import EpicSmartConnector
+from connectors.starters.wearables_v2 import (
+    GoogleHealthConnector,
+    MicrosoftGraphCalendarConnector,
+    OuraConnector,
+)
 from connectors.starters.withings import WithingsConnector
+from connectors.starters.zocdoc import ZocdocConnector
 
 _STARTER_MANIFESTS_DIR = Path(__file__).resolve().parent / "starters" / "manifests"
 
@@ -34,6 +45,13 @@ _STARTER_FACTORIES: Dict[str, Callable[[ConnectorManifest], Connector]] = {
     "google-calendar": lambda manifest: GoogleCalendarConnector(manifest=manifest),
     "caldav": lambda manifest: CalDavConnector(manifest=manifest),
     "epic-smart": lambda manifest: EpicSmartConnector(manifest=manifest),
+    "zocdoc": lambda manifest: ZocdocConnector(manifest=manifest),
+    "oracle-health": lambda manifest: OracleHealthConnector(manifest=manifest),
+    "athenahealth": lambda manifest: AthenahealthConnector(manifest=manifest),
+    "cms-blue-button": lambda manifest: CmsBlueButtonConnector(manifest=manifest),
+    "oura": lambda manifest: OuraConnector(manifest=manifest),
+    "google-health": lambda manifest: GoogleHealthConnector(manifest=manifest),
+    "microsoft-graph": lambda manifest: MicrosoftGraphCalendarConnector(manifest=manifest),
 }
 
 _STARTER_MANIFEST_FILES = (
@@ -42,6 +60,8 @@ _STARTER_MANIFEST_FILES = (
     "caldav.yaml",
     "epic_smart.yaml",
 )
+
+_V1_STARTER_IDS = frozenset({"withings", "google-calendar", "caldav", "epic-smart"})
 
 
 class ConnectorRegistry:
@@ -78,13 +98,24 @@ class ConnectorRegistry:
         self._manifests[manifest.id] = manifest
         self._factories[manifest.id] = factory
 
-    def list_manifests(self, include_mcp: bool = False) -> List[ConnectorManifest]:
-        """Returns all registered connector manifests in deterministic order."""
-        if include_mcp:
-            return list(self._manifests.values())
-        return [
-            m for m in self._manifests.values() if getattr(m, "kind", "rest") != "mcp"
-        ]
+    def list_manifests(
+        self,
+        include_mcp: bool = False,
+        include_v2: bool = False,
+    ) -> List[ConnectorManifest]:
+        """Returns registered connector manifests in deterministic order."""
+        items = list(self._manifests.values())
+        if not include_mcp:
+            items = [m for m in items if getattr(m, "kind", "rest") != "mcp"]
+        if not include_v2 and self._manifests_dir == _STARTER_MANIFESTS_DIR:
+            items = [
+                m
+                for m in items
+                if m.id in _V1_STARTER_IDS
+                or (include_mcp and getattr(m, "kind", "rest") == "mcp")
+                or m.id not in _STARTER_FACTORIES
+            ]
+        return items
 
     def get_manifest(self, connector_id: str) -> ConnectorManifest:
         """Returns the validated ConnectorManifest for `connector_id`."""

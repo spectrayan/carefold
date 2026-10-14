@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Gmail Read-Only via Curated Google Workspace MCP Adapter (AU-59 / E9.2, E11.4).
+"""Gmail Read-Only & Irreversible Approved Send via Curated Google Workspace MCP Adapter (AU-59, AU-76).
 
 Implements:
 - Label-filtered read-only message parsing (`ALLOWED_GMAIL_LABELS`).
@@ -23,6 +23,9 @@ Implements:
 - Review-before-save staging into `ImportBatch` (`format="gmail_mcp"`, `status="staged"`).
 - Per-item explicit user confirmation (`confirm_gmail_staged_item`) materializing
   confirmed items into `Appointment` or `Reminder` rows with `AuditEventRecord` logging.
+- Irreversible approval-gated `gmail_send_message` (`AU-76` / `E9.3`): prepares canonical
+  approval payloads and enforces explicit human `Approval` verification before dispatching
+  an `EmailDraft`.
 """
 
 from __future__ import annotations
@@ -40,7 +43,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from carefold.db.models import (
     Appointment,
+    Approval,
     AuditEventRecord,
+    EmailDraft,
     ImportBatch,
     Reminder,
     utc_now,
@@ -589,9 +594,171 @@ async def confirm_gmail_staged_item(
     }
 
 
+def _validate_recipient_email(recipient: str) -> str:
+    """Validates an email recipient string without polynomial regular expressions."""
+    clean = (recipient or "").strip()
+    if not clean or any(ch in clean for ch in (" ", "\r", "\n", "\t")):
+        raise ValueError("A valid recipient email address is required for gmail_send_message.")
+    if "@" not in clean:
+        raise ValueError(f"Invalid recipient email address '{recipient}'.")
+    local_part, domain_part = clean.rsplit("@", 1)
+    if not local_part or not domain_part or "." not in domain_part:
+        raise ValueError(f"Invalid recipient email address '{recipient}'.")
+    return clean
+
+
+def prepare_gmail_send_approval_payload(
+    draft_id: str,
+    recipient: str,
+    subject: str,
+    body: str,
+) -> Dict[str, Any]:
+    """Prepares a canonical `irreversible` approval payload for `gmail_send_message` (`AU-76` / `E9.3`).
+
+    Computes `payload_hash` over `{draft_id, recipient, subject, body_sha256}` and marks
+    `risk_tier="irreversible"` and `requires_approval=True`.
+    """
+    clean_draft_id = (draft_id or "").strip()
+    if not clean_draft_id:
+        raise ValueError("draft_id is required for gmail_send_message.")
+    clean_recipient = _validate_recipient_email(recipient)
+    clean_subject = (subject or "").strip()
+    if not clean_subject:
+        raise ValueError("subject is required for gmail_send_message.")
+    clean_body = str(body or "")
+
+    body_sha256 = hashlib.sha256(clean_body.encode("utf-8")).hexdigest()
+    canonical_args = {
+        "body_sha256": body_sha256,
+        "draft_id": clean_draft_id,
+        "recipient": clean_recipient,
+        "subject": clean_subject,
+    }
+    args_json = json.dumps(canonical_args, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    payload_hash = hashlib.sha256(args_json.encode("utf-8")).hexdigest()
+
+    return {
+        "tool_name": "gmail_send_message",
+        "draft_id": clean_draft_id,
+        "recipient": clean_recipient,
+        "subject": clean_subject,
+        "body_sha256": body_sha256,
+        "risk_tier": "irreversible",
+        "requires_approval": True,
+        "destination_hosts": ["workspace-mcp.spectrayan.com", "gmail.googleapis.com"],
+        "args": canonical_args,
+        "args_redacted": args_json,
+        "payload_hash": payload_hash,
+    }
+
+
+async def execute_gmail_send_message(
+    session: AsyncSession,
+    profile_id: str,
+    draft_id: str,
+    approval_id: Optional[str] = None,
+    actor_user_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Dispatches a reviewed `EmailDraft` via `gmail_send_message` ONLY after verifying an explicit human `Approval` (`AU-76`).
+
+    - Loads `EmailDraft` scoped to `profile_id`.
+    - Verifies that an `Approval` record with `id == approval_id`, `profile_id == profile_id`,
+      `tool_name == "gmail_send_message"`, and `status in ("approved", "consumed")` exists.
+    - If missing or unapproved, raises `PermissionError("gmail_send_message is irreversible and requires an explicit human approval record.")`.
+    - Updates `draft.status = "sent_via_approved_mcp"`, `draft.sent_at = utc_now()`,
+      `draft.external_message_id = f"gmail-msg-{uuid.uuid4().hex[:12]}"`, and records an `AuditEventRecord`.
+    """
+    clean_profile_id = (profile_id or "").strip()
+    clean_draft_id = (draft_id or "").strip()
+    if not clean_profile_id or not clean_draft_id:
+        raise ValueError("profile_id and draft_id are required.")
+
+    stmt_draft = select(EmailDraft).where(
+        EmailDraft.id == clean_draft_id,
+        EmailDraft.profile_id == clean_profile_id,
+    )
+    res_draft = await session.execute(stmt_draft)
+    draft = res_draft.scalar_one_or_none()
+    if draft is None:
+        raise ValueError(f"EmailDraft '{clean_draft_id}' not found for profile '{clean_profile_id}'.")
+
+    clean_approval_id = (approval_id or "").strip()
+    if not clean_approval_id:
+        raise PermissionError(
+            "gmail_send_message is irreversible and requires an explicit human approval record."
+        )
+
+    stmt_appr = select(Approval).where(
+        Approval.id == clean_approval_id,
+        Approval.profile_id == clean_profile_id,
+        Approval.tool_name == "gmail_send_message",
+    )
+    res_appr = await session.execute(stmt_appr)
+    approval = res_appr.scalar_one_or_none()
+    if approval is None or approval.status not in ("approved", "consumed"):
+        raise PermissionError(
+            "gmail_send_message is irreversible and requires an explicit human approval record."
+        )
+
+    prepared = prepare_gmail_send_approval_payload(
+        draft_id=draft.id,
+        recipient=draft.recipient or "",
+        subject=draft.subject,
+        body=draft.body,
+    )
+
+    now = utc_now()
+    ext_msg_id = f"gmail-msg-{uuid.uuid4().hex[:12]}"
+    draft.status = "sent_via_approved_mcp"
+    draft.sent_at = now
+    draft.external_message_id = ext_msg_id
+    draft.updated_at = now
+
+    if approval.status == "approved":
+        approval.status = "consumed"
+
+    audit = AuditEventRecord(
+        id=str(uuid.uuid4()),
+        ts=now,
+        profile_id=clean_profile_id,
+        actor_user_id=actor_user_id,
+        principal="user",
+        event="tool",
+        tool="gmail_send_message",
+        risk="irreversible",
+        decision="allow",
+        payload_hash=prepared["payload_hash"],
+        external_ref=f"email_draft:{draft.id}",
+        detail_redacted=json.dumps({
+            "draft_id": draft.id,
+            "approval_id": approval.id,
+            "recipient": draft.recipient,
+            "external_message_id": ext_msg_id,
+            "status": draft.status,
+        }),
+    )
+    session.add(audit)
+    await session.commit()
+    await session.refresh(draft)
+
+    return {
+        "draft_id": draft.id,
+        "profile_id": clean_profile_id,
+        "approval_id": approval.id,
+        "status": draft.status,
+        "sent_at": draft.sent_at.isoformat() if draft.sent_at else None,
+        "external_message_id": draft.external_message_id,
+        "external_ref": f"email_draft:{draft.id}",
+        "risk_tier": "irreversible",
+        "payload_hash": prepared["payload_hash"],
+    }
+
+
 __all__ = [
     "ALLOWED_GMAIL_LABELS",
     "confirm_gmail_staged_item",
+    "execute_gmail_send_message",
     "parse_gmail_messages_to_staged_items",
+    "prepare_gmail_send_approval_payload",
     "stage_gmail_extractions",
 ]

@@ -53,15 +53,22 @@ from carefold.importers.apple_health import parse_apple_health_export
 from carefold.importers.ccda import parse_ccda_xml
 from carefold.importers.fhir_bundle import parse_fhir_bundle
 from carefold.importers.iis_pdf import parse_iis_immunisation_text
+from carefold.importers.smart_health_card import verify_and_parse_smart_health_card
 from carefold.storage.cas import store_cas_file
 
 logger = logging.getLogger("carefold.importers.service")
 
-SUPPORTED_IMPORT_FORMATS = frozenset({"fhir_r4", "ccda", "apple_health", "iis_pdf"})
+SUPPORTED_IMPORT_FORMATS = frozenset({
+    "fhir_r4",
+    "ccda",
+    "apple_health",
+    "iis_pdf",
+    "smart_health_card",
+})
 
 
 def detect_import_format(filename: str, content: Union[bytes, str], fmt: Optional[str] = None) -> str:
-    """Auto-detects or validates the clinical import format ('fhir_r4', 'ccda', 'apple_health', 'iis_pdf')."""
+    """Auto-detects or validates the clinical import format ('fhir_r4', 'ccda', 'apple_health', 'iis_pdf', 'smart_health_card')."""
     if fmt and str(fmt).strip():
         clean_fmt = str(fmt).strip().lower()
         aliases = {
@@ -78,6 +85,9 @@ def detect_import_format(filename: str, content: Union[bytes, str], fmt: Optiona
             "iis_pdf": "iis_pdf",
             "immunization_pdf": "iis_pdf",
             "immunisation_pdf": "iis_pdf",
+            "shc": "smart_health_card",
+            "smart_health_card": "smart_health_card",
+            "smart-health-card": "smart_health_card",
         }
         resolved = aliases.get(clean_fmt)
         if not resolved:
@@ -89,13 +99,21 @@ def detect_import_format(filename: str, content: Union[bytes, str], fmt: Optiona
     raw_bytes = content.encode("utf-8") if isinstance(content, str) else bytes(content)
     fname_lower = (filename or "").strip().lower()
 
+    if fname_lower.endswith(".smart-health-card"):
+        return "smart_health_card"
     if raw_bytes[:4] == b"PK\x03\x04" or fname_lower.endswith(".zip"):
         return "apple_health"
     if raw_bytes[:4] == b"%PDF" or fname_lower.endswith(".pdf"):
         return "iis_pdf"
 
     head = raw_bytes[:4096].decode("utf-8", errors="ignore").lstrip()
+    if head.lower().startswith("shc:/"):
+        return "smart_health_card"
+    if head.startswith("eyJ") and head.count(".") == 2:
+        return "smart_health_card"
     if head.startswith("{"):
+        if '"verifiableCredential"' in head:
+            return "smart_health_card"
         return "fhir_r4"
     if "<HealthData" in head or "HKQuantityTypeIdentifier" in head or "apple_health" in fname_lower:
         return "apple_health"
@@ -114,7 +132,7 @@ def detect_import_format(filename: str, content: Union[bytes, str], fmt: Optiona
 
     raise ValueError(
         "Unable to auto-detect clinical import format from filename or content. "
-        "Expected FHIR R4 Bundle JSON, C-CDA XML, Apple Health export XML/ZIP, or State IIS PDF."
+        "Expected FHIR R4 Bundle JSON, C-CDA XML, Apple Health export XML/ZIP, State IIS PDF, or SMART Health Card."
     )
 
 
@@ -148,11 +166,12 @@ async def stage_import(
     source_name: Optional[str] = None,
     fmt: Optional[str] = None,
     user_id: Optional[str] = None,
+    trusted_jwks: Optional[Dict[str, Any]] = None,
 ) -> ImportBatch:
     """Stages a clinical or wearable file into an `ImportBatch` without writing to `HealthResource`.
 
     Steps:
-    1. Validates `profile_id` and resolves format (`fhir_r4`, `ccda`, `apple_health`, `iis_pdf`).
+    1. Validates `profile_id` and resolves format (`fhir_r4`, `ccda`, `apple_health`, `iis_pdf`, `smart_health_card`).
     2. Archives raw content in Content-Addressed Storage (CAS) and persists/reuses an
        `Attachment` row with `source="import"`.
     3. Parses and normalizes clinical records with provenance and `"trust": "untrusted"`.
@@ -173,10 +192,11 @@ async def stage_import(
         "ccda": "C-CDA Clinical Summary",
         "apple_health": "Apple Health Export",
         "iis_pdf": "State IIS Registry PDF",
+        "smart_health_card": "SMART Health Card",
     }
     clean_source_name = (source_name or default_sources[resolved_fmt]).strip()
 
-    # 1. Run format-specific parser first (fail closed on malformed/XXE input before DB commit)
+    # 1. Run format-specific parser first (fail closed on malformed/XXE/tampered input before DB commit)
     if resolved_fmt == "fhir_r4":
         parsed = parse_fhir_bundle(raw_bytes, source_name=clean_source_name)
     elif resolved_fmt == "ccda":
@@ -185,6 +205,12 @@ async def stage_import(
         parsed = parse_apple_health_export(raw_bytes, source_name=clean_source_name)
     elif resolved_fmt == "iis_pdf":
         parsed = parse_iis_immunisation_text(raw_bytes, source_name=clean_source_name)
+    elif resolved_fmt == "smart_health_card":
+        parsed = verify_and_parse_smart_health_card(
+            raw_bytes,
+            trusted_jwks=trusted_jwks,
+            source_name=clean_source_name,
+        )
     else:
         raise ValueError(f"Unsupported format: {resolved_fmt}")
 
@@ -215,7 +241,7 @@ async def stage_import(
 
     if attachment is None:
         safe_fname = _sanitize_filename(filename)
-        if resolved_fmt == "fhir_r4":
+        if resolved_fmt in ("fhir_r4", "smart_health_card"):
             content_type = "application/json"
         elif resolved_fmt == "iis_pdf":
             content_type = "application/pdf"
@@ -245,6 +271,9 @@ async def stage_import(
     summary.setdefault("aggregated_raw_sample_count", summary.get("raw_sample_count", 0))
     summary["format"] = resolved_fmt
     summary["attachment_id"] = attachment.id
+    if resolved_fmt == "smart_health_card":
+        summary["verification_status"] = parsed.get("verification_status", "unverified_issuer")
+        summary["issuer"] = parsed.get("issuer", "unknown-issuer")
 
     batch = ImportBatch(
         id=str(uuid.uuid4()),

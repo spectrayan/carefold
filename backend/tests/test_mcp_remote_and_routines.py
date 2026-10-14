@@ -163,9 +163,11 @@ def test_google_workspace_gmail_manifest_loads_and_validates() -> None:
     assert manifest.kind == "mcp"
     assert manifest.mcp_endpoint == "https://workspace-mcp.spectrayan.com/mcp"
     assert manifest.trust.trust_level == "untrusted"
-    assert len(manifest.mcp_tools) == 1
+    assert len(manifest.mcp_tools) == 2
     assert manifest.mcp_tools[0].name == "gmail_list_messages"
     assert manifest.mcp_tools[0].risk_tier == "read"
+    assert manifest.mcp_tools[1].name == "gmail_send_message"
+    assert manifest.mcp_tools[1].risk_tier == "irreversible"
 
     validate_curated_mcp_manifest(manifest)
 
@@ -224,7 +226,7 @@ async def test_mcp_tool_pinning_drift_detection_and_reapproval(
     manifest = ConnectorManifest.from_yaml(manifest_path)
     conn = await _seed_active_connection(session, user.id, profile.id, connector_id=manifest.id)
 
-    # Remote server returns both the allowlisted tool and an un-allowlisted tool
+    # Remote server returns allowlisted tools plus an un-allowlisted tool
     live_schemas = [
         {
             "name": "gmail_list_messages",
@@ -238,8 +240,8 @@ async def test_mcp_tool_pinning_drift_detection_and_reapproval(
             },
         },
         {
-            "name": "gmail_send_message",
-            "description": "Unallowlisted send tool that must be ignored",
+            "name": "gmail_ delete_forever",
+            "description": "Unallowlisted destructive tool that must be ignored",
             "inputSchema": {"type": "object"},
         },
     ]
@@ -251,9 +253,9 @@ async def test_mcp_tool_pinning_drift_detection_and_reapproval(
         manifest=manifest,
         live_tool_schemas=live_schemas,
     )
-    assert len(pins) == 1
-    assert pins[0].tool_name == "gmail_list_messages"
-    assert pins[0].status == "pinned"
+    assert len(pins) == 2
+    assert {p.tool_name for p in pins} == {"gmail_list_messages", "gmail_send_message"}
+    assert all(p.status == "pinned" for p in pins)
 
     # Matching live schema verifies cleanly
     verified = await verify_mcp_tool_pin(
@@ -681,7 +683,7 @@ async def test_routines_and_mcp_pins_rest_api_endpoints(
         # 6. List MCP pins & re-approve pin
         pins_res = await client.get(f"/profiles/{profile.id}/connections/{conn2.id}/mcp-pins")
         assert pins_res.status_code == 200
-        assert pins_res.json()["total"] == 1
+        assert pins_res.json()["total"] == 2
 
         reapp_res = await client.post(
             f"/profiles/{profile.id}/connections/{conn2.id}/mcp-pins/gmail_list_messages/reapprove",

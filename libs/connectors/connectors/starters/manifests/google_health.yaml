@@ -1,0 +1,62 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+id: google-health
+version: 0.1.0
+name: Google Health / Fit (Daily Aggregated Vitals & Activity)
+description: Ingests daily aggregated step counts, heart rate rollups, and body weight from Google Health / Google Fit REST APIs.
+categories:
+  - vitals
+  - wellness
+entrypoint: connectors.starters.wearables_v2:GoogleHealthConnector
+data_flows:
+  allowed_hosts:
+    - www.googleapis.com
+    - health.googleapis.com
+  allowed_schemes:
+    - https
+  allowed_ports:
+    - 443
+  egress_direction: egress_only
+  pii_types_transferred:
+    - vitals
+auth:
+  type: oauth2
+  pkce: true
+  client_source: byo
+  token_rotation: false
+  rotating_refresh: false
+  scopes:
+    - https://www.googleapis.com/auth/fitness.activity.read
+    - https://www.googleapis.com/auth/fitness.heart_rate.read
+    - https://www.googleapis.com/auth/fitness.body.read
+  authorization_url: https://accounts.google.com/o/oauth2/v2/auth
+  token_url: https://oauth2.googleapis.com/token
+tools:
+  - name: google_health_latest_metrics
+    description: Retrieves the most recent daily aggregated Google Health step, heart rate, and weight observations.
+    risk_class: read_only
+trust:
+  publisher: Spectrayan
+  verified: true
+  sandbox_level: strict
+  trust_level: trusted
+policy:
+  rate_limit_rpm: 60
+  timeout_seconds: 30.0
+  retry_max_attempts: 3
+terms:
+  license: Apache-2.0
+  ai_use_allowed: true
