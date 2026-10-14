@@ -25,6 +25,10 @@ from carefold.importers.fhir_bundle import (
     SUPPORTED_FHIR_RESOURCE_TYPES,
     parse_fhir_bundle,
 )
+from carefold.importers.iis_pdf import (
+    SUPPORTED_IIS_VACCINES,
+    parse_iis_immunisation_text,
+)
 from carefold.importers.service import (
     SUPPORTED_IMPORT_FORMATS,
     commit_import_batch,
@@ -39,6 +43,7 @@ __all__ = [
     "HIGH_FREQUENCY_HK_TYPES",
     "LOW_FREQUENCY_CLINICAL_HK_TYPES",
     "SUPPORTED_FHIR_RESOURCE_TYPES",
+    "SUPPORTED_IIS_VACCINES",
     "SUPPORTED_IMPORT_FORMATS",
     "commit_import_batch",
     "detect_import_format",
@@ -48,5 +53,6 @@ __all__ = [
     "parse_apple_health_export",
     "parse_ccda_xml",
     "parse_fhir_bundle",
+    "parse_iis_immunisation_text",
     "stage_import",
 ]

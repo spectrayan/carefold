@@ -29,6 +29,9 @@ import {
   Network,
   Globe,
   CheckCircle2,
+  Cpu,
+  Mail,
+  Smartphone,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -36,6 +39,9 @@ import { cn } from '@/lib/utils';
 import { ConnectorConsentModal } from './ConnectorConsentModal';
 import { SyncHealthTable } from './SyncHealthTable';
 import { DataFlowsPanel } from './DataFlowsPanel';
+import { McpPinsAndRoutinesPanel } from './McpPinsAndRoutinesPanel';
+import { EmailDraftsAndSchoolFeedsPanel } from './EmailDraftsAndSchoolFeedsPanel';
+import { CompanionAndHandoverPanel } from './CompanionAndHandoverPanel';
 import type {
   ConnectionItem,
   ConnectorManifestSummary,
@@ -43,12 +49,42 @@ import type {
   DataFlowsInventory,
   SyncRunItem,
 } from '@/types/connections';
+import type {
+  CompanionDeviceItem,
+  CompanionPairingQrPayload,
+  CreateEmailDraftPayload,
+  CreateSchoolIcsFeedPayload,
+  CreateStandingRoutinePayload,
+  EmailDraftItem,
+  GmailStagedCandidate,
+  McpToolPinItem,
+  SchoolIcsFeedItem,
+  StandingRoutineItem,
+  TeenHandoverPayload,
+  TeenHandoverResponse,
+  ViewerSectionKey,
+} from '@/types/autonomyBatch6';
+
+export type ConnectionsHubTab =
+  | 'connections'
+  | 'data_flows'
+  | 'mcp_routines'
+  | 'email_school'
+  | 'companion_handover';
 
 export interface ConnectionsHubProps {
   connectors: ConnectorManifestSummary[];
   connections: ConnectionItem[];
   syncRunsByConnection?: Record<string, SyncRunItem[]>;
   dataFlows?: DataFlowsInventory | null;
+  mcpPins?: McpToolPinItem[];
+  routines?: StandingRoutineItem[];
+  gmailCandidates?: GmailStagedCandidate[];
+  emailDrafts?: EmailDraftItem[];
+  schoolFeeds?: SchoolIcsFeedItem[];
+  companionDevices?: CompanionDeviceItem[];
+  pairingQr?: CompanionPairingQrPayload | null;
+  handoverResult?: TeenHandoverResponse | null;
   isLoading?: boolean;
   onCreateConnection?: (payload: CreateConnectionPayload) => void | Promise<void>;
   onSyncNow?: (connectionId: string) => void | Promise<void>;
@@ -58,6 +94,33 @@ export interface ConnectionsHubProps {
     deleteImportedData: boolean
   ) => void | Promise<void>;
   onLoadSyncRuns?: (connectionId: string) => void | Promise<void>;
+  onReapprovePin?: (pinId: string, schemaHash: string) => void | Promise<void>;
+  onCreateRoutine?: (
+    payload: CreateStandingRoutinePayload
+  ) => void | Promise<void>;
+  onPauseRoutine?: (routineId: string) => void | Promise<void>;
+  onRevokeRoutine?: (routineId: string) => void | Promise<void>;
+  onConfirmGmailCandidate?: (candidateIndex: number) => void | Promise<void>;
+  onCreateEmailDraft?: (
+    payload: CreateEmailDraftPayload
+  ) => void | Promise<void>;
+  onDownloadEmailEml?: (draftId: string) => void | Promise<void>;
+  onCreateSchoolFeed?: (
+    payload: CreateSchoolIcsFeedPayload
+  ) => void | Promise<void>;
+  onSyncSchoolFeed?: (feedId: string) => void | Promise<void>;
+  onGeneratePairingQr?: (
+    deviceName: string,
+    allowedCategories: string[]
+  ) => void | Promise<void>;
+  onRevokeCompanionDevice?: (deviceId: string) => void | Promise<void>;
+  onSaveViewerSections?: (
+    viewerUserId: string,
+    allowedSections: ViewerSectionKey[]
+  ) => void | Promise<void>;
+  onExecuteTeenHandover?: (
+    payload: TeenHandoverPayload
+  ) => void | Promise<void>;
   className?: string;
 }
 
@@ -82,17 +145,36 @@ export function ConnectionsHub({
   connections,
   syncRunsByConnection = {},
   dataFlows = null,
+  mcpPins = [],
+  routines = [],
+  gmailCandidates = [],
+  emailDrafts = [],
+  schoolFeeds = [],
+  companionDevices = [],
+  pairingQr = null,
+  handoverResult = null,
   isLoading = false,
   onCreateConnection,
   onSyncNow,
   onReauthenticate,
   onRevokeConnection,
   onLoadSyncRuns,
+  onReapprovePin,
+  onCreateRoutine,
+  onPauseRoutine,
+  onRevokeRoutine,
+  onConfirmGmailCandidate,
+  onCreateEmailDraft,
+  onDownloadEmailEml,
+  onCreateSchoolFeed,
+  onSyncSchoolFeed,
+  onGeneratePairingQr,
+  onRevokeCompanionDevice,
+  onSaveViewerSections,
+  onExecuteTeenHandover,
   className,
 }: ConnectionsHubProps) {
-  const [activeTab, setActiveTab] = useState<'connections' | 'data_flows'>(
-    'connections'
-  );
+  const [activeTab, setActiveTab] = useState<ConnectionsHubTab>('connections');
   const [selectedConnector, setSelectedConnector] =
     useState<ConnectorManifestSummary | null>(null);
   const [expandedSyncHealthIds, setExpandedSyncHealthIds] = useState<
@@ -146,7 +228,7 @@ export function ConnectionsHub({
     >
       {/* Top View Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--cf-border)] pb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             variant={activeTab === 'connections' ? 'primary' : 'ghost'}
@@ -155,6 +237,33 @@ export function ConnectionsHub({
             onClick={() => setActiveTab('connections')}
           >
             Connections &amp; Sync Hub
+          </Button>
+          <Button
+            size="sm"
+            variant={activeTab === 'mcp_routines' ? 'primary' : 'ghost'}
+            data-testid="hub-tab-mcp-routines"
+            leftIcon={<Cpu className="w-3.5 h-3.5" />}
+            onClick={() => setActiveTab('mcp_routines')}
+          >
+            MCP Pins &amp; A2 Routines
+          </Button>
+          <Button
+            size="sm"
+            variant={activeTab === 'email_school' ? 'primary' : 'ghost'}
+            data-testid="hub-tab-email-school"
+            leftIcon={<Mail className="w-3.5 h-3.5" />}
+            onClick={() => setActiveTab('email_school')}
+          >
+            Gmail, Drafts &amp; School Feeds
+          </Button>
+          <Button
+            size="sm"
+            variant={activeTab === 'companion_handover' ? 'primary' : 'ghost'}
+            data-testid="hub-tab-companion-handover"
+            leftIcon={<Smartphone className="w-3.5 h-3.5" />}
+            onClick={() => setActiveTab('companion_handover')}
+          >
+            iOS Companion &amp; Teen Handover
           </Button>
           <Button
             size="sm"
@@ -185,6 +294,37 @@ export function ConnectionsHub({
               onRevokeConnection?.(connectionId, false);
             }
           }}
+        />
+      ) : activeTab === 'mcp_routines' ? (
+        <McpPinsAndRoutinesPanel
+          mcpPins={mcpPins}
+          routines={routines}
+          onReapprovePin={onReapprovePin}
+          onCreateRoutine={onCreateRoutine}
+          onPauseRoutine={onPauseRoutine}
+          onRevokeRoutine={onRevokeRoutine}
+        />
+      ) : activeTab === 'email_school' ? (
+        <EmailDraftsAndSchoolFeedsPanel
+          gmailCandidates={gmailCandidates}
+          emailDrafts={emailDrafts}
+          schoolFeeds={schoolFeeds}
+          onConfirmGmailCandidate={onConfirmGmailCandidate}
+          onCreateEmailDraft={onCreateEmailDraft}
+          onDownloadEmailEml={onDownloadEmailEml}
+          onCreateSchoolFeed={onCreateSchoolFeed}
+          onSyncSchoolFeed={onSyncSchoolFeed}
+        />
+      ) : activeTab === 'companion_handover' ? (
+        <CompanionAndHandoverPanel
+          companionDevices={companionDevices}
+          pairingQr={pairingQr}
+          connections={connections}
+          handoverResult={handoverResult}
+          onGeneratePairingQr={onGeneratePairingQr}
+          onRevokeCompanionDevice={onRevokeCompanionDevice}
+          onSaveViewerSections={onSaveViewerSections}
+          onExecuteTeenHandover={onExecuteTeenHandover}
         />
       ) : (
         <div className="space-y-6">

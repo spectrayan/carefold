@@ -52,15 +52,16 @@ from carefold.db.models import (
 from carefold.importers.apple_health import parse_apple_health_export
 from carefold.importers.ccda import parse_ccda_xml
 from carefold.importers.fhir_bundle import parse_fhir_bundle
+from carefold.importers.iis_pdf import parse_iis_immunisation_text
 from carefold.storage.cas import store_cas_file
 
 logger = logging.getLogger("carefold.importers.service")
 
-SUPPORTED_IMPORT_FORMATS = frozenset({"fhir_r4", "ccda", "apple_health"})
+SUPPORTED_IMPORT_FORMATS = frozenset({"fhir_r4", "ccda", "apple_health", "iis_pdf"})
 
 
 def detect_import_format(filename: str, content: Union[bytes, str], fmt: Optional[str] = None) -> str:
-    """Auto-detects or validates the clinical import format ('fhir_r4', 'ccda', 'apple_health')."""
+    """Auto-detects or validates the clinical import format ('fhir_r4', 'ccda', 'apple_health', 'iis_pdf')."""
     if fmt and str(fmt).strip():
         clean_fmt = str(fmt).strip().lower()
         aliases = {
@@ -73,6 +74,10 @@ def detect_import_format(filename: str, content: Union[bytes, str], fmt: Optiona
             "apple": "apple_health",
             "apple_health": "apple_health",
             "healthkit": "apple_health",
+            "iis": "iis_pdf",
+            "iis_pdf": "iis_pdf",
+            "immunization_pdf": "iis_pdf",
+            "immunisation_pdf": "iis_pdf",
         }
         resolved = aliases.get(clean_fmt)
         if not resolved:
@@ -86,6 +91,8 @@ def detect_import_format(filename: str, content: Union[bytes, str], fmt: Optiona
 
     if raw_bytes[:4] == b"PK\x03\x04" or fname_lower.endswith(".zip"):
         return "apple_health"
+    if raw_bytes[:4] == b"%PDF" or fname_lower.endswith(".pdf"):
+        return "iis_pdf"
 
     head = raw_bytes[:4096].decode("utf-8", errors="ignore").lstrip()
     if head.startswith("{"):
@@ -96,10 +103,18 @@ def detect_import_format(filename: str, content: Union[bytes, str], fmt: Optiona
         return "ccda"
     if fname_lower.endswith(".json"):
         return "fhir_r4"
+    head_lower = head.lower()
+    if (
+        "immunization" in head_lower
+        or "immunisation" in head_lower
+        or "iis" in fname_lower
+        or "vaccine" in head_lower
+    ):
+        return "iis_pdf"
 
     raise ValueError(
         "Unable to auto-detect clinical import format from filename or content. "
-        "Expected FHIR R4 Bundle JSON, C-CDA XML, or Apple Health export XML/ZIP."
+        "Expected FHIR R4 Bundle JSON, C-CDA XML, Apple Health export XML/ZIP, or State IIS PDF."
     )
 
 
@@ -137,7 +152,7 @@ async def stage_import(
     """Stages a clinical or wearable file into an `ImportBatch` without writing to `HealthResource`.
 
     Steps:
-    1. Validates `profile_id` and resolves format (`fhir_r4`, `ccda`, `apple_health`).
+    1. Validates `profile_id` and resolves format (`fhir_r4`, `ccda`, `apple_health`, `iis_pdf`).
     2. Archives raw content in Content-Addressed Storage (CAS) and persists/reuses an
        `Attachment` row with `source="import"`.
     3. Parses and normalizes clinical records with provenance and `"trust": "untrusted"`.
@@ -157,6 +172,7 @@ async def stage_import(
         "fhir_r4": "FHIR Bundle Import",
         "ccda": "C-CDA Clinical Summary",
         "apple_health": "Apple Health Export",
+        "iis_pdf": "State IIS Registry PDF",
     }
     clean_source_name = (source_name or default_sources[resolved_fmt]).strip()
 
@@ -167,6 +183,8 @@ async def stage_import(
         parsed = parse_ccda_xml(raw_bytes, source_name=clean_source_name)
     elif resolved_fmt == "apple_health":
         parsed = parse_apple_health_export(raw_bytes, source_name=clean_source_name)
+    elif resolved_fmt == "iis_pdf":
+        parsed = parse_iis_immunisation_text(raw_bytes, source_name=clean_source_name)
     else:
         raise ValueError(f"Unsupported format: {resolved_fmt}")
 
@@ -197,11 +215,12 @@ async def stage_import(
 
     if attachment is None:
         safe_fname = _sanitize_filename(filename)
-        content_type = (
-            "application/json"
-            if resolved_fmt == "fhir_r4"
-            else "application/xml"
-        )
+        if resolved_fmt == "fhir_r4":
+            content_type = "application/json"
+        elif resolved_fmt == "iis_pdf":
+            content_type = "application/pdf"
+        else:
+            content_type = "application/xml"
         attachment = Attachment(
             id=str(uuid.uuid4()),
             user_id=effective_user_id,

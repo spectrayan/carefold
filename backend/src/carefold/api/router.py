@@ -26,7 +26,10 @@ from carefold.api.attachments import router as attachments_router
 from carefold.api.audit import router as audit_router
 from carefold.api.auth import router as auth_router
 from carefold.api.chat import router as chat_router
+from carefold.api.companion import router as companion_router
 from carefold.api.connections import router as connections_router
+from carefold.api.email_drafts import router as email_drafts_router
+from carefold.api.handover import router as handover_router
 from carefold.api.health import router as health_router
 from carefold.api.imports import router as imports_router
 from carefold.api.memory import router as memory_router
@@ -36,6 +39,7 @@ from carefold.api.prep_pack import router as prep_pack_router
 from carefold.api.preventive import router as preventive_router
 from carefold.api.profiles import router as profiles_router
 from carefold.api.reminders import router as reminders_router
+from carefold.api.routines import router as routines_router
 from carefold.api.school_forms import router as school_forms_router
 from carefold.api.search import router as search_router
 from carefold.api.skills import router as skills_router
@@ -51,6 +55,10 @@ api_router.include_router(preventive_router)
 api_router.include_router(imports_router)
 api_router.include_router(school_forms_router)
 api_router.include_router(connections_router)
+api_router.include_router(routines_router)
+api_router.include_router(email_drafts_router)
+api_router.include_router(companion_router)
+api_router.include_router(handover_router)
 
 api_router.include_router(agents_router)
 api_router.include_router(skills_router)

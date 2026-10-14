@@ -183,6 +183,7 @@ class JobRunner:
         self.register_handler("delete_doc", self._default_delete_doc_handler)
         self.register_handler("reminder", self._default_reminder_handler)
         self.register_handler("sync", self._default_sync_handler)
+        self.register_handler("routine", self._default_routine_handler)
 
     def register_handler(self, kind: str, handler: Callable[..., Any]) -> None:
         """Registers an asynchronous handler function for a specific job kind.
@@ -244,6 +245,21 @@ class JobRunner:
         from carefold.connectors.sync import run_connection_sync
         async with self.session_factory() as session:
             await run_connection_sync(session=session, connection_id=str(connection_id))
+
+    async def _default_routine_handler(self, job: Any) -> None:
+        """Default A2 standing routine handler bound to JobRunner instance (AU-58 / E1.10)."""
+        routine_id = getattr(job, "routine_id", None)
+        if not routine_id and hasattr(job, "payload"):
+            try:
+                payload = json.loads(job.payload) if isinstance(job.payload, str) else (job.payload or {})
+                routine_id = payload.get("routine_id")
+            except Exception:
+                routine_id = None
+        if not routine_id or self.session_factory is None:
+            return
+        from carefold.clinical.routines import execute_standing_routine
+        async with self.session_factory() as session:
+            await execute_standing_routine(session=session, routine_id=str(routine_id))
 
     @property
     def is_running(self) -> bool:

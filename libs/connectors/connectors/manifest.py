@@ -19,7 +19,8 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
-from pydantic import BaseModel, Field, ValidationError
+from urllib.parse import urlparse
+from pydantic import BaseModel, Field, ValidationError, model_validator
 import yaml
 
 from connectors.errors import ManifestValidationError
@@ -102,6 +103,21 @@ class ToolDeclaration(BaseModel):
     )
 
 
+class McpToolAllowlistEntry(BaseModel):
+    """Allowlisted remote MCP tool entry with explicit risk tier and expected input schema (AU-57)."""
+
+    name: str = Field(..., min_length=1, description="Remote MCP tool name")
+    description: str = Field(default="", description="Expected tool description for schema-hash pinning")
+    risk_tier: Literal["read", "write_local", "write_external", "irreversible"] = Field(
+        default="read",
+        description="Assigned Carefold risk tier",
+    )
+    input_schema: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Expected JSON Schema for tool input arguments",
+    )
+
+
 class TrustConfig(BaseModel):
     """Trust and provenance verification metadata."""
 
@@ -144,6 +160,18 @@ class ConnectorManifest(BaseModel):
     version: str = Field(..., description="Semantic version string (e.g. '1.0.0')")
     name: str = Field(..., description="Human display name")
     description: str = Field(default="", description="Detailed description of connector functionality")
+    kind: Literal["rest", "mcp"] = Field(
+        default="rest",
+        description="Connector transport kind ('rest' or 'mcp')",
+    )
+    mcp_endpoint: Optional[str] = Field(
+        default=None,
+        description="Curated remote HTTPS MCP server endpoint URL (when kind=='mcp')",
+    )
+    mcp_tools: List[McpToolAllowlistEntry] = Field(
+        default_factory=list,
+        description="Allowlisted MCP tools and their assigned risk tiers",
+    )
     categories: List[str] = Field(
         default_factory=list,
         description="Clinical or administrative categories provided by this connector",
@@ -161,6 +189,41 @@ class ConnectorManifest(BaseModel):
     )
     policy: PolicyConfig = Field(default_factory=PolicyConfig, description="Rate limits and timeouts")
     terms: TermsConfig = Field(default_factory=TermsConfig, description="License and terms")
+
+    @model_validator(mode="after")
+    def _validate_mcp_transport(self) -> ConnectorManifest:
+        """Validates curated remote MCP transport constraints when kind == 'mcp'."""
+        if self.kind == "mcp" and self.mcp_endpoint is not None:
+            endpoint = self.mcp_endpoint.strip()
+            parsed = urlparse(endpoint)
+            scheme = (parsed.scheme or "").lower()
+            host = (parsed.hostname or "").strip().lower()
+
+            if scheme in ("stdio", "file", "shell", "ws") or endpoint.lower().startswith(("stdio:", "file:")):
+                raise ValueError(
+                    "Local stdio or file MCP transports are forbidden; curated remote MCP requires HTTPS."
+                )
+            if scheme == "http" and host not in ("127.0.0.1", "localhost"):
+                raise ValueError(
+                    f"Curated remote MCP endpoint '{endpoint}' must use HTTPS."
+                )
+            if scheme not in ("https", "http"):
+                raise ValueError(
+                    f"Unsupported MCP endpoint scheme '{scheme}'; HTTPS is required."
+                )
+            if not host:
+                raise ValueError("MCP endpoint must include a valid hostname.")
+
+            allowed_hosts = {
+                h.strip().lower()
+                for h in (self.data_flows.allowed_hosts or [])
+                if h and h.strip()
+            }
+            if host not in allowed_hosts:
+                raise ValueError(
+                    f"MCP endpoint host '{host}' must be listed in data_flows.allowed_hosts."
+                )
+        return self
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> ConnectorManifest:
@@ -194,6 +257,7 @@ __all__ = [
     "AuthConfig",
     "ConnectorManifest",
     "DataFlowSpec",
+    "McpToolAllowlistEntry",
     "PolicyConfig",
     "TermsConfig",
     "ToolDeclaration",

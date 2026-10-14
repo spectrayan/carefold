@@ -1400,6 +1400,112 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
     )
 
+    # 30. create_email_draft (AU-60 / E9.3)
+    async def _exec_create_email_draft(args: Dict[str, Any], ctx: Any = None) -> Any:
+        from carefold.clinical.email_drafts import execute_create_email_draft
+        return await execute_create_email_draft(args or {}, ctx)
+
+    spec_create_email_draft = ToolSpec(
+        name="create_email_draft",
+        description=(
+            "Create a local email draft (RFC 5322 .eml / mailto:) for user review and "
+            "sending from their own email client. Carefold never sends emails directly."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "recipient_email": {"type": "string", "description": "Optional recipient email address."},
+                "recipient_name": {"type": "string", "description": "Optional recipient display name."},
+                "subject": {"type": "string", "description": "Email subject line."},
+                "body_markdown": {"type": "string", "description": "Draft body content."},
+                "context_type": {
+                    "type": "string",
+                    "enum": ["visit_request", "records_request", "school_form", "appeal", "general"],
+                    "default": "general",
+                },
+            },
+            "required": ["subject", "body_markdown"],
+        },
+        risk_tier="write_local",
+        trust="trusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        executor=_exec_create_email_draft,
+        metadata={
+            "action": "create_email_draft",
+            "entity": "email_draft",
+            "undoable": True,
+            "risk": "write_local",
+        },
+    )
+
+    # 31. sync_school_ics (AU-61 / E11.3)
+    async def _exec_sync_school_ics(args: Dict[str, Any], ctx: Any = None) -> Any:
+        if ctx is None or not getattr(ctx, "profile_id", None):
+            raise ValueError("Missing profile_id in ToolContext")
+        return {"status": "ready", "profile_id": str(ctx.profile_id)}
+
+    spec_sync_school_ics = ToolSpec(
+        name="sync_school_ics",
+        description="Synchronize a child school RFC 5545 .ics calendar feed into local profile appointments.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "feed_id": {"type": "string", "description": "School ICS feed UUID."},
+            },
+            "required": ["feed_id"],
+        },
+        risk_tier="write_local",
+        trust="untrusted",
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="pii"),
+        executor=_exec_sync_school_ics,
+        metadata={
+            "action": "sync_school_ics",
+            "entity": "school_ics_feed",
+            "risk": "write_local",
+            "taints_context": True,
+        },
+    )
+
+    # 32. gmail_list_messages (AU-57, AU-59 / E9.2, E11.4)
+    async def _exec_gmail_list_messages(args: Dict[str, Any], ctx: Any = None) -> Any:
+        if ctx is None or not getattr(ctx, "profile_id", None):
+            raise ValueError("Missing profile_id in ToolContext")
+        return {"messages": [], "trust": "untrusted"}
+
+    spec_gmail_list_messages = ToolSpec(
+        name="gmail_list_messages",
+        description=(
+            "List read-only Gmail messages filtered by consented label ('appointments', "
+            "'school-summaries', 'healthcare') via the curated Google Workspace remote MCP bridge."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string",
+                    "enum": ["appointments", "school-summaries", "healthcare", "INBOX"],
+                    "default": "appointments",
+                },
+                "query": {"type": "string"},
+                "max_results": {"type": "integer", "default": 20, "minimum": 1, "maximum": 50},
+            },
+            "required": ["label"],
+        },
+        risk_tier="read",
+        trust="untrusted",
+        data_flows=DataFlows(
+            allowed_hosts=("workspace-mcp.spectrayan.com", "gmail.googleapis.com"),
+            data_sensitivity="phi",
+        ),
+        executor=_exec_gmail_list_messages,
+        metadata={
+            "action": "gmail_list_messages",
+            "connector_id": "google-workspace-gmail",
+            "risk": "read",
+            "taints_context": True,
+        },
+    )
+
     return [
         spec_attach_read,
         spec_workspace_note,
@@ -1430,6 +1536,9 @@ def _make_builtin_specs() -> List[ToolSpec]:
         spec_calendar_suggest_slots,
         spec_calendar_create_event,
         spec_epic_smart_search_records,
+        spec_create_email_draft,
+        spec_sync_school_ics,
+        spec_gmail_list_messages,
     ]
 
 

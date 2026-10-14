@@ -24,5 +24,14 @@ export type { SyncHealthTableProps } from './SyncHealthTable';
 export { DataFlowsPanel } from './DataFlowsPanel';
 export type { DataFlowsPanelProps } from './DataFlowsPanel';
 
+export { McpPinsAndRoutinesPanel } from './McpPinsAndRoutinesPanel';
+export type { McpPinsAndRoutinesPanelProps } from './McpPinsAndRoutinesPanel';
+
+export { EmailDraftsAndSchoolFeedsPanel } from './EmailDraftsAndSchoolFeedsPanel';
+export type { EmailDraftsAndSchoolFeedsPanelProps } from './EmailDraftsAndSchoolFeedsPanel';
+
+export { CompanionAndHandoverPanel } from './CompanionAndHandoverPanel';
+export type { CompanionAndHandoverPanelProps } from './CompanionAndHandoverPanel';
+
 export { ConnectionsHub } from './ConnectionsHub';
-export type { ConnectionsHubProps } from './ConnectionsHub';
+export type { ConnectionsHubProps, ConnectionsHubTab } from './ConnectionsHub';

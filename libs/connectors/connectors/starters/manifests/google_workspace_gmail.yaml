@@ -1,0 +1,71 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+id: google-workspace-gmail
+version: 0.1.0
+name: Google Workspace Gmail (Curated Remote MCP)
+description: Curated remote HTTPS MCP bridge for read-only label-filtered Gmail appointment confirmations and school notices.
+kind: mcp
+mcp_endpoint: https://workspace-mcp.spectrayan.com/mcp
+categories:
+  - email
+  - appointments
+  - school
+data_flows:
+  allowed_hosts:
+    - workspace-mcp.spectrayan.com
+    - gmail.googleapis.com
+    - oauth2.googleapis.com
+    - accounts.google.com
+  allowed_schemes:
+    - https
+  allowed_ports:
+    - 443
+  egress_direction: egress_only
+  pii_types_transferred:
+    - email_metadata
+auth:
+  type: oauth2
+  pkce: true
+  client_source: byo
+  token_rotation: false
+  rotating_refresh: false
+  scopes:
+    - https://www.googleapis.com/auth/gmail.readonly
+  authorization_url: https://accounts.google.com/o/oauth2/v2/auth
+  token_url: https://oauth2.googleapis.com/token
+mcp_tools:
+  - name: gmail_list_messages
+    description: List read-only label-filtered Gmail messages
+    risk_tier: read
+    input_schema:
+      type: object
+      properties:
+        label:
+          type: string
+        max_results:
+          type: integer
+trust:
+  publisher: Spectrayan
+  verified: true
+  sandbox_level: strict
+  trust_level: untrusted
+policy:
+  rate_limit_rpm: 60
+  timeout_seconds: 30.0
+  retry_max_attempts: 3
+terms:
+  license: Apache-2.0
+  ai_use_allowed: true

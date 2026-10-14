@@ -39,12 +39,15 @@ from carefold.db.models import (
     Attachment,
     AuditEventRecord,
     ChatThread,
+    CompanionDevice,
     Connection,
     ConsentGrant,
     Credential,
+    EmailDraft,
     HealthResource,
     ImportBatch,
     Job,
+    McpToolPin,
     Note,
     PreventiveRecord,
     Profile,
@@ -52,7 +55,9 @@ from carefold.db.models import (
     ProfileConsent,
     ProfileKey,
     Reminder,
+    Routine,
     SchoolForm,
+    SchoolIcsFeed,
     SyncRun,
     User,
     ViewerInvite,
@@ -964,6 +969,11 @@ async def delete_profile(
         await db.execute(update(AuditEventRecord).where(AuditEventRecord.profile_id == profile.id).values(profile_id=None))
         await db.execute(delete(Job).where(Job.profile_id == profile.id))
         await db.execute(delete(Approval).where(Approval.profile_id == profile.id))
+        await db.execute(delete(Routine).where(Routine.profile_id == profile.id))
+        await db.execute(delete(McpToolPin).where(McpToolPin.profile_id == profile.id))
+        await db.execute(delete(EmailDraft).where(EmailDraft.profile_id == profile.id))
+        await db.execute(delete(SchoolIcsFeed).where(SchoolIcsFeed.profile_id == profile.id))
+        await db.execute(delete(CompanionDevice).where(CompanionDevice.profile_id == profile.id))
         await db.execute(delete(SyncRun).where(SyncRun.profile_id == profile.id))
         await db.execute(delete(ConsentGrant).where(ConsentGrant.profile_id == profile.id))
         await db.execute(delete(Credential).where(Credential.profile_id == profile.id))

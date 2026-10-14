@@ -962,6 +962,36 @@ class Profile(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    routines: Mapped[List[Routine]] = sa_relationship(
+        "Routine",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    mcp_tool_pins: Mapped[List[McpToolPin]] = sa_relationship(
+        "McpToolPin",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    email_drafts: Mapped[List[EmailDraft]] = sa_relationship(
+        "EmailDraft",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    school_ics_feeds: Mapped[List[SchoolIcsFeed]] = sa_relationship(
+        "SchoolIcsFeed",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    companion_devices: Mapped[List[CompanionDevice]] = sa_relationship(
+        "CompanionDevice",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __repr__(self) -> str:
         return f"<Profile id={self.id!r} name={self.name!r} relationship={self.relationship!r} role={self.role!r}>"
@@ -1010,6 +1040,11 @@ class ProfileAccess(Base):
         nullable=False,
         doc="Access level: manage, view_clinical, view_paperwork",
     )
+    allowed_sections_json: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Optional JSON array of permitted viewer sections (e.g. ['vitals', 'appointments', 'connections'])",
+    )
     granted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -1025,6 +1060,15 @@ class ProfileAccess(Base):
     profile: Mapped[Profile] = relationship("Profile", back_populates="access_grants")
     user: Mapped[User] = relationship("User", foreign_keys=[user_id])
     grantor: Mapped[Optional[User]] = relationship("User", foreign_keys=[granted_by])
+
+    @property
+    def allowed_sections(self) -> Optional[List[str]]:
+        if not self.allowed_sections_json:
+            return None
+        try:
+            return json.loads(self.allowed_sections_json)
+        except Exception:
+            return None
 
     def __repr__(self) -> str:
         return f"<ProfileAccess profile_id={self.profile_id!r} user_id={self.user_id!r} level={self.access_level!r}>"
@@ -1789,6 +1833,13 @@ class Connection(Base):
         nullable=True,
         doc="Connector manifest version under which active consent was granted",
     )
+    autonomy_level: Mapped[str] = mapped_column(
+        String(16),
+        default="inherit",
+        server_default="inherit",
+        nullable=False,
+        doc="Per-connector autonomy level override: inherit, A0, A1, A2 (AU-58)",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,
@@ -1824,6 +1875,18 @@ class Connection(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    routines: Mapped[List[Routine]] = relationship(
+        "Routine",
+        back_populates="connection",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    mcp_tool_pins: Mapped[List[McpToolPin]] = relationship(
+        "McpToolPin",
+        back_populates="connection",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __init__(self, **kwargs: Any) -> None:
         if "id" not in kwargs:
@@ -1832,6 +1895,8 @@ class Connection(Base):
             kwargs["status"] = kwargs.pop("state")
         if "consecutive_failures" not in kwargs:
             kwargs["consecutive_failures"] = 0
+        if "autonomy_level" not in kwargs:
+            kwargs["autonomy_level"] = "inherit"
         if "created_at" not in kwargs:
             kwargs["created_at"] = utc_now()
         if "updated_at" not in kwargs:
@@ -3241,6 +3306,543 @@ class SyncRun(Base):
         return (
             f"<SyncRun id={self.id!r} connection_id={self.connection_id!r} "
             f"status={self.status!r} upserted={self.records_upserted}>"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Autonomy Batch 6 Models (AU-57 through AU-63)
+# ---------------------------------------------------------------------------
+
+
+class Routine(Base):
+    """Named, scoped A2 standing routine with <=90-day expiry and fire-time re-check (AU-58)."""
+
+    __tablename__ = "routines"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique routine identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier",
+    )
+    connection_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("connections.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+        doc="Optional bound Connection identifier",
+    )
+    created_by_user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        doc="Authenticated steward/guardian who created the standing routine",
+    )
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Human-readable routine name",
+    )
+    description: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Optional routine description",
+    )
+    tool_name: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        doc="Authorized ToolSpec identifier to invoke",
+    )
+    args_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+        nullable=False,
+        doc="Canonical JSON arguments template for the routine",
+    )
+    rrule: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="RFC 5545 recurrence rule string",
+    )
+    timezone: Mapped[str] = mapped_column(
+        String(64),
+        default="UTC",
+        nullable=False,
+        doc="IANA timezone identifier for recurrence expansion",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="active",
+        nullable=False,
+        index=True,
+        doc="Lifecycle status: active, paused, revoked, expired",
+    )
+    last_run_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Last execution timestamp (UTC)",
+    )
+    next_run_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+        doc="Next scheduled execution timestamp (UTC)",
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        doc="Mandatory routine expiration timestamp (<= 90 days from creation)",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    profile: Mapped[Profile] = relationship("Profile", back_populates="routines")
+    connection: Mapped[Optional[Connection]] = relationship("Connection", back_populates="routines")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "args" in kwargs and "args_json" not in kwargs:
+            kwargs["args_json"] = json.dumps(kwargs.pop("args"))
+        if "args_json" not in kwargs:
+            kwargs["args_json"] = "{}"
+        if "timezone" not in kwargs:
+            kwargs["timezone"] = "UTC"
+        if "status" not in kwargs:
+            kwargs["status"] = "active"
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    @property
+    def args(self) -> Dict[str, Any]:
+        try:
+            return json.loads(self.args_json or "{}")
+        except Exception:
+            return {}
+
+    def __repr__(self) -> str:
+        return (
+            f"<Routine id={self.id!r} profile_id={self.profile_id!r} "
+            f"tool_name={self.tool_name!r} status={self.status!r}>"
+        )
+
+
+class McpToolPin(Base):
+    """Schema-hash pin for a curated remote MCP tool on a connection (AU-57 / Titan S7)."""
+
+    __tablename__ = "mcp_tool_pins"
+    __table_args__ = (
+        UniqueConstraint("connection_id", "tool_name", name="uq_mcp_tool_pins_conn_tool"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique MCP tool pin identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier",
+    )
+    connection_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("connections.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Connection identifier",
+    )
+    tool_name: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        doc="Remote MCP tool identifier",
+    )
+    risk_tier: Mapped[str] = mapped_column(
+        String(32),
+        default="read",
+        nullable=False,
+        doc="Assigned Carefold risk tier: read, write_local, write_external, irreversible",
+    )
+    schema_hash: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        doc="SHA-256 digest of canonical (name, description, inputSchema)",
+    )
+    schema_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+        nullable=False,
+        doc="Serialized canonical tool schema snapshot",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="pinned",
+        nullable=False,
+        index=True,
+        doc="Pin status: pinned, drift_blocked",
+    )
+    pinned_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Initial pin timestamp (UTC)",
+    )
+    verified_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Last schema verification timestamp (UTC)",
+    )
+
+    profile: Mapped[Profile] = relationship("Profile", back_populates="mcp_tool_pins")
+    connection: Mapped[Connection] = relationship("Connection", back_populates="mcp_tool_pins")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "risk_tier" not in kwargs:
+            kwargs["risk_tier"] = "read"
+        if "schema_json" not in kwargs:
+            kwargs["schema_json"] = "{}"
+        if "status" not in kwargs:
+            kwargs["status"] = "pinned"
+        if "pinned_at" not in kwargs:
+            kwargs["pinned_at"] = utc_now()
+        if "verified_at" not in kwargs:
+            kwargs["verified_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return (
+            f"<McpToolPin id={self.id!r} connection_id={self.connection_id!r} "
+            f"tool_name={self.tool_name!r} status={self.status!r}>"
+        )
+
+
+class EmailDraft(Base):
+    """Local-only email draft prepared by Carefold with no automatic send capability (AU-60)."""
+
+    __tablename__ = "email_drafts"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique email draft identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier",
+    )
+    created_by_user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        doc="User who requested or created the draft",
+    )
+    recipient: Mapped[Optional[str]] = mapped_column(
+        String(320),
+        nullable=True,
+        doc="Optional recipient email address",
+    )
+    subject: Mapped[str] = mapped_column(
+        String(500),
+        nullable=False,
+        doc="Email subject line",
+    )
+    body: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        doc="Email plaintext body",
+    )
+    category: Mapped[str] = mapped_column(
+        String(64),
+        default="general",
+        nullable=False,
+        doc="Draft category: appointment, school, insurance, general",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="draft",
+        nullable=False,
+        index=True,
+        doc="Lifecycle status: draft, exported, archived",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    profile: Mapped[Profile] = relationship("Profile", back_populates="email_drafts")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "category" not in kwargs:
+            kwargs["category"] = "general"
+        if "status" not in kwargs:
+            kwargs["status"] = "draft"
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return (
+            f"<EmailDraft id={self.id!r} profile_id={self.profile_id!r} "
+            f"subject={self.subject!r} status={self.status!r}>"
+        )
+
+
+class SchoolIcsFeed(Base):
+    """Per-child read-only school calendar ICS subscription feed (AU-61 / E4.4)."""
+
+    __tablename__ = "school_ics_feeds"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique school ICS feed identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced child/student Profile identifier",
+    )
+    label: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="School or calendar feed display name (e.g. 'Oakridge Elementary Calendar')",
+    )
+    feed_url: Mapped[str] = mapped_column(
+        String(1024),
+        nullable=False,
+        doc="Public HTTPS/webcal .ics subscription URL",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="active",
+        nullable=False,
+        index=True,
+        doc="Feed sync status: active, paused, error",
+    )
+    last_synced_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Last successful feed synchronization timestamp (UTC)",
+    )
+    events_synced: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+        doc="Count of calendar events synchronized from this feed",
+    )
+    last_error: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Redacted error message if last sync failed",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    profile: Mapped[Profile] = relationship("Profile", back_populates="school_ics_feeds")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "status" not in kwargs:
+            kwargs["status"] = "active"
+        if "events_synced" not in kwargs:
+            kwargs["events_synced"] = 0
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return (
+            f"<SchoolIcsFeed id={self.id!r} profile_id={self.profile_id!r} "
+            f"label={self.label!r} status={self.status!r}>"
+        )
+
+
+class CompanionDevice(Base):
+    """Paired iOS companion device with pinned TLS certificate fingerprint and scoped profile permissions (AU-62)."""
+
+    __tablename__ = "companion_devices"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique companion device identifier (UUID v4 string)",
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Owner User identifier",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Scoped Profile identifier",
+    )
+    device_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Human-readable device label (e.g. 'Priya iPhone 16 Pro')",
+    )
+    platform: Mapped[str] = mapped_column(
+        String(32),
+        default="ios",
+        nullable=False,
+        doc="Companion platform ('ios' in v1)",
+    )
+    pairing_code_hash: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        doc="SHA-256 digest of one-time pairing code (cleared once paired)",
+    )
+    token_hash: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        doc="SHA-256 digest of issued companion device bearer token",
+    )
+    cert_fingerprint_sha256: Mapped[str] = mapped_column(
+        String(95),
+        nullable=False,
+        doc="Pinned TLS server certificate SHA-256 fingerprint",
+    )
+    allowed_categories_json: Mapped[str] = mapped_column(
+        Text,
+        default='["vitals", "clinical_records", "reminders"]',
+        nullable=False,
+        doc="Serialized JSON array of consented companion sync categories",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="pending_pair",
+        nullable=False,
+        index=True,
+        doc="Device status: pending_pair, active, revoked",
+    )
+    paired_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Timestamp when QR pairing completed (UTC)",
+    )
+    last_seen_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Last companion sync or notification poll timestamp (UTC)",
+    )
+    expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Pairing code or device token expiration timestamp (UTC)",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="Creation timestamp (UTC)",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="Last modification timestamp (UTC)",
+    )
+
+    profile: Mapped[Profile] = relationship("Profile", back_populates="companion_devices")
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "allowed_categories" in kwargs and "allowed_categories_json" not in kwargs:
+            kwargs["allowed_categories_json"] = json.dumps(list(kwargs.pop("allowed_categories")))
+        if "allowed_categories_json" not in kwargs:
+            kwargs["allowed_categories_json"] = '["vitals", "clinical_records", "reminders"]'
+        if "platform" not in kwargs:
+            kwargs["platform"] = "ios"
+        if "status" not in kwargs:
+            kwargs["status"] = "pending_pair"
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    @property
+    def allowed_categories(self) -> List[str]:
+        try:
+            return json.loads(self.allowed_categories_json or "[]")
+        except Exception:
+            return []
+
+    def __repr__(self) -> str:
+        return (
+            f"<CompanionDevice id={self.id!r} profile_id={self.profile_id!r} "
+            f"device_name={self.device_name!r} status={self.status!r}>"
         )
 
 

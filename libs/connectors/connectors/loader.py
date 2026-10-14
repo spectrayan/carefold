@@ -78,9 +78,13 @@ class ConnectorRegistry:
         self._manifests[manifest.id] = manifest
         self._factories[manifest.id] = factory
 
-    def list_manifests(self) -> List[ConnectorManifest]:
+    def list_manifests(self, include_mcp: bool = False) -> List[ConnectorManifest]:
         """Returns all registered connector manifests in deterministic order."""
-        return list(self._manifests.values())
+        if include_mcp:
+            return list(self._manifests.values())
+        return [
+            m for m in self._manifests.values() if getattr(m, "kind", "rest") != "mcp"
+        ]
 
     def get_manifest(self, connector_id: str) -> ConnectorManifest:
         """Returns the validated ConnectorManifest for `connector_id`."""
