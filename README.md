@@ -1,28 +1,24 @@
 <!--
   Carefold — Healthcare AI Agent Marketplace & Runtime
-  Copyright 2026 Spectrayan
+  Copyright 2026 Spectrayan (https://spectrayan.com)
 
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
+  Licensed under the PolyForm Noncommercial License 1.0.0 and the
+  Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+  Personal and household local use only. Commercial use, hosted service
+  offering, rebranding, white-labeling, and redistribution of modified
+  forks are prohibited without a written commercial license from Spectrayan.
 
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+  Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 -->
 
 <h1 align="center">Carefold</h1>
 
 <p align="center">
-  <strong>Privacy-Preserving Healthcare AI Agent Marketplace & Runtime.</strong>
+  <strong>Local-First Personal & Family Health AI Companion & Specialist Runtime.</strong>
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge" alt="License" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-PolyForm_Noncommercial_+_Additional_Terms-047857.svg?style=for-the-badge" alt="License" /></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.12-3776AB.svg?style=for-the-badge&logo=python&logoColor=white" alt="Python" /></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-22_LTS-339933.svg?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node" /></a>
   <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-16_Turbopack-000000.svg?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" /></a>
@@ -33,14 +29,14 @@
 </p>
 
 <p align="center">
-  <em>"Healthcare AI cannot be a black box or a centralized data honeypot. It must be local-first, structurally safe, grounded in clinical reality, and strictly accountable to human stewards."</em>
+  <em>"Great care starts with prepared patients and supported families. Carefold brings local-first AI to your household—helping you organize records, prepare thoughtful questions for your care team, and navigate coverage with clarity and privacy."</em>
 </p>
 
 ---
 
-**Carefold** is an open-source, local-first healthcare AI agent marketplace and multi-agent execution runtime. Designed for clinical visit preparation, health insurance navigation, and chronic care support, Carefold runs entirely on user-controlled hardware (or private self-hosted endpoints) to safeguard patient privacy.
+**Carefold** is a source-available, local-first personal and family health AI companion and specialist agent runtime. Designed to work alongside your doctors, care teams, and health plans, Carefold runs on your own hardware (or private household instance) to help you prepare for clinical visits, organize health records and vitals across family members, track preventive screenings and pediatric school forms, and understand health insurance benefits.
 
-It pairs a **5-phase LangGraph orchestration engine** with **20 specialist clinical and administrative navigators**, modular skill packs, hexagonal memory architecture (with Spector cognitive memory integration planned), zero-trust sandboxed tools, and a two-tier clinical safety guardrail system.
+It pairs a **5-phase LangGraph orchestration engine** with **23 specialist clinical and administrative navigators**, **24 modular skill packs**, multi-profile household care with per-profile AES-256-GCM envelope encryption, scoped health and calendar connectors (`Epic SMART on FHIR`, `Withings`, `Google Calendar`, `CalDAV`, `Apple Health`, `FHIR R4`, `C-CDA`), multilingual support (`en-US`, `es-ES`, `fr-FR`, `hi-IN`, `ar-SA` with `RTL`), and a two-tier clinical safety guardrail system.
 
 <details>
   <summary>📸 <strong>Preview Carefold Web Marketplace UI</strong> (Click to expand)</summary>
@@ -54,7 +50,7 @@ It pairs a **5-phase LangGraph orchestration engine** with **20 specialist clini
 
 ## ⚡ 30-Second Quickstart
 
-Get a local Carefold runtime and agent marketplace running in seconds:
+Get a local Carefold runtime and household companion running in seconds:
 
 ### 1. Instant Launch via Prebuilt Docker Container
 Run Carefold with a single command using the published multi-architecture image (supports Apple Silicon `arm64` and Intel/AMD `amd64` automatically):
@@ -72,7 +68,7 @@ docker run -d \
   -v carefold-data:/data \
   ghcr.io/spectrayan/carefold:latest
 ```
-Visit `http://localhost:3000` to browse specialist agents and launch private consultations.
+Visit `http://localhost:3000` to browse specialist helpers and launch private household consultations.
 
 > [!TIP]
 > - **Connecting to Ollama on host**: On Docker Desktop (macOS / Windows), use `-e OLLAMA_URL=http://host.docker.internal:11434/v1` so the container can reach your host machine's Ollama instance.
@@ -82,7 +78,7 @@ Visit `http://localhost:3000` to browse specialist agents and launch private con
 Images can also be built locally from [`docker/Dockerfile`](docker/Dockerfile):
 
 ```bash
-# From the repository root: build and start the FastAPI backend (:8000) and Next.js marketplace UI (:3000)
+# From the repository root: build and start the FastAPI backend (:8000) and Next.js UI (:3000)
 docker compose -f docker/docker-compose.yml up -d --build
 
 # Or also start a local Ollama container for on-device LLM inference:
@@ -91,7 +87,7 @@ docker compose -f docker/docker-compose.yml --profile ollama up -d --build
 # Pull the default model into the Ollama container (first run only)
 docker compose -f docker/docker-compose.yml exec ollama ollama pull llama3.2
 ```
-Visit `http://localhost:3000` to browse specialist agents and launch private consultations.
+Visit `http://localhost:3000` to browse specialist helpers and launch private consultations.
 
 ### 3. Local Monorepo Development
 
@@ -114,7 +110,7 @@ pip install -r backend/requirements-dev.txt
 # Start backend server (Terminal 1)
 uvicorn carefold.main:app --host 127.0.0.1 --port 8000 --reload
 
-# Start Next.js marketplace UI (Terminal 2)
+# Start Next.js UI (Terminal 2)
 pnpm --filter web dev
 ```
 
@@ -122,16 +118,16 @@ pnpm --filter web dev
 
 ## 🏥 Specialist Agent Topology
 
-Carefold features a modular, growing catalog of specialist clinical and administrative agents, organized into three core domains:
+Carefold features a modular catalog of 23 specialist clinical and administrative navigators, organized into three core domains:
 
-- **Clinical Organ & Specialty Navigators (`clinical_assist`)**: Dedicated navigators for Cardiology, Pulmonology, Gastroenterology, Oncology, Neurology, Nephrology, Dermatology, Endocrinology, Orthopedics, Rheumatology, Urology, ENT, Vision, Podiatry, Vascular Medicine, and more. Each specialist assists with appointment preparation, symptom tracking logs, vital signs, and prioritized clinical discussion agendas.
-- **Administrative & Insurance Stewards (`admin`)**: Stewards for Health Insurance Benefits & Coverage explanation, Prior Authorization verification, Claims & Denials Appeals (ERISA), Prescription Drug Formularies, and Multi-Provider Medical Records coordination.
+- **Clinical Organ & Specialty Navigators (`clinical_assist`)**: Dedicated navigators for Cardiology, Pulmonology, Gastroenterology, Oncology, Neurology, Nephrology, Dermatology, Endocrinology, Orthopedics, Rheumatology, Urology, ENT, Vision, Hematology, Podiatry, Vascular Medicine, Oral Health, and General Visit Preparation. Each specialist helps you organize symptoms, review lab trends and vital signs, and prepare clear, prioritized questions to discuss with your clinician.
+- **Administrative & Insurance Stewards (`admin`)**: Stewards for Health Insurance Benefits & Coverage explanation, Prior Authorization preparation, Claims & Denials Appeals, Prescription Drug Formularies, and Multi-Provider Medical Records coordination.
 - **Wellness & Habit Companions (`wellness`)**: Daily companions for chronic care routines, hydration tracking, sleep hygiene, and lifestyle check-ins.
 
 ### Exploring Available Agents
 
 You can explore, search, and interact with all specialist agents through:
-- **Web Marketplace UI**: Launch the consultation studio (`pnpm dev:web` at `http://localhost:3000`) to browse and chat with any agent in the interactive gallery.
+- **Web Consultation Studio**: Launch the web app (`pnpm dev:web` at `http://localhost:3000`) to browse and chat with any specialist helper.
 - **Living Documentation Catalog**: Read [`docs/agents/catalog.md`](docs/agents/catalog.md) for detailed descriptions, taxonomy classifications, and key capabilities.
 - **Carefold CLI & API**: Run `carefold list` or query `GET /api/agents` to inspect the runtime catalog programmatically.
 
@@ -145,30 +141,29 @@ You can explore, search, and interact with all specialist agents through:
 
 ---
 
-## 🧠 Cognitive Memory & Spector Integration
+## 🧠 Cognitive Memory, Hybrid Retrieval & Household Isolation
 
-Carefold implements a hexagonal architecture for memory and agent discovery:
+Carefold implements a hexagonal architecture for memory, search, and household data isolation:
 
-* **`MemoryPort`**: Cognitive memory interface supporting working, episodic, semantic, and procedural memory tiers with salience ranking and decay.
-* **`CatalogPort`**: Full-text and BM25 agent/skill catalog search index.
-* **Zero-Dependency SQLite FTS5 Adapter**: Out-of-the-box local storage requiring no external services.
-* **Spector Integration (Planned)**: A `MemoryPort` adapter for [Spector](https://github.com/spectrayan/spector) — Spectrayan's SIMD-accelerated cognitive memory engine — is planned for Q1–Q2 2027 (see [ROADMAP](ROADMAP.md)). The `CAREFOLD_MEMORY_BACKEND` setting already reserves the `spector` value, but only `sqlite` is implemented today; selecting `spector` currently raises a "not yet implemented" error.
+* **Per-Profile Household Scoping & Envelope Encryption**: Every family member profile (`Self`, `Child`, `Parent`, `Spouse`) is isolated at the database, Content-Addressed Storage (`CAS`), and cryptographic levels using per-profile `HKDF-SHA256` / `AES-256-GCM` Data Encryption Keys (`ADR-0005`, `ADR-0007`).
+* **`MemoryPort` & 3-Tier Consolidation**: Cognitive memory interface supporting working, episodic, and semantic memory tiers with salience ranking and decay (`ADR-0002`).
+* **Hybrid `SearchIndex`**: Combines SQLite `FTS5` lexical BM25 search with `sqlite-vec` dense embeddings, Reciprocal Rank Fusion (`RRF`), and Maximal Marginal Relevance (`MMR`).
+* **End-to-End Internationalization (`ADR-0009`)**: Supports `en-US`, `es-ES`, `fr-FR`, `hi-IN`, and `ar-SA` (`RTL`) with IETF BCP 47 locale negotiation, Unicode UAX #15 `NFC` canonical storage normalization, HL7 FHIR R4 language-neutral clinical coding, and localized safety disclaimers.
 
 ---
 
-## 🛡️ Two-Tier Clinical Safety & Sandboxed Security
+## 🛡️ Two-Tier Clinical Safety, Policy Gates & Sandboxed Security
 
-Carefold enforces strict safety invariants to ensure patient safety and privacy:
+Carefold enforces strict safety invariants to protect families and ensure non-clinical boundaries:
 
 ### 1. Two-Tier Clinical Boundary System
-* **Tier 1 (Emergency Red Flags)**: Instant termination with 911/988 emergency escalation when acute symptoms are detected (e.g. crushing chest pain radiating to the jaw, acute stroke FAST symptoms, anaphylaxis, severe respiratory distress).
-* **Tier 2 (Soft Boundary Steering)**: Constructive educational redirection for non-emergent requests for formal diagnoses or dosage calculations.
+* **Tier 1 (Multilingual Emergency Red Flags)**: Instant termination with `911`/`988`/`112` emergency escalation when acute symptoms are detected across supported languages (e.g., crushing chest pain, acute stroke FAST symptoms, anaphylaxis, severe respiratory distress, or active self-harm crisis).
+* **Tier 2 (Collaborative Clinical Preparation)**: Helps patients organize questions and records for their licensed healthcare providers while never diagnosing conditions, prescribing medications, or adjusting dosages.
 
-### 2. Zero-Trust Sandboxed File Security
-* **Path Traversal Shield**: Strict lexical normalization and containment checks preventing `../` traversal, null bytes, and protocol escaping across `attachments/` and `workspace/notes/`.
-* **Symlink Neutralization**: Automatic detection and rejection of symlinks pointing outside the workspace sandbox.
-* **Grounding Validation**: Validates all extracted numerical lab values, copays, and deductibles against raw source documents.
-* **47-Attack Penetration Test Suite**: Automated penetration testing covering path traversal, command injection, symlink overwrites, and unauthenticated skill access.
+### 2. Four-Tier Policy Gate & Zero-Trust Sandbox (`ADR-0004`)
+* **4-Tier Tool Execution Gate**: Classifies every tool into `read`, `write_local`, `write_external`, or `irreversible` across user-selectable autonomy levels (`A0` Manual, `A1` Assisted, `A2` Routine) with monotone taint tracking (`UntrustedResult`) and SHA-256 hash-chained `audit_events`.
+* **Path Traversal & Symlink Shield**: Strict lexical normalization and containment checks preventing `../` traversal, null bytes, and symlink escapes across `attachments/` and `workspace/notes/`.
+* **47-Attack Penetration Test Suite**: Automated security verification covering path traversal, command injection, symlink overwrites, and unauthorized skill access.
 
 ---
 
@@ -177,11 +172,11 @@ Carefold enforces strict safety invariants to ensure patient safety and privacy:
 Carefold maintains rigorous verification standards across all code changes:
 
 ```bash
-# 1. Spectrayan Apache-2.0 License Header Check
+# 1. Spectrayan License Header Check
 pnpm run check:licenses
 
-# 2. Backend Pytest Suite (3,900+ tests)
-backend/.venv/bin/pytest backend/tests/
+# 2. Backend Pytest Suite
+PYTHONPATH=backend/src:libs/connectors backend/.venv/bin/pytest backend/tests/ libs/connectors/tests/
 
 # 3. Security Penetration Suite (47 Attack Vectors)
 PYTHONPATH=backend/src backend/.venv/bin/python backend/tests/penetration_suite.py
@@ -200,9 +195,16 @@ pnpm --filter web build
 
 ## 📜 Architecture Decision Records (ADRs)
 
-Carefold uses a living ADR framework to document architectural decisions:
+Carefold documents all major architectural decisions in [`docs/adr/`](docs/adr/):
 * [ADR 0001: Orchestrator-Driven Agent Architecture](docs/adr/0001-orchestrator-driven-agent-architecture.md)
 * [ADR 0002: Hexagonal Memory and Catalog Ports](docs/adr/0002-hexagonal-memory-and-catalog-ports.md)
+* [ADR 0003: Progressive Disclosure & Skill Context Management](docs/adr/0003-progressive-disclosure-skill-context-management.md)
+* [ADR 0004: Tool Execution Gate, 4-Tier Risk Approvals & Taint Propagation](docs/adr/0004-tool-execution-gate-and-taint-propagation.md)
+* [ADR 0005: Keyring Vault & Per-Profile Envelope Encryption](docs/adr/0005-keyring-vault-and-envelope-encryption.md)
+* [ADR 0006: Deployment Modes (Mode L Local vs Mode S Shared Household)](docs/adr/0006-deployment-modes-and-security-posture.md)
+* [ADR 0007: Partitioned Content-Addressed Storage & Hybrid Search Index](docs/adr/0007-partitioned-cas-and-hybrid-search.md)
+* [ADR 0008: Scoped Connectors, OAuth Bounce Relay & Taint Tracking](docs/adr/0008-scoped-connectors-and-taint-tracking.md)
+* [ADR 0009: End-to-End Internationalization & Multilingual Architecture](docs/adr/0009-internationalization-and-multilingual-architecture.md)
 
 ---
 
@@ -218,8 +220,14 @@ Thank you to all the contributors who help build and improve Carefold!
 
 ---
 
-## 📄 License & Attribution
+## 📄 License, Personal/Household Terms & Trademarks
 
-Carefold is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) and [NOTICE](NOTICE) files for details.
+Carefold is **source-available** software licensed under the **[PolyForm Noncommercial License 1.0.0](LICENSE)** together with the **[Carefold Additional Terms](ADDITIONAL-TERMS.md)** and the **[Carefold Trademark Policy](TRADEMARKS.md)**:
 
-Copyright © 2026 Spectrayan.
+- **Permitted (Free Personal & Household Local Use)**: You may install, run, study, and modify Carefold for **personal and family use** on your own local hardware or private household instance, and contribute improvements back to the official repository under the **[Carefold Individual CLA](CLA.md)**.
+- **Prohibited Without a Commercial License**: Selling, reselling, offering Carefold as a hosted service (SaaS/API/portal), deploying inside any business or healthcare organization, **rebranding or white-labeling**, removing Carefold/Spectrayan attribution, or redistributing modified forks outside your household is strictly prohibited.
+- **Commercial Licensing**: For commercial, clinical, enterprise, or OEM licensing inquiries, contact `licensing@spectrayan.com`.
+
+See [`LICENSE`](LICENSE), [`ADDITIONAL-TERMS.md`](ADDITIONAL-TERMS.md), [`TRADEMARKS.md`](TRADEMARKS.md), [`CLA.md`](CLA.md), and [`NOTICE`](NOTICE) for full terms.
+
+Required Notice: Copyright © 2026 Spectrayan (https://spectrayan.com). All rights reserved.

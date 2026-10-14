@@ -2,19 +2,15 @@
 
 <!--
   Carefold — Healthcare AI Agent Marketplace & Runtime
-  Copyright 2026 Spectrayan
+  Copyright 2026 Spectrayan (https://spectrayan.com)
 
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
+  Licensed under the PolyForm Noncommercial License 1.0.0 and the
+  Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+  Personal and household local use only. Commercial use, hosted service
+  offering, rebranding, white-labeling, and redistribution of modified
+  forks are prohibited without a written commercial license from Spectrayan.
 
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+  Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 -->
 
 Specification compliance: [AGENTS.md v1.0.0](https://github.com/agent-infra/agents.md)  
@@ -25,7 +21,7 @@ Last updated: 2026-10-14
 
 ## 1. Project Boundaries & Operational Constraints
 
-Carefold is an open-source, local-first healthcare AI agent marketplace and execution runtime designed for privacy-preserving clinical visit preparation, health insurance navigation, and chronic care support.
+Carefold is a source-available, local-first personal and family health AI companion and specialist agent runtime designed for privacy-preserving clinical visit preparation, health insurance navigation, and chronic care support.
 
 ### 1.1 Non-Clinical Boundary (Strict Safety Mandate)
 - **Informational and Administrative Navigation Only**: Carefold agents provide educational context, visit preparation checklists, formulary navigation, and benefits explanation. Agents **never** provide formal medical diagnoses, drug dosage adjustments, clinical treatment decisions, or acute triage replacement.
@@ -209,7 +205,7 @@ All AI coding assistants (e.g., Cursor, Claude Code, GitHub Copilot, Gemini CLI)
 1. **Minimal Change Principle**:
    - Modify only files directly relevant to the assigned task. Never perform unsolicited refactoring or stylistic reformatting.
 2. **License Header Integrity**:
-   - Every `.py`, `.ts`, `.tsx`, `.js`, `.mjs`, and `.css` file must contain the official Spectrayan Apache-2.0 copyright header.
+   - Every `.py`, `.ts`, `.tsx`, `.js`, `.mjs`, and `.css` file must contain the official Spectrayan PolyForm Noncommercial + Carefold Additional Terms copyright header.
    - Verify license compliance using `pnpm run check:licenses`.
 3. **Safety & Security Invariants**:
    - Never weaken clinical safety guardrails, emergency red-flag patterns, or PII regex filters in `resources/` or `subgraphs/extraction/`.

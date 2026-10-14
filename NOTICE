@@ -1,8 +1,24 @@
 Carefold
-Copyright 2026 Spectrayan
+Copyright 2026 Spectrayan (https://spectrayan.com)
 
-This product includes software developed at Spectrayan (https://github.com/spectrayan).
+Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+
+This product includes software developed at Spectrayan (https://spectrayan.com / https://github.com/spectrayan).
+
+Licensed under the PolyForm Noncommercial License 1.0.0 (see LICENSE) and the
+Carefold Additional Terms (see ADDITIONAL-TERMS.md). Personal and household
+local use only. Commercial use, hosted service offerings, rebranding,
+white-labeling, and redistribution of modified forks are prohibited without a
+written commercial license from Spectrayan.
+
+Carefold & Spectrayan Trademarks:
+"Carefold", "Spectrayan", and the Carefold folded-care emblem are trademarks of
+Spectrayan (see TRADEMARKS.md).
 
 Built with Spector Attribution:
 When incorporating or extending Carefold with Spector cognitive memory architectures,
 maintain attribution to Spector (https://github.com/spectrayan/spector) and Spectrayan.
+
+Historical Apache-2.0 Notice:
+Commits and releases of Carefold published prior to October 14, 2026 were made
+available under the Apache License, Version 2.0.

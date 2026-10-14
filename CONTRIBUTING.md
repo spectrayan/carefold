@@ -1,8 +1,8 @@
 # Contributing to Carefold
 
-Thank you for your interest in contributing to Carefold! Carefold is an open-source, local-first healthcare AI agent marketplace and runtime built with Spector standards.
+Thank you for your interest in contributing to Carefold! Carefold is a source-available, local-first personal and family health AI companion and specialist agent runtime built by Spectrayan.
 
-By contributing to this repository, you help make healthcare navigation and clinical visit preparation more private, accessible, and reliable.
+By contributing to this repository, you help families prepare for clinical visits, organize household health records, and navigate coverage with clarity and privacy.
 
 ---
 
@@ -64,11 +64,13 @@ All contributors and maintainers are expected to adhere to the [Carefold Code of
 
 ---
 
-## Contribution Workflow
+## Contribution Workflow & Licensing
 
-### 1. Developer Certificate of Origin (DCO)
+### 1. Individual Contributor License Agreement (CLA) & DCO Sign-Off
 
-Carefold requires the Developer Certificate of Origin (DCO) sign-off on all commits. By adding a `Signed-off-by:` line, you certify that you wrote the code or have the right to submit it under the Apache-2.0 license.
+Carefold is distributed under the [PolyForm Noncommercial License 1.0.0](LICENSE) and the [Carefold Additional Terms](ADDITIONAL-TERMS.md). All contributions require:
+1. Acceptance of the **[Carefold Individual Contributor License Agreement (CLA)](CLA.md)**; and
+2. **Developer Certificate of Origin (DCO 1.1)** sign-off (`Signed-off-by:`) on every commit.
 
 To sign your commit automatically:
 ```bash
@@ -90,33 +92,21 @@ We follow the [Conventional Commits](https://www.conventionalcommits.org/) speci
 - `ci:` Changes to GitHub Actions workflows or scripts
 - `chore:` Maintenance tasks, license header updates
 
-Example commit messages:
-```
-feat(agents): add nephrology specialist agent manifest
-fix(guardrails): prevent false positive on qualified negation
-docs(adr): document hexagonal memory ports decision
-chore: update dependency packages
-```
-
 ### 3. Spectrayan License Headers
 
-Every source file (`.py`, `.ts`, `.tsx`, `.js`, `.mjs`, `.css`) must include the official Spectrayan Apache-2.0 copyright header:
+Every source file (`.py`, `.ts`, `.tsx`, `.js`, `.mjs`, `.css`) must include the official Spectrayan license header:
 
 ```
 Carefold — Healthcare AI Agent Marketplace & Runtime
-Copyright 2026 Spectrayan
+Copyright 2026 Spectrayan (https://spectrayan.com)
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Licensed under the PolyForm Noncommercial License 1.0.0 and the
+Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+Personal and household local use only. Commercial use, hosted service
+offering, rebranding, white-labeling, and redistribution of modified
+forks are prohibited without a written commercial license from Spectrayan.
 
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 ```
 
 To verify and auto-apply headers across the repository:
@@ -137,7 +127,7 @@ Before submitting your PR, verify all local quality gates:
 pnpm run check:licenses
 
 # 2. Backend test suite
-backend/.venv/bin/pytest backend/tests/
+PYTHONPATH=backend/src:libs/connectors backend/.venv/bin/pytest backend/tests/ libs/connectors/tests/
 
 # 3. Security penetration suite (47 attacks)
 PYTHONPATH=backend/src backend/.venv/bin/python backend/tests/penetration_suite.py
@@ -146,7 +136,7 @@ PYTHONPATH=backend/src backend/.venv/bin/python backend/tests/penetration_suite.
 pnpm --filter web typecheck
 
 # 5. Frontend unit & component tests
-pnpm --filter web test --exclude "**/chat.test.ts"
+pnpm --filter web test --exclude "**/api/**"
 
 # 6. Frontend production build
 pnpm --filter web build
@@ -161,9 +151,9 @@ mkdocs build --strict
 
 When proposing or contributing a new clinical or administrative agent:
 
-1. **Agent Manifest (`agents/<agent-id>/agent.yaml`)**:
+1. **Agent Manifest (`agents/<agent-id>/carefold.yaml`)**:
    - Must specify: `id`, `name`, `version`, `domain`, `category`, `risk_class`, `persona`, `skills`, and `system_prompt`.
-   - `risk_class` must be one of: `admin`, `wellness`, `clinical_assist`, `education`.
+   - `risk_class` must be one of: `admin`, `wellness`, `clinical_assist`.
 2. **Clinical Safety Bounds**:
    - Every clinical agent must declare the `clinical-safety-boundaries` skill.
    - Emergency-sensitive agents must declare `emergency-red-flags`.
@@ -174,7 +164,8 @@ When proposing or contributing a new clinical or administrative agent:
 
 ---
 
-## Questions & Discussions
+## Questions & Inquiries
 
-- **GitHub Issues**: For bug reports, feature requests, and clinical agent proposals.
+- **GitHub Issues**: For bug reports, feature requests, and specialist agent proposals.
+- **Commercial & Trademark Licensing**: Email `licensing@spectrayan.com` (see [`ADDITIONAL-TERMS.md`](ADDITIONAL-TERMS.md) and [`TRADEMARKS.md`](TRADEMARKS.md)).
 - **Security Inquiries**: For security vulnerabilities or safety incidents, email `security@spectrayan.com`.

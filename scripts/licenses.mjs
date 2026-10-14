@@ -1,19 +1,15 @@
 #!/usr/bin/env node
 /*
  * Carefold — Healthcare AI Agent Marketplace & Runtime
- * Copyright 2026 Spectrayan
+ * Copyright 2026 Spectrayan (https://spectrayan.com)
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the PolyForm Noncommercial License 1.0.0 and the
+ * Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+ * Personal and household local use only. Commercial use, hosted service
+ * offering, rebranding, white-labeling, and redistribution of modified
+ * forks are prohibited without a written commercial license from Spectrayan.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
  */
 
 import fs from 'node:fs';
@@ -26,6 +22,30 @@ const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '..');
 
 const C_STYLE_HEADER = `/*
+ * Carefold \u2014 Healthcare AI Agent Marketplace & Runtime
+ * Copyright 2026 Spectrayan (https://spectrayan.com)
+ *
+ * Licensed under the PolyForm Noncommercial License 1.0.0 and the
+ * Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+ * Personal and household local use only. Commercial use, hosted service
+ * offering, rebranding, white-labeling, and redistribution of modified
+ * forks are prohibited without a written commercial license from Spectrayan.
+ *
+ * Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+ */`;
+
+const HASH_STYLE_HEADER = `# Carefold \u2014 Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan (https://spectrayan.com)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0 and the
+# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+# Personal and household local use only. Commercial use, hosted service
+# offering, rebranding, white-labeling, and redistribution of modified
+# forks are prohibited without a written commercial license from Spectrayan.
+#
+# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)`;
+
+const LEGACY_C_STYLE_HEADER = `/*
  * Carefold \u2014 Healthcare AI Agent Marketplace & Runtime
  * Copyright 2026 Spectrayan
  *
@@ -42,7 +62,7 @@ const C_STYLE_HEADER = `/*
  * limitations under the License.
  */`;
 
-const HASH_STYLE_HEADER = `# Carefold \u2014 Healthcare AI Agent Marketplace & Runtime
+const LEGACY_HASH_STYLE_HEADER = `# Carefold \u2014 Healthcare AI Agent Marketplace & Runtime
 # Copyright 2026 Spectrayan
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -86,6 +106,16 @@ function isPython(filePath) {
   return filePath.endsWith('.py');
 }
 
+function stripLegacyHeader(text, isPy) {
+  const normalized = text.replace(/\r\n/g, '\n');
+  const trimmed = normalized.trimStart();
+  const legacyHeader = isPy ? LEGACY_HASH_STYLE_HEADER : LEGACY_C_STYLE_HEADER;
+  if (trimmed.startsWith(legacyHeader)) {
+    return trimmed.slice(legacyHeader.length).replace(/^\n+/, '');
+  }
+  return normalized;
+}
+
 export function hasLicenseHeader(content, isPy) {
   let checkArea = content;
   if (checkArea.startsWith('#!')) {
@@ -124,7 +154,7 @@ export function applyLicenseHeader(content, isPy) {
     const newlineIndex = content.indexOf('\n');
     if (newlineIndex !== -1) {
       const shebang = content.slice(0, newlineIndex + 1);
-      const rest = content.slice(newlineIndex + 1);
+      const rest = stripLegacyHeader(content.slice(newlineIndex + 1), isPy);
       const cleanRest = rest.replace(/^\r?\n+/, '');
       return `${shebang}${expectedHeader}\n\n${cleanRest}`;
     } else {
@@ -132,7 +162,8 @@ export function applyLicenseHeader(content, isPy) {
     }
   }
 
-  const cleanContent = content.replace(/^\r?\n+/, '');
+  const strippedContent = stripLegacyHeader(content, isPy);
+  const cleanContent = strippedContent.replace(/^\r?\n+/, '');
   return `${expectedHeader}\n\n${cleanContent}`;
 }
 
@@ -198,9 +229,9 @@ Usage:
   node scripts/licenses.mjs --fix [files...]
 
 Options:
-  --check    Verify that all target source files have the official Spectrayan Apache-2.0 header.
+  --check    Verify that all target source files have the official Spectrayan license header.
              Exits with code 0 on success, code 1 on violations.
-  --fix      Apply the official Spectrayan Apache-2.0 header idempotently to all target source files.
+  --fix      Apply the official Spectrayan license header idempotently to all target source files.
   --all      Include all untracked files discovered by walking directories.
   --help     Show this help message.
 `);

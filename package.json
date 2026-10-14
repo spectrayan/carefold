@@ -2,8 +2,8 @@
   "name": "carefold-monorepo",
   "version": "0.4.0-beta.1",
   "private": true,
-  "description": "Carefold: Local-first runtime and marketplace for specialist health agents",
-  "license": "Apache-2.0",
+  "description": "Carefold: Local-first personal and family health AI companion and specialist runtime",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "packageManager": "pnpm@12.3.4",
   "scripts": {
