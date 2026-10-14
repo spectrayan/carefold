@@ -41,12 +41,14 @@ import type {
   LatestVitalsState,
 } from '@/types/vitals';
 import type { BpChartPoint } from '@/components/vitals/BloodPressureTrendChart';
+import { useI18n } from '@/i18n';
 
 export interface VitalsClientProps {
   profileId: string;
 }
 
 export function VitalsClient({ profileId }: VitalsClientProps) {
+  const { t } = useI18n();
   const [observations, setObservations] = useState<VitalsObservationItem[]>([]);
   const [trends, setTrends] = useState<VitalsTrendsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -151,10 +153,10 @@ export function VitalsClient({ profileId }: VitalsClientProps) {
             className="text-2xl font-bold tracking-tight text-[var(--cf-fg)] flex items-center gap-2.5"
           >
             <HeartPulse className="w-6 h-6 text-rose-500" />
-            Vitals & Biometrics
+            {t('vitals.title')}
           </h1>
           <p className="text-xs sm:text-sm text-[var(--cf-fg-muted)] mt-1">
-            Track physiological vital signs, diurnal blood pressure trends, and clinical safety thresholds.
+            {t('vitals.subtitle')}
           </p>
         </div>
 
@@ -168,7 +170,7 @@ export function VitalsClient({ profileId }: VitalsClientProps) {
             title={hideWeight ? 'Reveal Weight & BMI' : 'Mask Weight & BMI'}
           >
             {hideWeight ? <EyeOff className="w-4 h-4 text-amber-500" /> : <Eye className="w-4 h-4" />}
-            <span>{hideWeight ? 'Weight Hidden' : 'Hide Weight'}</span>
+            <span>{hideWeight ? t('vitals.weight_hidden') : t('vitals.hide_weight')}</span>
           </button>
 
           {/* Refresh Button */}
@@ -189,7 +191,7 @@ export function VitalsClient({ profileId }: VitalsClientProps) {
             className="min-h-[40px]"
           >
             <Plus className="w-4 h-4 mr-1.5" />
-            Log Reading
+            {t('vitals.log_reading')}
           </Button>
         </div>
       </div>
@@ -203,7 +205,7 @@ export function VitalsClient({ profileId }: VitalsClientProps) {
       {isLoading ? (
         <div className="py-20 flex flex-col items-center justify-center gap-3 text-[var(--cf-fg-subtle)]">
           <Loader2 className="w-8 h-8 animate-spin text-[var(--cf-primary)]" />
-          <p className="text-sm">Loading physiological records...</p>
+          <p className="text-sm">{t('vitals.loading')}</p>
         </div>
       ) : (
         <>

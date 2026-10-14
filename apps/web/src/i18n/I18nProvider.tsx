@@ -85,10 +85,15 @@ function applyDocumentLocaleAttributes(locale: SupportedLocale, direction: TextD
   }
 }
 
-function useStandaloneLocaleState(initialLocale: SupportedLocale = DEFAULT_LOCALE): I18nContextValue {
+function useStandaloneLocaleState(
+  initialLocale: SupportedLocale = DEFAULT_LOCALE,
+  active: boolean = true
+): I18nContextValue {
   const [locale, setLocaleState] = useState<SupportedLocale>(initialLocale);
 
   useEffect(() => {
+    if (!active) return;
+
     let hydratedLocale = initialLocale;
     try {
       const saved = window.localStorage.getItem(LOCALE_STORAGE_KEY);
@@ -122,7 +127,7 @@ function useStandaloneLocaleState(initialLocale: SupportedLocale = DEFAULT_LOCAL
       window.removeEventListener('carefold:locale-change', handleLocaleChange);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [initialLocale]);
+  }, [initialLocale, active]);
 
   const setLocale = useCallback((nextInput: SupportedLocale | string) => {
     const next = normalizeLocale(nextInput);
@@ -211,13 +216,13 @@ export function I18nProvider({
   children,
   defaultLocale = DEFAULT_LOCALE
 }: I18nProviderProps) {
-  const value = useStandaloneLocaleState(defaultLocale);
+  const value = useStandaloneLocaleState(defaultLocale, true);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
 export function useI18n(): I18nContextValue {
   const context = useContext(I18nContext);
-  const fallback = useStandaloneLocaleState(DEFAULT_LOCALE);
+  const fallback = useStandaloneLocaleState(DEFAULT_LOCALE, context === null);
   return context ?? fallback;
 }

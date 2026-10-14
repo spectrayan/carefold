@@ -44,6 +44,7 @@ import {
 } from '@/lib/library';
 import { ChatMarkdown } from '@/components/chat/ChatMarkdown';
 import { RecordSearch } from '@/components/library/RecordSearch';
+import { useI18n } from '@/i18n';
 
 interface LibraryClientProps {
   initialAttachments: AttachmentItem[];
@@ -53,6 +54,7 @@ interface LibraryClientProps {
 export function LibraryClient({ initialAttachments, initialNotes }: LibraryClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t } = useI18n();
 
   const tabParam = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState<'documents' | 'notes' | 'search'>(
@@ -190,10 +192,10 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
-            Library
+            {t('library.title')}
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400">
-            Browse medical documents and clinical consultation notes in your local workspace.
+            {t('library.subtitle')}
           </p>
         </div>
 
@@ -203,7 +205,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
           className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm font-medium shadow-sm"
         >
           <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <span>Stored on this computer in your Carefold workspace</span>
+          <span>{t('library.residency_notice')}</span>
         </div>
       </div>
 
@@ -221,7 +223,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span>Documents</span>
+            <span>{t('library.tab_documents')}</span>
             <span className="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
               {attachments.length}
             </span>
@@ -238,7 +240,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>Notes</span>
+            <span>{t('library.tab_notes')}</span>
             <span className="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
               {notes.length}
             </span>
@@ -255,7 +257,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
             }`}
           >
             <Sparkles className="w-4 h-4" />
-            <span>Search Records</span>
+            <span>{t('library.tab_search')}</span>
           </button>
         </nav>
       </div>
@@ -272,8 +274,8 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={
               activeTab === 'documents'
-                ? 'Search documents by filename...'
-                : 'Search notes by title or helper...'
+                ? t('library.search_documents')
+                : t('library.search_notes')
             }
             className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 placeholder:text-slate-500 dark:placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
@@ -300,7 +302,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
               ) : (
                 <Upload className="w-4 h-4" />
               )}
-              <span>{isUploading ? 'Uploading...' : 'Upload document'}</span>
+              <span>{isUploading ? t('library.uploading') : t('library.upload_document')}</span>
             </button>
           </div>
         )}

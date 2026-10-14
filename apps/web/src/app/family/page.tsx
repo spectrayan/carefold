@@ -34,8 +34,10 @@ import {
   ProfileEditModal,
   type ShareBundleRecord
 } from '@/components/family';
+import { useI18n } from '@/i18n';
 
 export default function FamilyPage() {
+  const { t } = useI18n();
   const [profiles, setProfiles] = useState<CareProfile[]>([]);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -167,18 +169,18 @@ export default function FamilyPage() {
       {/* Header Breadcrumbs & Action Cluster */}
       <div className="space-y-4">
         <nav aria-label="Breadcrumb" className="text-xs text-[var(--cf-fg-subtle)] flex items-center gap-1.5">
-          <span>Household</span>
+          <span>{t('family.breadcrumb_household')}</span>
           <span>/</span>
-          <span className="text-[var(--cf-fg)] font-medium">Family</span>
+          <span className="text-[var(--cf-fg)] font-medium">{t('family.title')}</span>
         </nav>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-[var(--cf-fg)] tracking-tight">
-              Family
+              {t('family.title')}
             </h1>
             <p className="text-xs sm:text-sm text-[var(--cf-fg-muted)] mt-1.5 max-w-2xl leading-relaxed">
-              People you help care for on this computer. Each person&apos;s chats, documents and notes are kept separate.
+              {t('family.subtitle')}
             </p>
           </div>
 
@@ -199,7 +201,7 @@ export default function FamilyPage() {
                 })
               }
             >
-              Add member
+              {t('family.add_member')}
             </Button>
 
             <Button
@@ -209,7 +211,7 @@ export default function FamilyPage() {
               data-testid="invite-viewer-btn"
               onClick={() => setInviteModalOpen(true)}
             >
-              Invite a viewer
+              {t('family.invite_viewer')}
             </Button>
 
             <Button
@@ -219,7 +221,7 @@ export default function FamilyPage() {
               data-testid="export-bundle-btn"
               onClick={() => setShareModalOpen(true)}
             >
-              Export share bundle
+              {t('family.export_bundle')}
             </Button>
           </div>
         </div>
@@ -229,7 +231,7 @@ export default function FamilyPage() {
       <section aria-labelledby="members-heading" className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 id="members-heading" className="text-lg font-bold text-[var(--cf-fg)]">
-            Household Members ({profiles.length})
+            {t('family.household_members', { count: profiles.length })}
           </h2>
         </div>
 
@@ -257,21 +259,21 @@ export default function FamilyPage() {
         <div className="p-5 rounded-2xl bg-[var(--cf-surface)] border border-[var(--cf-border)] shadow-sm space-y-6">
           <div>
             <h2 id="invitations-shares-heading" className="text-base font-bold text-[var(--cf-fg)] tracking-tight">
-              Invitations and shares
+              {t('family.invitations_shares')}
             </h2>
             <p className="text-xs text-[var(--cf-fg-muted)] mt-1">
-              Active local viewer invitations and printed care sheets. Viewers sign in on your local device or network.
+              {t('family.invitations_subtitle')}
             </p>
           </div>
 
           {/* Active Invitations List */}
           <div className="space-y-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-[var(--cf-fg-subtle)] block">
-              Active Viewers
+              {t('family.active_viewers')}
             </span>
 
             {invitations.length === 0 ? (
-              <p className="text-xs text-[var(--cf-fg-subtle)] italic">No active viewer invitations.</p>
+              <p className="text-xs text-[var(--cf-fg-subtle)] italic">{t('family.no_active_viewers')}</p>
             ) : (
               <div className="divide-y divide-[var(--cf-border)]" data-testid="invitations-list">
                 {invitations.map((invite) => (
@@ -310,7 +312,7 @@ export default function FamilyPage() {
                       onClick={() => handleRevokeInvite(invite.id)}
                       data-testid={`revoke-invite-${invite.id}`}
                     >
-                      Revoke
+                      {t('family.revoke')}
                     </Button>
                   </div>
                 ))}
@@ -321,12 +323,12 @@ export default function FamilyPage() {
           {/* Exported Share Bundles History */}
           <div className="space-y-3 pt-3 border-t border-[var(--cf-border)]">
             <span className="text-xs font-semibold uppercase tracking-wider text-[var(--cf-fg-subtle)] block">
-              Recent Printed &amp; Exported Bundles
+              {t('family.recent_bundles')}
             </span>
 
             <div className="divide-y divide-[var(--cf-border)]" data-testid="bundles-list">
               {shareBundles.length === 0 ? (
-                <p className="text-xs text-[var(--cf-fg-subtle)] italic py-2">No export history recorded on this device.</p>
+                <p className="text-xs text-[var(--cf-fg-subtle)] italic py-2">{t('family.no_export_history')}</p>
               ) : (
                 shareBundles.map((bundle) => (
                   <div key={bundle.id} className="py-2.5 flex items-center justify-between gap-3 text-xs">
@@ -352,7 +354,7 @@ export default function FamilyPage() {
           <div className="p-3.5 rounded-xl bg-[var(--cf-surface-2)] border border-[var(--cf-border)] flex items-start gap-3 text-xs text-[var(--cf-fg-muted)]">
             <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
             <p className="leading-relaxed">
-              Viewers sign in to this Carefold on your computer or local network. Nothing is uploaded to a Carefold server &mdash; your medical data stays on this device.
+              {t('family.local_privacy_note')}
             </p>
           </div>
         </div>

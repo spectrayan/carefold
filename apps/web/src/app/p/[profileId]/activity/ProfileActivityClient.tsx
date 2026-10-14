@@ -23,6 +23,7 @@ import {
 import { ActivityTimelineFeed } from '@/components/activity';
 import { fetchProfileActivity, undoActivityEvent } from '@/lib/activity';
 import type { ActivityItemResponse } from '@/types/activity';
+import { useI18n } from '@/i18n';
 
 export interface ProfileActivityClientProps {
   profileId: string;
@@ -37,6 +38,7 @@ export function ProfileActivityClient({
   initialTotal: _initialTotal = 0,
   initialHasMore: _initialHasMore = false,
 }: ProfileActivityClientProps) {
+  const { t } = useI18n();
   const [items, setItems] = useState<ActivityItemResponse[]>(initialItems);
   const [isLoading, setIsLoading] = useState(initialItems.length === 0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -116,10 +118,10 @@ export function ProfileActivityClient({
             className="text-2xl font-bold tracking-tight text-[var(--cf-fg)] flex items-center gap-2.5"
           >
             <History className="w-6 h-6 text-emerald-600" />
-            Activity & History
+            {t('activity.title')}
           </h1>
           <p className="text-xs sm:text-sm text-[var(--cf-fg-muted)] mt-1">
-            Chronological audit timeline of actions performed for this profile with single-click undo.
+            {t('activity.subtitle')}
           </p>
         </div>
 
@@ -164,7 +166,7 @@ export function ProfileActivityClient({
       {isLoading ? (
         <div className="py-20 flex flex-col items-center justify-center gap-3 text-[var(--cf-fg-subtle)]">
           <Loader2 className="w-8 h-8 animate-spin text-[var(--cf-primary)]" />
-          <p className="text-sm">Loading activity stream...</p>
+          <p className="text-sm">{t('activity.loading')}</p>
         </div>
       ) : (
         <ActivityTimelineFeed items={items} onUndo={handleUndo} />

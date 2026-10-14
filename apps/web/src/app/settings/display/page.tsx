@@ -44,10 +44,10 @@ export default function DisplaySettingsPage() {
     <div className="space-y-8">
       <div>
         <h2 className="text-xl font-bold text-[var(--cf-fg)] tracking-tight">
-          Appearance & Display
+          {t('settings.display.title')}
         </h2>
         <p className="text-xs text-[var(--cf-fg-muted)] mt-1">
-          Customize theme palette, contrast modes, and text accessibility.
+          {t('settings.display.description')}
         </p>
       </div>
 
@@ -55,10 +55,10 @@ export default function DisplaySettingsPage() {
       <div className="space-y-3 pb-6 border-b border-[var(--cf-border)]">
         <label className="text-sm font-semibold text-[var(--cf-fg)] flex items-center gap-2">
           <Palette className="w-4 h-4 text-[var(--cf-fg-subtle)]" />
-          <span>Color Theme</span>
+          <span>{t('settings.display.colorTheme')}</span>
         </label>
         <p className="text-xs text-[var(--cf-fg-muted)]">
-          Choose whether Carefold uses a light theme, dark slate theme, or follows your system settings.
+          {t('settings.display.colorThemeDesc')}
         </p>
 
         <div
@@ -82,7 +82,7 @@ export default function DisplaySettingsPage() {
             )}
           >
             <Sun className="w-5 h-5 text-amber-500" />
-            <span>Light</span>
+            <span>{t('settings.display.light')}</span>
           </button>
 
           {/* Dark Theme */}
@@ -100,7 +100,7 @@ export default function DisplaySettingsPage() {
             )}
           >
             <Moon className="w-5 h-5 text-indigo-400" />
-            <span>Dark</span>
+            <span>{t('settings.display.dark')}</span>
           </button>
 
           {/* System Theme */}
@@ -118,7 +118,7 @@ export default function DisplaySettingsPage() {
             )}
           >
             <Laptop className="w-5 h-5 text-slate-500" />
-            <span>System</span>
+            <span>{t('settings.display.system')}</span>
           </button>
         </div>
       </div>
@@ -219,10 +219,10 @@ export default function DisplaySettingsPage() {
       <div className="space-y-3">
         <label className="text-sm font-semibold text-[var(--cf-fg)] flex items-center gap-2">
           <Type className="w-4 h-4 text-[var(--cf-fg-subtle)]" />
-          <span>Accessibility & Typography Floor</span>
+          <span>{t('settings.display.a11yTitle')}</span>
         </label>
         <p className="text-xs text-[var(--cf-fg-muted)]">
-          All typography strictly enforces a 12px font size minimum and WCAG 2.1 AA contrast across light and dark modes.
+          {t('settings.display.a11yDesc')}
         </p>
         <div className="p-4 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)] text-xs text-[var(--cf-fg-subtle)] leading-relaxed">
           • Text contrast ratio: ≥ 5.48:1 (Light) and ≥ 6.75:1 (Dark)<br />

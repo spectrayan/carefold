@@ -19,6 +19,7 @@ import { usePathname } from 'next/navigation';
 import { Home, MessageSquare, Sparkles, Users, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { profilePath } from '@/lib/routes';
+import { useI18n } from '@/i18n';
 
 export interface MobileTabBarProps extends React.HTMLAttributes<HTMLElement> {
   activeProfileId?: string;
@@ -39,6 +40,7 @@ export function MobileTabBar({
   ...props
 }: MobileTabBarProps) {
   const pathname = usePathname();
+  const { t } = useI18n();
 
   const profileId = React.useMemo(() => {
     if (activeProfileIdProp) return activeProfileIdProp;
@@ -50,21 +52,21 @@ export function MobileTabBar({
   const tabs = [
     {
       id: 'home',
-      label: 'Home',
+      label: t('nav.home'),
       href: profilePath(profileId),
       icon: Home,
       exact: true
     },
     {
       id: 'chat',
-      label: 'Chat',
+      label: t('nav.chatShort'),
       href: profilePath(profileId, '/chat'),
       icon: MessageSquare,
       badge: badgeCounts?.chat
     },
     {
       id: 'agents',
-      label: 'Agents',
+      label: t('nav.agents'),
       href: '/agents',
       icon: Sparkles,
       badge: badgeCounts?.agents ?? badgeCounts?.helpers,
@@ -72,14 +74,14 @@ export function MobileTabBar({
     },
     {
       id: 'family',
-      label: 'Family',
+      label: t('nav.familyShort'),
       href: '/family',
       icon: Users,
       badge: badgeCounts?.family
     },
     {
       id: 'settings',
-      label: 'Settings',
+      label: t('nav.settings'),
       href: '/settings',
       icon: Settings,
       aliasPrefixes: ['/settings']

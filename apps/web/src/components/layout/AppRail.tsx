@@ -46,7 +46,8 @@ import { CarefoldLogo } from '@/components/ui/CarefoldLogo';
 import { ProfileSwitcher } from '@/components/layout/ProfileSwitcher';
 import { useAuth, DEFAULT_STEWARD_USER } from '@/lib/auth';
 import { useOptionalTheme } from '@/components/ThemeProvider';
-import { getHouseholdProfile } from '@/lib/familyProfiles';
+import { getHouseholdProfile, HOUSEHOLD_PROFILES_CHANGED_EVENT } from '@/lib/familyProfiles';
+import { useI18n } from '@/i18n';
 import {
   DEFAULT_USER_SETTINGS,
   loadSettings,
@@ -122,19 +123,29 @@ export function AppRail({
 
   const pathname = usePathname();
   const { user, isAdmin, logout } = useAuth();
+  const { t } = useI18n();
   const isRealUserSignedIn = Boolean(user && user.id !== DEFAULT_STEWARD_USER.id);
   const themeContext = useOptionalTheme();
   const [settings, setSettings] = useState<CarefoldUserSettings>(DEFAULT_USER_SETTINGS);
   const [_ollamaOnline, setOllamaOnline] = useState<boolean | null>(null);
   const [showPrivacyExplainer, setShowPrivacyExplainer] = useState(false);
   const [isProfileSwitcherOpen, setIsProfileSwitcherOpen] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+  const [profileRev, setProfileRev] = useState(0);
 
   useEffect(() => {
+    setHasMounted(true);
     try {
       if (localStorage.getItem('carefold_rail_collapsed') === 'true') {
         setInternalCollapsed(true);
       }
     } catch {}
+
+    const handleProfilesChanged = () => setProfileRev((r) => r + 1);
+    window.addEventListener(HOUSEHOLD_PROFILES_CHANGED_EVENT, handleProfilesChanged);
+    return () => {
+      window.removeEventListener(HOUSEHOLD_PROFILES_CHANGED_EVENT, handleProfilesChanged);
+    };
   }, []);
 
   // Derive active profile dynamically from household store or URL pathname
@@ -143,10 +154,14 @@ export function AppRail({
     const match = pathname.match(/^\/p\/([^/]+)/);
     const profileId = match ? match[1] : 'me';
 
-    const userFallbackName = user?.full_name?.trim() || user?.username?.trim() || 'Me';
-    const userShortName = user?.full_name ? user.full_name.trim().split(/\s+/)[0] : (user?.username || 'Me');
+    const userFallbackName = hasMounted
+      ? (user?.full_name?.trim() || user?.username?.trim() || 'Me')
+      : 'Me';
+    const userShortName = hasMounted
+      ? (user?.full_name ? user.full_name.trim().split(/\s+/)[0] : (user?.username || 'Me'))
+      : 'Me';
 
-    const household = getHouseholdProfile(profileId);
+    const household = hasMounted ? getHouseholdProfile(profileId) : null;
     if (household) {
       const isSelf = household.role === 'self' || household.relationship?.toLowerCase() === 'self' || profileId === 'me';
       const resolvedName = (isSelf && (household.name === 'Me' || !household.name)) ? userFallbackName : household.name;
@@ -175,7 +190,7 @@ export function AppRail({
       role: 'Personal care',
       colorSlot: 1
     };
-  }, [activeProfileProp, pathname, user]);
+  }, [activeProfileProp, pathname, user, hasMounted, profileRev]);
 
   useEffect(() => {
     const loaded = loadSettings();
@@ -203,39 +218,39 @@ export function AppRail({
   const caringNavItems = [
     {
       href: profilePath(derivedProfile.id),
-      label: 'Home',
+      label: t('nav.home'),
       icon: Home,
       exact: true
     },
     {
       href: profilePath(derivedProfile.id, '/chat'),
-      label: 'Chats',
+      label: t('nav.chat'),
       icon: MessageSquare,
       badge: counts?.chat
     },
     {
       href: profilePath(derivedProfile.id, '/vitals'),
-      label: 'Vitals',
+      label: t('nav.vitals'),
       icon: HeartPulse,
       badge: counts?.vitals,
       aliasPrefixes: [`/p/${derivedProfile.id}/vitals`]
     },
     {
       href: profilePath(derivedProfile.id, '/appointments'),
-      label: 'Schedule',
+      label: t('nav.schedule'),
       icon: Calendar,
       badge: counts?.schedule ?? counts?.appointments,
       aliasPrefixes: [`/p/${derivedProfile.id}/appointments`, `/p/${derivedProfile.id}/schedule`]
     },
     {
       href: profilePath(derivedProfile.id, '/library'),
-      label: 'Library',
+      label: t('nav.library'),
       icon: BookOpen,
       badge: counts?.library
     },
     {
       href: profilePath(derivedProfile.id, '/activity'),
-      label: 'Activity',
+      label: t('nav.activity'),
       icon: History,
       badge: counts?.activity
     }
@@ -244,20 +259,20 @@ export function AppRail({
   const householdNavItems = [
     {
       href: '/agents',
-      label: 'Agents',
+      label: t('nav.agents'),
       icon: Sparkles,
       badge: counts?.agents ?? counts?.helpers,
       aliasPrefixes: ['/agents', '/helpers', '/skills']
     },
     {
       href: '/family',
-      label: 'Family & Profiles',
+      label: t('nav.family'),
       icon: Users,
       badge: counts?.family
     },
     {
       href: '/settings',
-      label: 'Settings',
+      label: t('nav.settings'),
       icon: Settings,
       aliasPrefixes: ['/settings']
     },
@@ -265,7 +280,7 @@ export function AppRail({
       ? [
           {
             href: '/admin',
-            label: 'Admin Console',
+            label: t('nav.admin'),
             icon: Shield
           }
         ]
@@ -323,16 +338,16 @@ export function AppRail({
           )}
         >
           <CarefoldLogo size={20} />
-          <span className="font-bold text-lg text-[var(--cf-fg)] tracking-tight">Carefold</span>
+          <span className="font-bold text-lg text-[var(--cf-fg)] tracking-tight">{t('common.appName')}</span>
           <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--cf-surface-2)] text-[var(--cf-fg-subtle)] border border-[var(--cf-border)]">
-            Local
+            {t('common.localMode')}
           </span>
         </div>
         <button
           type="button"
           onClick={handleToggleCollapse}
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={isCollapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
+          title={isCollapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
           className={cn(
             'min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-[var(--cf-fg-muted)] hover:text-[var(--cf-fg)] hover:bg-[var(--cf-surface)] transition-all shrink-0 focus-visible:outline-2 focus-visible:outline-[var(--cf-focus)]',
             !isAlwaysCollapsed && (isAlwaysExpanded ? 'ml-auto' : 'xl:ml-auto')
@@ -405,14 +420,19 @@ export function AppRail({
       </div>
 
       {/* Nav Section 1: "Caring for [Person]" */}
-      <nav aria-label={`Caring for ${derivedProfile.shortName || derivedProfile.name}`} className="flex flex-col gap-1 mb-4">
+      <nav
+        aria-label={t('nav.caringFor', { name: derivedProfile.shortName || derivedProfile.name })}
+        suppressHydrationWarning
+        className="flex flex-col gap-1 mb-4"
+      >
         <div
+          suppressHydrationWarning
           className={cn(
             'text-[11px] font-semibold uppercase tracking-wider text-[var(--cf-fg-subtle)] px-2.5 pt-1 pb-1 truncate',
             isAlwaysCollapsed ? 'hidden' : isAlwaysExpanded ? 'block' : 'hidden xl:block'
           )}
         >
-          Caring for {derivedProfile.shortName || derivedProfile.name}
+          {t('nav.caringFor', { name: derivedProfile.shortName || derivedProfile.name })}
         </div>
         {caringNavItems.map((item) => {
           const Icon = item.icon;
@@ -463,14 +483,14 @@ export function AppRail({
       </nav>
 
       {/* Nav Section 2: "Household" */}
-      <nav aria-label="Household" className="flex flex-col gap-1 mb-4">
+      <nav aria-label={t('nav.household')} className="flex flex-col gap-1 mb-4">
         <div
           className={cn(
             'text-[11px] font-semibold uppercase tracking-wider text-[var(--cf-fg-subtle)] px-2.5 pt-1 pb-1',
             isAlwaysCollapsed ? 'hidden' : isAlwaysExpanded ? 'block' : 'hidden xl:block'
           )}
         >
-          Household
+          {t('nav.household')}
         </div>
         {householdNavItems.map((item) => {
           const Icon = item.icon;
@@ -536,7 +556,7 @@ export function AppRail({
             isAlwaysCollapsed ? 'hidden' : isAlwaysExpanded ? 'inline' : 'hidden xl:inline'
           )}
         >
-          Carefold helps you prepare. It doesn't diagnose. Emergency? Call 911.
+          {t('nav.quietSafetyNote')}
         </span>
       </div>
 
@@ -633,7 +653,7 @@ export function AppRail({
                   type="button"
                   onClick={() => setShowPrivacyExplainer(false)}
                   className="text-[var(--cf-fg-subtle)] hover:text-[var(--cf-fg)] p-1 rounded-md"
-                  aria-label="Close"
+                  aria-label={t('common.close')}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -649,7 +669,7 @@ export function AppRail({
                 onClick={() => setShowPrivacyExplainer(false)}
                 className="text-xs font-semibold text-[var(--cf-primary-hover)] hover:underline inline-flex items-center gap-1"
               >
-                Configure privacy & data settings →
+                {t('nav.configurePrivacyLink')}
               </Link>
             </div>
           </>
@@ -669,6 +689,7 @@ export function AppRail({
       >
         {/* Expanded User Details */}
         <div
+          suppressHydrationWarning
           className={cn(
             'items-center gap-2.5 min-w-0 flex-1',
             isAlwaysCollapsed ? 'hidden' : isAlwaysExpanded ? 'flex' : 'hidden xl:flex'
@@ -680,12 +701,14 @@ export function AppRail({
             size="sm"
             className="shrink-0"
           />
-          <div className="flex flex-col min-w-0 flex-1">
-            <span className="text-sm font-semibold text-[var(--cf-fg)] truncate">
+          <div className="flex flex-col min-w-0 flex-1" suppressHydrationWarning>
+            <span className="text-sm font-semibold text-[var(--cf-fg)] truncate" suppressHydrationWarning>
               {user?.full_name || user?.username || 'User'}
             </span>
-            <span className="text-xs text-[var(--cf-fg-subtle)] truncate">
-              {isRealUserSignedIn ? `Signed in · ${user?.role || 'user'}` : 'Local mode · single user'}
+            <span className="text-xs text-[var(--cf-fg-subtle)] truncate" suppressHydrationWarning>
+              {isRealUserSignedIn
+                ? t('nav.signedInAs', { role: user?.role || 'user' })
+                : t('nav.localSingleUser')}
             </span>
           </div>
         </div>
@@ -706,8 +729,8 @@ export function AppRail({
             onClick={async () => {
               await logout();
             }}
-            aria-label="Sign out"
-            title="Sign out"
+            aria-label={t('common.signOut')}
+            title={t('common.signOut')}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-[var(--cf-fg-muted)] hover:text-rose-600 hover:bg-[var(--cf-surface)] transition-all shrink-0 focus-visible:outline-2 focus-visible:outline-[var(--cf-focus)]"
           >
             <LogOut className="w-4 h-4" />
@@ -715,8 +738,8 @@ export function AppRail({
         ) : (
           <Link
             href="/login"
-            aria-label="Sign in"
-            title="Sign in"
+            aria-label={t('common.signIn')}
+            title={t('common.signIn')}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-[var(--cf-fg-muted)] hover:text-emerald-600 hover:bg-[var(--cf-surface)] transition-all shrink-0 focus-visible:outline-2 focus-visible:outline-[var(--cf-focus)]"
           >
             <LogIn className="w-4 h-4" />
@@ -727,8 +750,8 @@ export function AppRail({
         <button
           type="button"
           onClick={() => themeContext?.toggleTheme()}
-          aria-label="Switch to light or dark mode"
-          title="Switch to light or dark mode"
+          aria-label={t('nav.switchTheme')}
+          title={t('nav.switchTheme')}
           className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-[var(--cf-fg-muted)] hover:text-[var(--cf-fg)] hover:bg-[var(--cf-surface)] transition-all shrink-0 focus-visible:outline-2 focus-visible:outline-[var(--cf-focus)]"
         >
           <Sun className="hidden dark:block w-4 h-4 text-amber-400" />

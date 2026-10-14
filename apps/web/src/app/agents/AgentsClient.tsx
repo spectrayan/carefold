@@ -40,6 +40,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { AgentFormModal } from '@/components/agents/AgentFormModal';
 import { SkillFormModal } from '@/components/skills/SkillFormModal';
+import { useI18n } from '@/i18n';
 
 export interface AgentsClientProps {
   initialAgents: AgentSummary[];
@@ -67,6 +68,7 @@ export function AgentsClient({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useI18n();
 
   const [agents, setAgents] = useState<AgentSummary[]>(initialAgents);
   const [skills, setSkills] = useState<SkillSummary[]>(initialSkills);
@@ -189,10 +191,10 @@ export function AgentsClient({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-[var(--cf-fg)]">
-            Agents &amp; Skills
+            {t('agents.title')}
           </h1>
           <p className="text-sm text-[var(--cf-fg-muted)] mt-1 max-w-2xl">
-            Specialist agents and clinical skill packs running on this computer. Private, task-scoped, and zero cloud telemetry.
+            {t('agents.subtitle')}
           </p>
         </div>
 
@@ -205,7 +207,7 @@ export function AgentsClient({
               onClick={() => setIsCreateAgentOpen(true)}
               leftIcon={<Plus className="w-4 h-4" />}
             >
-              Create Agent
+              {t('agents.create_agent')}
             </Button>
           ) : (
             <Button
@@ -214,7 +216,7 @@ export function AgentsClient({
               onClick={() => setIsCreateSkillOpen(true)}
               leftIcon={<Plus className="w-4 h-4" />}
             >
-              Create Skill
+              {t('agents.create_skill')}
             </Button>
           )}
 
@@ -225,12 +227,12 @@ export function AgentsClient({
             options={[
               {
                 value: 'assistants',
-                label: 'Agents',
+                label: t('agents.tab_agents'),
                 badge: filteredAgents.length
               },
               {
                 value: 'skills',
-                label: 'Skills',
+                label: t('agents.tab_skills'),
                 badge: filteredSkills.length
               }
             ]}
@@ -246,7 +248,7 @@ export function AgentsClient({
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={`Search ${activeTab === 'assistants' ? 'agents' : 'skills'} by name, keyword, or domain... (Press / to focus)`}
+          placeholder={activeTab === 'assistants' ? t('agents.search_agents') : t('agents.search_skills')}
           aria-label="Search agents and skills"
           className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--cf-border-strong)] bg-[var(--cf-surface)] text-sm text-[var(--cf-fg)] placeholder:text-[var(--cf-fg-subtle)] focus:outline-none focus:ring-2 focus:ring-[var(--cf-focus)] transition-all min-h-[44px]"
         />
@@ -256,16 +258,16 @@ export function AgentsClient({
       {activeTab === 'assistants' ? (
         <div className="flex flex-wrap items-center gap-2 mb-6 text-xs">
           <span className="font-semibold text-[var(--cf-fg-subtle)] uppercase tracking-wider mr-1">
-            Filter:
+            {t('agents.filter_label')}
           </span>
 
           {/* Care Stage Filters */}
           {[
-            { id: 'all', label: 'Any time' },
-            { id: 'pre_visit', label: 'Before visit' },
-            { id: 'during_visit', label: 'At visit' },
-            { id: 'post_visit', label: 'After visit' },
-            { id: 'daily_living', label: 'Day to day' }
+            { id: 'all', label: t('agents.stage_all') },
+            { id: 'pre_visit', label: t('agents.stage_pre_visit') },
+            { id: 'during_visit', label: t('agents.stage_during_visit') },
+            { id: 'post_visit', label: t('agents.stage_post_visit') },
+            { id: 'daily_living', label: t('agents.stage_daily_living') }
           ].map((stage) => {
             const isSelected = selectedCareStage === stage.id;
             return (
@@ -283,10 +285,10 @@ export function AgentsClient({
 
           {/* Risk Filters */}
           {[
-            { id: 'all', label: 'All Risk Levels' },
-            { id: 'clinical_assist', label: 'Clinical prep' },
-            { id: 'admin', label: 'Administrative' },
-            { id: 'wellness', label: 'Wellness' }
+            { id: 'all', label: t('agents.risk_all') },
+            { id: 'clinical_assist', label: t('agents.risk_clinical') },
+            { id: 'admin', label: t('agents.risk_admin') },
+            { id: 'wellness', label: t('agents.risk_wellness') }
           ].map((rf) => {
             const isSelected = selectedRisk === rf.id;
             return (
@@ -310,20 +312,20 @@ export function AgentsClient({
             icon={forCaregivers ? <Check className="w-3.5 h-3.5" /> : undefined}
             className={forCaregivers ? 'font-semibold shadow-sm' : ''}
           >
-            For Caregivers
+            {t('agents.for_caregivers')}
           </Chip>
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2 mb-6 text-xs">
           <span className="font-semibold text-[var(--cf-fg-subtle)] uppercase tracking-wider mr-1">
-            Domain:
+            {t('agents.domain_label')}
           </span>
 
           {[
-            { id: 'all', label: 'All Domains' },
-            { id: 'clinical', label: 'Clinical' },
-            { id: 'navigation', label: 'Navigation' },
-            { id: 'wellness', label: 'Wellness' }
+            { id: 'all', label: t('agents.domain_all') },
+            { id: 'clinical', label: t('agents.domain_clinical') },
+            { id: 'navigation', label: t('agents.domain_navigation') },
+            { id: 'wellness', label: t('agents.domain_wellness') }
           ].map((df) => {
             const isSelected = selectedDomain === df.id;
             return (
@@ -383,7 +385,7 @@ export function AgentsClient({
                     href={`/agents/${agent.id}`}
                     className="text-xs font-semibold text-[var(--cf-fg-muted)] hover:text-[var(--cf-fg)] transition min-h-[36px] inline-flex items-center"
                   >
-                    View details
+                    {t('agents.view_details')}
                   </Link>
 
                   <Link
@@ -391,7 +393,7 @@ export function AgentsClient({
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:text-[#04201a] shadow-sm transition min-h-[36px]"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
-                    <span>Consult for {activeProfileName}</span>
+                    <span>{t('agents.consult_for', { name: activeProfileName })}</span>
                   </Link>
                 </div>
               </div>
@@ -431,7 +433,7 @@ export function AgentsClient({
                   href={`/skills/${skill.id}`}
                   className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline min-h-[36px] inline-flex items-center"
                 >
-                  Skill documentation &rarr;
+                  {t('agents.skill_docs')} &rarr;
                 </Link>
               </div>
             </div>

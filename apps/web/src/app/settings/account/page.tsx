@@ -15,16 +15,18 @@
 
 import React from 'react';
 import { SecurityProfilePanel } from '@/components/settings/SecurityProfilePanel';
+import { useI18n } from '@/i18n';
 
 export default function AccountSettingsPage() {
+  const { t } = useI18n();
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-[var(--cf-fg)] tracking-tight">
-          Account & Security
+          {t('settings.account.title')}
         </h2>
         <p className="text-xs text-[var(--cf-fg-muted)] mt-1">
-          Manage your credentials, password complexity, and active device sessions.
+          {t('settings.account.subtitle')}
         </p>
       </div>
 

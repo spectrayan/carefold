@@ -29,8 +29,10 @@ import {
   loadSettings,
   saveSettings
 } from '@/lib/settings';
+import { useI18n } from '@/i18n';
 
 export default function ModelSettingsPage() {
+  const { t } = useI18n();
   const [formData, setFormData] = useState<CarefoldUserSettings>(DEFAULT_USER_SETTINGS);
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
@@ -79,10 +81,10 @@ export default function ModelSettingsPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-[var(--cf-fg)] tracking-tight">
-          Model & Provider Settings
+          {t('settings.model.title')}
         </h2>
         <p className="text-xs text-[var(--cf-fg-muted)] mt-1">
-          Configure local Ollama execution and optional cloud inference providers.
+          {t('settings.model.description')}
         </p>
       </div>
 
@@ -93,8 +95,8 @@ export default function ModelSettingsPage() {
       >
         <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
         <div className="text-xs text-emerald-950 dark:text-emerald-200 leading-relaxed">
-          <span className="font-bold block mb-1">Local-First Privacy Guarantee</span>
-          Carefold runs AI models directly on your hardware via Ollama. Prompts, documents, notes, and health records never leave this machine.
+          <span className="font-bold block mb-1">{t('settings.model.privacyGuaranteeTitle')}</span>
+          {t('settings.model.privacyGuaranteeDesc')}
         </div>
       </div>
 
@@ -104,10 +106,10 @@ export default function ModelSettingsPage() {
           <div className="flex items-center justify-between">
             <label htmlFor="ollama-url-input" className="text-sm font-semibold text-[var(--cf-fg)] flex items-center gap-2">
               <Cpu className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Ollama Local Host URL</span>
+              <span>{t('settings.model.ollamaHostUrl')}</span>
             </label>
             <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-              Zero Keys Required
+              {t('settings.model.zeroKeysRequired')}
             </span>
           </div>
 
@@ -128,7 +130,7 @@ export default function ModelSettingsPage() {
               disabled={ollamaStatus === 'checking'}
               className="px-4 py-2 text-xs font-semibold rounded-xl border border-[var(--cf-border-strong)] bg-[var(--cf-surface-2)] text-[var(--cf-fg)] hover:bg-[var(--cf-surface-3)] transition-all min-h-[44px] shrink-0"
             >
-              {ollamaStatus === 'checking' ? 'Checking…' : 'Check Connectivity'}
+              {ollamaStatus === 'checking' ? t('settings.model.checking') : t('settings.model.checkConnectivity')}
             </button>
           </div>
 
@@ -158,10 +160,10 @@ export default function ModelSettingsPage() {
           <div>
             <h3 className="text-sm font-semibold text-[var(--cf-fg)] flex items-center gap-2">
               <Key className="w-4 h-4 text-[var(--cf-fg-subtle)]" />
-              <span>Optional Cloud Inference API Keys</span>
+              <span>{t('settings.model.optionalCloudKeys')}</span>
             </h3>
             <p className="text-xs text-[var(--cf-fg-muted)] mt-1">
-              Keys are stored securely in browser storage and only used if explicitly selected.
+              {t('settings.model.optionalCloudKeysDesc')}
             </p>
           </div>
 
