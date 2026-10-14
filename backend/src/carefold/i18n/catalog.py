@@ -90,9 +90,14 @@ def _load_raw_catalog(locale: str) -> Dict[str, Any]:
     safe_locale = locale if locale in SUPPORTED_LOCALES else negotiate_locale(profile_locale=locale, default=DEFAULT_LOCALE)
     if safe_locale not in SUPPORTED_LOCALES:
         safe_locale = DEFAULT_LOCALE
-    target_path = LOCALES_DIR / f"{safe_locale}.json"
+    base_dir = LOCALES_DIR.resolve()
+    target_path = (base_dir / f"{safe_locale}.json").resolve()
+    try:
+        target_path.relative_to(base_dir)
+    except ValueError:
+        target_path = (base_dir / f"{DEFAULT_LOCALE}.json").resolve()
     if not target_path.is_file():
-        target_path = LOCALES_DIR / f"{DEFAULT_LOCALE}.json"
+        target_path = (base_dir / f"{DEFAULT_LOCALE}.json").resolve()
     raw = target_path.read_text(encoding="utf-8")
     data = json.loads(raw)
     return data if isinstance(data, dict) else {}
