@@ -87,7 +87,10 @@ MULTILINGUAL_RED_FLAG_PATTERNS: Dict[str, List[Tuple[str, str]]] = {
 @lru_cache(maxsize=16)
 def _load_raw_catalog(locale: str) -> Dict[str, Any]:
     """Reads and caches a locale JSON catalog from resources/locales/{locale}.json."""
-    target_path = LOCALES_DIR / f"{locale}.json"
+    safe_locale = locale if locale in SUPPORTED_LOCALES else negotiate_locale(profile_locale=locale, default=DEFAULT_LOCALE)
+    if safe_locale not in SUPPORTED_LOCALES:
+        safe_locale = DEFAULT_LOCALE
+    target_path = LOCALES_DIR / f"{safe_locale}.json"
     if not target_path.is_file():
         target_path = LOCALES_DIR / f"{DEFAULT_LOCALE}.json"
     raw = target_path.read_text(encoding="utf-8")
