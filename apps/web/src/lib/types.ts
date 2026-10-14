@@ -70,6 +70,8 @@ export interface ChatMessage {
   approval?: ApprovalRecord;
   contextSources?: ContextSourceItem[];
   plan?: ExecutionPlan;
+  error?: string;
+  isError?: boolean;
 }
 
 // ---------------------------------------------------------------------------

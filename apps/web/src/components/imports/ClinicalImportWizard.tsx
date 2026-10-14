@@ -209,7 +209,7 @@ export function ClinicalImportWizard({
                   )}
                   <span>{opt.label}</span>
                 </div>
-                <p className="text-[11px] text-[var(--cf-fg-muted)] leading-relaxed">
+                <p className="text-xs text-[var(--cf-fg-muted)] leading-relaxed">
                   {opt.subtitle}
                 </p>
               </button>

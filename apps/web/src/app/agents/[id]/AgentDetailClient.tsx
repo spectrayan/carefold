@@ -414,18 +414,18 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
 
       {/* For Developers Collapsible Disclosure (#175) */}
       <details
-        data-testid="agent-developer-disclosure"
+        data-testid="agent-developer-details"
         className="group bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm transition-colors"
       >
         <summary className="cursor-pointer font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-zinc-300 flex items-center justify-between select-none">
           <div className="flex items-center gap-2">
             <Code className="w-4 h-4 text-slate-500 dark:text-zinc-400" />
-            <span>For Developers & Clinical Reviewers</span>
+            <span>For developers</span>
           </div>
           <span className="text-xs text-slate-400 group-open:rotate-180 transition-transform">▼</span>
         </summary>
 
-        <div className="mt-6 pt-6 border-t border-slate-100 dark:border-zinc-800 space-y-6">
+        <div data-testid="agent-developer-disclosure" className="mt-6 pt-6 border-t border-slate-100 dark:border-zinc-800 space-y-6">
           {/* CLI Execution */}
           <div>
             <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider mb-2">CLI Execution</h3>

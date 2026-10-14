@@ -19,7 +19,7 @@
 
 Specification compliance: [AGENTS.md v1.0.0](https://github.com/agent-infra/agents.md)  
 Runtime version: Carefold 0.4.0-beta.1
-Last updated: 2026-10-04  
+Last updated: 2026-10-14  
 
 ---
 
@@ -45,23 +45,39 @@ The Carefold repository is structured as a modular monorepo:
 carefold/
 ├── backend/            # FastAPI + LangGraph multi-agent execution runtime
 │   ├── src/carefold/
-│   │   ├── engine/     # LangGraph workflow builder, runner, and SSE streaming service
+│   │   ├── audit/      # Tamper-evident SHA-256 hash-chained audit_events
+│   │   ├── clinical/   # Preventive care rules, school forms, and SMART scheduling
+│   │   ├── companion/  # Paired iOS HealthKit & Android Health Connect sync
+│   │   ├── connectors/ # OAuth 2.0 PKCE broker, stateless relay, and curated Gmail MCP
+│   │   ├── db/         # SQLAlchemy 2.0 declarative models & Alembic migrations
+│   │   ├── engine/     # LangGraph workflow builder, runner, SSE, and 4-tier ToolExecutionGate
+│   │   ├── i18n/       # BCP 47 / RFC 4647 locale negotiation, UAX #15 NFC, ICU catalogs & multilingual safety
+│   │   ├── importers/  # Apple Health, C-CDA, FHIR R4, CSV & SMART Health Cards (.smart-health-card)
 │   │   ├── memory/     # Hexagonal ports (MemoryPort, CatalogPort) & SQLite FTS5 adapters
 │   │   ├── model/      # Multi-provider LLM abstraction (Ollama, Anthropic, OpenAI, Google)
+│   │   ├── search/     # Hybrid SearchIndex (FTS5 + sqlite-vec, RRF, MMR & local reranker)
+│   │   ├── storage/    # Per-profile Content-Addressed Storage (CAS)
 │   │   ├── tools/      # Sandboxed file, extraction, and delegation tools
+│   │   ├── vault/      # Envelope encryption keyring vault (HKDF-SHA256 per-profile AES-256-GCM DEKs)
 │   │   └── workflows/  # LangGraph state machine, nodes, and extraction subgraphs
 │   └── tests/          # Pytest suite & 47-attack penetration test harness
 ├── apps/web/           # Next.js 15 Tailwind CSS agent marketplace and consultation UI
+│   └── src/i18n/       # Client BCP 47 / ICU MessageFormat, Intl formatters & bidirectional LTR/RTL support
+├── libs/
+│   └── connectors/     # Scoped Connector SDK, ScopedHttp egress sandbox & starter/v2 connectors
 ├── packages/
 │   ├── cli/            # Carefold CLI for agent authoring and local execution
 │   └── runner/         # Standalone agent runtime sandbox
-├── agents/             # 22 Specialist clinical/navigational agents + 6 system agents
-├── skills/             # 23 Modular clinical skill packs with reference guidelines
-├── docs/               # Verified MkDocs Material documentation & Living ADR framework
+├── agents/             # 23 Specialist clinical/navigational agents + 6 system agents
+├── skills/             # 24 Modular clinical skill packs with reference guidelines
+├── docs/               # Verified MkDocs Material documentation, Living ADRs & Compliance Packs
+│   ├── adr/            # Living Architecture Decision Records (0001–0009)
+│   ├── compliance/     # OAuth CASA Tier 2/3, OWASP ASVS L2, Threat Model & Regulatory Readiness Packs
+│   └── connectors/     # Scoped Connector SDK authoring guide
 └── .github/            # GitHub Actions CI/CD matrix, CodeQL, and community templates
 ```
 
-### 2.1 Specialist Agent Topology (22 Specialists)
+### 2.1 Specialist Agent Topology (23 Specialists)
 
 Carefold organizes clinical and administrative specialists under clear clinical risk classes (`admin`, `wellness`, `clinical_assist`, `education`):
 
@@ -79,6 +95,7 @@ Carefold organizes clinical and administrative specialists under clear clinical 
 | `urology-guide` | `clinical` | `urology` | `clinical_assist` | `urology-prep`, `clinical-safety-boundaries` |
 | `ent-guide` | `clinical` | `ent` | `clinical_assist` | `ent-prep`, `clinical-safety-boundaries` |
 | `eye-guide` | `clinical` | `ophthalmology` | `clinical_assist` | `vision-prep`, `clinical-safety-boundaries` |
+| `hematology-guide` | `clinical` | `hematology` | `clinical_assist` | `hematology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
 | `oncology-navigator` | `clinical` | `oncology` | `clinical_assist` | `oncology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
 | `visit-steward` | `clinical` | `general` | `clinical_assist` | `visit-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
 | `benefits-guide` | `navigation` | `insurance` | `admin` | `benefits-explainer`, `records-management` |
@@ -99,6 +116,16 @@ System agents manage orchestration, safety enforcement, document intelligence, a
 4. **`skill-generator`**: Synthesis of dynamic skill manifests and validation templates from clinical guidelines.
 5. **`suggestion-generator`**: Context-aware follow-up suggestion chips presented in the client UI.
 6. **`triage-auditor`**: Compliance logging, risk tagging, and clinical safety telemetry.
+
+### 2.3 Autonomy, Scoped Connectors, Internationalization & Living ADRs
+
+- **Scoped Connector SDK (`libs/connectors/`)**:
+  - Declarative `ConnectorManifest` YAML files, `ScopedHttp` outbound host allowlisting, `UntrustedResult` taint tracking, and first-party/v2 connectors (`withings`, `google-calendar`, `caldav`, `epic-smart`, `gmail-mcp`, `oracle-health`, `athenahealth`, `cms-blue-button`, `oura`, `google-health`, `microsoft-graph`, `zocdoc`).
+- **End-to-End Internationalization (`backend/src/carefold/i18n/`, `apps/web/src/i18n/`, `ADR-0009`)**:
+  - IETF BCP 47 locale tags (`en-US`, `es-ES`, `fr-FR`, `hi-IN`, `ar-SA`), RFC 4647 quality-weighted locale negotiation, Unicode UAX #15 `NFC` canonical storage normalization, language-neutral HL7 FHIR R4 coding, ICU MessageFormat translation catalogs, multilingual acute red-flag detection, and bidirectional (`LTR`/`RTL`) layout mirroring via W3C CSS Logical Properties.
+- **Living Architecture Decision Records (`docs/adr/0001`–`0009`) & Compliance Packs (`docs/compliance/`)**:
+  - Living ADRs `0001` through `0009` govern orchestration (`0001`), hexagonal ports (`0002`), progressive disclosure (`0003`), 4-tier policy approvals & taint propagation (`0004`), envelope keyring vault (`0005`), Mode L / Mode S deployment tiers (`0006`), partitioned CAS & hybrid search (`0007`), stateless PKCE OAuth bounce relay (`0008`), and 5-layer internationalization (`0009`).
+  - `docs/compliance/` provides verification and regulatory readiness documentation covering Google OAuth CASA Tier 2/3 & OWASP ASVS L2 (`google-verification-and-casa.md`, `asvs-l2-checklist.md`, `threat-model.md`) and HIPAA Safe Harbor, MHMDA, DPDP, FTC HBNR, COPPA under-13, and non-clinical wellness positioning (`legal-and-regulatory-pack.md`, `hipaa-readiness.md`, `dpdp-readiness.md`, `wellness-positioning.md`).
 
 ---
 

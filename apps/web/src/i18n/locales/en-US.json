@@ -1,0 +1,41 @@
+{
+  "common": {
+    "appName": "Carefold",
+    "tagline": "Specialist Health Agents",
+    "localMode": "Local",
+    "save": "Save",
+    "cancel": "Cancel",
+    "search": "Search",
+    "loading": "Loading…",
+    "appointmentCount": "{count, plural, zero {No upcoming appointments} one {# upcoming appointment} other {# upcoming appointments}}"
+  },
+  "nav": {
+    "home": "Home",
+    "chat": "Chats",
+    "specialists": "Specialists",
+    "skills": "Skills",
+    "records": "Records",
+    "schedule": "Schedule",
+    "vitals": "Vitals",
+    "preventive": "Preventive Care",
+    "connections": "Connections",
+    "activity": "Activity",
+    "settings": "Settings"
+  },
+  "settings": {
+    "display": {
+      "title": "Appearance & Display",
+      "description": "Customize theme palette, contrast modes, language, and text accessibility.",
+      "languageTitle": "Language & Regional Formatting",
+      "languageDescription": "Select your preferred interface language, writing direction, and regional date and number formatting.",
+      "rtlBadge": "RTL",
+      "previewTitle": "Regional Formatting Preview",
+      "previewDate": "Sample date",
+      "previewNumber": "Sample lab value"
+    }
+  },
+  "safety": {
+    "disclaimerBanner": "Carefold helps you prepare for visits and navigate care. It does not provide medical diagnosis or treatment.",
+    "emergencyNotice": "If you are experiencing a medical emergency, call 911 or go to the nearest emergency room immediately."
+  }
+}

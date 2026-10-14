@@ -328,7 +328,7 @@ export function MemoryManagementPanel() {
         <div
           role="status"
           data-testid="memory-feedback-banner"
-          className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200 flex items-center gap-2 animate-in fade-in"
+          className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200 flex items-center gap-2"
         >
           <Check className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
           <span>{feedback}</span>
@@ -474,7 +474,7 @@ export function MemoryManagementPanel() {
             className={cn(
               'px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer',
               selectedTier === 'procedural'
-                ? 'bg-purple-600 text-white shadow-sm'
+                ? 'bg-emerald-700 text-white shadow-sm'
                 : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700'
             )}
           >

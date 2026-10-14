@@ -166,7 +166,7 @@ export function RecordSearch({ profileId = 'me', onSelectNote }: RecordSearchPro
                         <span className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate">
                           {filename}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 uppercase">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 uppercase">
                           {source}
                         </span>
                       </div>

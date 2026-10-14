@@ -88,6 +88,13 @@ class User(Base):
         nullable=False,
         doc="Identity source: local, oidc, google, github",
     )
+    preferred_locale: Mapped[str] = mapped_column(
+        String(16),
+        default="en-US",
+        server_default="en-US",
+        nullable=False,
+        doc="Preferred IETF BCP 47 locale tag (e.g. en-US, es-ES, fr-FR, hi-IN, ar-SA)",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -830,6 +837,13 @@ class Profile(Base):
         nullable=False,
         doc="Whether this is the primary self/steward profile",
     )
+    preferred_locale: Mapped[str] = mapped_column(
+        String(16),
+        default="en-US",
+        server_default="en-US",
+        nullable=False,
+        doc="Preferred IETF BCP 47 locale tag for this care profile (e.g. en-US, es-ES, fr-FR, hi-IN, ar-SA)",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -1315,6 +1329,14 @@ class Note(Base):
         default="[]",
         doc="Serialized JSON array of note tags",
     )
+    locale: Mapped[str] = mapped_column(
+        String(16),
+        default="en-US",
+        server_default="en-US",
+        nullable=False,
+        index=True,
+        doc="IETF BCP 47 locale tag of the note content (e.g. en-US, es-ES)",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -1457,6 +1479,13 @@ class Attachment(Base):
         nullable=False,
         index=True,
         doc="Processing lifecycle state: pending, completed, failed, not_applicable",
+    )
+    locale: Mapped[str] = mapped_column(
+        String(16),
+        default="en-US",
+        server_default="en-US",
+        nullable=False,
+        doc="IETF BCP 47 locale tag of the attachment document (e.g. en-US, es-ES)",
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -2417,6 +2446,13 @@ class HealthResource(Base):
         default="active",
         nullable=False,
         doc="Status: active, amended, tombstone",
+    )
+    locale: Mapped[str] = mapped_column(
+        String(16),
+        default="en-US",
+        server_default="en-US",
+        nullable=False,
+        doc="IETF BCP 47 locale tag of resource display narrative while codes stay language-neutral",
     )
     effective_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

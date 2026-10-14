@@ -256,7 +256,7 @@ export function PreventiveChecklist({
                 </div>
 
                 {/* Source & Reviewed Metadata */}
-                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
                   <span
                     data-testid={`preventive-source-badge-${item.rule_id}`}
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/50"

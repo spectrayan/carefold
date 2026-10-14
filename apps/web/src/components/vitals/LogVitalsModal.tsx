@@ -227,7 +227,7 @@ export function LogVitalsModal({
                   max={300}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--cf-border)] bg-[var(--cf-surface)] text-[var(--cf-fg)] focus:outline-none focus:ring-2 focus:ring-[var(--cf-focus)] font-mono"
                 />
-                <span className="text-[11px] text-[var(--cf-fg-subtle)] mt-0.5 block">Systolic (Upper)</span>
+                <span className="text-xs text-[var(--cf-fg-subtle)] mt-0.5 block">Systolic (Upper)</span>
               </div>
               <div>
                 <input
@@ -240,7 +240,7 @@ export function LogVitalsModal({
                   max={200}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--cf-border)] bg-[var(--cf-surface)] text-[var(--cf-fg)] focus:outline-none focus:ring-2 focus:ring-[var(--cf-focus)] font-mono"
                 />
-                <span className="text-[11px] text-[var(--cf-fg-subtle)] mt-0.5 block">Diastolic (Lower)</span>
+                <span className="text-xs text-[var(--cf-fg-subtle)] mt-0.5 block">Diastolic (Lower)</span>
               </div>
             </div>
             {bpIncomplete && (
@@ -374,7 +374,7 @@ export function LogVitalsModal({
           </div>
 
           {/* Non-clinical boundary notice */}
-          <div className="pt-2 text-[11px] text-[var(--cf-fg-subtle)] flex items-start gap-1.5 leading-relaxed">
+          <div className="pt-2 text-xs text-[var(--cf-fg-subtle)] flex items-start gap-1.5 leading-relaxed">
             <ShieldAlert className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[var(--cf-fg-subtle)]" />
             <span>
               Values recorded here are stored locally in your clinical profile for tracking and visit preparation.

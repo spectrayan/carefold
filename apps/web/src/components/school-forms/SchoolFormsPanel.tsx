@@ -167,7 +167,7 @@ export function SchoolFormsPanel({
                       {form.renewal_reminder_id && (
                         <span
                           data-testid={`school-form-reminder-badge-${form.id}`}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50"
                         >
                           <Bell className="w-3 h-3" />
                           Renewal Reminder Set
@@ -176,7 +176,7 @@ export function SchoolFormsPanel({
                       {form.guardian_only && (
                         <span
                           data-testid={`school-form-guardian-badge-${form.id}`}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/50"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/50"
                         >
                           <Clock className="w-3 h-3" />
                           Guardian Only

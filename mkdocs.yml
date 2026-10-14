@@ -68,12 +68,18 @@ nav:
   - Skills:
       - Authoring Guide: skills/authoring.md
       - Intended Use & Safety: skills/specification.md
+  - Connectors:
+      - Authoring Guide: connectors/authoring.md
   - Memory:
       - Cognitive Memory & Spector: memory/spector.md
       - Hexagonal Ports: memory/hexagonal-ports.md
   - Safety & Guardrails:
       - Safety Boundaries: safety/boundaries.md
       - Emergency Red Flags: safety/emergency-triage.md
+  # Compliance packs consolidate threat-model.md / asvs-l2-checklist.md and hipaa-readiness.md / dpdp-readiness.md / wellness-positioning.md
+  - Compliance & Security:
+      - Google OAuth & OWASP ASVS / CASA Readiness: compliance/google-verification-and-casa.md
+      - Legal, Regulatory & Privacy Readiness Pack: compliance/legal-and-regulatory-pack.md
   - Testing & Quality Gates: testing/index.md
   - API Reference: api/reference.md
   - Architecture Decision Records:
@@ -86,3 +92,6 @@ nav:
       - 0005 - Vault Threat Model & KEK: adr/0005-vault-threat-model-and-kek-sources.md
       - 0006 - Deployment Modes & Tiers: adr/0006-deployment-modes-and-requirement-tiers.md
       - 0007 - Content-Addressed Storage: adr/0007-content-addressed-storage-and-hybrid-search.md
+      - 0008 - Stateless OAuth PKCE Relay: adr/0008-oauth-relay-and-stateless-callback.md
+      - 0009 - Internationalization & Multilingual Architecture: adr/0009-internationalization-and-multilingual-architecture.md
+

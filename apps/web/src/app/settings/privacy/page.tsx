@@ -143,7 +143,7 @@ export default function PrivacySettingsPage() {
                   <div className="font-semibold text-[var(--cf-fg)] truncate capitalize">
                     {agentId.replace(/-/g, ' ')}
                   </div>
-                  <div className="text-[11px] text-[var(--cf-fg-subtle)]">
+                  <div className="text-xs text-[var(--cf-fg-subtle)]">
                     Consent given {new Date(record.grantedAt).toLocaleString()}
                   </div>
                 </div>
@@ -177,7 +177,7 @@ export default function PrivacySettingsPage() {
         {/* Storage Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="p-3.5 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)]">
-            <div className="text-[11px] font-semibold text-[var(--cf-fg-subtle)] uppercase tracking-wider">
+            <div className="text-xs font-semibold text-[var(--cf-fg-subtle)] uppercase tracking-wider">
               Stored Conversations
             </div>
             <div data-testid="stored-conversations-stat" className="text-lg font-bold text-[var(--cf-fg)] mt-1">
@@ -189,7 +189,7 @@ export default function PrivacySettingsPage() {
           </div>
 
           <div className="p-3.5 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)]">
-            <div className="text-[11px] font-semibold text-[var(--cf-fg-subtle)] uppercase tracking-wider">
+            <div className="text-xs font-semibold text-[var(--cf-fg-subtle)] uppercase tracking-wider">
               Saved API Keys
             </div>
             <div data-testid="stored-keys-stat" className="text-lg font-bold text-[var(--cf-fg)] mt-1">

@@ -90,7 +90,7 @@ export function SyncHealthTable({
             {connectionLabel ? ` — ${connectionLabel}` : ''}
           </h4>
         </div>
-        <span className="text-[11px] text-[var(--cf-fg-muted)]">
+        <span className="text-xs text-[var(--cf-fg-muted)]">
           {runs.length} {runs.length === 1 ? 'run' : 'runs'}
         </span>
       </div>
@@ -113,7 +113,7 @@ export function SyncHealthTable({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-[var(--cf-border)] text-[11px] text-[var(--cf-fg-muted)]">
+              <tr className="border-b border-[var(--cf-border)] text-xs text-[var(--cf-fg-muted)]">
                 <th className="py-2 pr-3 font-semibold">Status</th>
                 <th className="py-2 px-3 font-semibold">Stream</th>
                 <th className="py-2 px-3 font-semibold">Fetched</th>
@@ -137,7 +137,7 @@ export function SyncHealthTable({
                         <span
                           data-testid={`sync-run-status-${run.id}`}
                           className={cn(
-                            'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border',
+                            'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border',
                             badge.classes
                           )}
                         >
@@ -167,7 +167,7 @@ export function SyncHealthTable({
                         <span
                           data-testid={`sync-run-quarantined-${run.id}`}
                           className={cn(
-                            'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border',
+                            'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border',
                             run.records_quarantined > 0
                               ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
                               : 'bg-[var(--cf-surface-2)] text-[var(--cf-fg-muted)] border-[var(--cf-border)]'
@@ -190,7 +190,7 @@ export function SyncHealthTable({
                       </td>
                       <td
                         data-testid={`sync-run-started-${run.id}`}
-                        className="py-2.5 pl-3 text-[var(--cf-fg-muted)] font-mono text-[11px]"
+                        className="py-2.5 pl-3 text-[var(--cf-fg-muted)] font-mono text-xs"
                       >
                         {run.started_at}
                       </td>
@@ -198,7 +198,7 @@ export function SyncHealthTable({
                     {(run.error_message || run.error_code) && (
                       <tr data-testid={`sync-run-error-${run.id}`}>
                         <td colSpan={7} className="pb-2.5 pt-1">
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-[11px] text-rose-700 dark:text-rose-300">
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-700 dark:text-rose-300">
                             <XCircle className="w-3.5 h-3.5 shrink-0" />
                             <span>
                               {run.error_code ? `[${run.error_code}] ` : ''}

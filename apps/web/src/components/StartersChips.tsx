@@ -44,7 +44,7 @@ export function StartersChips({
     >
       <div className="w-full flex items-center gap-1.5 text-xs text-zinc-700 dark:text-zinc-300 font-semibold mb-1">
         <svg
-          className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400"
+          className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -61,7 +61,7 @@ export function StartersChips({
           data-testid="starter-chip"
           disabled={disabled}
           onClick={() => onSelectStarter(prompt, autoSend)}
-          className="inline-flex items-center text-left text-xs min-h-[44px] max-w-full px-3.5 py-2 rounded-2xl border border-[#7f8ea3] dark:border-[#657895] bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 hover:bg-emerald-50 dark:hover:bg-zinc-700 hover:border-emerald-700 dark:hover:border-emerald-400 hover:text-emerald-950 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 shadow-sm hover:shadow group cursor-pointer"
+          className="inline-flex items-center text-left whitespace-normal break-words text-xs min-h-[44px] max-w-full px-3.5 py-2 rounded-2xl border border-[#7f8ea3] dark:border-[#657895] bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 hover:bg-emerald-50 dark:hover:bg-zinc-700 hover:border-emerald-700 dark:hover:border-emerald-400 hover:text-emerald-950 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 shadow-sm hover:shadow group cursor-pointer"
         >
           <span className="break-words whitespace-normal max-w-full leading-snug">{prompt}</span>
           <svg

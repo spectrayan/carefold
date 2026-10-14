@@ -98,7 +98,7 @@ export function UndoConfirmPopover({
           {rollbackDescription()}
         </p>
 
-        <p className="text-[11px] text-[var(--cf-fg-subtle)] mb-3">
+        <p className="text-xs text-[var(--cf-fg-subtle)] mb-3">
           An audited reversal event will be logged in this timeline.
         </p>
 

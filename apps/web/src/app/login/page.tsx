@@ -90,7 +90,7 @@ function LoginForm() {
     <div className="w-full max-w-md mx-auto p-5 sm:p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl space-y-6">
       {/* Brand & Heading */}
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-600 text-white shadow-md mx-auto">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-700 text-white shadow-md mx-auto">
           <HeartHandshake className="w-6 h-6" />
         </div>
         <h1 className="text-xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
@@ -105,7 +105,7 @@ function LoginForm() {
       {needsAdminSetup && (
         <div
           data-testid="needs-admin-setup-banner"
-          className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 text-xs text-purple-900 dark:text-purple-200 space-y-2.5 animate-in fade-in"
+          className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 text-xs text-purple-900 dark:text-purple-200 space-y-2.5"
         >
           <div className="flex items-center gap-2 font-bold text-purple-800 dark:text-purple-300">
             <ShieldCheck className="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -173,7 +173,7 @@ function LoginForm() {
         <div
           role="alert"
           data-testid="service-unavailable-alert"
-          className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2.5 animate-in fade-in"
+          className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2.5"
         >
           <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
@@ -190,7 +190,7 @@ function LoginForm() {
         <div
           role="alert"
           data-testid="session-expired-alert"
-          className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 text-xs text-slate-800 dark:text-zinc-200 flex items-start gap-2.5 animate-in fade-in"
+          className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 text-xs text-slate-800 dark:text-zinc-200 flex items-start gap-2.5"
         >
           <AlertCircle className="w-4 h-4 text-slate-600 dark:text-zinc-400 shrink-0 mt-0.5" />
           <span className="leading-relaxed">Your session has expired or is invalid. Please sign in again.</span>
@@ -202,7 +202,7 @@ function LoginForm() {
         <div
           role="alert"
           data-testid="login-error-alert"
-          className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2.5 animate-in fade-in"
+          className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2.5"
         >
           <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
           <span className="leading-relaxed">{error}</span>

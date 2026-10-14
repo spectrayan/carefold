@@ -151,7 +151,7 @@ export function DossierExportMenu({
           role="menu"
           aria-orientation="vertical"
           aria-label="Export dossier options"
-          className="absolute right-0 mt-1.5 w-60 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-lg shadow-slate-900/10 dark:shadow-black/40 py-1.5 z-50 focus:outline-none animate-in fade-in zoom-in-95 duration-100"
+          className="absolute right-0 mt-1.5 w-60 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-lg shadow-slate-900/10 dark:shadow-black/40 py-1.5 z-50 focus:outline-none duration-100"
         >
           <div className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-800 mb-1">
             Export Consultation

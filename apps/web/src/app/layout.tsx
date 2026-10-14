@@ -78,10 +78,19 @@ export const fraunces = localFont({
 
 export const metadata: Metadata = {
   title: 'Carefold — Specialist Health Agents',
-  description: 'Local-first runtime and marketplace for specialist health agents (wellness, care navigation, clinic-admin).'
+  description: 'Local-first runtime and marketplace for specialist health agents (wellness, care navigation, clinic-admin).',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/icon.svg', type: 'image/svg+xml' }
+    ],
+    apple: '/icon.svg'
+  },
+  manifest: '/manifest.json'
 };
 
 import { AppLayout } from '@/components/layout/AppLayout';
+import { I18nProvider } from '@/i18n';
 
 export default function RootLayout({
   children
@@ -91,6 +100,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      dir="ltr"
       className={`${inter.variable} ${fraunces.variable}`}
       suppressHydrationWarning
     >
@@ -99,11 +109,13 @@ export default function RootLayout({
       </head>
       <body className="antialiased min-h-screen flex flex-col font-sans bg-canvas text-fg transition-colors">
         <ThemeProvider>
-          <AuthProvider>
-            <AppLayout>
-              {children}
-            </AppLayout>
-          </AuthProvider>
+          <I18nProvider>
+            <AuthProvider>
+              <AppLayout>
+                {children}
+              </AppLayout>
+            </AuthProvider>
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>

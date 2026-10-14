@@ -110,7 +110,7 @@ export default function ModelSettingsPage() {
               <Cpu className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Ollama Local Host URL</span>
             </label>
-            <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
               Zero Keys Required
             </span>
           </div>

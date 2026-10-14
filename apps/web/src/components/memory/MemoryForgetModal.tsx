@@ -57,14 +57,14 @@ export function MemoryForgetModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="forget-modal-title"
       aria-describedby="forget-modal-desc"
     >
       <div
-        className="w-full max-w-md bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-6 overflow-hidden animate-in zoom-in-95"
+        className="w-full max-w-md bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-6 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-4">

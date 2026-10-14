@@ -64,7 +64,7 @@ export function CloudDisclosureModal({
       data-testid="cloud-disclosure-modal"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
     >
-      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col duration-150">
         {/* Header */}
         <div className="px-5 py-4 border-b border-slate-200 dark:border-zinc-800 bg-amber-50 dark:bg-amber-950/40 flex items-start justify-between gap-3">
           <div className="flex items-start gap-2.5">

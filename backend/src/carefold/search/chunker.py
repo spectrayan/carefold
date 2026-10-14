@@ -22,6 +22,8 @@ import logging
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
+from carefold.i18n.locale import normalize_text_nfc
+
 logger = logging.getLogger("carefold.search.chunker")
 
 try:
@@ -144,6 +146,7 @@ class ClinicalChunker:
         """Estimates token count using tiktoken cl100k_base or word heuristic fallback."""
         if not text or not text.strip():
             return 0
+        text = normalize_text_nfc(text)
         words = text.split()
         if len(words) == 1:
             return 1
@@ -249,6 +252,7 @@ class ClinicalChunker:
         if not text or not text.strip():
             return []
 
+        text = normalize_text_nfc(text)
         base_meta = dict(metadata or {})
         should_coalesce = self.coalesce_sections if coalesce is None else coalesce
 

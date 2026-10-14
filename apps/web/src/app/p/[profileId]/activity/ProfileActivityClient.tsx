@@ -111,7 +111,7 @@ export function ProfileActivityClient({
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto py-2">
+    <div className="space-y-6">
       {/* Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--cf-border)]">
         <div>
@@ -152,7 +152,7 @@ export function ProfileActivityClient({
         <div
           data-testid="activity-toast-success"
           role="status"
-          className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs flex items-center gap-2 shadow-sm animate-fade-in"
+          className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs flex items-center gap-2 shadow-sm animate-"
         >
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span className="font-medium">{toastMessage}</span>

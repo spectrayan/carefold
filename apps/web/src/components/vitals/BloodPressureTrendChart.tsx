@@ -151,7 +151,7 @@ export function BloodPressureTrendChart({
                     y={y + 3.5}
                     textAnchor="end"
                     className={cn(
-                      'text-[10px] font-mono select-none',
+                      'text-xs font-mono select-none',
                       isCrisis
                         ? 'fill-red-500 font-semibold'
                         : isStage2
@@ -235,7 +235,7 @@ export function BloodPressureTrendChart({
                   {hoveredPoint.systolic} / {hoveredPoint.diastolic} mmHg
                 </span>
               </div>
-              <div className="text-[var(--cf-fg-muted)] text-[11px] mt-0.5">
+              <div className="text-[var(--cf-fg-muted)] text-xs mt-0.5">
                 {new Date(hoveredPoint.timestamp).toLocaleString(undefined, {
                   month: 'short',
                   day: 'numeric',
@@ -244,7 +244,7 @@ export function BloodPressureTrendChart({
                 })}
               </div>
               {hoveredPoint.classification && (
-                <div className="mt-1 font-semibold text-[var(--cf-primary)] text-[11px]">
+                <div className="mt-1 font-semibold text-[var(--cf-primary)] text-xs">
                   {hoveredPoint.classification}
                 </div>
               )}

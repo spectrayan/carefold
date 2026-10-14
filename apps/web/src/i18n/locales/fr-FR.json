@@ -1,0 +1,41 @@
+{
+  "common": {
+    "appName": "Carefold",
+    "tagline": "Agents de Santé Spécialisés",
+    "localMode": "Local",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "search": "Rechercher",
+    "loading": "Chargement…",
+    "appointmentCount": "{count, plural, zero {Aucun rendez-vous à venir} one {# rendez-vous à venir} other {# rendez-vous à venir}}"
+  },
+  "nav": {
+    "home": "Accueil",
+    "chat": "Discussions",
+    "specialists": "Spécialistes",
+    "skills": "Compétences",
+    "records": "Dossiers",
+    "schedule": "Calendrier",
+    "vitals": "Constantes",
+    "preventive": "Soins préventifs",
+    "connections": "Connexions",
+    "activity": "Activité",
+    "settings": "Paramètres"
+  },
+  "settings": {
+    "display": {
+      "title": "Apparence et Affichage",
+      "description": "Personnalisez le thème de couleur, le contraste, la langue et l'accessibilité du texte.",
+      "languageTitle": "Langue et Format Régional",
+      "languageDescription": "Sélectionnez votre langue d'interface préférée, le sens de lecture et le format régional des dates et nombres.",
+      "rtlBadge": "RTL",
+      "previewTitle": "Aperçu du format régional",
+      "previewDate": "Exemple de date",
+      "previewNumber": "Exemple de valeur de laboratoire"
+    }
+  },
+  "safety": {
+    "disclaimerBanner": "Carefold vous aide à préparer vos consultations médicales. Il ne fournit pas de diagnostic ni de traitement médical.",
+    "emergencyNotice": "En cas d'urgence médicale, appelez immédiatement le 15, le 112 ou le 911."
+  }
+}

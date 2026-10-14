@@ -17,6 +17,12 @@
 
 export type RiskClass = 'wellness' | 'admin' | 'clinical_assist';
 
+export const RISK_CLASS_OPTIONS: readonly RiskClass[] = [
+  'wellness',
+  'admin',
+  'clinical_assist',
+] as const;
+
 export const SAFE_REFUSAL_TEMPLATE =
   'I am a wellness and care navigation assistant, not a licensed medical professional or emergency service. I cannot diagnose conditions, prescribe medications, or alter medical treatments. Please consult a qualified healthcare provider or contact emergency services immediately if you are experiencing a medical emergency.';
 

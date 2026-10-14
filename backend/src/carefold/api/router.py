@@ -32,6 +32,7 @@ from carefold.api.coordinated import router as coordinated_router
 from carefold.api.email_drafts import router as email_drafts_router
 from carefold.api.handover import router as handover_router
 from carefold.api.health import router as health_router
+from carefold.api.i18n import router as i18n_router
 from carefold.api.imports import router as imports_router
 from carefold.api.memory import router as memory_router
 from carefold.api.models import router as models_router
@@ -48,6 +49,7 @@ from carefold.api.vitals import router as vitals_router
 
 api_router = APIRouter()
 api_router.include_router(health_router)
+api_router.include_router(i18n_router)
 api_router.include_router(vitals_router)
 api_router.include_router(appointments_router)
 api_router.include_router(reminders_router)

@@ -1,0 +1,45 @@
+{
+  "locale": "fr-FR",
+  "direction": "ltr",
+  "safety": {
+    "disclaimer_banner": "Les agents Carefold fournissent une aide éducative au bien-être et à l'orientation des soins. Ceci ne remplace ni un médecin ni les services d'urgence. Ne modifiez jamais un traitement sans l'avis du médecin prescripteur.",
+    "emergency_directive": "En cas d'urgence médicale, cessez d'utiliser cet assistant et appelez immédiatement le 112, le 15 ou le 911 (ou le 988 en cas de crise), ou rendez-vous aux urgences les plus proches.",
+    "non_clinical_notice": "À titre purement informatif et pour préparer vos consultations. Vérifiez toujours les décisions cliniques auprès d'un professionnel de santé qualifié."
+  },
+  "navigation": {
+    "home": "Accueil",
+    "timeline": "Chronologie",
+    "vitals": "Constantes vitales",
+    "medications": "Médicaments",
+    "appointments": "Rendez-vous",
+    "notes": "Notes",
+    "documents": "Documents",
+    "preventive": "Soins préventifs",
+    "connectors": "Sources connectées",
+    "settings": "Paramètres",
+    "profiles": "Profils familiaux"
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "loading": "Chargement...",
+    "search_placeholder": "Rechercher des notes cliniques, analyses et rendez-vous...",
+    "language": "Langue",
+    "profile_greeting": "Bonjour, {name}"
+  },
+  "preventive": {
+    "title": "Soins préventifs et vaccinations",
+    "due_summary": "{count, plural, zero {Aucun élément à prévoir} one {# élément à prévoir} other {# éléments à prévoir}}",
+    "due_count": "{count, plural, zero {Aucun élément à prévoir} one {# élément à prévoir} other {# éléments à prévoir}}",
+    "status_overdue": "En retard",
+    "status_due_soon": "À prévoir bientôt",
+    "status_up_to_date": "À jour"
+  },
+  "errors": {
+    "not_found": "La ressource demandée est introuvable.",
+    "invalid_locale": "Balise de langue BCP 47 non valide ou non prise en charge.",
+    "unauthorized": "Vous n'êtes pas autorisé à accéder à ce profil."
+  }
+}

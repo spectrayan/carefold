@@ -171,13 +171,20 @@ def test_upgrade_head_fresh_sqlite():
         # Assert 34 tables at head
         assert len(EXPECTED_HEAD_TABLES) == 34
 
-        # Assert head revision is 0009_autonomy_batch_7
+        # Assert head revision is 0010_i18n_and_locale_storage
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0009_autonomy_batch_7"
+        assert curr_ver == "0010_i18n_and_locale_storage"
+
+        # Assert BCP 47 locale columns exist on users, profiles, notes, attachments, health_resources
+        user_cols_map = {c["name"]: c for c in insp.get_columns("users")}
+        assert "preferred_locale" in user_cols_map
+        prof_cols_map = {c["name"]: c for c in insp.get_columns("profiles")}
+        assert "preferred_locale" in prof_cols_map
 
         # Assert notes.profile_id and chat_threads.profile_id are NOT NULL
         notes_cols = {c["name"]: c for c in insp.get_columns("notes")}
         assert notes_cols["profile_id"]["nullable"] is False
+        assert "locale" in notes_cols
 
         thread_cols = {c["name"]: c for c in insp.get_columns("chat_threads")}
         assert thread_cols["profile_id"]["nullable"] is False
@@ -286,7 +293,7 @@ def test_downgrade_to_0008_autonomy_batch_6():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0009_autonomy_batch_7"
+        assert curr_ver == "0010_i18n_and_locale_storage"
 
         alembic.command.downgrade(cfg, "0008_autonomy_batch_6")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -303,7 +310,7 @@ def test_downgrade_to_0008_autonomy_batch_6():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0009_autonomy_batch_7"
+        assert curr_ver_up == "0010_i18n_and_locale_storage"
 
 
 def test_downgrade_to_0007_autonomy_batch_5():
@@ -314,7 +321,7 @@ def test_downgrade_to_0007_autonomy_batch_5():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0009_autonomy_batch_7"
+        assert curr_ver == "0010_i18n_and_locale_storage"
 
         alembic.command.downgrade(cfg, "0007_autonomy_batch_5")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -332,7 +339,7 @@ def test_downgrade_to_0007_autonomy_batch_5():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0009_autonomy_batch_7"
+        assert curr_ver_up == "0010_i18n_and_locale_storage"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_6_TABLES.issubset(tables_up)
@@ -346,7 +353,7 @@ def test_downgrade_to_0006_autonomy_batch_4():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0009_autonomy_batch_7"
+        assert curr_ver == "0010_i18n_and_locale_storage"
 
         alembic.command.downgrade(cfg, "0006_autonomy_batch_4")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -363,7 +370,7 @@ def test_downgrade_to_0006_autonomy_batch_4():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0009_autonomy_batch_7"
+        assert curr_ver_up == "0010_i18n_and_locale_storage"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_5_TABLES.issubset(tables_up)
@@ -377,7 +384,7 @@ def test_downgrade_to_0005_autonomy_batch_3():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0009_autonomy_batch_7"
+        assert curr_ver == "0010_i18n_and_locale_storage"
 
         alembic.command.downgrade(cfg, "0005_autonomy_batch_3")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -394,7 +401,7 @@ def test_downgrade_to_0005_autonomy_batch_3():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0009_autonomy_batch_7"
+        assert curr_ver_up == "0010_i18n_and_locale_storage"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_4_TABLES.issubset(tables_up)
@@ -491,7 +498,7 @@ def test_downgrade_to_0004_autonomy_batch_2():
         # Re-upgrade to head (0009_autonomy_batch_7)
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0009_autonomy_batch_7"
+        assert curr_ver_up == "0010_i18n_and_locale_storage"
 
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())

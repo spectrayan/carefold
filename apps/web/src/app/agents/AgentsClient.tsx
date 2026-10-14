@@ -364,7 +364,7 @@ export function AgentsClient({
                     </div>
                     <span
                       className={cn(
-                        'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold',
+                        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold',
                         isClinical
                           ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20'
                           : 'bg-[var(--cf-surface-2)] text-[var(--cf-fg-subtle)] border border-[var(--cf-border)]'
@@ -411,7 +411,7 @@ export function AgentsClient({
             >
               <div>
                 <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800/60 flex items-center justify-center text-purple-700 dark:text-purple-300 shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 flex items-center justify-center text-emerald-800 dark:text-emerald-300 shrink-0">
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--cf-surface-2)] text-[var(--cf-fg-subtle)] border border-[var(--cf-border)]">

@@ -139,7 +139,7 @@ Carefold Patient`;
           <div data-testid="phone-script-content" className="space-y-4 py-4 text-xs">
             {/* 1. GREETING */}
             <div className="p-3 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface)] space-y-1">
-              <span className="font-bold text-[11px] uppercase tracking-wider text-[var(--cf-fg-subtle)]">
+              <span className="font-bold text-xs uppercase tracking-wider text-[var(--cf-fg-subtle)]">
                 1. Greeting
               </span>
               <p className="text-[var(--cf-fg)] text-sm font-medium">
@@ -149,7 +149,7 @@ Carefold Patient`;
 
             {/* 2. REASON */}
             <div className="p-3 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface)] space-y-1">
-              <span className="font-bold text-[11px] uppercase tracking-wider text-[var(--cf-fg-subtle)]">
+              <span className="font-bold text-xs uppercase tracking-wider text-[var(--cf-fg-subtle)]">
                 2. Reason for Visit
               </span>
               <p className="text-[var(--cf-fg)] text-sm font-medium">
@@ -187,7 +187,7 @@ Carefold Patient`;
 
             {/* 4. AVAILABILITY */}
             <div className="p-3 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface)] space-y-1">
-              <span className="font-bold text-[11px] uppercase tracking-wider text-[var(--cf-fg-subtle)]">
+              <span className="font-bold text-xs uppercase tracking-wider text-[var(--cf-fg-subtle)]">
                 4. Availability Preference
               </span>
               <p className="text-[var(--cf-fg)] text-sm font-medium">
@@ -197,7 +197,7 @@ Carefold Patient`;
 
             {/* 5. CONFIRMATION */}
             <div className="p-3 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface)] space-y-1">
-              <span className="font-bold text-[11px] uppercase tracking-wider text-[var(--cf-fg-subtle)]">
+              <span className="font-bold text-xs uppercase tracking-wider text-[var(--cf-fg-subtle)]">
                 5. Confirmation
               </span>
               <p className="text-[var(--cf-fg)] text-sm font-medium">

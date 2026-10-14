@@ -23,6 +23,7 @@ import { usePathname } from 'next/navigation';
 import { ChevronDown, Search, Settings, Sun, Moon, LogIn, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, type MemberColorSlot } from '@/components/ui/Avatar';
+import { CarefoldLogo } from '@/components/ui/CarefoldLogo';
 import { ProfileSwitcher } from '@/components/layout/ProfileSwitcher';
 import { useOptionalTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/lib/auth';
@@ -104,12 +105,7 @@ export function MobileTopBar({
         aria-label="Carefold Home"
         className="min-h-[44px] flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-[var(--cf-focus)]"
       >
-        <div
-          className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0"
-          aria-hidden="true"
-        >
-          C
-        </div>
+        <CarefoldLogo size={20} />
         <span className="hidden min-[380px]:inline font-bold text-sm text-[var(--cf-fg)] tracking-tight">Carefold</span>
       </Link>
 

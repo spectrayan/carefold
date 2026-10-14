@@ -278,7 +278,7 @@ export function ProfileSwitcher({
               className={cn(
                 'absolute left-0 z-50 w-72 mt-2 rounded-2xl bg-[var(--cf-surface)] border border-[var(--cf-border)] shadow-xl p-2 focus:outline-none transition-all',
                 mode === 'mobile-sheet'
-                  ? 'fixed inset-x-0 bottom-0 left-0 right-0 w-full rounded-b-none border-x-0 border-b-0 max-h-[85vh] animate-in slide-in-from-bottom duration-200'
+                  ? 'fixed inset-x-0 bottom-0 left-0 right-0 w-full rounded-b-none border-x-0 border-b-0 max-h-[85vh] duration-200'
                   : 'top-full'
               )}
             >
@@ -286,7 +286,7 @@ export function ProfileSwitcher({
                 <span className="text-xs font-semibold uppercase tracking-wider text-[var(--cf-fg-subtle)]">
                   Care Profiles
                 </span>
-                <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--cf-surface-2)] text-[var(--cf-fg-subtle)] border border-[var(--cf-border)]">
+                <kbd className="text-xs font-mono px-1.5 py-0.5 rounded bg-[var(--cf-surface-2)] text-[var(--cf-fg-subtle)] border border-[var(--cf-border)]">
                   G then P
                 </kbd>
               </div>

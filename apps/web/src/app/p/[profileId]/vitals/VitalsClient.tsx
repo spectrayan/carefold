@@ -146,7 +146,7 @@ export function VitalsClient({ profileId }: VitalsClientProps) {
   }, [observations]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto py-2">
+    <div className="space-y-6">
       {/* Top Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--cf-border)]">
         <div>

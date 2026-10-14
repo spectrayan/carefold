@@ -163,7 +163,7 @@ export function ActivityTimelineItem({
             <span
               data-testid="actor-badge"
               className={cn(
-                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border',
+                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border',
                 actorColorClass()
               )}
             >
@@ -175,7 +175,7 @@ export function ActivityTimelineItem({
             <span
               data-testid="tool-badge"
               className={cn(
-                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border',
+                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border',
                 badgeInfo.colorClass
               )}
             >
@@ -194,7 +194,7 @@ export function ActivityTimelineItem({
             <span
               data-testid="activity-timestamp"
               title={fullTime}
-              className="text-[11px] text-[var(--cf-fg-subtle)] flex items-center gap-1 font-mono ml-auto"
+              className="text-xs text-[var(--cf-fg-subtle)] flex items-center gap-1 font-mono ml-auto"
             >
               <Clock className="w-3 h-3" />
               {relativeTime}

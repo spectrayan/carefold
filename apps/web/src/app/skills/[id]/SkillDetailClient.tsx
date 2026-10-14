@@ -139,9 +139,9 @@ export function SkillDetailClient({ skill: initialSkill }: SkillDetailClientProp
               {skill.has_evals && (
                 <span
                   data-testid="skill-detail-evals"
-                  className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60"
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-stone-100 dark:bg-zinc-800 text-emerald-800 dark:text-emerald-300 border border-stone-200 dark:border-zinc-700"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                   <span>Has Evals</span>
                 </span>
               )}

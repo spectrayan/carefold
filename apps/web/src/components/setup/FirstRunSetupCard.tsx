@@ -22,7 +22,11 @@ import { X, Sparkles } from 'lucide-react';
 import { isSetupComplete, markSetupComplete } from '@/lib/setup';
 import { SetupChecklist } from './SetupChecklist';
 
-export function FirstRunSetupCard() {
+export interface FirstRunSetupCardProps {
+  status?: 'READY' | 'ACTION_REQUIRED' | 'DEGRADED';
+}
+
+export function FirstRunSetupCard({ status }: FirstRunSetupCardProps = {}) {
   const [mounted, setMounted] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
@@ -88,7 +92,7 @@ export function FirstRunSetupCard() {
         </button>
       </div>
 
-      <SetupChecklist isSettingsView={false} onDismiss={handleDismiss} />
+      <SetupChecklist isSettingsView={false} initialStatus={status} onDismiss={handleDismiss} />
     </aside>
   );
 }

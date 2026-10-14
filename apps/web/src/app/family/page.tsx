@@ -167,7 +167,7 @@ export default function FamilyPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-8 sm:space-y-10">
+    <div className="space-y-6">
       {/* Header Breadcrumbs & Action Cluster */}
       <div className="space-y-4">
         <nav aria-label="Breadcrumb" className="text-xs text-[var(--cf-fg-subtle)] flex items-center gap-1.5">
@@ -289,14 +289,14 @@ export default function FamilyPage() {
                       <div className="space-y-0.5 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-[var(--cf-fg)]">{invite.inviteeName}</span>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 shrink-0">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 shrink-0">
                             <Eye className="w-3 h-3 shrink-0" />
                             <span>Viewer &middot; {invite.targetProfileName}</span>
                           </span>
                         </div>
                         <p className="text-[var(--cf-fg-subtle)] flex items-center gap-1.5 flex-wrap">
                           <Key className="w-3 h-3 text-[var(--cf-fg-subtle)] shrink-0" />
-                          <span>Code: <code className="font-mono bg-[var(--cf-surface-2)] px-1 py-0.5 rounded text-[11px]">{invite.inviteCode}</code></span>
+                          <span>Code: <code className="font-mono bg-[var(--cf-surface-2)] px-1 py-0.5 rounded text-xs">{invite.inviteCode}</code></span>
                           <span>&middot;</span>
                           <span>
                             {invite.permissions.view_clinical ? 'Visit prep & clinical' : ''}
@@ -340,12 +340,12 @@ export default function FamilyPage() {
                       </div>
                       <div className="min-w-0">
                         <span className="font-medium text-[var(--cf-fg)] block truncate">{bundle.title}</span>
-                        <span className="text-[11px] text-[var(--cf-fg-subtle)] block">
+                        <span className="text-xs text-[var(--cf-fg-subtle)] block">
                           {bundle.profileName ? `${bundle.profileName} · ` : ''}Printed care sheet
                         </span>
                       </div>
                     </div>
-                    <span className="text-[11px] text-[var(--cf-fg-subtle)] shrink-0">{bundle.exportedAt}</span>
+                    <span className="text-xs text-[var(--cf-fg-subtle)] shrink-0">{bundle.exportedAt}</span>
                   </div>
                 ))
               )}

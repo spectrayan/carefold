@@ -110,7 +110,7 @@ function ResetPasswordForm() {
     <div className="w-full max-w-md mx-auto p-6 sm:p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl space-y-6">
       {/* Brand & Heading */}
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-600 text-white shadow-md mx-auto">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-700 text-white shadow-md mx-auto">
           <HeartHandshake className="w-6 h-6" />
         </div>
         <h1 className="text-xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
@@ -126,7 +126,7 @@ function ResetPasswordForm() {
         <div
           role="alert"
           data-testid="reset-password-error-alert"
-          className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2.5 animate-in fade-in"
+          className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2.5"
         >
           <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
           <span className="leading-relaxed">{error}</span>
@@ -138,7 +138,7 @@ function ResetPasswordForm() {
         <div
           role="status"
           data-testid="reset-password-success-alert"
-          className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-200 space-y-2 animate-in fade-in"
+          className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-200 space-y-2"
         >
           <div className="flex items-center gap-2 font-semibold">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />

@@ -81,7 +81,7 @@ export function getTierBadgeConfig(tier: string | MemoryTier) {
         code: '[PROCEDURAL]',
         icon: Layers,
         classes:
-          'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+          'bg-stone-100 dark:bg-zinc-800 text-emerald-800 dark:text-emerald-400 border-stone-200 dark:border-zinc-700',
       };
     case 'episodic':
     default:

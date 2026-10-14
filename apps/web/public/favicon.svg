@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Carefold favicon">
+  <defs>
+    <linearGradient id="cf-fav-bg" x1="6" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#cf-fav-bg)" />
+  <path d="M32 13L48 22.5L32 32L16 22.5L32 13Z" fill="#FAF9F5" />
+  <path d="M16 22.5L32 32V51L16 40.5V22.5Z" fill="#D1FAE5" />
+  <path d="M48 22.5L32 32V51L48 40.5V22.5Z" fill="#6EE7B7" />
+  <path
+    d="M32 18V45M23 27.5L32 32L41 27.5"
+    stroke="#047857"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

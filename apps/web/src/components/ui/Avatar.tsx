@@ -63,8 +63,8 @@ const slotStyles: Record<1 | 2 | 3 | 4 | 5, string> = {
 };
 
 const sizeStyles: Record<AvatarSize, { container: string; text: string }> = {
-  xs: { container: 'w-[22px] h-[22px]', text: 'text-[10px]' },
-  sm: { container: 'w-[26px] h-[26px]', text: 'text-[11px]' },
+  xs: { container: 'w-[22px] h-[22px]', text: 'text-xs' },
+  sm: { container: 'w-[26px] h-[26px]', text: 'text-xs' },
   md: { container: 'w-[34px] h-[34px]', text: 'text-sm font-semibold' },
   lg: { container: 'w-[56px] h-[56px]', text: 'text-xl font-bold' },
   xl: { container: 'w-[64px] h-[64px]', text: 'text-2xl font-bold' }

@@ -297,15 +297,21 @@ body:has([data-chat-page]) footer {
  * ============================================================================= */
 
 /* Global Keyboard Focus-Visible Normalization (#185, #173) */
-:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible,
+:where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--cf-focus);
+  outline-offset: 2px;
+  border-radius: var(--cf-radius-sm);
+}
+
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 summary:focus-visible,
-[tabindex]:focus-visible {
-  outline: 2px solid var(--cf-focus);
+[role="button"]:focus-visible {
+  outline: 2px solid var(--cf-accent, #047857);
   outline-offset: 2px;
   border-radius: var(--cf-radius-sm);
 }

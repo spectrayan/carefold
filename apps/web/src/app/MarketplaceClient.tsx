@@ -228,7 +228,7 @@ export function MarketplaceClient({
       case 'admin':
         return 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800';
       case 'education':
-        return 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800';
+        return 'bg-stone-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-stone-200 dark:border-zinc-700';
       case 'clinical_assist':
         return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800';
       default:
@@ -237,7 +237,7 @@ export function MarketplaceClient({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* First-Run Setup Check Card (#99) */}
       <FirstRunSetupCard />
 

@@ -1,0 +1,45 @@
+{
+  "locale": "es-ES",
+  "direction": "ltr",
+  "safety": {
+    "disclaimer_banner": "Los agentes de Carefold brindan asistencia educativa de bienestar y navegación de atención médica. No es un médico ni atención de emergencia. No cambie su medicación sin consultar al médico que la recetó.",
+    "emergency_directive": "Si experimenta una emergencia médica, deje de usar este asistente y llame inmediatamente al 112 o al 911 (o al 988 para apoyo en crisis) o acuda al servicio de urgencias más cercano.",
+    "non_clinical_notice": "Solo con fines informativos y de preparación para consultas. Verifique siempre las decisiones clínicas con un profesional sanitario titulado."
+  },
+  "navigation": {
+    "home": "Inicio",
+    "timeline": "Cronología",
+    "vitals": "Signos vitales",
+    "medications": "Medicamentos",
+    "appointments": "Citas",
+    "notes": "Notas",
+    "documents": "Documentos",
+    "preventive": "Cuidado preventivo",
+    "connectors": "Fuentes conectadas",
+    "settings": "Configuración",
+    "profiles": "Perfiles familiares"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "loading": "Cargando...",
+    "search_placeholder": "Buscar notas clínicas, análisis y citas...",
+    "language": "Idioma",
+    "profile_greeting": "Hola, {name}"
+  },
+  "preventive": {
+    "title": "Cuidado preventivo y vacunas",
+    "due_summary": "{count, plural, zero {Sin controles pendientes} one {# control pendiente} other {# controles pendientes}}",
+    "due_count": "{count, plural, zero {Sin controles pendientes} one {# control pendiente} other {# controles pendientes}}",
+    "status_overdue": "Vencido",
+    "status_due_soon": "Próximo a vencer",
+    "status_up_to_date": "Al día"
+  },
+  "errors": {
+    "not_found": "No se encontró el recurso solicitado.",
+    "invalid_locale": "Etiqueta de configuración regional BCP 47 no válida o no admitida.",
+    "unauthorized": "No tiene permiso para acceder a este perfil."
+  }
+}

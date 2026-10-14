@@ -19,7 +19,7 @@
 
 Standard: Spector Living Project Context Standard  
 Target System: Carefold Healthcare AI Agent Marketplace & Local Runtime  
-Last Updated: 2026-10-02  
+Last Updated: 2026-10-14  
 Status: Active / Verified against Codebase  
 
 ---
@@ -208,3 +208,103 @@ Carefold enforces security through defense-in-depth:
    - The backend returns `403` for `GET /api/agents/{id}` and refuses `POST /api/chat` for `clinical_assist` agents unless `allow_clinical=true`.
    - The web client never assumes consent: per-agent consent is granted through `ClinicalConsentDialog`, stored only in browser storage (`carefold_clinical_consent_v1`, managed by `apps/web/src/lib/clinicalConsent.ts`), and read at request time. The Next.js proxy routes default `allow_clinical` to `false`.
    - `AgentSummary` (from `GET /api/agents`) includes the agent's `forbidden` list so the dialog can render it before consent.
+
+---
+
+## 6. Carefold Autonomy & Multi-Profile Household Architecture (`AU-01`–`AU-81`)
+
+Carefold extends its local-first runtime into a full multi-profile household care organizer and policy-gated autonomous execution engine across Milestones M1–M6 (`AU-01`–`AU-81`):
+
+### 6.1 Multi-User Household Profiles, Envelope Encryption & Content-Addressed Storage
+
+- **Multi-User & Household Profiles**:
+  - Relational identity and RBAC tables (`users`, `sessions` / `user_sessions`, `profiles`, `profile_access`, `profile_consents`, `viewer_invites`) support household stewardship across `self`, `child`, `parent`, `spouse`, and `dependent` profiles.
+  - Access control enforces fail-closed profile scoping (`owner`, `caregiver`, `viewer`) on every API route and tool invocation (`ADR-0007`), with COPPA guardian-only connector guards for under-13 pediatric profiles (`E11.6`).
+  - Dual operational modes (`ADR-0006`): `Mode L` (local-first desktop bound to `127.0.0.1` with SQLite) and `Mode S` (multi-user self-hosted server with PostgreSQL and OIDC/Argon2id authentication).
+- **Per-Profile Envelope Encryption (`profile_keys`, `ADR-0005`)**:
+  - A 256-bit Master Key (`KEK`, resolved from OS keyring, cloud KMS, file, or environment) wraps and derives per-profile AES-256-GCM Data Encryption Keys (`DEKs`) via `HKDF-SHA256` (`carefold/vault/`).
+  - Encrypted `credentials` bind authenticated additional data (`aad_binding = carefold:p:{profile_id}:c:{connection_id}`) and support key rotation (`dek_version`) and instant cryptographic erasure (crypto-shredding) upon profile deletion (`Titan S2`).
+- **Content-Addressed Storage (`attachments`, `profile_attachments`, `ADR-0007`)**:
+  - Patient uploads are stored in a per-profile partitioned Content-Addressed Storage (CAS) layout (`<carefold_home>/data/files/<user_id>/<profile_id>/<sha256[:2]>/<sha256>`), eliminating path traversal vulnerabilities and preventing cross-tenant deduplication side-channels.
+
+### 6.2 Clinical Domain Records & Organizer Schema
+
+- **FHIR R4 Clinical Repository (`health_resources`)**:
+  - Stores validated HL7 FHIR R4 / R4B JSONB payloads (`Observation`, `Condition`, `MedicationRequest`, `MedicationStatement`, `AllergyIntolerance`, `Immunization`, `Encounter`, `DocumentReference`, `DiagnosticReport`) indexed by profile, category, canonical `system`/`code` (`LOINC`, `SNOMED CT`, `RxNorm`, `CVX`, `ICD-10-CM`), and effective date.
+- **Care Coordination & Household Workflows**:
+  - `appointments` & `reminders`: Clinical visit scheduling, pre-visit prep checklists, and timezone-aware (`TIMESTAMPTZ` + IANA timezone) notification queues.
+  - `preventive_records`: Deterministic preventive care rules engine tracking age/sex-specific USPSTF, CDC, and ACIP screening and immunization intervals.
+  - `school_forms` & `school_ics_feeds`: Pediatric/camp health form autofill with field-level provenance (`AU-39`) and one-way `.ics` school calendar ingestion (`AU-61`).
+  - `email_drafts`: Local-first care correspondence drafting (`draft_care_email`) stored offline before any optional external send approval.
+  - `import_batches`: Idempotent clinical importers (`carefold/importers/`) supporting Apple Health `export.xml`, HL7 C-CDA XML, FHIR R4 Bundles, CSV vitals, and offline RFC 7515 JWS-verified SMART Health Cards (`.smart-health-card`, `AU-77`).
+  - `companion_devices`: Paired iOS HealthKit (`AU-62`) and Android Health Connect (`AU-80`) mobile companions using SHA-256 token digests and pinned TLS certificate fingerprints.
+
+### 6.3 Scoped Connectors, Provenance & Taint Tracking
+
+- **Scoped Connector SDK (`libs/connectors/`)**:
+  - Declarative YAML manifests (`ConnectorManifest`) and `@runtime_checkable` `Connector` implementations (`streams`, `fetch`, `map`, `tools`) enforced by `ScopedHttp` egress allowlisting (`allowed_hosts`, HTTPS-only, RFC 1918 / link-local SSRF blocking).
+  - State persisted across `connections`, `credentials`, `consent_grants` (granular `connector × profile × category × purpose` matrix), `sync_runs`, `mcp_tool_pins`, `routines`, and `jobs`.
+- **Starter & Coordinated v2 Connectors**:
+  - First-party connectors: **Withings** (`withings`), **Google Calendar** (`google-calendar`), **CalDAV** (`caldav`), **Epic SMART on FHIR** (`epic-smart`), and **Curated Gmail MCP** (`gmail-mcp`: `gmail_search_messages`, `gmail_get_thread`, `gmail_send_message`).
+  - Coordinated v2 connectors (`AU-70`–`AU-76`): **Oracle Health (Cerner)** (`oracle-health`), **athenahealth** (`athenahealth`), **CMS Blue Button 2.0** (`cms-blue-button`), **Oura Ring** (`oura`), **Google Health / Fitbit** (`google-health`), **Microsoft 365 Graph** (`microsoft-graph`), and **Zocdoc / SMART Scheduling Links** (`zocdoc`).
+  - **Stateless OAuth 2.0 PKCE Callback Bounce Relay (`ADR-0008`, `AU-70`)**: Verifies `<= 120s` TTL HMAC-SHA256 relay tickets and single-use nonces while storing zero tokens and zero PHI on the relay.
+  - **Remote MCP Tool Schema Pinning (`mcp_tool_pins`, `Titan S7`, `AU-57`)**: Computes canonical SHA-256 digests over `(name, description, inputSchema)` and halts execution (`409 Conflict` / `drift_blocked`) on upstream schema drift.
+
+### 6.4 4-Tier Tool Execution Gate, Taint Propagation & Hash-Chained Audit Log
+
+- **4-Tier Tool Execution Gate (`ADR-0004`, `carefold/engine/tool_exec.py`)**:
+  - Every tool declares a deterministic risk tier—`read`, `write_local`, `write_external`, or `irreversible`—evaluated against the active autonomy level (`A0` Manual, `A1` Assisted, `A2` Autonomous).
+  - `irreversible` actions (such as `gmail_send_message` or external appointment booking confirmation) **always** halt execution and require a single-use human `Approval` (`approvals` table) cryptographically bound to the exact `payload_hash`, even under `A2`.
+- **Monotone Taint Propagation (`UntrustedResult`)**:
+  - Any tool returning external or unverified content (`trust_level="untrusted"`, e.g., EHR clinical narratives, web search snippets, or email bodies) wraps its output in `UntrustedResult` and fences content in `<untrusted_external_content>`. Once a turn is tainted, all `write_external` and `irreversible` calls automatically escalate to require explicit human approval.
+- **Tamper-Evident Audit Hash Chain (`audit_events`, `AU-78`)**:
+  - Every tool call, policy decision, approval consumption, and connector sync is recorded in `audit_events` linked via a per-profile SHA-256 hash chain (`prev_hash` $\rightarrow$ `entry_hash` anchored at `GENESIS`) and verified via `verify_profile_audit_chain()` (`carefold/audit/hash_chain.py`).
+
+### 6.5 Hybrid Retrieval (`SearchIndex`) & 3-Tier Memory Consolidation
+
+- **Hybrid Retrieval (`chunks`, `chunks_fts`, `chunks_vec`, `ADR-0007`)**:
+  - `ClinicalChunker` segments documents into structure-aware `chunks` indexed simultaneously in SQLite FTS5 (`chunks_fts` BM25 lexical search) and `sqlite-vec` (`chunks_vec` dense vector embeddings).
+  - Retrieval combines lexical and semantic rankings via **Reciprocal Rank Fusion (`RRF`)**, **Maximal Marginal Relevance (`MMR`)** diversity filtering, and optional local cross-encoder reranking (`carefold/search/reranker.py`, `AU-79`).
+- **3-Tier Memory Consolidation**:
+  - Background consolidation promotes high-salience `working` turn state into `episodic` session memories and distills durable clinical facts into `semantic` profile records with exponential time-decay weighting.
+
+---
+
+## 7. End-to-End Internationalization & Multilingual Safety (`i18n` / `l10n`, `ADR-0009`)
+
+Carefold implements a five-layer, standards-based internationalization architecture across `backend/src/carefold/i18n/` and `apps/web/src/i18n/`:
+
+1. **IETF BCP 47 Locale Tags & RFC 4647 Negotiation (`carefold.i18n.locale`)**:
+   - First-class supported locales: `en-US` (English), `es-ES` (Spanish — `Español`), `fr-FR` (French — `Français`), `hi-IN` (Hindi — `हिन्दी`), and `ar-SA` (Arabic — `العربية`, `dir="rtl"`).
+   - Deterministic 4-level locale lookup (`negotiate_locale`): `Profile.preferred_locale` $\triangleright$ `User.preferred_locale` $\triangleright$ HTTP `Accept-Language` (`RFC 4647` quality-weighted matching with primary-subtag fallback) $\triangleright$ `en-US`.
+2. **Unicode UAX #15 `NFC` Normalization & Provenance Storage (`0010_i18n_and_locale_storage`)**:
+   - All user-authored text and search chunks pass through `normalize_text_nfc()` (`unicodedata.normalize("NFC", text)`) before persistence, SHA-256 content addressing, and SQLite FTS5 indexing.
+   - Relational tables store explicit locale preferences and document provenance (`users.preferred_locale`, `profiles.preferred_locale`, `notes.locale`, `attachments.locale`, `health_resources.locale`).
+3. **HL7 FHIR R4 Language-Neutral Clinical Coding**:
+   - Clinical `system` and `code` fields remain strictly language-neutral (`LOINC`, `SNOMED CT`, `RxNorm`, `CVX`, `ICD-10-CM`), while human-facing display labels and summaries localize per profile.
+4. **ICU MessageFormat Catalogs & Multilingual Emergency Red Flags (`carefold.i18n.catalog`)**:
+   - JSON translation catalogs (`backend/src/carefold/resources/locales/*.json`) support ICU variable interpolation and plural rules (`zero`, `one`, `other`).
+   - Deterministic offline safety guardrails provide localized non-clinical disclaimers (`get_localized_disclaimer`), localized emergency contact directives (`get_localized_emergency_directive`: `911`, `988`, `112`), and multilingual acute red-flag detection (`detect_multilingual_red_flag`) across English, Spanish, French, Hindi, and Arabic.
+5. **Bidirectional (`LTR` / `RTL`) Layout & `Intl` Formatting (`apps/web/src/i18n/`)**:
+   - Client formatting uses native `Intl.DateTimeFormat`, `Intl.NumberFormat`, `Intl.RelativeTimeFormat`, and `Intl.PluralRules`.
+   - Document direction (`dir="ltr"` / `dir="rtl"`) and W3C CSS Logical Properties (`ms-*`, `me-*`, `ps-*`, `pe-*`, `inset-inline-*`, `text-start`) mirror the application shell automatically for RTL locales (`ar-SA`) while meeting WCAG 2.1 AA contrast and keyboard accessibility standards.
+
+---
+
+## 8. Living ADRs & Compliance Documentation Reference
+
+| Document / Record | Path | Scope |
+|---|---|---|
+| **ADR-0001** | `docs/adr/0001-orchestrator-driven-agent-architecture.md` | 5-phase LangGraph orchestrator, two-hop routing, and safety guardrails. |
+| **ADR-0002** | `docs/adr/0002-hexagonal-memory-and-catalog-ports.md` | Hexagonal `MemoryPort` and `CatalogPort` interfaces and SQLite FTS5 adapters. |
+| **ADR-0003** | `docs/adr/0003-progressive-disclosure-skill-context-management.md` | Progressive disclosure skill loading and token budget governance. |
+| **ADR-0004** | `docs/adr/0004-policy-approvals-and-resume.md` | 4-tier policy gate, monotone taint propagation, and single-use `Approval` tokens. |
+| **ADR-0005** | `docs/adr/0005-vault-threat-model-and-kek-sources.md` | Envelope encryption keyring vault, `HKDF-SHA256` per-profile DEKs, and KEK sources. |
+| **ADR-0006** | `docs/adr/0006-deployment-modes-and-requirement-tiers.md` | Mode L (Local Desktop) vs Mode S (Server) and Tier A / Tier S invariants. |
+| **ADR-0007** | `docs/adr/0007-content-addressed-storage-and-hybrid-search.md` | Per-profile partitioned CAS layout and hybrid FTS5 + `sqlite-vec` `SearchIndex`. |
+| **ADR-0008** | `docs/adr/0008-oauth-relay-and-stateless-callback.md` | Stateless OAuth 2.0 PKCE callback bounce relay (`<= 120s` TTL) with zero token custody. |
+| **ADR-0009** | `docs/adr/0009-internationalization-and-multilingual-architecture.md` | 5-layer i18n architecture, BCP 47 / RFC 4647 negotiation, UAX #15 `NFC`, and RTL UI. |
+| **Connector Authoring** | `docs/connectors/authoring.md` | Scoped Connector SDK (`libs/connectors`), FHIR R4 validation, and taint rules. |
+| **OAuth, Threat Model & ASVS L2/CASA Pack** | `docs/compliance/google-verification-and-casa.md` | Google OAuth scope least-privilege matrix, OWASP ASVS L2 (`asvs-l2-checklist.md`) / CASA Tier 2/3 controls, and threat model (`threat-model.md`). |
+| **Legal, Regulatory & Privacy Readiness Pack** | `docs/compliance/legal-and-regulatory-pack.md` | HIPAA Safe Harbor & MHMDA privacy readiness (`hipaa-readiness.md`), consent withdrawal & data erasure (`dpdp-readiness.md`), non-clinical wellness positioning (`wellness-positioning.md`), FTC HBNR runbook, and COPPA under-13 safeguards. |
+

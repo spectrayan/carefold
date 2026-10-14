@@ -401,7 +401,7 @@ export function HomeDashboardClient({
                   aria-hidden="true"
                   className="w-14 h-14 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50 dark:bg-emerald-950/40 flex flex-col items-center justify-center shrink-0 shadow-sm"
                 >
-                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
                     {appointment.monthShort}
                   </span>
                   <span className="text-xl font-bold text-[var(--cf-fg)] leading-none">
@@ -477,7 +477,7 @@ export function HomeDashboardClient({
                         className={cn(
                           'w-4 h-4 rounded mt-0.5 flex items-center justify-center shrink-0 border transition-colors',
                           item.isDone
-                            ? 'bg-emerald-600 border-emerald-600 text-white'
+                            ? 'bg-emerald-700 border-emerald-700 text-white'
                             : 'border-[var(--cf-border-strong)] bg-[var(--cf-surface)]'
                         )}
                       >
@@ -513,7 +513,7 @@ export function HomeDashboardClient({
                 </div>
 
                 {appointment.savedToNotesTimestamp && (
-                  <span className="text-[11px] text-[var(--cf-fg-subtle)]">
+                  <span className="text-xs text-[var(--cf-fg-subtle)]">
                     {appointment.savedToNotesTimestamp}
                   </span>
                 )}
@@ -572,7 +572,7 @@ export function HomeDashboardClient({
 
           {/* Quick Starters */}
           <div className="space-y-2 mt-4 pt-3 border-t border-[var(--cf-border)]">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--cf-fg-subtle)] block">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--cf-fg-subtle)] block">
               Suggested starters
             </span>
             {[
@@ -638,15 +638,15 @@ export function HomeDashboardClient({
                 {/* Financial KV Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 rounded-xl bg-[var(--cf-surface-2)] text-xs border border-[var(--cf-border)] mt-2">
                   <div>
-                    <span className="text-[10px] text-[var(--cf-fg-subtle)] block">Deductible</span>
+                    <span className="text-xs text-[var(--cf-fg-subtle)] block">Deductible</span>
                     <span className="font-semibold text-[var(--cf-fg)]">$450 / $1,500</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[var(--cf-fg-subtle)] block">Copay</span>
+                    <span className="text-xs text-[var(--cf-fg-subtle)] block">Copay</span>
                     <span className="font-semibold text-[var(--cf-fg)]">$35 Specialist</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[var(--cf-fg-subtle)] block">You may owe</span>
+                    <span className="text-xs text-[var(--cf-fg-subtle)] block">You may owe</span>
                     <span className="font-bold text-amber-700 dark:text-amber-400">{paperwork.patientOwedAmount}</span>
                   </div>
                 </div>
@@ -720,13 +720,13 @@ export function HomeDashboardClient({
                       ))}
                     </div>
 
-                    <span className="text-[11px] text-[var(--cf-fg-subtle)] font-semibold w-6 text-right shrink-0">
+                    <span className="text-xs text-[var(--cf-fg-subtle)] font-semibold w-6 text-right shrink-0">
                       {routine.summaryCount}
                     </span>
                   </div>
                 ))}
 
-                <p className="text-[11px] text-[var(--cf-fg-subtle)] mt-3 pt-2 border-t border-[var(--cf-border)]">
+                <p className="text-xs text-[var(--cf-fg-subtle)] mt-3 pt-2 border-t border-[var(--cf-border)]">
                   Tracking only — no judgement on readings.
                 </p>
               </div>
@@ -776,7 +776,7 @@ export function HomeDashboardClient({
                     <div className="font-semibold text-[var(--cf-fg)] truncate">
                       {note.title}
                     </div>
-                    <div className="text-[11px] text-[var(--cf-fg-subtle)] mt-0.5">
+                    <div className="text-xs text-[var(--cf-fg-subtle)] mt-0.5">
                       {note.authorAgentTitle} · {note.dateFormatted}
                     </div>
                   </Link>

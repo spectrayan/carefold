@@ -1,0 +1,45 @@
+{
+  "locale": "en-US",
+  "direction": "ltr",
+  "safety": {
+    "disclaimer_banner": "Carefold agents provide educational wellness and care navigation assistance. Not a clinician and not emergency care. Do not change medication without the prescribing clinician.",
+    "emergency_directive": "If you are experiencing a medical emergency, stop using this assistant and call 911 (or 988 for crisis support) or go to the nearest emergency department immediately.",
+    "non_clinical_notice": "For informational and care preparation purposes only. Always verify clinical decisions with a licensed healthcare professional."
+  },
+  "navigation": {
+    "home": "Home",
+    "timeline": "Timeline",
+    "vitals": "Vitals",
+    "medications": "Medications",
+    "appointments": "Appointments",
+    "notes": "Notes",
+    "documents": "Documents",
+    "preventive": "Preventive Care",
+    "connectors": "Connected Sources",
+    "settings": "Settings",
+    "profiles": "Family Profiles"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "search_placeholder": "Search clinical notes, labs, and appointments...",
+    "language": "Language",
+    "profile_greeting": "Hello, {name}"
+  },
+  "preventive": {
+    "title": "Preventive Care & Immunizations",
+    "due_summary": "{count, plural, zero {No items due} one {# item due} other {# items due}}",
+    "due_count": "{count, plural, zero {No items due} one {# item due} other {# items due}}",
+    "status_overdue": "Overdue",
+    "status_due_soon": "Due Soon",
+    "status_up_to_date": "Up to Date"
+  },
+  "errors": {
+    "not_found": "The requested resource was not found.",
+    "invalid_locale": "Unsupported or malformed BCP 47 locale tag.",
+    "unauthorized": "You do not have permission to access this profile."
+  }
+}

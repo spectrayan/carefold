@@ -132,10 +132,12 @@ describe('ChatClient Scroll Tracking & Viewport Integration', () => {
     }
   });
 
-  it('uses dynamic viewport height 100dvh and overflow-hidden on outer card', () => {
+  it('uses clean flex container sizing and overflow-hidden on outer card', () => {
     const { container } = render(<ChatClient initialAgents={mockAgents} />);
     const outerCard = container.querySelector('.flex.flex-col');
-    expect(outerCard?.className).toContain('h-[calc(100dvh-120px)]');
+    expect(outerCard?.className).toContain('h-full');
+    expect(outerCard?.className).toContain('flex-1');
+    expect(outerCard?.className).toContain('min-h-0');
     expect(outerCard?.className).toContain('overflow-hidden');
     expect(outerCard?.className).not.toContain('100vh');
   });

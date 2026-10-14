@@ -294,19 +294,19 @@ export function SchoolFormPrefillSheet({
           </div>
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div className="p-2 rounded-lg bg-[var(--cf-surface)] border border-[var(--cf-border)]">
-              <div className="text-[10px] text-[var(--cf-fg-muted)]">Height</div>
+              <div className="text-xs text-[var(--cf-fg-muted)]">Height</div>
               <div className="font-bold text-[var(--cf-fg)]">
                 {draft?.latest_vitals?.height || '—'}
               </div>
             </div>
             <div className="p-2 rounded-lg bg-[var(--cf-surface)] border border-[var(--cf-border)]">
-              <div className="text-[10px] text-[var(--cf-fg-muted)]">Weight</div>
+              <div className="text-xs text-[var(--cf-fg-muted)]">Weight</div>
               <div className="font-bold text-[var(--cf-fg)]">
                 {draft?.latest_vitals?.weight || '—'}
               </div>
             </div>
             <div className="p-2 rounded-lg bg-[var(--cf-surface)] border border-[var(--cf-border)]">
-              <div className="text-[10px] text-[var(--cf-fg-muted)]">BP</div>
+              <div className="text-xs text-[var(--cf-fg-muted)]">BP</div>
               <div className="font-bold text-[var(--cf-fg)]">
                 {draft?.latest_vitals?.blood_pressure || '—'}
               </div>

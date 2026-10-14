@@ -176,7 +176,7 @@ export function AppointmentCard({
               : 'bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-900/60 text-blue-700 dark:text-blue-300'
           )}
         >
-          <span className="text-[10px] uppercase tracking-wider">{monthStr}</span>
+          <span className="text-xs uppercase tracking-wider">{monthStr}</span>
           <span className="text-xl leading-none mt-0.5">{dayStr}</span>
         </div>
 
@@ -299,7 +299,7 @@ export function AppointmentCard({
               type="button"
               data-testid="mark-confirmed-btn"
               onClick={() => onConfirmAppointment(appointment.id)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold transition-colors"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Confirm Visit</span>

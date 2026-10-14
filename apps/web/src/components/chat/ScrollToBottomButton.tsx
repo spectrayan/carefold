@@ -60,7 +60,7 @@ export function ScrollToBottomButton({
         {hasUnread && (
           <span
             data-testid="unread-counter-badge"
-            className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 bg-blue-600 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-sm animate-pulse"
+            className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 bg-emerald-700 dark:bg-emerald-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-sm animate-pulse"
           >
             {badgeText}
           </span>

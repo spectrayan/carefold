@@ -109,7 +109,7 @@ export function McpPinsAndRoutinesPanel({
           </div>
           <span
             data-testid="mcp-taint-policy-banner"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60"
           >
             <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
             All Remote MCP Outputs Tagged Untrusted (Taint Active)
@@ -139,7 +139,7 @@ export function McpPinsAndRoutinesPanel({
                         <h4 className="text-sm font-bold font-mono text-[var(--cf-fg)]">
                           {pin.tool_name}
                         </h4>
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[var(--cf-surface-2)] border border-[var(--cf-border)] text-[var(--cf-fg)]">
+                        <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-[var(--cf-surface-2)] border border-[var(--cf-border)] text-[var(--cf-fg)]">
                           Tier {pin.risk_tier}
                         </span>
                       </div>
@@ -153,7 +153,7 @@ export function McpPinsAndRoutinesPanel({
                     <span
                       data-testid={`mcp-pin-status-${pin.id}`}
                       className={cn(
-                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border',
+                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border',
                         isDriftBlocked
                           ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60'
                           : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
@@ -168,7 +168,7 @@ export function McpPinsAndRoutinesPanel({
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span
                       data-testid={`mcp-pin-hash-${pin.id}`}
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[var(--cf-surface-2)] border border-[var(--cf-border)] font-mono text-[var(--cf-fg-muted)]"
@@ -186,7 +186,7 @@ export function McpPinsAndRoutinesPanel({
 
                   {isDriftBlocked && (
                     <div className="pt-2 border-t border-[var(--cf-border)] flex items-center justify-between gap-2">
-                      <span className="text-[11px] text-rose-700 dark:text-rose-300 font-medium">
+                      <span className="text-xs text-rose-700 dark:text-rose-300 font-medium">
                         Upstream descriptor hash changed — execution blocked.
                       </span>
                       <Button
@@ -251,7 +251,7 @@ export function McpPinsAndRoutinesPanel({
                       <span
                         data-testid={`routine-status-badge-${routine.id}`}
                         className={cn(
-                          'px-2 py-0.5 rounded-full text-[11px] font-semibold border',
+                          'px-2 py-0.5 rounded-full text-xs font-semibold border',
                           routine.status === 'active'
                             ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
                             : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'
@@ -261,14 +261,14 @@ export function McpPinsAndRoutinesPanel({
                       </span>
                       <span
                         data-testid={`routine-expiry-badge-${routine.id}`}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
                       >
                         <Clock className="w-3 h-3 shrink-0" />
                         Expires in {daysLeft}d (&le; 90 days max)
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--cf-fg-muted)] font-mono">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--cf-fg-muted)] font-mono">
                       <span>Tool: {routine.tool_name}</span>
                       <span>RRULE: {routine.rrule}</span>
                       <span>TZ: {routine.timezone}</span>
@@ -320,7 +320,7 @@ export function McpPinsAndRoutinesPanel({
               <div>
                 <label
                   htmlFor="routine-name-input"
-                  className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                  className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
                 >
                   Routine Name
                 </label>
@@ -337,7 +337,7 @@ export function McpPinsAndRoutinesPanel({
               <div>
                 <label
                   htmlFor="routine-tool-input"
-                  className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                  className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
                 >
                   Pinned Tool Name (A2 Eligible)
                 </label>
@@ -354,7 +354,7 @@ export function McpPinsAndRoutinesPanel({
               <div>
                 <label
                   htmlFor="routine-expiry-days-input"
-                  className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                  className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
                 >
                   Expiry Days (Max 90)
                 </label>
@@ -377,7 +377,7 @@ export function McpPinsAndRoutinesPanel({
               <div>
                 <label
                   htmlFor="routine-conn-input"
-                  className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                  className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
                 >
                   Connection ID
                 </label>
@@ -394,7 +394,7 @@ export function McpPinsAndRoutinesPanel({
               <div>
                 <label
                   htmlFor="routine-rrule-input"
-                  className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                  className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
                 >
                   Schedule RRULE
                 </label>
@@ -411,7 +411,7 @@ export function McpPinsAndRoutinesPanel({
               <div>
                 <label
                   htmlFor="routine-tz-input"
-                  className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                  className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
                 >
                   IANA Timezone
                 </label>

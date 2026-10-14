@@ -136,7 +136,7 @@ export function CoordinatedV2Panel({
               Verifies compact JWS ES256 cryptographic signatures and raw DEFLATE FHIR bundles before staging into your local profile.
             </p>
           </div>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
             <QrCode className="w-3.5 h-3.5 shrink-0" />
             JWS ES256 + Raw DEFLATE
           </span>
@@ -152,7 +152,7 @@ export function CoordinatedV2Panel({
               <div>
                 <label
                   htmlFor="shc-filename-input"
-                  className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                  className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
                 >
                   Source Filename
                 </label>
@@ -169,7 +169,7 @@ export function CoordinatedV2Panel({
               <div className="md:col-span-2">
                 <label
                   htmlFor="shc-payload-input"
-                  className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                  className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
                 >
                   Paste <code>.smart-health-card</code> JSON or{' '}
                   <code>shc:/</code> QR URI
@@ -208,7 +208,7 @@ export function CoordinatedV2Panel({
                   <span
                     data-testid="shc-verification-badge"
                     className={cn(
-                      'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border',
+                      'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border',
                       shcResult.verification_status === 'verified'
                         ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
                         : shcResult.verification_status === 'unverified_issuer'
@@ -235,7 +235,7 @@ export function CoordinatedV2Panel({
                   </span>
                   <span
                     data-testid="shc-issuer-uri"
-                    className="font-mono text-[11px] text-[var(--cf-fg-muted)]"
+                    className="font-mono text-xs text-[var(--cf-fg-muted)]"
                   >
                     Issuer: {shcResult.issuer}
                   </span>
@@ -243,7 +243,7 @@ export function CoordinatedV2Panel({
 
                 <span
                   data-testid="shc-summary-counts"
-                  className="text-[11px] font-semibold text-[var(--cf-fg)]"
+                  className="text-xs font-semibold text-[var(--cf-fg)]"
                 >
                   Staged: {shcResult.summary.immunisations} immunisations,{' '}
                   {shcResult.summary.observations} observations
@@ -263,7 +263,7 @@ export function CoordinatedV2Panel({
                       <span className="font-medium text-[var(--cf-fg)]">
                         {rec.display} ({rec.resource_type})
                       </span>
-                      <span className="text-[11px] font-mono text-[var(--cf-fg-muted)]">
+                      <span className="text-xs font-mono text-[var(--cf-fg-muted)]">
                         {rec.source_display}
                       </span>
                     </div>
@@ -291,7 +291,7 @@ export function CoordinatedV2Panel({
           </div>
           <span
             data-testid="zocdoc-irreversible-badge"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60"
           >
             <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
             Irreversible Action — Per-Booking Human Approval Required (Even in A2)
@@ -307,7 +307,7 @@ export function CoordinatedV2Panel({
             <div className="flex-1 min-w-[200px]">
               <label
                 htmlFor="smart-slots-specialty-input"
-                className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
               >
                 Specialty Filter
               </label>
@@ -359,7 +359,7 @@ export function CoordinatedV2Panel({
                       <span
                         data-testid={`smart-slot-calendar-badge-${slot.slot_id}`}
                         className={cn(
-                          'px-2 py-0.5 rounded-full text-[10px] font-semibold border',
+                          'px-2 py-0.5 rounded-full text-xs font-semibold border',
                           slot.fits_calendar
                             ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
                             : 'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
@@ -367,11 +367,11 @@ export function CoordinatedV2Panel({
                       >
                         {slot.fits_calendar ? 'Fits Calendar' : 'Calendar Conflict'}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-[var(--cf-surface)] border border-[var(--cf-border)] text-[10px] font-mono text-[var(--cf-fg-muted)]">
+                      <span className="px-2 py-0.5 rounded bg-[var(--cf-surface)] border border-[var(--cf-border)] text-xs font-mono text-[var(--cf-fg-muted)]">
                         {slot.source}
                       </span>
                     </div>
-                    <p className="text-[11px] font-mono text-[var(--cf-fg-muted)]">
+                    <p className="text-xs font-mono text-[var(--cf-fg-muted)]">
                       {slot.location} • {slot.start_time} → {slot.end_time}
                     </p>
                   </div>
@@ -410,13 +410,13 @@ export function CoordinatedV2Panel({
                   Zocdoc Booking Staged for Approval: {zocdocPreview.provider_name} (
                   {zocdocPreview.specialty})
                 </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-rose-100 dark:bg-rose-900/50 border border-rose-300 dark:border-rose-700">
+                <span className="px-2 py-0.5 rounded text-xs font-mono font-bold uppercase bg-rose-100 dark:bg-rose-900/50 border border-rose-300 dark:border-rose-700">
                   Risk Tier: {zocdocPreview.risk_tier} • {zocdocPreview.status}
                 </span>
               </div>
               <p
                 data-testid="zocdoc-preview-hash"
-                className="text-[11px] font-mono text-rose-800 dark:text-rose-300"
+                className="text-xs font-mono text-rose-800 dark:text-rose-300"
               >
                 Payload SHA-256: {zocdocPreview.payload_hash}
               </p>
@@ -441,7 +441,7 @@ export function CoordinatedV2Panel({
           </div>
           <span
             data-testid="android-health-connect-companion-badge"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
           >
             <Smartphone className="w-3.5 h-3.5 shrink-0" />
             Android Health Connect Companion
@@ -471,13 +471,13 @@ export function CoordinatedV2Panel({
                     <h4 className="text-sm font-bold text-[var(--cf-fg)]">
                       {conn.name}
                     </h4>
-                    <span className="text-[11px] font-mono text-[var(--cf-fg-muted)]">
+                    <span className="text-xs font-mono text-[var(--cf-fg-muted)]">
                       {conn.id} • {conn.category}
                     </span>
                   </div>
                   <span
                     className={cn(
-                      'px-2 py-0.5 rounded text-[10px] font-semibold border',
+                      'px-2 py-0.5 rounded text-xs font-semibold border',
                       conn.trust_level === 'trusted'
                         ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
                         : 'bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
@@ -491,7 +491,7 @@ export function CoordinatedV2Panel({
                   {conn.allowed_hosts.map((host) => (
                     <span
                       key={host}
-                      className="inline-flex items-center gap-1 text-[10px] font-mono text-[var(--cf-fg-muted)]"
+                      className="inline-flex items-center gap-1 text-xs font-mono text-[var(--cf-fg-muted)]"
                     >
                       <Globe className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
                       {host}
@@ -520,7 +520,7 @@ export function CoordinatedV2Panel({
           </div>
           <span
             data-testid="os-service-loopback-notice"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
           >
             <Terminal className="w-3.5 h-3.5 shrink-0" />
             Bound Strictly to 127.0.0.1 Loopback
@@ -539,7 +539,7 @@ export function CoordinatedV2Panel({
                   <span
                     data-testid="audit-chain-status-badge"
                     className={cn(
-                      'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border',
+                      'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border',
                       auditVerification.valid
                         ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
                         : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60'
@@ -562,7 +562,7 @@ export function CoordinatedV2Panel({
               </div>
 
               {auditVerification ? (
-                <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-[var(--cf-fg-muted)]">
+                <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-[var(--cf-fg-muted)]">
                   <span data-testid="audit-chain-checked-count">
                     Checked events: {auditVerification.checked_count}
                   </span>
@@ -618,16 +618,16 @@ export function CoordinatedV2Panel({
                   <h4 className="text-xs font-bold text-[var(--cf-fg)]">
                     {getPlatformDisplayLabel(desc.platform)}
                   </h4>
-                  <span className="text-[10px] font-mono text-[var(--cf-fg-muted)]">
+                  <span className="text-xs font-mono text-[var(--cf-fg-muted)]">
                     {desc.filename}
                   </span>
                 </div>
-                <p className="text-[11px] font-mono text-[var(--cf-fg-muted)] break-all">
+                <p className="text-xs font-mono text-[var(--cf-fg-muted)] break-all">
                   Path: {desc.install_path}
                 </p>
                 <div
                   data-testid={`os-service-cmd-${desc.platform}`}
-                  className="p-2 rounded bg-[var(--cf-surface-2)] border border-[var(--cf-border)] text-[11px] font-mono text-[var(--cf-fg)] break-all"
+                  className="p-2 rounded bg-[var(--cf-surface-2)] border border-[var(--cf-border)] text-xs font-mono text-[var(--cf-fg)] break-all"
                 >
                   {desc.install_command}
                 </div>

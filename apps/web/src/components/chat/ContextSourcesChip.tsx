@@ -100,14 +100,14 @@ export function ContextSourcesChip({
           isTainted
             ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 hover:bg-amber-100'
             : hasPhi
-            ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-300 dark:border-purple-800 text-purple-900 dark:text-purple-200 hover:bg-purple-100'
+            ? 'bg-stone-100 dark:bg-zinc-800 border-stone-300 dark:border-zinc-700 text-emerald-950 dark:text-emerald-200 hover:bg-stone-200'
             : 'bg-white dark:bg-zinc-800 border-slate-300 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-750'
         )}
       >
         {isTainted ? (
           <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
         ) : hasPhi ? (
-          <Lock className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+          <Lock className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
         ) : (
           <Layers className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400 shrink-0" />
         )}
@@ -119,7 +119,7 @@ export function ContextSourcesChip({
         {isTainted && (
           <span
             data-testid="context-taint-badge"
-            className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded-full bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100"
+            className="text-xs font-bold uppercase tracking-wider px-1.5 py-0.2 rounded-full bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100"
           >
             Tainted
           </span>
@@ -128,7 +128,7 @@ export function ContextSourcesChip({
         {hasPhi && !isTainted && (
           <span
             data-testid="context-phi-badge"
-            className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded-full bg-purple-200 dark:bg-purple-900 text-purple-900 dark:text-purple-100"
+            className="text-xs font-bold uppercase tracking-wider px-1.5 py-0.2 rounded-full bg-stone-200 dark:bg-zinc-800 text-emerald-950 dark:text-emerald-100"
           >
             PHI
           </span>
@@ -147,7 +147,7 @@ export function ContextSourcesChip({
         >
           <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800">
             <span className="font-bold text-slate-900 dark:text-zinc-100">Active Context Sources</span>
-            <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
+            <span className="text-xs font-medium text-slate-500 dark:text-zinc-400">
               {sources.length} active
             </span>
           </div>
@@ -162,7 +162,7 @@ export function ContextSourcesChip({
                 <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <span>Monotone Taint Active (AU-19)</span>
               </div>
-              <p className="text-[11px] leading-relaxed">
+              <p className="text-xs leading-relaxed">
                 Untrusted external data (e.g. web search, imported EHR text) was injected into this turn. Outbound external mutations strictly require human sign-off.
               </p>
             </div>
@@ -190,18 +190,18 @@ export function ContextSourcesChip({
                           {src.label}
                         </span>
                         {src.has_phi && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-300 shrink-0">
+                          <span className="text-xs font-bold px-1.5 py-0.2 rounded bg-stone-200 dark:bg-zinc-800 text-emerald-900 dark:text-emerald-300 shrink-0">
                             PHI
                           </span>
                         )}
                         {src.is_tainted && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 shrink-0">
+                          <span className="text-xs font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 shrink-0">
                             Tainted
                           </span>
                         )}
                       </div>
                       {src.description && (
-                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">
                           {src.description}
                         </p>
                       )}
@@ -212,7 +212,7 @@ export function ContextSourcesChip({
             )}
           </div>
 
-          <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-[11px] text-slate-400 dark:text-zinc-500">
+          <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs text-slate-400 dark:text-zinc-500">
             Carefold local-first security ensures data sources are governed by policy gates and sandboxed tools.
           </div>
         </div>

@@ -215,7 +215,7 @@ export function Navbar() {
         {/* Brand */}
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-sm group-hover:bg-emerald-700 transition">
+            <div className="w-9 h-9 rounded-lg bg-emerald-700 flex items-center justify-center text-white shadow-sm group-hover:bg-emerald-700 transition">
               <HeartHandshake className="w-5 h-5" />
             </div>
             <span className="font-bold text-lg text-slate-900 dark:text-white tracking-tight">Carefold</span>
@@ -259,7 +259,7 @@ export function Navbar() {
                 setShowExplainer((prev) => !prev);
               }}
               className={cn(
-                'min-h-[32px] px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1.5 sm:gap-2 transition cursor-pointer shadow-sm',
+                'min-h-[44px] min-w-[44px] px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium border flex items-center justify-center gap-1.5 sm:gap-2 transition cursor-pointer shadow-sm',
                 privacyState.isLocal
                   ? 'border-emerald-200 dark:border-emerald-800/80 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
                   : 'border-amber-200 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50'
@@ -315,7 +315,7 @@ export function Navbar() {
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2">
                       {privacyState.isLocal ? (
-                        <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <ShieldCheck className="w-5 h-5 text-emerald-700 dark:text-emerald-400 shrink-0" />
                       ) : (
                         <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
                       )}
@@ -332,7 +332,7 @@ export function Navbar() {
                       data-testid="close-explainer-btn"
                       onClick={() => setShowExplainer(false)}
                       aria-label="Close"
-                      className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-1 rounded-md"
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -407,7 +407,7 @@ export function Navbar() {
                 aria-haspopup="menu"
                 aria-label="User profile menu"
                 onClick={() => setShowUserMenu((prev) => !prev)}
-                className="flex items-center gap-2 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 transition cursor-pointer text-xs shadow-sm"
+                className="flex items-center gap-2 min-h-[44px] min-w-[44px] px-2.5 py-1 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 transition cursor-pointer text-xs shadow-sm"
               >
                 <div className="w-6 h-6 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center text-xs">
                   {user.full_name
@@ -442,7 +442,7 @@ export function Navbar() {
                   <div
                     role="menu"
                     data-testid="user-profile-dropdown"
-                    className="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2 shadow-xl z-40 text-xs animate-in fade-in zoom-in-95"
+                    className="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2 shadow-xl z-40 text-xs"
                   >
                     <div className="px-3 py-2 border-b border-slate-100 dark:border-zinc-800 mb-1">
                       <div className="font-bold text-slate-900 dark:text-zinc-100 truncate">
@@ -461,7 +461,7 @@ export function Navbar() {
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition font-medium"
                       >
-                        <Shield className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                        <Shield className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                         <span>Admin Console</span>
                       </Link>
                     )}

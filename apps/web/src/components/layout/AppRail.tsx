@@ -46,6 +46,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, type MemberColorSlot } from '@/components/ui/Avatar';
+import { CarefoldLogo } from '@/components/ui/CarefoldLogo';
 import { ProfileSwitcher } from '@/components/layout/ProfileSwitcher';
 import { useAuth, DEFAULT_STEWARD_USER } from '@/lib/auth';
 import { useOptionalTheme } from '@/components/ThemeProvider';
@@ -325,12 +326,7 @@ export function AppRail({
             isAlwaysCollapsed ? 'hidden' : isAlwaysExpanded ? 'flex' : 'hidden xl:flex'
           )}
         >
-          <div
-            className="w-[30px] h-[30px] shrink-0 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-sm shadow-sm ring-1 ring-white/20"
-            aria-hidden="true"
-          >
-            C
-          </div>
+          <CarefoldLogo size={20} />
           <span className="font-bold text-lg text-[var(--cf-fg)] tracking-tight">Carefold</span>
           <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--cf-surface-2)] text-[var(--cf-fg-subtle)] border border-[var(--cf-border)]">
             Local

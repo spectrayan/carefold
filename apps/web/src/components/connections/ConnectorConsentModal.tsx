@@ -227,7 +227,7 @@ export function ConnectorConsentModal({
                 <span
                   key={host}
                   data-testid={`consent-host-badge-${host}`}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--cf-surface-2)] border border-[var(--cf-border)] text-[11px] font-mono text-[var(--cf-fg)]"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--cf-surface-2)] border border-[var(--cf-border)] text-xs font-mono text-[var(--cf-fg)]"
                 >
                   <Globe className="w-3 h-3 text-emerald-600 shrink-0" />
                   {host}
@@ -282,7 +282,7 @@ export function ConnectorConsentModal({
               <div>
                 <label
                   htmlFor="consent-byo-client-id"
-                  className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                  className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
                 >
                   OAuth Client ID
                 </label>
@@ -300,7 +300,7 @@ export function ConnectorConsentModal({
               <div>
                 <label
                   htmlFor="consent-byo-client-secret"
-                  className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                  className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
                 >
                   OAuth Client Secret
                 </label>
@@ -318,7 +318,7 @@ export function ConnectorConsentModal({
             </div>
             <p
               data-testid="consent-vault-security-notice"
-              className="flex items-center gap-1.5 text-[11px] text-[var(--cf-fg-muted)]"
+              className="flex items-center gap-1.5 text-xs text-[var(--cf-fg-muted)]"
             >
               <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
               <span>

@@ -126,14 +126,14 @@ export function ScheduleSourceSelector({
                 <span className="font-semibold text-sm text-[var(--cf-fg)]">
                   {opt.label}
                 </span>
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--cf-surface-2)] text-[var(--cf-fg-subtle)] border border-[var(--cf-border)]">
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[var(--cf-surface-2)] text-[var(--cf-fg-subtle)] border border-[var(--cf-border)]">
                   {opt.badgeText}
                 </span>
               </div>
               <p className="text-xs font-medium text-[var(--cf-fg-subtle)] mb-1">
                 {opt.authority}
               </p>
-              <p className="text-[11px] text-[var(--cf-fg-muted)] leading-relaxed">
+              <p className="text-xs text-[var(--cf-fg-muted)] leading-relaxed">
                 {opt.description}
               </p>
             </button>

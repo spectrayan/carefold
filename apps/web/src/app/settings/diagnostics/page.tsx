@@ -86,7 +86,7 @@ export default function DiagnosticsSettingsPage() {
             />
             <span>{healthData?.status === 'ok' ? 'Online' : 'Degraded / Offline'}</span>
           </div>
-          <p className="text-[11px] text-[var(--cf-fg-subtle)] mt-1">
+          <p className="text-xs text-[var(--cf-fg-subtle)] mt-1">
             Version: {healthData?.version || '0.4.0-beta.1'}
           </p>
         </div>
@@ -104,7 +104,7 @@ export default function DiagnosticsSettingsPage() {
             />
             <span>{healthData?.modelReachable ? 'Connected' : 'Offline'}</span>
           </div>
-          <p className="text-[11px] text-[var(--cf-fg-subtle)] mt-1">127.0.0.1:11434</p>
+          <p className="text-xs text-[var(--cf-fg-subtle)] mt-1">127.0.0.1:11434</p>
         </div>
 
         <div className="p-4 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)]">
@@ -116,7 +116,7 @@ export default function DiagnosticsSettingsPage() {
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span>SQLite Active</span>
           </div>
-          <p className="text-[11px] text-[var(--cf-fg-subtle)] mt-1">FTS5 BM25 Ranked</p>
+          <p className="text-xs text-[var(--cf-fg-subtle)] mt-1">FTS5 BM25 Ranked</p>
         </div>
       </div>
 

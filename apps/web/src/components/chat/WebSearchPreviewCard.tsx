@@ -73,7 +73,7 @@ export function WebSearchPreviewCard({
       {/* Header Row */}
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-blue-200/80 dark:border-blue-900/40">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+          <div className="w-6 h-6 rounded-lg bg-emerald-700 text-white flex items-center justify-center shrink-0">
             <Globe className="w-3.5 h-3.5" />
           </div>
           <div>
@@ -117,7 +117,7 @@ export function WebSearchPreviewCard({
 
       {/* Sanitised Query Box */}
       <div className="p-2.5 rounded-xl bg-[var(--cf-surface)] border border-[var(--cf-border)] space-y-1">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--cf-fg-muted)]">
+        <div className="text-xs font-semibold uppercase tracking-wider text-[var(--cf-fg-muted)]">
           Outbound Sanitised Query (Zero Raw PHI)
         </div>
         <div
@@ -129,7 +129,7 @@ export function WebSearchPreviewCard({
         {redactedLabels.length > 0 && (
           <div
             data-testid="web-search-redacted-items-list"
-            className="text-[11px] text-[var(--cf-fg-muted)] pt-1"
+            className="text-xs text-[var(--cf-fg-muted)] pt-1"
           >
             Stripped tokens: {redactedLabels.join(', ')}
           </div>
@@ -153,14 +153,14 @@ export function WebSearchPreviewCard({
                     href={r.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-[11px]"
+                    className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-xs"
                   >
                     Source
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
               </div>
-              <p className="text-[11px] text-[var(--cf-fg-muted)]">
+              <p className="text-xs text-[var(--cf-fg-muted)]">
                 {r.snippet}
               </p>
             </div>

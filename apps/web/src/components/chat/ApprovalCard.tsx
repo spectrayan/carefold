@@ -72,7 +72,7 @@ const RISK_TIER_CONFIG: Record<
   },
   admin: {
     label: 'Admin Operation',
-    badge: 'bg-purple-50 text-purple-900 border-purple-300 dark:bg-purple-950/60 dark:text-purple-200 dark:border-purple-800',
+    badge: 'bg-stone-100 text-emerald-950 border-stone-300 dark:bg-zinc-800 dark:text-emerald-200 dark:border-zinc-700',
     description: 'Privileged configuration or administrative change.',
     icon: ShieldAlert
   },
@@ -304,7 +304,7 @@ export function ApprovalCard({
               {remainingTimeText && currentStatus === 'pending' && (
                 <span
                   data-testid="approval-ttl-timer"
-                  className="inline-flex items-center gap-1 text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-amber-100/80 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200"
+                  className="inline-flex items-center gap-1 text-xs font-mono font-medium px-1.5 py-0.5 rounded bg-amber-100/80 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200"
                 >
                   <Clock className="w-3 h-3" />
                   <span>{remainingTimeText}</span>
@@ -355,7 +355,7 @@ export function ApprovalCard({
               <span
                 key={host}
                 data-testid="destination-host-pill"
-                className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-700 text-slate-800 dark:text-zinc-200 border border-slate-300 dark:border-zinc-600"
+                className="font-mono text-xs px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-700 text-slate-800 dark:text-zinc-200 border border-slate-300 dark:border-zinc-600"
               >
                 {host}
               </span>
@@ -386,7 +386,7 @@ export function ApprovalCard({
             </button>
           )}
           {hasModifiedArgs && !isEditing && (
-            <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-1.5 py-0.5 rounded">
+            <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-1.5 py-0.5 rounded">
               Modified Arguments
             </span>
           )}
@@ -465,9 +465,9 @@ export function ApprovalCard({
                       </td>
                       <td className="px-3 py-1.5 font-mono text-slate-900 dark:text-zinc-100 break-all">
                         {typeof val === 'object' && val !== null ? (
-                          <pre className="text-[11px] whitespace-pre-wrap">{JSON.stringify(val, null, 2)}</pre>
+                          <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(val, null, 2)}</pre>
                         ) : String(val) === '[REDACTED]' ? (
-                          <span className="font-semibold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px]">
+                          <span className="font-semibold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-xs">
                             [REDACTED]
                           </span>
                         ) : (
@@ -492,7 +492,7 @@ export function ApprovalCard({
 
       {/* Bottom Action Controls */}
       <div className="mt-4 pt-3 border-t border-slate-200/80 dark:border-zinc-700/80 flex flex-wrap items-center justify-between gap-2">
-        <div className="text-[11px] font-mono text-slate-400 dark:text-zinc-500">
+        <div className="text-xs font-mono text-slate-400 dark:text-zinc-500">
           Hash: {approval.payload_hash ? approval.payload_hash.slice(0, 12) + '...' : 'pending'}
         </div>
 

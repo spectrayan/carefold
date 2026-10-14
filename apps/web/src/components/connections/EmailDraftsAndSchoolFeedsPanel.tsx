@@ -113,7 +113,7 @@ export function EmailDraftsAndSchoolFeedsPanel({
           </div>
           <span
             data-testid="gmail-readonly-scope-badge"
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
           >
             Scope: gmail.readonly (No Send Scope)
           </span>
@@ -136,7 +136,7 @@ export function EmailDraftsAndSchoolFeedsPanel({
               >
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[var(--cf-surface-2)] border border-[var(--cf-border)] text-[var(--cf-fg)]">
+                    <span className="px-2 py-0.5 rounded text-xs font-bold uppercase bg-[var(--cf-surface-2)] border border-[var(--cf-border)] text-[var(--cf-fg)]">
                       {item.record_type}
                     </span>
                     <h4 className="text-sm font-bold text-[var(--cf-fg)]">
@@ -144,7 +144,7 @@ export function EmailDraftsAndSchoolFeedsPanel({
                     </h4>
                     <span
                       data-testid={`gmail-candidate-taint-${item.index}`}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60"
                     >
                       <ShieldAlert className="w-3 h-3 shrink-0" />
                       Untrusted ({item.trust})
@@ -157,7 +157,7 @@ export function EmailDraftsAndSchoolFeedsPanel({
 
                   <p
                     data-testid={`gmail-candidate-provenance-${item.index}`}
-                    className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300"
+                    className="text-xs font-medium text-emerald-700 dark:text-emerald-300"
                   >
                     {item.source_display}
                   </p>
@@ -203,7 +203,7 @@ export function EmailDraftsAndSchoolFeedsPanel({
           </div>
           <span
             data-testid="email-no-autosend-badge"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
           >
             <Mail className="w-3.5 h-3.5 shrink-0" />
             No Auto-Send (User Sends from Mail Client)
@@ -223,7 +223,7 @@ export function EmailDraftsAndSchoolFeedsPanel({
                     <h4 className="text-sm font-bold text-[var(--cf-fg)]">
                       {draft.subject}
                     </h4>
-                    <span className="text-[11px] font-mono text-[var(--cf-fg-muted)]">
+                    <span className="text-xs font-mono text-[var(--cf-fg-muted)]">
                       To: {draft.recipient}
                     </span>
                   </div>
@@ -269,7 +269,7 @@ export function EmailDraftsAndSchoolFeedsPanel({
               <div>
                 <label
                   htmlFor="draft-recipient-input"
-                  className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                  className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
                 >
                   Recipient Email
                 </label>
@@ -285,7 +285,7 @@ export function EmailDraftsAndSchoolFeedsPanel({
               <div>
                 <label
                   htmlFor="draft-subject-input"
-                  className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                  className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
                 >
                   Subject
                 </label>
@@ -302,7 +302,7 @@ export function EmailDraftsAndSchoolFeedsPanel({
             <div>
               <label
                 htmlFor="draft-body-input"
-                className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
               >
                 Draft Body
               </label>
@@ -359,12 +359,12 @@ export function EmailDraftsAndSchoolFeedsPanel({
                     </h4>
                     <span
                       data-testid={`school-feed-events-${feed.id}`}
-                      className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+                      className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
                     >
                       {feed.events_synced} events synced
                     </span>
                   </div>
-                  <p className="text-[11px] font-mono text-[var(--cf-fg-muted)]">
+                  <p className="text-xs font-mono text-[var(--cf-fg-muted)]">
                     {feed.feed_url}
                   </p>
                 </div>
@@ -392,7 +392,7 @@ export function EmailDraftsAndSchoolFeedsPanel({
             <div className="flex-1 min-w-[200px]">
               <label
                 htmlFor="school-feed-label-input"
-                className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
               >
                 School Calendar Label
               </label>
@@ -408,7 +408,7 @@ export function EmailDraftsAndSchoolFeedsPanel({
             <div className="flex-1 min-w-[240px]">
               <label
                 htmlFor="school-feed-url-input"
-                className="block text-[11px] font-medium text-[var(--cf-fg-muted)] mb-1"
+                className="block text-xs font-medium text-[var(--cf-fg-muted)] mb-1"
               >
                 HTTPS .ics Feed URL
               </label>

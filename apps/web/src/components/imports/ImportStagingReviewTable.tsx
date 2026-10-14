@@ -138,7 +138,7 @@ export function ImportStagingReviewTable({
             <div className="text-lg font-bold text-[var(--cf-fg)]">
               {item.count}
             </div>
-            <div className="text-[11px] font-medium text-[var(--cf-fg-muted)]">
+            <div className="text-xs font-medium text-[var(--cf-fg-muted)]">
               {item.label}
             </div>
           </div>
@@ -209,7 +209,7 @@ export function ImportStagingReviewTable({
                     {recDate}
                   </td>
                   <td className="py-2.5 px-3">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50">
                       {`From ${rec.source_name || batch.source_name}, ${recDate}`}
                     </span>
                   </td>

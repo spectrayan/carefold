@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import Field
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,19 +46,61 @@ from carefold.config import settings
 from carefold.constants.api import ROUTE_NOTE_DETAIL, ROUTE_NOTES
 from carefold.db.models import Appointment, Job, Note, Profile, ProfileAccess
 from carefold.db.session import get_db
+from carefold.i18n.locale import (
+    DEFAULT_LOCALE,
+    canonicalize_locale,
+    normalize_text_nfc,
+)
 from carefold.logging import get_logger
 from carefold.schemas.notes import (
     AfterVisitExtractionResponse,
-    NoteCreateRequest,
-    NoteUpdateRequest,
-    TypedNoteCreateRequest,
-    TypedNoteDetailResponse,
-    TypedNoteListResponse,
-    TypedNoteSummaryResponse,
-    TypedNoteUpdateRequest,
-    WorkspaceNoteDetail,
-    WorkspaceNoteSummary,
+    NoteCreateRequest as _BaseNoteCreateRequest,
+    NoteUpdateRequest as _BaseNoteUpdateRequest,
+    TypedNoteCreateRequest as _BaseTypedNoteCreateRequest,
+    TypedNoteDetailResponse as _BaseTypedNoteDetailResponse,
+    TypedNoteListResponse as _BaseTypedNoteListResponse,
+    TypedNoteSummaryResponse as _BaseTypedNoteSummaryResponse,
+    TypedNoteUpdateRequest as _BaseTypedNoteUpdateRequest,
+    WorkspaceNoteDetail as _BaseWorkspaceNoteDetail,
+    WorkspaceNoteSummary as _BaseWorkspaceNoteSummary,
 )
+
+
+class WorkspaceNoteSummary(_BaseWorkspaceNoteSummary):
+    locale: str = Field(default=DEFAULT_LOCALE, description="IETF BCP 47 locale tag of the note content")
+
+
+class WorkspaceNoteDetail(_BaseWorkspaceNoteDetail):
+    locale: str = Field(default=DEFAULT_LOCALE, description="IETF BCP 47 locale tag of the note content")
+
+
+class NoteCreateRequest(_BaseNoteCreateRequest):
+    locale: Optional[str] = Field(default=None, max_length=16, description="Optional IETF BCP 47 locale tag")
+
+
+class NoteUpdateRequest(_BaseNoteUpdateRequest):
+    locale: Optional[str] = Field(default=None, max_length=16, description="Optional IETF BCP 47 locale tag")
+
+
+class TypedNoteCreateRequest(_BaseTypedNoteCreateRequest):
+    locale: Optional[str] = Field(default=None, max_length=16, description="Optional IETF BCP 47 locale tag")
+
+
+class TypedNoteUpdateRequest(_BaseTypedNoteUpdateRequest):
+    locale: Optional[str] = Field(default=None, max_length=16, description="Optional IETF BCP 47 locale tag")
+
+
+class TypedNoteSummaryResponse(_BaseTypedNoteSummaryResponse):
+    locale: str = Field(default=DEFAULT_LOCALE, description="IETF BCP 47 locale tag of the note content")
+
+
+class TypedNoteDetailResponse(_BaseTypedNoteDetailResponse):
+    locale: str = Field(default=DEFAULT_LOCALE, description="IETF BCP 47 locale tag of the note content")
+
+
+class TypedNoteListResponse(_BaseTypedNoteListResponse):
+    notes: List[TypedNoteSummaryResponse]
+
 
 logger = get_logger("carefold.api.notes")
 
@@ -83,7 +126,7 @@ def _get_note_creation_lock() -> asyncio.Lock:
 
 def parse_note_file(path: Path, workspace_root: Path | None = None) -> Dict[str, Any]:
     """Parses a markdown note file extracting frontmatter, resolved title, and content."""
-    raw_text = path.read_text(encoding="utf-8", errors="replace")
+    raw_text = normalize_text_nfc(path.read_text(encoding="utf-8", errors="replace"))
     stat = path.stat()
     slug = path.stem
 
@@ -103,10 +146,10 @@ def parse_note_file(path: Path, workspace_root: Path | None = None) -> Dict[str,
     fm_title = metadata.get("title")
     if fm_title is not None and not isinstance(fm_title, str):
         fm_title = str(fm_title)
-    fm_title_clean = fm_title.strip() if fm_title else ""
+    fm_title_clean = normalize_text_nfc(fm_title.strip()) if fm_title else ""
 
     heading_match = HEADING_PATTERN.search(body)
-    heading_title = heading_match.group(1).strip() if heading_match else None
+    heading_title = normalize_text_nfc(heading_match.group(1).strip()) if heading_match else None
 
     slug_title = slug.replace("-", " ").replace("_", " ").strip().title()
 
@@ -139,12 +182,12 @@ def parse_note_file(path: Path, workspace_root: Path | None = None) -> Dict[str,
 
     return {
         "slug": slug,
-        "title": title,
+        "title": normalize_text_nfc(title),
         "agent": agent,
         "profile_id": profile_id,
         "created_at": created_at,
         "size_bytes": stat.st_size,
-        "content": body.strip(),
+        "content": normalize_text_nfc(body.strip()),
         "raw_content": raw_text,
         "metadata": metadata,
         "path": rel_path,
@@ -187,6 +230,7 @@ def _build_note_detail_response(note: Note) -> WorkspaceNoteDetail:
     """Builds a WorkspaceNoteDetail response synthesizing raw_content on the fly."""
     created_iso = note.created_at.isoformat() if note.created_at else datetime.now(timezone.utc).isoformat()
     tags = note.get_tags()
+    note_locale = getattr(note, "locale", None) or DEFAULT_LOCALE
     profile_fm = f"\nprofile_id: \"{note.profile_id}\"" if note.profile_id else ""
     raw_content = f"---\ntitle: \"{note.title}\"\ncreated_at: \"{created_iso}\"{profile_fm}\n---\n\n{note.content}\n"
     rel_path = f"workspace/notes/{note.slug}.md"
@@ -198,6 +242,7 @@ def _build_note_detail_response(note: Note) -> WorkspaceNoteDetail:
         type=note.type or None,
         profile_id=note.profile_id,
         linked_appointment_id=note.linked_appointment_id,
+        locale=note_locale,
         created_at=created_iso,
         size_bytes=len(note.content.encode("utf-8")),
         content=note.content,
@@ -208,6 +253,7 @@ def _build_note_detail_response(note: Note) -> WorkspaceNoteDetail:
             "agent_id": note.type,
             "profile_id": note.profile_id,
             "linked_appointment_id": note.linked_appointment_id,
+            "locale": note_locale,
             "tags": tags,
         },
         path=rel_path,
@@ -220,6 +266,7 @@ def _build_typed_note_detail(note: Note) -> TypedNoteDetailResponse:
     """Builds a TypedNoteDetailResponse."""
     created_iso = note.created_at.isoformat() if note.created_at else datetime.now(timezone.utc).isoformat()
     updated_iso = note.updated_at.isoformat() if note.updated_at else datetime.now(timezone.utc).isoformat()
+    note_locale = getattr(note, "locale", None) or DEFAULT_LOCALE
     return TypedNoteDetailResponse(
         id=note.id,
         profile_id=note.profile_id,
@@ -227,6 +274,7 @@ def _build_typed_note_detail(note: Note) -> TypedNoteDetailResponse:
         title=note.title,
         type=note.type,
         content=note.content,
+        locale=note_locale,
         linked_appointment_id=note.linked_appointment_id,
         tags=note.get_tags(),
         tags_json=note.tags_json or "[]",
@@ -239,12 +287,14 @@ def _build_typed_note_summary(note: Note) -> TypedNoteSummaryResponse:
     """Builds a TypedNoteSummaryResponse."""
     created_iso = note.created_at.isoformat() if note.created_at else datetime.now(timezone.utc).isoformat()
     updated_iso = note.updated_at.isoformat() if note.updated_at else datetime.now(timezone.utc).isoformat()
+    note_locale = getattr(note, "locale", None) or DEFAULT_LOCALE
     return TypedNoteSummaryResponse(
         id=note.id,
         profile_id=note.profile_id,
         slug=note.slug,
         title=note.title,
         type=note.type,
+        locale=note_locale,
         linked_appointment_id=note.linked_appointment_id,
         tags=note.get_tags(),
         size_bytes=len(note.content.encode("utf-8")),
@@ -352,6 +402,7 @@ async def list_notes(
             type=n.type or None,
             profile_id=n.profile_id,
             linked_appointment_id=n.linked_appointment_id,
+            locale=getattr(n, "locale", None) or DEFAULT_LOCALE,
             created_at=n.created_at.isoformat() if n.created_at else datetime.now(timezone.utc).isoformat(),
             size_bytes=len(n.content.encode("utf-8")),
             tags=n.get_tags(),
@@ -368,7 +419,8 @@ async def create_note(
     db: AsyncSession = Depends(get_db),
 ) -> WorkspaceNoteDetail:
     """Creates a new note strictly in carefold.db with zero filesystem disk write."""
-    title = payload.title
+    title = normalize_text_nfc(payload.title)
+    content_nfc = normalize_text_nfc(payload.content)
     # Compute and validate slug
     if payload.slug:
         slug = _clean_and_validate_slug(payload.slug)
@@ -382,12 +434,12 @@ async def create_note(
     # 3-tier title resolution
     if title == slug:
         resolved_heading: Optional[str] = None
-        for line in payload.content.splitlines():
+        for line in content_nfc.splitlines():
             stripped = line.strip()
             if stripped.startswith("#"):
                 heading_text = stripped.lstrip("#").strip()
                 if heading_text:
-                    resolved_heading = heading_text
+                    resolved_heading = normalize_text_nfc(heading_text)
                     break
         if resolved_heading:
             title = resolved_heading
@@ -397,6 +449,17 @@ async def create_note(
     owner_id = resolve_owner_user_id(user)
     clean_profile_id = (payload.profile_id or "").strip()
     prof = await _verify_profile_access(clean_profile_id, user, db, required_level="manage")
+
+    if payload.locale is not None:
+        try:
+            note_locale = canonicalize_locale(payload.locale, strict=True)
+        except ValueError as loc_err:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(loc_err),
+            ) from loc_err
+    else:
+        note_locale = getattr(prof, "preferred_locale", None) or DEFAULT_LOCALE
 
     # Validate note category
     raw_type = (payload.type or "scratchpad").strip()
@@ -447,8 +510,9 @@ async def create_note(
             user_id=owner_id,
             profile_id=clean_profile_id,
             slug=slug,
-            title=title,
-            content=payload.content,
+            title=normalize_text_nfc(title),
+            content=content_nfc,
+            locale=note_locale,
             tags_json=json.dumps(tags_list),
             linked_appointment_id=linked_appt_id,
             created_at=now,
@@ -640,10 +704,19 @@ async def update_note(
                 )
         note.linked_appointment_id = clean_aid
 
+    if payload.locale is not None:
+        try:
+            note.locale = canonicalize_locale(payload.locale, strict=True)
+        except ValueError as loc_err:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(loc_err),
+            ) from loc_err
+
     if payload.title is not None:
-        note.title = payload.title
+        note.title = normalize_text_nfc(payload.title)
     if payload.content is not None:
-        note.content = payload.content
+        note.content = normalize_text_nfc(payload.content)
     if payload.tags is not None:
         note.set_tags(payload.tags)
 
@@ -793,10 +866,23 @@ async def create_profile_typed_note(
 ) -> TypedNoteDetailResponse:
     """Creates a typed note scoped to a specific profile with category and appointment validation."""
     clean_pid = profile_id.strip()
-    await _verify_profile_access(clean_pid, user, db, required_level="manage")
+    prof = await _verify_profile_access(clean_pid, user, db, required_level="manage")
     owner_id = resolve_owner_user_id(user)
 
+    if payload.locale is not None:
+        try:
+            note_locale = canonicalize_locale(payload.locale, strict=True)
+        except ValueError as loc_err:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(loc_err),
+            ) from loc_err
+    else:
+        note_locale = getattr(prof, "preferred_locale", None) or DEFAULT_LOCALE
+
     note_type = validate_note_type(payload.type)
+    title_nfc = normalize_text_nfc(payload.title)
+    content_nfc = normalize_text_nfc(payload.content)
 
     linked_appt_id = payload.linked_appointment_id
     if linked_appt_id:
@@ -816,7 +902,7 @@ async def create_profile_typed_note(
     if payload.slug:
         slug = _clean_and_validate_slug(payload.slug)
     else:
-        raw_slug = re.sub(r"[^a-zA-Z0-9_\-\s]", "", payload.title.strip())
+        raw_slug = re.sub(r"[^a-zA-Z0-9_\-\s]", "", title_nfc.strip())
         slug = re.sub(r"\s+", "-", raw_slug).lower()[:64] or "note"
 
     async with _get_note_creation_lock():
@@ -841,8 +927,9 @@ async def create_profile_typed_note(
             user_id=owner_id,
             profile_id=clean_pid,
             slug=slug,
-            title=payload.title,
-            content=payload.content,
+            title=title_nfc,
+            content=content_nfc,
+            locale=note_locale,
             tags_json=json.dumps(tags_list),
             linked_appointment_id=linked_appt_id,
             created_at=now,
@@ -1020,10 +1107,19 @@ async def patch_profile_note(
                 )
         note.linked_appointment_id = clean_aid
 
+    if payload.locale is not None:
+        try:
+            note.locale = canonicalize_locale(payload.locale, strict=True)
+        except ValueError as loc_err:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(loc_err),
+            ) from loc_err
+
     if payload.title is not None:
-        note.title = payload.title
+        note.title = normalize_text_nfc(payload.title)
     if payload.content is not None:
-        note.content = payload.content
+        note.content = normalize_text_nfc(payload.content)
     if payload.tags is not None:
         note.set_tags(payload.tags)
 

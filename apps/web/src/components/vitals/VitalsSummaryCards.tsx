@@ -125,7 +125,7 @@ export function VitalsSummaryCards({
               Blood Pressure
             </span>
             {vitals.bloodPressure?.isAM !== undefined && (
-              <span className="flex items-center gap-1 text-[11px] font-medium text-[var(--cf-fg-subtle)]">
+              <span className="flex items-center gap-1 text-xs font-medium text-[var(--cf-fg-subtle)]">
                 {vitals.bloodPressure.isAM ? (
                   <>
                     <Sun className="w-3 h-3 text-amber-500" /> AM
@@ -156,7 +156,7 @@ export function VitalsSummaryCards({
                   {vitals.bloodPressure.stage}
                 </Badge>
                 {vitals.bloodPressure.deltaSys !== undefined && (
-                  <span className="flex items-center text-[11px] font-mono text-[var(--cf-fg-subtle)]">
+                  <span className="flex items-center text-xs font-mono text-[var(--cf-fg-subtle)]">
                     {vitals.bloodPressure.deltaSys > 0 ? (
                       <TrendingUp className="w-3 h-3 text-rose-500 mr-0.5" />
                     ) : vitals.bloodPressure.deltaSys < 0 ? (
@@ -183,7 +183,7 @@ export function VitalsSummaryCards({
             </div>
           )}
         </div>
-        <div className="pt-3 mt-3 border-t border-[var(--cf-border)] text-[11px] text-[var(--cf-fg-subtle)] truncate">
+        <div className="pt-3 mt-3 border-t border-[var(--cf-border)] text-xs text-[var(--cf-fg-subtle)] truncate">
           {formatTime(vitals.bloodPressure?.effectiveAt)}
         </div>
       </Card>
@@ -221,7 +221,7 @@ export function VitalsSummaryCards({
                   {vitals.heartRate.classification || 'Recorded'}
                 </Badge>
                 {vitals.heartRate.delta !== undefined && (
-                  <span className="flex items-center text-[11px] font-mono text-[var(--cf-fg-subtle)]">
+                  <span className="flex items-center text-xs font-mono text-[var(--cf-fg-subtle)]">
                     {vitals.heartRate.delta > 0 ? (
                       <TrendingUp className="w-3 h-3 text-rose-500 mr-0.5" />
                     ) : vitals.heartRate.delta < 0 ? (
@@ -247,7 +247,7 @@ export function VitalsSummaryCards({
             </div>
           )}
         </div>
-        <div className="pt-3 mt-3 border-t border-[var(--cf-border)] text-[11px] text-[var(--cf-fg-subtle)] truncate">
+        <div className="pt-3 mt-3 border-t border-[var(--cf-border)] text-xs text-[var(--cf-fg-subtle)] truncate">
           {formatTime(vitals.heartRate?.effectiveAt)}
         </div>
       </Card>
@@ -287,7 +287,7 @@ export function VitalsSummaryCards({
                   {vitals.bloodGlucose.classification || 'Recorded'}
                 </Badge>
                 {vitals.bloodGlucose.delta !== undefined && (
-                  <span className="flex items-center text-[11px] font-mono text-[var(--cf-fg-subtle)]">
+                  <span className="flex items-center text-xs font-mono text-[var(--cf-fg-subtle)]">
                     {vitals.bloodGlucose.delta > 0 ? (
                       <TrendingUp className="w-3 h-3 text-amber-500 mr-0.5" />
                     ) : (
@@ -313,7 +313,7 @@ export function VitalsSummaryCards({
             </div>
           )}
         </div>
-        <div className="pt-3 mt-3 border-t border-[var(--cf-border)] text-[11px] text-[var(--cf-fg-subtle)] truncate">
+        <div className="pt-3 mt-3 border-t border-[var(--cf-border)] text-xs text-[var(--cf-fg-subtle)] truncate">
           {formatTime(vitals.bloodGlucose?.effectiveAt)}
         </div>
       </Card>
@@ -351,7 +351,7 @@ export function VitalsSummaryCards({
                   {vitals.spo2.classification || 'Recorded'}
                 </Badge>
                 {vitals.spo2.delta !== undefined && (
-                  <span className="flex items-center text-[11px] font-mono text-[var(--cf-fg-subtle)]">
+                  <span className="flex items-center text-xs font-mono text-[var(--cf-fg-subtle)]">
                     {vitals.spo2.delta >= 0 ? `+${vitals.spo2.delta}` : vitals.spo2.delta}%
                   </span>
                 )}
@@ -372,7 +372,7 @@ export function VitalsSummaryCards({
             </div>
           )}
         </div>
-        <div className="pt-3 mt-3 border-t border-[var(--cf-border)] text-[11px] text-[var(--cf-fg-subtle)] truncate">
+        <div className="pt-3 mt-3 border-t border-[var(--cf-border)] text-xs text-[var(--cf-fg-subtle)] truncate">
           {formatTime(vitals.spo2?.effectiveAt)}
         </div>
       </Card>
@@ -443,7 +443,7 @@ export function VitalsSummaryCards({
                       </Badge>
                     )}
                     {vitals.weight.delta !== undefined && (
-                      <span className="flex items-center text-[11px] font-mono text-[var(--cf-fg-subtle)]">
+                      <span className="flex items-center text-xs font-mono text-[var(--cf-fg-subtle)]">
                         {vitals.weight.delta >= 0 ? `+${vitals.weight.delta.toFixed(1)}` : vitals.weight.delta.toFixed(1)} kg
                       </span>
                     )}
@@ -466,7 +466,7 @@ export function VitalsSummaryCards({
             </div>
           )}
         </div>
-        <div className="pt-3 mt-3 border-t border-[var(--cf-border)] text-[11px] text-[var(--cf-fg-subtle)] truncate">
+        <div className="pt-3 mt-3 border-t border-[var(--cf-border)] text-xs text-[var(--cf-fg-subtle)] truncate">
           {formatTime(vitals.weight?.effectiveAt)}
         </div>
       </Card>

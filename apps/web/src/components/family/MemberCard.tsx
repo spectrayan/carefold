@@ -62,7 +62,7 @@ export function MemberCard({ profile, className, onEdit }: MemberCardProps) {
       }
       if (profile.age !== undefined && profile.age >= 13 && profile.age < 18) {
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 whitespace-nowrap">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/10 text-emerald-800 dark:text-emerald-300 border border-purple-500/20 whitespace-nowrap">
             <Sparkles className="w-3.5 h-3.5 shrink-0" />
             <span>Teen login</span>
           </span>

@@ -21,10 +21,11 @@ from datetime import datetime, timedelta, timezone
 import inspect
 import secrets
 import shutil
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import Field
 from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -63,6 +64,12 @@ from carefold.db.models import (
     ViewerInvite,
 )
 from carefold.db.session import get_db
+from carefold.i18n.locale import (
+    DEFAULT_LOCALE,
+    canonicalize_locale,
+    get_text_direction,
+    normalize_text_nfc,
+)
 from carefold.logging import get_logger
 from carefold.memory.factory import get_memory_port
 from carefold.storage.cas import sanitize_partition_segment
@@ -73,15 +80,54 @@ from carefold.schemas.profiles import (
     ProfileAccessResponse,
     ProfileConsentResponse,
     ProfileConsentUpdate,
-    ProfileCreate,
-    ProfileDetailResponse,
-    ProfileSummaryResponse,
-    ProfileUpdate,
+    ProfileCreate as _BaseProfileCreate,
+    ProfileDetailResponse as _BaseProfileDetailResponse,
+    ProfileSummaryResponse as _BaseProfileSummaryResponse,
+    ProfileUpdate as _BaseProfileUpdate,
     ViewerInviteAcceptRequest,
     ViewerInviteAcceptResponse,
     ViewerInviteCreate,
     ViewerInviteResponse,
 )
+
+
+class ProfileCreate(_BaseProfileCreate):
+    preferred_locale: Optional[str] = Field(
+        default=None,
+        max_length=16,
+        description="Preferred IETF BCP 47 locale tag (e.g. en-US, es-ES, fr-FR, hi-IN, ar-SA)",
+    )
+
+
+class ProfileUpdate(_BaseProfileUpdate):
+    preferred_locale: Optional[str] = Field(
+        default=None,
+        max_length=16,
+        description="Preferred IETF BCP 47 locale tag (e.g. en-US, es-ES, fr-FR, hi-IN, ar-SA)",
+    )
+
+
+class ProfileSummaryResponse(_BaseProfileSummaryResponse):
+    preferred_locale: str = Field(
+        default=DEFAULT_LOCALE,
+        description="Preferred IETF BCP 47 locale tag",
+    )
+    text_direction: Literal["ltr", "rtl"] = Field(
+        default="ltr",
+        description="Text layout direction derived from preferred_locale",
+    )
+
+
+class ProfileDetailResponse(_BaseProfileDetailResponse):
+    preferred_locale: str = Field(
+        default=DEFAULT_LOCALE,
+        description="Preferred IETF BCP 47 locale tag",
+    )
+    text_direction: Literal["ltr", "rtl"] = Field(
+        default="ltr",
+        description="Text layout direction derived from preferred_locale",
+    )
+
 
 logger = get_logger("carefold.api.profiles")
 
@@ -231,6 +277,7 @@ async def list_profiles(
 
     summaries: List[ProfileSummaryResponse] = []
     for p, access_level in profiles_map.values():
+        prof_locale = getattr(p, "preferred_locale", None) or DEFAULT_LOCALE
         summaries.append(
             ProfileSummaryResponse(
                 id=p.id,
@@ -243,6 +290,8 @@ async def list_profiles(
                 avatar_color=p.avatar_color,
                 avatar_url=p.avatar_url,
                 is_primary=p.is_primary,
+                preferred_locale=prof_locale,
+                text_direction=get_text_direction(prof_locale),
                 access_level=access_level,
                 created_at=p.created_at.isoformat() if p.created_at else datetime.now(timezone.utc).isoformat(),
                 updated_at=p.updated_at.isoformat() if p.updated_at else datetime.now(timezone.utc).isoformat(),
@@ -266,6 +315,16 @@ async def create_profile(
     effective_user_id = owner_id or user.id
     now = datetime.now(timezone.utc)
 
+    resolved_locale = DEFAULT_LOCALE
+    if payload.preferred_locale is not None:
+        try:
+            resolved_locale = canonicalize_locale(payload.preferred_locale, strict=True)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
+
     # Check if this should be marked primary (only if user has no primary profile)
     check_stmt = select(Profile).where(Profile.is_primary.is_(True))
     if owner_id:
@@ -278,14 +337,15 @@ async def create_profile(
     new_profile = Profile(
         id=str(uuid.uuid4()),
         user_id=owner_id,
-        name=payload.name.strip(),
-        short_name=payload.short_name.strip() if payload.short_name else None,
+        name=normalize_text_nfc(payload.name.strip()),
+        short_name=normalize_text_nfc(payload.short_name.strip()) if payload.short_name else None,
         relationship=payload.relationship.strip().lower(),
         role=payload.role,
         date_of_birth=payload.date_of_birth,
         avatar_color=payload.avatar_color,
         avatar_url=payload.avatar_url.strip() if payload.avatar_url else None,
         is_primary=not has_primary,
+        preferred_locale=resolved_locale,
         created_at=now,
         updated_at=now,
     )
@@ -314,6 +374,7 @@ async def create_profile(
     await db.commit()
     await db.refresh(new_profile)
 
+    prof_locale = getattr(new_profile, "preferred_locale", None) or DEFAULT_LOCALE
     return ProfileDetailResponse(
         id=new_profile.id,
         user_id=new_profile.user_id or effective_user_id,
@@ -325,6 +386,8 @@ async def create_profile(
         avatar_color=new_profile.avatar_color,
         avatar_url=new_profile.avatar_url,
         is_primary=new_profile.is_primary,
+        preferred_locale=prof_locale,
+        text_direction=get_text_direction(prof_locale),
         access_level="manage",
         consent=ProfileConsentResponse(
             id=consent.id,
@@ -799,6 +862,7 @@ async def get_profile(
                 )
             )
 
+    prof_locale = getattr(profile, "preferred_locale", None) or DEFAULT_LOCALE
     return ProfileDetailResponse(
         id=profile.id,
         user_id=profile.user_id or effective_user_id,
@@ -810,6 +874,8 @@ async def get_profile(
         avatar_color=profile.avatar_color,
         avatar_url=profile.avatar_url,
         is_primary=profile.is_primary,
+        preferred_locale=prof_locale,
+        text_direction=get_text_direction(prof_locale),
         access_level=access_level,
         consent=consent_resp,
         access_grants=grants_resp,
@@ -846,10 +912,19 @@ async def update_profile(
             detail="Forbidden: management privileges required to update this profile.",
         )
 
+    if payload.preferred_locale is not None:
+        try:
+            profile.preferred_locale = canonicalize_locale(payload.preferred_locale, strict=True)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
+
     if payload.name is not None:
-        profile.name = payload.name.strip()
+        profile.name = normalize_text_nfc(payload.name.strip())
     if payload.short_name is not None:
-        profile.short_name = payload.short_name.strip() if payload.short_name else None
+        profile.short_name = normalize_text_nfc(payload.short_name.strip()) if payload.short_name else None
     if payload.relationship is not None:
         profile.relationship = payload.relationship.strip().lower()
     if payload.role is not None:

@@ -229,13 +229,13 @@ describe('Stress Test: Scroll Tracking & Anti-Hijack Guarantee', () => {
 });
 
 describe('Stress Test: Mobile Responsiveness, 100dvh & Double Scrollbars', () => {
-  it('container uses dynamic viewport 100dvh with outer overflow-hidden to prevent nested window scrollbars', () => {
+  it('container uses clean flex sizing (h-full flex-1 min-h-0) with outer overflow-hidden to prevent nested window scrollbars', () => {
     const { container } = render(<ChatClient initialAgents={mockAgents} />);
     const outerContainer = container.querySelector('.flex.flex-col') as HTMLElement;
 
-    // Must be 100dvh on mobile (<640px) and sm:100dvh
-    expect(outerContainer.className).toContain('h-[calc(100dvh-120px)]');
-    expect(outerContainer.className).toContain('sm:h-[calc(100dvh-140px)]');
+    expect(outerContainer.className).toContain('h-full');
+    expect(outerContainer.className).toContain('flex-1');
+    expect(outerContainer.className).toContain('min-h-0');
     // Must strictly contain overflow-hidden
     expect(outerContainer.className).toContain('overflow-hidden');
     // Must not contain 100vh static heights that cause mobile overflow

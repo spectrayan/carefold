@@ -495,7 +495,7 @@ describe('Vitals and Schedule Components Suite', () => {
           category: 'vitals',
           rrule: 'RRULE:FREQ=DAILY;BYHOUR=7;BYMINUTE=30',
           timezone: 'America/New_York',
-          next_due_at: '2026-10-13T11:30:00Z',
+          next_due_at: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
           status: 'pending',
           last_triggered_at: null,
           snooze_until: null,
@@ -510,7 +510,7 @@ describe('Vitals and Schedule Components Suite', () => {
           category: 'medication',
           rrule: null,
           timezone: 'America/New_York',
-          next_due_at: '2026-10-10T12:00:00Z', // >24h in past
+          next_due_at: new Date(Date.now() - 48 * 3600 * 1000).toISOString(), // >24h in past
           status: 'missed',
           last_triggered_at: null,
           snooze_until: null,

@@ -1,0 +1,41 @@
+{
+  "common": {
+    "appName": "Carefold",
+    "tagline": "Agentes Especialistas de Salud",
+    "localMode": "Local",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "search": "Buscar",
+    "loading": "Cargando…",
+    "appointmentCount": "{count, plural, zero {Sin citas próximas} one {# cita próxima} other {# citas próximas}}"
+  },
+  "nav": {
+    "home": "Inicio",
+    "chat": "Consultas",
+    "specialists": "Especialistas",
+    "skills": "Habilidades",
+    "records": "Documentos",
+    "schedule": "Agenda",
+    "vitals": "Signos vitales",
+    "preventive": "Cuidado preventivo",
+    "connections": "Conexiones",
+    "activity": "Actividad",
+    "settings": "Ajustes"
+  },
+  "settings": {
+    "display": {
+      "title": "Apariencia y Pantalla",
+      "description": "Personaliza el tema de color, modos de contraste, idioma y accesibilidad de texto.",
+      "languageTitle": "Idioma y Formato Regional",
+      "languageDescription": "Selecciona el idioma de la interfaz, dirección de lectura y formato regional de fechas y números.",
+      "rtlBadge": "RTL",
+      "previewTitle": "Vista previa de formato regional",
+      "previewDate": "Fecha de ejemplo",
+      "previewNumber": "Valor de laboratorio de ejemplo"
+    }
+  },
+  "safety": {
+    "disclaimerBanner": "Carefold te ayuda a preparar tus consultas médicas y navegar tu atención. No proporciona diagnósticos ni tratamientos médicos.",
+    "emergencyNotice": "Si experimentas una emergencia médica, llama al 911 o al 112 o acude a urgencias de inmediato."
+  }
+}

@@ -404,7 +404,7 @@ export function SessionHistorySidebar({
             aria-labelledby="delete-dialog-title"
             aria-describedby="delete-dialog-description"
           >
-            <div className="w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-5 animate-in fade-in zoom-in-95">
+            <div className="w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-5">
               <div className="flex items-start gap-3">
                 <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 shrink-0">
                   <AlertTriangle className="w-5 h-5" />
