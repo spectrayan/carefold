@@ -213,7 +213,7 @@ Carefold enforces security through defense-in-depth:
 
 ## 6. Carefold Autonomy & Multi-Profile Household Architecture (`AU-01`–`AU-81`)
 
-Carefold extends its local-first runtime into a full multi-profile household care organizer and policy-gated autonomous execution engine across Milestones M1–M6 (`AU-01`–`AU-81`):
+Carefold extends its local-first runtime into a full multi-profile household care organizer and policy-gated autonomous execution engine across Milestones Phase1–Phase6 (`AU-01`–`AU-81`):
 
 ### 6.1 Multi-User Household Profiles, Envelope Encryption & Content-Addressed Storage
 

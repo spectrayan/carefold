@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial stress test for candidate boundaries (<= 8 candidates) across all 5 domains,
+"""Boundary stress test for candidate boundaries (<= 8 candidates) across all 5 domains,
 API pagination, domain filtering, and system agent isolation.
 """
 

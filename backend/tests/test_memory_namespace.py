@@ -96,7 +96,7 @@ class TestNamespaceIsolationAndDelimiterStress:
 
     @pytest.mark.asyncio
     async def test_delimiter_multiple_colons_namespace(self, adapter: SqliteMemoryAdapter) -> None:
-        """Challenge 1.1: Namespace 'a:b:c' vs 'a:b' vs 'a' with colons in keys."""
+        """Verification 1.1: Namespace 'a:b:c' vs 'a:b' vs 'a' with colons in keys."""
         # Tenant A: namespace='a:b:c', key='d'
         # Tenant B: namespace='a:b',   key='c:d'
         # Tenant C: namespace='a',     key='b:c:d'
@@ -127,7 +127,7 @@ class TestNamespaceIsolationAndDelimiterStress:
 
     @pytest.mark.asyncio
     async def test_delimiter_colon_only_namespaces(self, adapter: SqliteMemoryAdapter) -> None:
-        """Challenge 1.2: Extreme namespaces consisting solely of colons (":::", "::", ":", "")."""
+        """Verification 1.2: Extreme namespaces consisting solely of colons (":::", "::", ":", "")."""
         await adapter.remember("key", "val_3", MemoryTier.EPISODIC, namespace=":::")
         await adapter.remember(":key", "val_2", MemoryTier.EPISODIC, namespace="::")
         await adapter.remember("::key", "val_1", MemoryTier.EPISODIC, namespace=":")
@@ -145,7 +145,7 @@ class TestNamespaceIsolationAndDelimiterStress:
 
     @pytest.mark.asyncio
     async def test_empty_namespace_lifecycle(self, adapter: SqliteMemoryAdapter) -> None:
-        """Challenge 1.3: Empty namespace ('') lifecycle across all port methods."""
+        """Verification 1.3: Empty namespace ('') lifecycle across all port methods."""
         # 1. remember in empty namespace
         await adapter.remember("k_empty", "v_empty", MemoryTier.SEMANTIC, namespace="")
 
@@ -181,7 +181,7 @@ class TestNamespaceIsolationAndDelimiterStress:
 
     @pytest.mark.asyncio
     async def test_unicode_colons_isolation(self, adapter: SqliteMemoryAdapter) -> None:
-        """Challenge 1.4: Namespaces containing distinct unicode colon variants."""
+        """Verification 1.4: Namespaces containing distinct unicode colon variants."""
         # Colons across unicode blocks:
         # standard:   U+003A (:)
         # fullwidth:  U+FF1A (：)
@@ -220,7 +220,7 @@ class TestNamespaceIsolationAndDelimiterStress:
 
     @pytest.mark.asyncio
     async def test_digit_prefix_namespace_collision_resistance(self, adapter: SqliteMemoryAdapter) -> None:
-        """Challenge 1.5: Namespaces starting with digits and colons mimicking length prefix."""
+        """Verification 1.5: Namespaces starting with digits and colons mimicking length prefix."""
         # e.g. ns="5:admin", key="key" vs ns="5", key="admin:key" vs ns="1:5:admin", key="key"
         await adapter.remember("key", "val_5_admin", MemoryTier.WORKING, namespace="5:admin")
         await adapter.remember("admin:key", "val_5_plain", MemoryTier.WORKING, namespace="5")
@@ -232,7 +232,7 @@ class TestNamespaceIsolationAndDelimiterStress:
 
     @pytest.mark.asyncio
     async def test_extreme_length_namespace(self, adapter: SqliteMemoryAdapter) -> None:
-        """Challenge 1.6: Very long namespace (4000+ chars) with mixed colons and symbols."""
+        """Verification 1.6: Very long namespace (4000+ chars) with mixed colons and symbols."""
         long_ns = "ns_" + ("segment:" * 400) + "terminal"
         assert len(long_ns) > 3200
 
@@ -263,7 +263,7 @@ class TestCatalogTagFilteringAdversarial:
 
     @pytest.mark.asyncio
     async def test_multi_tag_or_semantics(self, catalog: SqliteCatalogAdapter) -> None:
-        """Challenge 2.1: Verify multi-tag combinations behave with OR (match any) semantics."""
+        """Verification 2.1: Verify multi-tag combinations behave with OR (match any) semantics."""
         a1 = _make_agent("a1", title="Cardio Agent", tags=["cardiology", "heart"])
         a2 = _make_agent("a2", title="Pediatric Agent", tags=["pediatrics", "child"])
         a3 = _make_agent("a3", title="Dual Agent", tags=["cardiology", "pediatrics"])
@@ -282,7 +282,7 @@ class TestCatalogTagFilteringAdversarial:
 
     @pytest.mark.asyncio
     async def test_tag_case_insensitivity_ascii(self, catalog: SqliteCatalogAdapter) -> None:
-        """Challenge 2.2: Case variations in query tags match uppercase, lowercase, mixed case."""
+        """Verification 2.2: Case variations in query tags match uppercase, lowercase, mixed case."""
         a = _make_agent("a_case", tags=["CARDIOLOGY", "Pediatrics", "wellness_plan"])
         await catalog.index_agent(a)
 
@@ -304,7 +304,7 @@ class TestCatalogTagFilteringAdversarial:
 
     @pytest.mark.asyncio
     async def test_tag_case_insensitivity_accented_unicode_finding(self, catalog: SqliteCatalogAdapter) -> None:
-        """Challenge 2.3: Empirical verification of SQLite LOWER() behavior on non-ASCII characters.
+        """Verification 2.3: Systematic verification of SQLite LOWER() behavior on non-ASCII characters.
         
         Demonstrates that SQLite's built-in LOWER() function only folds ASCII A-Z.
         If a manifest tag contains uppercase accented unicode like 'CAFÉ', SQLite LOWER('CAFÉ')
@@ -322,13 +322,13 @@ class TestCatalogTagFilteringAdversarial:
         # Searching with uppercase 'CAFÉ': clean_tags has Python 'café'
         # In SQL: SQLite LOWER('CAFÉ')='CAFÉ'
         # 'CAFÉ' IN ('café') -> FALSE
-        # This empirically proves that uppercase accented tags in manifests are PERMANENTLY UNSEARCHABLE!
+        # This systematically proves that uppercase accented tags in manifests are PERMANENTLY UNSEARCHABLE!
         res_upper = await catalog.search_agents(tags=["CAFÉ"])
         assert len(res_upper) == 0, "Confirms uppercase accented tags in manifest are permanently unsearchable"
 
     @pytest.mark.asyncio
     async def test_manifest_untrimmed_whitespace_finding(self, catalog: SqliteCatalogAdapter) -> None:
-        """Challenge 2.4: Untrimmed whitespace in manifest tags.
+        """Verification 2.4: Untrimmed whitespace in manifest tags.
         
         If manifest.tags contains ' cardiology ' with spaces, SQL LOWER(value) retains the spaces,
         so searching with clean tag 'cardiology' fails to match.
@@ -342,7 +342,7 @@ class TestCatalogTagFilteringAdversarial:
 
     @pytest.mark.asyncio
     async def test_empty_and_whitespace_tag_lists(self, catalog: SqliteCatalogAdapter) -> None:
-        """Challenge 2.5: Empty, None, and whitespace-only tag lists bypass tag filtering safely."""
+        """Verification 2.5: Empty, None, and whitespace-only tag lists bypass tag filtering safely."""
         for i in range(5):
             await catalog.index_agent(_make_agent(f"agent_{i}", tags=[f"tag_{i}"]))
 
@@ -360,7 +360,7 @@ class TestCatalogTagFilteringAdversarial:
 
     @pytest.mark.asyncio
     async def test_nonexistent_tags_with_pagination(self, catalog: SqliteCatalogAdapter) -> None:
-        """Challenge 2.6: Nonexistent tags with pagination limits and offsets."""
+        """Verification 2.6: Nonexistent tags with pagination limits and offsets."""
         for i in range(15):
             await catalog.index_agent(_make_agent(f"agent_{i}", tags=["common_tag"]))
 
@@ -374,7 +374,7 @@ class TestCatalogTagFilteringAdversarial:
 
     @pytest.mark.asyncio
     async def test_tag_pagination_boundary_integrity(self, catalog: SqliteCatalogAdapter) -> None:
-        """Challenge 2.7: Strict pagination boundary integrity across 25 tagged agents with limit=7.
+        """Verification 2.7: Strict pagination boundary integrity across 25 tagged agents with limit=7.
         
         Ensures pre-LIMIT tag filtering correctly returns all 25 matching agents across 4 pages
         without dropping records, overlapping records, or off-by-one errors.
@@ -406,7 +406,7 @@ class TestCatalogTagFilteringAdversarial:
 
     @pytest.mark.asyncio
     async def test_tags_combined_with_fts_search(self, catalog: SqliteCatalogAdapter) -> None:
-        """Challenge 2.8: Tag filtering combined with full-text search query and scoring."""
+        """Verification 2.8: Tag filtering combined with full-text search query and scoring."""
         a1 = _make_agent("a1", title="Hypertension Clinical Guide", tags=["clinical", "cardio"])
         a2 = _make_agent("a2", title="Hypertension Wellness Tracker", tags=["wellness", "habits"])
         a3 = _make_agent("a3", title="Asthma Clinical Guide", tags=["clinical", "pulmonary"])
@@ -425,7 +425,7 @@ class TestCatalogTagFilteringAdversarial:
 
     @pytest.mark.asyncio
     async def test_skills_tag_filtering_and_pagination(self, catalog: SqliteCatalogAdapter) -> None:
-        """Challenge 2.9: Verify skills catalog implements identical pre-LIMIT tag filtering."""
+        """Verification 2.9: Verify skills catalog implements identical pre-LIMIT tag filtering."""
         for i in range(20):
             tag = "preauth" if i < 12 else "claims"
             await catalog.index_skill(_make_skill(f"skill_{i:02d}", name=f"Skill {i:02d}", tags=[tag]))
@@ -461,7 +461,7 @@ class TestLargeMemoryPayloadsAndTypePreservation:
 
     @pytest.mark.asyncio
     async def test_large_json_payload_100kb_plus(self, adapter: SqliteMemoryAdapter) -> None:
-        """Challenge 3.1: 150KB+ JSON structured memory payload.
+        """Verification 3.1: 150KB+ JSON structured memory payload.
         
         Verifies:
         - Exact JSON round-trip fidelity through get() with zero corruption of nested types.
@@ -503,7 +503,7 @@ class TestLargeMemoryPayloadsAndTypePreservation:
 
     @pytest.mark.asyncio
     async def test_large_json_payload_mutation_and_fts_reindex(self, adapter: SqliteMemoryAdapter) -> None:
-        """Challenge 3.2: Updating a large JSON payload refreshes FTS index without duplication."""
+        """Verification 3.2: Updating a large JSON payload refreshes FTS index without duplication."""
         doc1 = {"text": "Original document content with keyword alpha_marker", "items": list(range(2000))}
         await adapter.remember("doc_key", doc1, MemoryTier.WORKING, namespace="docs")
 
@@ -524,7 +524,7 @@ class TestLargeMemoryPayloadsAndTypePreservation:
 
     @pytest.mark.asyncio
     async def test_unicode_multilingual_memory_payloads(self, adapter: SqliteMemoryAdapter) -> None:
-        """Challenge 3.3: Multilingual medical records (Cyrillic, Arabic, Devanagari, Greek, CJK, Emoji)."""
+        """Verification 3.3: Multilingual medical records (Cyrillic, Arabic, Devanagari, Greek, CJK, Emoji)."""
         multilingual_data = {
             "ru": "Медицинская карта: пациент перенес операцию без осложнений.",
             "ar": "تقرير طبي: المريض يعاني من ارتفاع ضغط الدم والسكري.",
@@ -561,7 +561,7 @@ class TestLargeMemoryPayloadsAndTypePreservation:
 
     @pytest.mark.asyncio
     async def test_raw_bytes_handling_and_type_loss_finding(self, adapter: SqliteMemoryAdapter) -> None:
-        """Challenge 3.4: Raw binary bytes storage and type conversion finding.
+        """Verification 3.4: Raw binary bytes storage and type conversion finding.
         
         Demonstrates that SqliteMemoryAdapter handles raw bytes without crashing,
         but serializes via json.dumps(str(value)), returning a string representation
@@ -578,7 +578,7 @@ class TestLargeMemoryPayloadsAndTypePreservation:
 
     @pytest.mark.asyncio
     async def test_dict_containing_bytes_type_error_finding(self, adapter: SqliteMemoryAdapter) -> None:
-        """Challenge 3.5: Unhandled TypeError when value is a dict containing bytes.
+        """Verification 3.5: Unhandled TypeError when value is a dict containing bytes.
         
         Lines 125-126 in SqliteMemoryAdapter execute:
             elif isinstance(value, (dict, list)):
@@ -593,7 +593,7 @@ class TestLargeMemoryPayloadsAndTypePreservation:
 
     @pytest.mark.asyncio
     async def test_metadata_containing_bytes_type_error_finding(self, adapter: SqliteMemoryAdapter) -> None:
-        """Challenge 3.6: Unhandled TypeError when metadata contains bytes.
+        """Verification 3.6: Unhandled TypeError when metadata contains bytes.
         
         Line 121 in SqliteMemoryAdapter executes:
             meta_str = json.dumps(metadata or {})

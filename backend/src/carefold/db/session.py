@@ -536,8 +536,30 @@ def run_alembic_migrations(connection: Connection) -> None:
 
     # Check whether migrations have already been applied to head
     if has_alembic:
+        canonical_revisions = {
+            "0003": "0003_household_profiles_and_audit",
+            "0004": "0004_policy_gate_and_vault",
+            "0005": "0005_clinical_domain_records",
+            "0006": "0006_preventive_and_school_forms",
+            "0007": "0007_connectors_and_consent",
+            "0008": "0008_routines_mcp_and_drafts",
+            "0009": "0009_companion_and_handover",
+        }
         rows = connection.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()
-        current_revs = {row[0] for row in rows if row and row[0]}
+        current_revs = set()
+        for row in rows:
+            if not row or not row[0]:
+                continue
+            ver = str(row[0])
+            prefix = ver[:4]
+            if prefix in canonical_revisions and ver != canonical_revisions[prefix]:
+                new_ver = canonical_revisions[prefix]
+                connection.exec_driver_sql(
+                    "UPDATE alembic_version SET version_num = :new_ver WHERE version_num = :old_ver;",
+                    {"new_ver": new_ver, "old_ver": ver},
+                )
+                ver = new_ver
+            current_revs.add(ver)
         script = alembic.script.ScriptDirectory.from_config(cfg)
         heads = set(script.get_heads())
         if heads and heads.issubset(current_revs):

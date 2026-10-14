@@ -94,9 +94,9 @@ describe('Stress-Testing for Multi-Theme & Contrast System', () => {
   });
 
   // =========================================================================
-  // 1. CORRUPTED & ADVERSARIAL LOCALSTORAGE HANDLING
+  // 1. CORRUPTED & BOUNDARY LOCALSTORAGE HANDLING
   // =========================================================================
-  describe('Resilience Challenge 1: Corrupted, Injected & Unexpected localStorage Values', () => {
+  describe('Resilience Suite 1: Corrupted, Injected & Unexpected localStorage Values', () => {
     it('safely recovers to system default when localStorage contains unexpected strings', () => {
       const corruptedValues = [
         '',
@@ -224,7 +224,7 @@ describe('Stress-Testing for Multi-Theme & Contrast System', () => {
   // =========================================================================
   // 2. SSR HYDRATION & SCRIPT EXECUTION HARNESS
   // =========================================================================
-  describe('Resilience Challenge 2: SSR Flash Prevention & Hydration Script Execution', () => {
+  describe('Resilience Suite 2: SSR Flash Prevention & Hydration Script Execution', () => {
     function executeThemeScriptLogic(storedValue: string | null, osDark: boolean) {
       // Direct reproduction of ThemeScript logic in ThemeProvider.tsx lines 150-163
       try {
@@ -302,7 +302,7 @@ describe('Stress-Testing for Multi-Theme & Contrast System', () => {
   // =========================================================================
   // 3. RAPID THEME TOGGLING STRESS HARNESS
   // =========================================================================
-  describe('Resilience Challenge 3: Rapid Theme Toggling Stress Harness', () => {
+  describe('Resilience Suite 3: Rapid Theme Toggling Stress Harness', () => {
     it('maintains state consistency under rapid 50x sequential toggle cycles', async () => {
       render(
         <ThemeProvider defaultTheme="light">
@@ -398,7 +398,7 @@ describe('Stress-Testing for Multi-Theme & Contrast System', () => {
   // =========================================================================
   // 4. MATHEMATICAL COLOR CONTRAST & CHIP STYLING VERIFICATION
   // =========================================================================
-  describe('Resilience Challenge 4: Mathematical Color Contrast & Chip Verification', () => {
+  describe('Resilience Suite 4: Mathematical Color Contrast & Chip Verification', () => {
     // Exact Tailwind palette values used in apps/web
     const colors = {
       white: '#ffffff',

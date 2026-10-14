@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Tier 2: Boundary & Corner Cases — Adversarial, Fail-Closed & Tamper Detection.
+"""Tier 2: Boundary & Corner Cases — Boundary, Fail-Closed & Tamper Detection.
 
 Verifies boundary conditions, fail-closed security invariants, tamper detection,
 injection defense, and error cascades across all 6 Autonomy features.
@@ -229,8 +229,8 @@ def test_t2_f4_replay_attack_on_consumed_approval_rejected(approval_store: Appro
     approval_store.decide("app-replay", "prof-1", "approved", None, "u1", ["manage"])
 
     # First consume succeeds
-    c1 = approval_store.consume_atomic("app-replay", args)
-    assert c1 == "app-replay"
+    item_one = approval_store.consume_atomic("app-replay", args)
+    assert item_one == "app-replay"
 
     # Second consume attempt rejected
     with pytest.raises(ValueError, match="status 'consumed'"):
@@ -376,7 +376,7 @@ def test_t2_f6_expired_lease_acquired_by_new_worker(job_runner: JobRunner):
         profile_id="prof-1",
         kind="sync",
         routine_id="r1",
-        connection_id="c1",
+        connection_id="item_one",
         payload={},
         next_run_at=now - 100.0,
         lease_owner="worker-dead",
@@ -395,7 +395,7 @@ def test_t2_f6_expired_lease_acquired_by_new_worker(job_runner: JobRunner):
 
 def test_t2_f6_zero_batch_size_returns_empty_list(job_runner: JobRunner):
     """F6.B2: Leasing with batch_size=0 returns empty list without error."""
-    job_runner.add_job(Job("j1", "p1", "kind", "r1", "c1", {}, next_run_at=100.0, status="pending"))
+    job_runner.add_job(Job("j1", "p1", "kind", "r1", "item_one", {}, next_run_at=100.0, status="pending"))
     leased = job_runner.lease_batch("worker-1", now=200.0, batch_size=0)
     assert leased == []
 
@@ -415,7 +415,7 @@ async def test_t2_f6_failing_job_increments_attempts(job_runner: JobRunner):
         profile_id="prof-1",
         kind="sync",
         routine_id="r1",
-        connection_id="c1",
+        connection_id="item_one",
         payload={"url": "http://blocked.com"},
         attempts=0,
     )

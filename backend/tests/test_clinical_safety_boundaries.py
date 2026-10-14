@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial Test Suite for Clinical Safety and Tool Allow-List Enforcement.
+"""Boundary Test Suite for Clinical Safety and Tool Allow-List Enforcement.
 
 Tests and documents:
 1. Tool Allow-List Enforcement & Bounding:

@@ -331,7 +331,7 @@ class TestExtractionSubgraph:
             "Coinsurance: 20%\n"
         )
         state = create_initial_state(
-            thread_id="t-m4-subgraph",
+            thread_id="t-msg_four-subgraph",
             user_id="u-test",
             messages=[HumanMessage(content="Extract insurance schedule")],
         )
@@ -355,7 +355,7 @@ class TestExtractionSubgraph:
             "Follow-up: Return in 4 weeks.\n"
         )
         state = create_initial_state(
-            thread_id="t-m4-sup",
+            thread_id="t-msg_four-sup",
             user_id="u-test",
             messages=[HumanMessage(content="Extract document details from attachment")],
         )

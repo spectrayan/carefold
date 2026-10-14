@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Unit and integration test suite for Index Freshness Automation (AU-27, M4).
+"""Unit and integration test suite for Index Freshness Automation (AU-27, Phase4).
 
 Verifies:
 1. JobRunner automatically registers index_doc and delete_doc handlers.

@@ -22,7 +22,7 @@ Tests and documents:
    - AgentRegistry.get("orchestrator") resolves the AgentManifest with hidden=True.
    - AgentRegistry.get("_template") strictly returns None.
    - AgentRegistry.get("_system") and dot/underscore queries strictly return None.
-3. Adversarial Traversal Stress Testing:
+3. Boundary Traversal Stress Testing:
    - Synthetic workspaces with dot prefixes (.git, .hidden_dir) and underscore prefixes
      (_backup, __pycache__, _draft, _template) at root and within _system/.
    - Plain files placed directly in agents/ and agents/_system/.
@@ -169,7 +169,7 @@ def test_agent_registry_get_template_returns_none(temp_workspace: Path):
 
 
 # ============================================================================
-# 3. Adversarial Traversal Stress Testing: Synthetic Edge Cases
+# 3. Boundary Traversal Stress Testing: Synthetic Edge Cases
 # ============================================================================
 
 
@@ -193,7 +193,7 @@ skills: []
 
 
 def test_synthetic_directory_traversal_filtering(tmp_path: Path):
-    """Adversarial stress test: synthetic workspace with complex dot and underscore directory structures.
+    """Boundary stress test: synthetic workspace with complex dot and underscore directory structures.
 
     Structure:
     agents/
@@ -223,7 +223,7 @@ def test_synthetic_directory_traversal_filtering(tmp_path: Path):
     _create_minimal_agent(agents_dir / "valid-public-1", "valid-public-1", "Public 1")
     _create_minimal_agent(agents_dir / "valid-public-2", "valid-public-2", "Public 2")
 
-    # 2. Adversarial root entries (should be skipped)
+    # 2. Boundary root entries (should be skipped)
     (agents_dir / ".git").mkdir(parents=True)
     _create_minimal_agent(agents_dir / ".hidden-agent", ".hidden-agent", "Hidden Dot Agent")
     _create_minimal_agent(agents_dir / "_backup-agent", "_backup-agent", "Backup Underscore Agent")
@@ -240,7 +240,7 @@ def test_synthetic_directory_traversal_filtering(tmp_path: Path):
     _create_minimal_agent(system_dir / "sys-agent-1", "sys-agent-1", "System 1")
     _create_minimal_agent(system_dir / "sys-agent-2", "sys-agent-2", "System 2")
 
-    # 4. Adversarial entries inside _system (should be skipped)
+    # 4. Boundary entries inside _system (should be skipped)
     (system_dir / ".git").mkdir(parents=True)
     _create_minimal_agent(system_dir / ".internal-secret", ".internal-secret", "Secret Dot System Agent")
     _create_minimal_agent(system_dir / "_nested-temp", "_nested-temp", "Nested Underscore System Agent")
@@ -248,7 +248,7 @@ def test_synthetic_directory_traversal_filtering(tmp_path: Path):
     (system_dir / "__pycache__").mkdir(parents=True)
     (system_dir / "stray_system_file.json").write_text("{}", encoding="utf-8")
 
-    # --- Empirical Test A: load_all_agents() ---
+    # --- Systematic Test A: load_all_agents() ---
     summaries = load_all_agents(agents_dir, skills_dir)
     discovered_ids = {s.id for s in summaries}
 
@@ -263,7 +263,7 @@ def test_synthetic_directory_traversal_filtering(tmp_path: Path):
     assert summary_map["sys-agent-1"].hidden is True
     assert summary_map["sys-agent-2"].hidden is True
 
-    # --- Empirical Test B: AgentRegistry.reload() ---
+    # --- Systematic Test B: AgentRegistry.reload() ---
     registry = AgentRegistry(agents_dir, skills_dir)
     assert set(registry.list_agent_ids()) == expected_ids
 
@@ -326,8 +326,8 @@ def test_on_demand_resolution_of_late_added_system_agent(tmp_path: Path):
     assert late_manifest.id == "late-sys-agent"
     assert late_manifest.hidden is True
 
-    # Now add an adversarial underscore agent in _system
-    _create_minimal_agent(system_dir / "_adversarial-late", "_adversarial-late", "Adversarial")
+    # Now add an boundary underscore agent in _system
+    _create_minimal_agent(system_dir / "_adversarial-late", "_adversarial-late", "Boundary")
     assert registry.get("_adversarial-late") is None
 
 

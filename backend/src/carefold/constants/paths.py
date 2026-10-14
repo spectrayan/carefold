@@ -24,7 +24,7 @@ from __future__ import annotations
 DEFAULT_WORKSPACE_ROOT: str = "."
 WORKSPACE_DIR: str = "workspace"
 
-# Dedicated user home storage directory (M1)
+# Dedicated user home storage directory (Phase1)
 DEFAULT_HOME_DIR: str = ".carefold"
 UPLOADS_DIR: str = "uploads"
 

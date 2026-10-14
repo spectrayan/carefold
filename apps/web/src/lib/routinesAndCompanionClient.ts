@@ -26,7 +26,7 @@ import type {
   TeenHandoverResponse,
   ViewerSectionKey,
   ViewerSectionPermissions,
-} from '@/types/autonomyBatch6';
+} from '@/types/routinesAndCompanion';
 
 export async function fetchMcpToolPins(
   profileId: string

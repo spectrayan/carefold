@@ -263,7 +263,7 @@ describe('Stress Suite: Composer & Textarea Edge Cases', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 5. CJK / IME COMPOSITION ADVERSARIAL STRESS
+  // 5. CJK / IME COMPOSITION BOUNDARY STRESS
   // ---------------------------------------------------------------------------
   it('protects CJK / IME candidate selection: suppresses submit on native isComposing and keyCode 229', () => {
     const mockFetch = vi.fn().mockImplementation(() => Promise.resolve(new Response('{}', { status: 200 })));

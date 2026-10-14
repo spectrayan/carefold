@@ -233,8 +233,8 @@ describe('sessionHistory Storage Index Library', () => {
     it('scans localStorage for unindexed carefold_msgs_* keys and populates index', () => {
       const threadId = 'thread-visit-steward-legacy-99';
       const messages = [
-        { id: 'm1', role: 'user', content: 'What questions to ask for annual physical?' },
-        { id: 'm2', role: 'assistant', content: 'Here are 5 questions to ask.' }
+        { id: 'msg_one', role: 'user', content: 'What questions to ask for annual physical?' },
+        { id: 'msg_two', role: 'assistant', content: 'Here are 5 questions to ask.' }
       ];
       localStorage.setItem(`carefold_msgs_${threadId}`, JSON.stringify(messages));
 

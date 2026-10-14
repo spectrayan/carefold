@@ -11,7 +11,7 @@
 
 """Unit and lifecycle integration test suite for LangGraph BaseStore memory lifecycle.
 
-Tests Requirement R3 and Milestone M3:
+Tests Requirement R3 and Milestone Phase3:
 - Graph compilation with InMemoryStore and SpectorStore
 - Phase 1 context recall populating recalled_memories, memory_context, and system_prompt
 - Phase 5 turn persistence writing episodic turn records to ("memories", thread_id)

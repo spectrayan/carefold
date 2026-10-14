@@ -9,9 +9,9 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial Verification Suite for Model Provider Strategies.
+"""Boundary Verification Suite for Model Provider Strategies.
 
-Thoroughly stress-tests ModelFactory and provider strategies under adversarial conditions:
+Thoroughly stress-tests ModelFactory and provider strategies under boundary conditions:
 1. Rejection of provider="mock" and all case/whitespace variations (must raise UnsupportedProviderError / ValueError).
 2. Unknown, empty, whitespace, and non-string providers (None, "", "  ", "unsupported_xyz", numbers, booleans).
 3. Case insensitivity and alias resolution ("OLLAMA", "Ollama", "OpEnAi", "Google", "GEMINI", "Claude", etc.).
@@ -60,7 +60,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 
 
 # ============================================================================
-# Section 1: Provider="mock" Adversarial Rejection
+# Section 1: Provider="mock" Boundary Rejection
 # ============================================================================
 
 @pytest.mark.parametrize("mock_variant", [
@@ -216,24 +216,24 @@ def test_case_insensitivity_and_alias_resolution(cased_provider: str, expected_c
 def test_case_insensitive_instantiation():
     """Verify create_chat_model succeeds with mixed casing and aliases."""
     # Ollama
-    m1 = create_chat_model(provider="OLLAMA")
-    assert hasattr(m1, "model_name") or hasattr(m1, "model")
+    msg_one = create_chat_model(provider="OLLAMA")
+    assert hasattr(msg_one, "model_name") or hasattr(msg_one, "model")
 
     # OpenAI
-    m2 = create_chat_model(provider="OpEnAi", api_key="dummy-openai-key")
-    assert hasattr(m2, "openai_api_key")
+    msg_two = create_chat_model(provider="OpEnAi", api_key="dummy-openai-key")
+    assert hasattr(msg_two, "openai_api_key")
 
     # Google via Gemini alias
-    m3 = create_chat_model(provider="GeMiNi", api_key="dummy-gemini-key")
-    assert hasattr(m3, "google_api_key")
+    msg_three = create_chat_model(provider="GeMiNi", api_key="dummy-gemini-key")
+    assert hasattr(msg_three, "google_api_key")
 
     # Anthropic via Claude alias
-    m4 = create_chat_model(provider="CLAUDE", api_key="dummy-claude-key")
-    assert hasattr(m4, "anthropic_api_key")
+    msg_four = create_chat_model(provider="CLAUDE", api_key="dummy-claude-key")
+    assert hasattr(msg_four, "anthropic_api_key")
 
     # Custom via Local alias
-    m5 = create_chat_model(provider="Local", base_url="http://localhost:8000/v1")
-    assert m5.openai_api_base == "http://localhost:8000/v1"
+    msg_five = create_chat_model(provider="Local", base_url="http://localhost:8000/v1")
+    assert msg_five.openai_api_base == "http://localhost:8000/v1"
 
 
 # ============================================================================

@@ -602,7 +602,7 @@ def other_profile_id() -> str:
 
 @pytest.fixture
 def sample_user_id() -> str:
-    return "user-bharat-001"
+    return "user-alex-001"
 
 
 @pytest.fixture

@@ -329,7 +329,7 @@ def test_local_cross_reranker_boosts_loinc_code_and_clinical_section() -> None:
         ),
         SearchResult(
             document_id="doc-vitals-loinc",
-            chunk_id="doc-vitals-loinc#c1",
+            chunk_id="doc-vitals-loinc#item_one",
             content="Vital Signs: Blood pressure panel (LOINC 85354-9) recorded at 128/82 mmHg during Cardiology Assessment.",
             score=0.55,
             lexical_score=0.60,

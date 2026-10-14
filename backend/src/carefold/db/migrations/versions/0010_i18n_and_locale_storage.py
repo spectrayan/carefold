@@ -12,7 +12,7 @@
 """Internationalization (i18n) storage schema evolution: BCP 47 locale columns on users, profiles, notes, attachments, and health_resources.
 
 Revision ID: 0010_i18n_and_locale_storage
-Revises: 0009_autonomy_batch_7
+Revises: 0009_companion_and_handover
 Create Date: 2026-10-14 10:25:00.000000
 
 """
@@ -24,7 +24,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "0010_i18n_and_locale_storage"
-down_revision: Union[str, None] = "0009_autonomy_batch_7"
+down_revision: Union[str, None] = "0009_companion_and_handover"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

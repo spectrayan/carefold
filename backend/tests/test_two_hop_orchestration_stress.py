@@ -9,19 +9,19 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial stress-test suite for Two-Hop Orchestrator Fallback Chain.
+"""Boundary stress-test suite for Two-Hop Orchestrator Fallback Chain.
 
 Target:
 - carefold.workflows.nodes.orchestrator_node.OrchestratorNode
 - carefold.memory.adapters.sqlite.catalog_adapter.SqliteCatalogAdapter
 
 Challenges Tested:
-1. Challenge Step 1: Exact dot-notated category match.
-2. Challenge Step 2: Obscure subcategories not in database -> fallback to domain-only match.
-3. Challenge Step 3: Completely unrecognized domain -> fallback to FTS search on user query keywords/tags.
-4. Challenge Step 4: Pure gibberish / total absence of matching candidates -> fallback to pattern matching.
-5. Challenge Step 5: Candidate limits: Ensure candidates list passed to Tier-2 is strictly <= 8.
-6. Challenge Step 6: Empty CatalogPort (zero agents indexed) -> clean fallback to pattern matching without crashing.
+1. Verification Step 1: Exact dot-notated category match.
+2. Verification Step 2: Obscure subcategories not in database -> fallback to domain-only match.
+3. Verification Step 3: Completely unrecognized domain -> fallback to FTS search on user query keywords/tags.
+4. Verification Step 4: Pure gibberish / total absence of matching candidates -> fallback to pattern matching.
+5. Verification Step 5: Candidate limits: Ensure candidates list passed to Tier-2 is strictly <= 8.
+6. Verification Step 6: Empty CatalogPort (zero agents indexed) -> clean fallback to pattern matching without crashing.
 7. Hostile / edge-case stress tests: symbols-only prompt, Tier-1 model crash, Tier-2 model crash, hallucinated IDs.
 """
 
@@ -77,7 +77,7 @@ def make_agent(
     tags: Optional[List[str]] = None,
     tools: Optional[List[str]] = None,
 ) -> AgentManifest:
-    """Helper to create valid AgentManifest instances for adversarial testing."""
+    """Helper to create valid AgentManifest instances for boundary testing."""
     return AgentManifest(
         id=agent_id,
         title=title,
@@ -94,11 +94,11 @@ def make_agent(
 
 
 # ============================================================================
-# Challenge Step 1: Exact Dot-Notated Category Match
+# Verification Step 1: Exact Dot-Notated Category Match
 # ============================================================================
 
 class TestChallengeStep1ExactCategoryMatch:
-    """Challenge Step 1: Exact dot-notated category match.
+    """Verification Step 1: Exact dot-notated category match.
     
     Verifies:
     - Queries matching an exact subcategory retrieve only agents from that category.
@@ -188,11 +188,11 @@ class TestChallengeStep1ExactCategoryMatch:
 
 
 # ============================================================================
-# Challenge Step 2: Obscure Subcategories -> Fallback to Domain-Only Match
+# Verification Step 2: Obscure Subcategories -> Fallback to Domain-Only Match
 # ============================================================================
 
 class TestChallengeStep2DomainOnlyFallback:
-    """Challenge Step 2: Obscure subcategories not in database -> fallback to domain-only match.
+    """Verification Step 2: Obscure subcategories not in database -> fallback to domain-only match.
     
     Verifies:
     - Tier-1 returns a non-existent or obscure category path.
@@ -278,11 +278,11 @@ class TestChallengeStep2DomainOnlyFallback:
 
 
 # ============================================================================
-# Challenge Step 3: Unrecognized Domain -> Fallback to FTS Search
+# Verification Step 3: Unrecognized Domain -> Fallback to FTS Search
 # ============================================================================
 
 class TestChallengeStep3FTSFallback:
-    """Challenge Step 3: Completely unrecognized domain -> fallback to FTS search on user query keywords/tags.
+    """Verification Step 3: Completely unrecognized domain -> fallback to FTS search on user query keywords/tags.
     
     Verifies:
     - Tier-1 returns a domain that has ZERO agents in the database.
@@ -408,11 +408,11 @@ class TestChallengeStep3FTSFallback:
 
 
 # ============================================================================
-# Challenge Step 4: Pure Gibberish & Total Absence -> Pattern Matching Fallback
+# Verification Step 4: Pure Gibberish & Total Absence -> Pattern Matching Fallback
 # ============================================================================
 
 class TestChallengeStep4PatternFallback:
-    """Challenge Step 4: Pure gibberish / total absence of matching candidates -> fallback to pattern matching.
+    """Verification Step 4: Pure gibberish / total absence of matching candidates -> fallback to pattern matching.
     
     Verifies:
     - Pure gibberish produces 0 matches across Step 1, Step 2, and Step 3.
@@ -516,11 +516,11 @@ class TestChallengeStep4PatternFallback:
 
 
 # ============================================================================
-# Challenge Step 5: Candidate Limits (Strictly <= 8)
+# Verification Step 5: Candidate Limits (Strictly <= 8)
 # ============================================================================
 
 class TestChallengeStep5CandidateLimits:
-    """Challenge Step 5: Candidate limits: Ensure candidates list passed to Tier-2 is strictly <= 8.
+    """Verification Step 5: Candidate limits: Ensure candidates list passed to Tier-2 is strictly <= 8.
     
     Verifies:
     - When database has 25 matching agents for exact category, Tier-2 receives <= 8.
@@ -681,11 +681,11 @@ class TestChallengeStep5CandidateLimits:
 
 
 # ============================================================================
-# Challenge Step 6: Empty CatalogPort (Zero Agents Indexed)
+# Verification Step 6: Empty CatalogPort (Zero Agents Indexed)
 # ============================================================================
 
 class TestChallengeStep6EmptyCatalogPort:
-    """Challenge Step 6: Empty CatalogPort (zero agents indexed) -> must cleanly fall back to pattern matching without crashing.
+    """Verification Step 6: Empty CatalogPort (zero agents indexed) -> must cleanly fall back to pattern matching without crashing.
     
     Verifies:
     - Catalog with 0 agents handles all query types without throwing IndexError, AttributeError, or KeyError.
@@ -784,7 +784,7 @@ class TestChallengeStep6EmptyCatalogPort:
 
 
 # ============================================================================
-# Section 7: Hostile & Adversarial Edge Cases
+# Section 7: Hostile & Boundary Edge Cases
 # ============================================================================
 
 class TestAdversarialHostileEdgeCases:

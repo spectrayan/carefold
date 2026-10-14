@@ -176,26 +176,26 @@ LangGraph Deep Agents provides **three precise extensibility hooks** that cover 
 ```mermaid
 flowchart TD
     subgraph "Deep Agents Built-in Stack"
-        M1["1. SkillsMiddleware<br/>(OVERRIDDEN: custom system_prompt<br/>with safety framing + routing hints)"]
-        M2["2. FilesystemMiddleware<br/>(with CompositeBackend + Permissions)"]
-        M3["3. SubAgentMiddleware<br/>(specialist subagents per clinical domain)"]
-        M4["4. SummarizationMiddleware"]
-        M5["5. PatchToolCallsMiddleware"]
+        Phase1["1. SkillsMiddleware<br/>(OVERRIDDEN: custom system_prompt<br/>with safety framing + routing hints)"]
+        Phase2["2. FilesystemMiddleware<br/>(with CompositeBackend + Permissions)"]
+        Phase3["3. SubAgentMiddleware<br/>(specialist subagents per clinical domain)"]
+        Phase4["4. SummarizationMiddleware"]
+        Phase5["5. PatchToolCallsMiddleware"]
     end
 
     subgraph "Carefold Custom Middleware (slot 7)"
-        M6["6. ClinicalSafetyMiddleware<br/>(red-flag gating, risk class enforcement,<br/>PII sanitization, intended-use validation)"]
-        M7["7. AuditMiddleware<br/>(compliance logging, triage telemetry)"]
-        M8["8. OrchestratorMiddleware<br/>(two-hop routing, execution plan)"]
+        Phase6["6. ClinicalSafetyMiddleware<br/>(red-flag gating, risk class enforcement,<br/>PII sanitization, intended-use validation)"]
+        Phase7["7. AuditMiddleware<br/>(compliance logging, triage telemetry)"]
+        Phase8["8. OrchestratorMiddleware<br/>(two-hop routing, execution plan)"]
     end
 
     subgraph "Deep Agents Tail Stack"
-        M9["9. Prompt Caching"]
+        Phase9["9. Prompt Caching"]
         M10["10. MemoryMiddleware"]
         M11["11. HumanInTheLoopMiddleware"]
     end
 
-    M1 --> M2 --> M3 --> M4 --> M5 --> M6 --> M7 --> M8 --> M9 --> M10 --> M11
+    Phase1 --> Phase2 --> Phase3 --> Phase4 --> Phase5 --> Phase6 --> Phase7 --> Phase8 --> Phase9 --> M10 --> M11
 ```
 
 ### Architectural Diagram — Skill Loading Flow
@@ -216,11 +216,11 @@ flowchart TD
     end
 
     subgraph "ClinicalSafetyMiddleware (Custom)"
-        C1["Read state.skills_metadata"]
-        C2["Extract risk_class from metadata"]
-        C3["Enforce Phase 0 tool registry<br/>against metadata.tools"]
-        C4["Validate intended-use declarations"]
-        C5["Emergency red-flag gating"]
+        ItemOne["Read state.skills_metadata"]
+        ItemTwo["Extract risk_class from metadata"]
+        ItemThree["Enforce Phase 0 tool registry<br/>against metadata.tools"]
+        ItemFour["Validate intended-use declarations"]
+        ItemFive["Emergency red-flag gating"]
     end
 
     subgraph "Agent Execution"
@@ -234,9 +234,9 @@ flowchart TD
     F4 --> S3
     S1 --> S2
     S2 --> A1
-    S3 --> C1
-    C1 --> C2
-    C2 --> C3
+    S3 --> ItemOne
+    ItemOne --> ItemTwo
+    ItemTwo --> ItemThree
     A1 -->|"On demand"| A2
     A2 -->|"On demand"| A3
 ```
@@ -907,7 +907,7 @@ def migrate_agent_yaml(agent_dir: Path):
 
 ### Core Implementation Files (To Be Modified)
 - **Skill Manifests**: All 23 `skills/*/SKILL.md` files — add `metadata` block, add `license` field
-- **Migration Script**: `backend/scripts/migrate_carefold_yaml.py` (new)
+- **Migration Script**: `skill manifest frontmatter loader` (new)
 - **Agent Construction**: `backend/src/carefold/engine/agent_factory.py` (new — replaces parts of registry.py)
 - **Safety Middleware**: `backend/src/carefold/middleware/clinical_safety.py` (new)
 - **Audit Middleware**: `backend/src/carefold/middleware/audit.py` (new)

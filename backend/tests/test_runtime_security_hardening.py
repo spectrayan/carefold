@@ -11,7 +11,7 @@
 
 """Runtime Security Hardening Test Suite.
 
-Empirically probes:
+Systematically probes:
 1. Concurrency:
    - Race condition on simultaneous user registration with duplicate emails/usernames
    - Concurrent note creation with colliding slugs
@@ -65,7 +65,7 @@ from carefold.db.models import ChatThread, Profile, ProfileAccess, User
 
 
 @pytest.fixture
-async def chal_env(temp_workspace: Path, monkeypatch):
+async def security_env(temp_workspace: Path, monkeypatch):
     """Sets up an isolated database, auth adapter, memory adapter, and workspace."""
     engine = create_db_engine("sqlite+aiosqlite:///:memory:")
     await init_db(engine)
@@ -107,13 +107,13 @@ async def chal_env(temp_workspace: Path, monkeypatch):
 
 
 @pytest.fixture
-def registered_users(client: TestClient, chal_env):
+def registered_users(client: TestClient, security_env):
     """Registers Admin, Alice (Owner), Bob (Viewer), and Eve (Unrelated Attacker)."""
     # 0. Initial Admin
     client.post(
         "/api/auth/register",
         json={
-            "email": "admin@carefold.chal",
+            "email": "admin@carefold.test",
             "username": "admin",
             "password": "AdminPassword123!",
             "full_name": "System Administrator",
@@ -124,7 +124,7 @@ def registered_users(client: TestClient, chal_env):
     res_a = client.post(
         "/api/auth/register",
         json={
-            "email": "alice@carefold.chal",
+            "email": "alice@carefold.test",
             "username": "alice",
             "password": "AlicePassword123!",
             "full_name": "Alice Primary",
@@ -141,7 +141,7 @@ def registered_users(client: TestClient, chal_env):
     res_b = client.post(
         "/api/auth/register",
         json={
-            "email": "bob@carefold.chal",
+            "email": "bob@carefold.test",
             "username": "bob",
             "password": "BobPassword123!",
             "full_name": "Bob Viewer",
@@ -158,7 +158,7 @@ def registered_users(client: TestClient, chal_env):
     res_e = client.post(
         "/api/auth/register",
         json={
-            "email": "eve@carefold.chal",
+            "email": "eve@carefold.test",
             "username": "eve",
             "password": "EvePassword123!",
             "full_name": "Eve Attacker",
@@ -186,14 +186,14 @@ class TestConcurrencyProbes:
     """Stress tests concurrent operations for race conditions and data corruption."""
 
     @pytest.mark.asyncio
-    async def test_concurrent_duplicate_user_registration(self, chal_env):
+    async def test_concurrent_duplicate_user_registration(self, security_env):
         """Concurrent registration of the same email must yield at most one success."""
-        auth: SqlAuthAdapter = chal_env["auth"]
+        auth: SqlAuthAdapter = security_env["auth"]
 
         async def attempt_register():
             try:
                 profile = await auth.register_user(
-                    email="concurrent_twin@carefold.chal",
+                    email="concurrent_twin@carefold.test",
                     username="concurrent_twin",
                     password="Password12345!",
                     full_name="Twin User",
@@ -212,13 +212,13 @@ class TestConcurrencyProbes:
 
     @pytest.mark.xfail(strict=False, reason="Single-use token race condition under concurrent redemption")
     @pytest.mark.asyncio
-    async def test_concurrent_password_reset_token_redemption(self, chal_env):
+    async def test_concurrent_password_reset_token_redemption(self, security_env):
         """A single-use password reset token must only succeed once under concurrent redemption."""
-        auth: SqlAuthAdapter = chal_env["auth"]
+        auth: SqlAuthAdapter = security_env["auth"]
 
         # Register user
         user = await auth.register_user(
-            email="reset_target@carefold.chal",
+            email="reset_target@carefold.test",
             username="reset_target",
             password="InitialPassword123!",
             full_name="Reset Target",
@@ -241,7 +241,7 @@ class TestConcurrencyProbes:
         assert len(successes) == 1, f"Token redeemed {len(successes)} times, must be strictly 1"
 
     @pytest.mark.asyncio
-    async def test_concurrent_note_creation_colliding_slugs(self, chal_env):
+    async def test_concurrent_note_creation_colliding_slugs(self, security_env):
         """Concurrent note creations with identical slugs must generate unique slugs without failing."""
         from httpx import ASGITransport, AsyncClient
 
@@ -250,7 +250,7 @@ class TestConcurrencyProbes:
             reg_res = await aclient.post(
                 "/api/auth/register",
                 json={
-                    "email": "slug_race_user@carefold.chal",
+                    "email": "slug_race_user@carefold.test",
                     "username": "slug_race_user",
                     "password": "Password123!",
                     "full_name": "Slug Race User",
@@ -516,12 +516,12 @@ class TestNotesSlugSanitization:
 class TestSessionAndAccountGovernance:
     """Probes session lifecycle, logout invalidation, and disabled account blocking."""
 
-    def test_logout_revokes_session_token_immediately(self, client: TestClient, chal_env):
+    def test_logout_revokes_session_token_immediately(self, client: TestClient, security_env):
         # Register and login
         client.post(
             "/api/auth/register",
             json={
-                "email": "session_user@carefold.chal",
+                "email": "session_user@carefold.test",
                 "username": "session_user",
                 "password": "Password123!",
                 "full_name": "Session User",
@@ -551,13 +551,13 @@ class TestSessionAndAccountGovernance:
         assert audit_after.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_disabled_user_account_login_blocked(self, client: TestClient, chal_env):
-        auth: SqlAuthAdapter = chal_env["auth"]
-        session_factory = chal_env["session_factory"]
+    async def test_disabled_user_account_login_blocked(self, client: TestClient, security_env):
+        auth: SqlAuthAdapter = security_env["auth"]
+        session_factory = security_env["session_factory"]
 
         # Register user
         user = await auth.register_user(
-            email="disabled_user@carefold.chal",
+            email="disabled_user@carefold.test",
             username="disabled_user",
             password="Password123!",
             full_name="Disabled User",

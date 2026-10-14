@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Comprehensive Adversarial Penetration Test Suite for Carefold Phase 0 Tools Sandbox.
+"""Comprehensive Boundary Penetration Test Suite for Carefold Phase 0 Tools Sandbox.
 
 Executes penetration attacks covering:
 1. Path traversal in attach-read (../, ..%2f, null bytes, file:// URIs, absolute paths)
@@ -65,7 +65,7 @@ class PenetrationSuite:
         with tempfile.TemporaryDirectory(prefix="carefold_pentest_") as td:
             self.temp_dir = Path(td)
             print("=" * 80)
-            print(f"RUNNING CAREFOLD ADVERSARIAL PENETRATION SUITE")
+            print(f"RUNNING CAREFOLD BOUNDARY PENETRATION SUITE")
             print(f"Temporary test workspace: {self.temp_dir}")
             print("=" * 80)
 

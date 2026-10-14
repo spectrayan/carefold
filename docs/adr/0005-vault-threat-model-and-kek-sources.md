@@ -340,7 +340,7 @@ sequenceDiagram
 - **DEK Management**: `backend/src/carefold/vault/dek.py` (`get_or_create_dek`, `rotate_dek`)
 - **Exception Definitions**: `backend/src/carefold/vault/errors.py` (`VaultLockedError`, `DecryptionError`)
 - **Database Models**: `backend/src/carefold/db/models.py` (`ProfileKey`, `Credential`)
-- **Alembic Migration**: `backend/src/carefold/db/migrations/versions/0003_autonomy_batch_1.py`
+- **Alembic Migration**: `backend/src/carefold/db/migrations/versions/0003_household_profiles_and_audit.py`
 - **Unit & Security Tests**: `backend/tests/test_vault.py`
 - **Verification Commands**:
   ```bash

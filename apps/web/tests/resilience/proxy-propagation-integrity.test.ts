@@ -92,7 +92,7 @@ function getHeader(headers: any, name: string): string | null {
   return null;
 }
 
-describe('Resilience Challenge: Next.js Proxy Routes Propagation & Streaming', () => {
+describe('Resilience Suite: Next.js Proxy Routes Propagation & Streaming', () => {
   const TEST_COOKIE = 'carefold_session=sess_sec_99998888; theme=dark; test_csrf=xyz789';
   const TEST_AUTH = 'Bearer test_jwt_token_adv_chal_2026';
 
@@ -220,7 +220,7 @@ describe('Resilience Challenge: Next.js Proxy Routes Propagation & Streaming', (
             cookie: TEST_COOKIE,
             authorization: TEST_AUTH,
           },
-          body: JSON.stringify({ title: 'Adversarial Note', content: 'Testing' }),
+          body: JSON.stringify({ title: 'Boundary Note', content: 'Testing' }),
         }
       );
       const res = await postNotes(req);

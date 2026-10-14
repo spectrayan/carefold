@@ -80,9 +80,9 @@ class TestMemoryFactoryResolution:
         p2 = get_memory_port()
         assert p1 is p2
 
-        c1 = get_catalog_port(test_settings)
-        c2 = get_catalog_port()
-        assert c1 is c2
+        item_one = get_catalog_port(test_settings)
+        item_two = get_catalog_port()
+        assert item_one is item_two
 
     def test_factory_reset_memory_ports(self, tmp_path: Path) -> None:
         test_settings = Settings(catalog_db_path=tmp_path / "reset_test.db")

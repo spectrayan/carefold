@@ -219,7 +219,7 @@ class TestM1ConcurrentAccess:
         assert all(r == custom_home.resolve() for r in results)
 
     def test_concurrent_first_launch_migration(self, tmp_path: Path) -> None:
-        """Empirically demonstrates the concurrency race condition in run_first_launch_migration.
+        """Systematically demonstrates the concurrency race condition in run_first_launch_migration.
 
         Without inter-thread/inter-process locking and unique staging paths, concurrent workers
         collide on shared .tmp files, causing FileNotFoundError on atomic rename.
@@ -247,7 +247,7 @@ class TestM1ConcurrentAccess:
             exceptions = [f.exception() for f in futures if f.exception() is not None]
             results = [f.result() for f in futures if f.exception() is None]
 
-        # Empirical finding: concurrent execution produces collisions on shared .tmp files
+        # Systematic finding: concurrent execution produces collisions on shared .tmp files
         # At least one thread attempts migration, while others collide or finish
         assert (target_home / ".migration_done").is_file()
         assert (target_home / "carefold.db").is_file()

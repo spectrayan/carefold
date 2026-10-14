@@ -334,9 +334,9 @@ flowchart LR
   - `backend/src/carefold/memory/adapters/sqlite/memory_adapter.py`: FTS5 query tokenization and ranking.
 - **Verification Commands**:
   ```bash
-  # 1. Run empirical CAS stress and partition isolation tests
+  # 1. Run systematic CAS stress and partition isolation tests
   backend/.venv/bin/pytest backend/tests/test_cas_empirical_stress.py backend/tests/test_cas_adversarial_refcount.py
 
-  # 2. Run fail-closed scoping and adversarial attachment access tests
+  # 2. Run fail-closed scoping and boundary attachment access tests
   backend/.venv/bin/pytest backend/tests/test_m2_adversarial_attachments.py backend/tests/test_chal1_scoped_attachments_adversarial.py
   ```

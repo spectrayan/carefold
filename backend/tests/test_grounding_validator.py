@@ -38,7 +38,7 @@ Authoritative stress-testing and verification for:
    - 50 concurrent grounding validations.
    - 50 concurrent tool invocations.
    - Multithreaded execution with ThreadPoolExecutor.
-6. Empirical Defect Verification:
+6. Systematic Defect Verification:
    - Defect 1: tool.py line 259 ATTACHMENTS_DIR / file_path raises TypeError because ATTACHMENTS_DIR is a str.
    - Defect 2: Insecure un-sandboxed fallback paths in tool.py candidate_paths (ws_root / file_path, Path(file_path)).
    - Defect 3: ExtractDocumentDossierInput args_schema omits workspace_root, stripping it during invoke.

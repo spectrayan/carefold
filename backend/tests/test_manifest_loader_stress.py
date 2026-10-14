@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial Test Suite for Manifest & SubAgent Loader Robustness.
+"""Boundary Test Suite for Manifest & SubAgent Loader Robustness.
 
 Focus Areas:
 1. Manifest & SubAgent Loader Robustness:
@@ -88,7 +88,7 @@ class TestSubAgentLoaderExecution:
 
     @pytest.mark.parametrize("agent_id", SPECIALIST_AGENT_IDS)
     def test_load_subagent_from_yaml_execution(self, agent_id: str):
-        """Empirically asserts load_subagent_from_yaml can execute without NameError."""
+        """Systematically asserts load_subagent_from_yaml can execute without NameError."""
         agent_dir = AGENTS_DIR / agent_id
         assert agent_dir.is_dir(), f"Agent directory missing: {agent_dir}"
         # This will raise NameError: name 'PHASE_0_REGISTRY' is not defined

@@ -92,7 +92,7 @@ describe('Storage Scoping Isolation Suite (#166)', () => {
       // as called by loadSettings(userId) or saveSettings(..., userId) when userId is omitted!
       const keyDoubleUndefined = getScopedStorageKey(undefined, 'settings');
       
-      // CHALLENGE: If keyDoubleUndefined is 'carefold_guest_settings', then calling
+      // VERIFICATION: If keyDoubleUndefined is 'carefold_guest_settings', then calling
       // loadSettings() or saveSettings() without userId while logged in as User A
       // will write/read to GUEST namespace instead of User A's namespace!
       console.log('keyDoubleUndefined result:', keyDoubleUndefined);
@@ -173,7 +173,7 @@ describe('Storage Scoping Isolation Suite (#166)', () => {
       // User A logs out
       detachUserSession(USER_A);
 
-      // CHALLENGE: Are raw carefold_msgs_* or carefold_thread_* keys left behind in localStorage?
+      // VERIFICATION: Are raw carefold_msgs_* or carefold_thread_* keys left behind in localStorage?
       const remainingMsgs = localStorage.getItem(`carefold_msgs_${aliceThreadId}`);
       const remainingThread = localStorage.getItem('carefold_thread_cardiology-guide');
 
@@ -278,7 +278,7 @@ describe('Storage Scoping Isolation Suite (#166)', () => {
       expect(loadClinicalConsents(USER_A)).toEqual({});
       expect(hasClinicalConsent('cardiology-guide', USER_A)).toBe(false);
       expect(listSessions()).toEqual([]);
-      expect(loadChecklist('t1', 'm1', ['Q1'], USER_A)).toEqual([{ id: 'init-0', text: 'Q1', completed: false }]);
+      expect(loadChecklist('t1', 'msg_one', ['Q1'], USER_A)).toEqual([{ id: 'init-0', text: 'Q1', completed: false }]);
       expect(isSessionMemoryPaused(USER_A)).toBe(false);
     });
   });

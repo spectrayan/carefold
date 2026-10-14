@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial stress harness for Emergency Refusal & Explicit Routing.
+"""Boundary stress harness for Emergency Refusal & Explicit Routing.
 
 Tasks:
 1. Adversarially stress test the remediated emergency refusal logic in `InputGuardrailNode`:
@@ -35,7 +35,7 @@ from langchain_core.messages import HumanMessage
 
 
 # ============================================================================
-# Section 1: InputGuardrailNode Emergency Refusal Adversarial Tests
+# Section 1: InputGuardrailNode Emergency Refusal Boundary Tests
 # ============================================================================
 
 class TestInputGuardrailPureEmergency:

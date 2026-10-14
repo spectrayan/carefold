@@ -100,7 +100,7 @@ def test_create_initial_state_defaults_and_dict_conversion():
             {"role": "user", "content": "Howdy"},
             {"role": "assistant", "content": "Welcome"},
             {"role": "system", "content": "System directive"},
-            {"role": "tool", "content": "Tool result", "tool_call_id": "c1"},
+            {"role": "tool", "content": "Tool result", "tool_call_id": "item_one"},
         ],
     )
     assert state["thread_id"] == "thread-xyz"

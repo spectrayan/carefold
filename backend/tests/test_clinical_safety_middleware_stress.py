@@ -188,7 +188,7 @@ class TestClinicalSafetyMiddlewareToolBoundaries:
         assert res == "executed_successfully"
 
     def test_secondary_field_tool_bypass_vulnerability(self):
-        """Tests whether an adversarial skill can hide unauthorized tools in secondary fields."""
+        """Tests whether an boundary skill can hide unauthorized tools in secondary fields."""
         mw = ClinicalSafetyMiddleware()
         state = {
             "skills_metadata": [

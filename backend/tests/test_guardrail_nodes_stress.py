@@ -224,7 +224,7 @@ class TestAdversarialToolValidatorNode:
 
 
 # ============================================================================
-# 3. InputGuardrailNode Adversarial Tests
+# 3. InputGuardrailNode Boundary Tests
 # ============================================================================
 
 class TestAdversarialInputGuardrailNode:
@@ -328,7 +328,7 @@ class TestAdversarialInputGuardrailNode:
 
 
 # ============================================================================
-# 4. RefusalNode Adversarial Tests
+# 4. RefusalNode Boundary Tests
 # ============================================================================
 
 class TestAdversarialRefusalNode:
@@ -372,7 +372,7 @@ class TestAdversarialRefusalNode:
 
 
 # ============================================================================
-# 5. SuggestionNode Adversarial Tests
+# 5. SuggestionNode Boundary Tests
 # ============================================================================
 
 class TestAdversarialSuggestionNode:
@@ -417,7 +417,7 @@ class TestAdversarialSuggestionNode:
 
 
 # ============================================================================
-# 6. ErrorNode Adversarial Information Leakage Tests
+# 6. ErrorNode Boundary Information Leakage Tests
 # ============================================================================
 
 class TestAdversarialErrorNode:

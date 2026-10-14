@@ -11,7 +11,7 @@
 
 """Autonomy Batch 1 schema evolution (profile_keys, approvals, jobs, credentials.dek_version).
 
-Revision ID: 0003_autonomy_batch_1
+Revision ID: 0003_household_profiles_and_audit
 Revises: 0002_autonomy_foundations
 Create Date: 2026-10-12 17:15:00.000000
 
@@ -23,7 +23,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "0003_autonomy_batch_1"
+revision: str = "0003_household_profiles_and_audit"
 down_revision: Union[str, None] = "0002_autonomy_foundations"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

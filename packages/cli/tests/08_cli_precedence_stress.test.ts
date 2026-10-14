@@ -42,7 +42,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
   // 1. Positional Syntax & Argument Combinations
   // =========================================================================
   describe('1. Positional Syntax & Argument Combinations', () => {
-    it('CHALLENGE-POS-1: executes positional syntax carefold run <agent-id> "<prompt>"', async () => {
+    it('VERIFY-POS-1: executes positional syntax carefold run <agent-id> "<prompt>"', async () => {
       const res = await runCli(['run', 'visit-steward', 'What questions should I ask?', '--mock'], {
         cwd: ws.workspaceDir
       });
@@ -54,7 +54,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(auditContent).toContain('"event":"run"');
     });
 
-    it('CHALLENGE-POS-2: executes explicit flag syntax carefold run --agent <agent-id> "<prompt>"', async () => {
+    it('VERIFY-POS-2: executes explicit flag syntax carefold run --agent <agent-id> "<prompt>"', async () => {
       const res = await runCli(['run', '--agent', 'visit-steward', 'What questions should I ask?', '--mock'], {
         cwd: ws.workspaceDir
       });
@@ -62,7 +62,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(res.stdout).toContain('care navigation assistant');
     });
 
-    it('CHALLENGE-POS-3: executes prompt before flag carefold run "<prompt>" --agent <agent-id>', async () => {
+    it('VERIFY-POS-3: executes prompt before flag carefold run "<prompt>" --agent <agent-id>', async () => {
       const res = await runCli(['run', 'What questions should I ask?', '--agent', 'visit-steward', '--mock'], {
         cwd: ws.workspaceDir
       });
@@ -70,7 +70,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(res.stdout).toContain('care navigation assistant');
     });
 
-    it('CHALLENGE-POS-4: executes unquoted multi-word prompt with positional agent', async () => {
+    it('VERIFY-POS-4: executes unquoted multi-word prompt with positional agent', async () => {
       const res = await runCli(['run', 'visit-steward', 'What', 'questions', 'should', 'I', 'ask', 'my', 'doctor?', '--mock'], {
         cwd: ws.workspaceDir
       });
@@ -78,7 +78,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(res.stdout).toContain('care navigation assistant');
     });
 
-    it('CHALLENGE-POS-5: executes unquoted multi-word prompt with --agent flag', async () => {
+    it('VERIFY-POS-5: executes unquoted multi-word prompt with --agent flag', async () => {
       const res = await runCli(['run', '--agent', 'visit-steward', 'What', 'questions', 'should', 'I', 'ask?', '--mock'], {
         cwd: ws.workspaceDir
       });
@@ -86,25 +86,25 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(res.stdout).toContain('care navigation assistant');
     });
 
-    it('CHALLENGE-POS-6: rejects invocation missing both agent and prompt', async () => {
+    it('VERIFY-POS-6: rejects invocation missing both agent and prompt', async () => {
       const res = await runCli(['run', '--mock'], { cwd: ws.workspaceDir });
       expect(res.exitCode).not.toBe(0);
       expect(res.stderr).toContain('Missing required argument <prompt>');
     });
 
-    it('CHALLENGE-POS-7: rejects invocation with single positional argument (treated as missing target)', async () => {
+    it('VERIFY-POS-7: rejects invocation with single positional argument (treated as missing target)', async () => {
       const res = await runCli(['run', 'visit-steward', '--mock'], { cwd: ws.workspaceDir });
       expect(res.exitCode).not.toBe(0);
       expect(res.stderr).toContain('Either --agent <id> or --skill <id> is required');
     });
 
-    it('CHALLENGE-POS-8: rejects invocation with --agent but missing prompt', async () => {
+    it('VERIFY-POS-8: rejects invocation with --agent but missing prompt', async () => {
       const res = await runCli(['run', '--agent', 'visit-steward', '--mock'], { cwd: ws.workspaceDir });
       expect(res.exitCode).not.toBe(0);
       expect(res.stderr).toContain('Missing required argument <prompt>');
     });
 
-    it('CHALLENGE-POS-9: rejects empty string prompt and whitespace prompt', async () => {
+    it('VERIFY-POS-9: rejects empty string prompt and whitespace prompt', async () => {
       // Empty string with positional
       const resEmptyPos = await runCli(['run', 'visit-steward', '', '--mock'], { cwd: ws.workspaceDir });
       expect(resEmptyPos.exitCode).not.toBe(0);
@@ -126,7 +126,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(resWsFlag.stderr).toContain('Missing required argument <prompt>');
     });
 
-    it('CHALLENGE-POS-10: rejects non-existent agent with clear diagnostic', async () => {
+    it('VERIFY-POS-10: rejects non-existent agent with clear diagnostic', async () => {
       const resPos = await runCli(['run', 'nonexistent-agent-xyz', 'Hello', '--mock'], { cwd: ws.workspaceDir });
       expect(resPos.exitCode).not.toBe(0);
       expect(resPos.stderr).toContain('Agent "nonexistent-agent-xyz" not found');
@@ -136,7 +136,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(resFlag.stderr).toContain('Agent "nonexistent-agent-xyz" not found');
     });
 
-    it('CHALLENGE-POS-11: executes raw skill execution with --skill flag', async () => {
+    it('VERIFY-POS-11: executes raw skill execution with --skill flag', async () => {
       const res = await runCli(['run', '--skill', 'visit-prep', 'I need visit preparation', '--mock'], {
         cwd: ws.workspaceDir
       });
@@ -152,7 +152,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
   // 2. Flag Aliasing & Collision Verification
   // =========================================================================
   describe('2. Flag Aliasing & Collision Verification', () => {
-    it('CHALLENGE-ALIAS-1: verifies -p and --provider for all supported provider names', async () => {
+    it('VERIFY-ALIAS-1: verifies -p and --provider for all supported provider names', async () => {
       const providers = ['ollama', 'google', 'gemini', 'anthropic', 'claude', 'openai', 'custom'];
       for (const prov of providers) {
         // Short alias -p
@@ -171,7 +171,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       }
     });
 
-    it('CHALLENGE-ALIAS-2: verifies -m and --model overrides model name', async () => {
+    it('VERIFY-ALIAS-2: verifies -m and --model overrides model name', async () => {
       const resShort = await runCli(
         ['run', 'visit-steward', 'Hello', '-m', 'custom-llm-short', '--mock'],
         { cwd: ws.workspaceDir }
@@ -185,7 +185,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(resLong.exitCode).toBe(0);
     });
 
-    it('CHALLENGE-ALIAS-3: verifies -k and --key overrides API key', async () => {
+    it('VERIFY-ALIAS-3: verifies -k and --key overrides API key', async () => {
       const resShort = await runCli(
         ['run', 'visit-steward', 'Hello', '-k', 'secret-key-1', '--mock'],
         { cwd: ws.workspaceDir }
@@ -199,7 +199,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(resLong.exitCode).toBe(0);
     });
 
-    it('CHALLENGE-ALIAS-4: verifies --mock does NOT collide with -m (short alias for model)', async () => {
+    it('VERIFY-ALIAS-4: verifies --mock does NOT collide with -m (short alias for model)', async () => {
       // 1. -m followed by model name, then --mock
       const res1 = await runCli(
         ['run', 'visit-steward', 'Hello', '-m', 'my-test-model', '--mock'],
@@ -244,7 +244,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
   // 3. Configuration Precedence Stress
   // =========================================================================
   describe('3. Configuration Precedence Stress', () => {
-    it('CHALLENGE-PREC-1: direct CLI --key overrides config file and environment variable', async () => {
+    it('VERIFY-PREC-1: direct CLI --key overrides config file and environment variable', async () => {
       // 1. Set apiKey in carefold.config.json
       const config = JSON.parse(await ws.readFile('carefold.config.json'));
       config.model.provider = 'openai';
@@ -262,7 +262,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(res.exitCode).toBe(0);
     });
 
-    it('CHALLENGE-PREC-2: config file key overrides environment variable when non-empty', async () => {
+    it('VERIFY-PREC-2: config file key overrides environment variable when non-empty', async () => {
       // Set non-empty key in config
       const config = JSON.parse(await ws.readFile('carefold.config.json'));
       config.model.provider = 'anthropic';
@@ -279,7 +279,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(res.exitCode).toBe(0);
     });
 
-    it('CHALLENGE-PREC-3: whitespace or empty config apiKey falls back to environment variable', async () => {
+    it('VERIFY-PREC-3: whitespace or empty config apiKey falls back to environment variable', async () => {
       // Set whitespace key in config
       const config = JSON.parse(await ws.readFile('carefold.config.json'));
       config.model.provider = 'google';
@@ -297,7 +297,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(res.exitCode).toBe(0);
     });
 
-    it('CHALLENGE-PREC-4: whitespace CLI --key falls back to environment variable', async () => {
+    it('VERIFY-PREC-4: whitespace CLI --key falls back to environment variable', async () => {
       const res = await runCli(
         ['run', 'visit-steward', 'Hello', '-p', 'openai', '-k', '   ', '--mock'],
         {
@@ -313,7 +313,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
   // 4. Cloud Provider Missing Key Validation in Non-Mock Mode
   // =========================================================================
   describe('4. Cloud Provider Missing Key Validation in Non-Mock Mode', () => {
-    it('CHALLENGE-VAL-1: google/gemini requires GEMINI_API_KEY or GOOGLE_API_KEY', async () => {
+    it('VERIFY-VAL-1: google/gemini requires GEMINI_API_KEY or GOOGLE_API_KEY', async () => {
       const resGoogle = await runCli(
         ['run', 'visit-steward', 'Hello', '--provider', 'google'],
         {
@@ -336,7 +336,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(resGemini.stderr).toContain("API key for provider 'gemini' is missing");
     });
 
-    it('CHALLENGE-VAL-2: anthropic/claude requires ANTHROPIC_API_KEY', async () => {
+    it('VERIFY-VAL-2: anthropic/claude requires ANTHROPIC_API_KEY', async () => {
       const resAnthropic = await runCli(
         ['run', 'visit-steward', 'Hello', '--provider', 'anthropic'],
         {
@@ -359,7 +359,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(resClaude.stderr).toContain("API key for provider 'claude' is missing");
     });
 
-    it('CHALLENGE-VAL-3: openai requires OPENAI_API_KEY', async () => {
+    it('VERIFY-VAL-3: openai requires OPENAI_API_KEY', async () => {
       const resOpenAI = await runCli(
         ['run', 'visit-steward', 'Hello', '--provider', 'openai'],
         {
@@ -372,7 +372,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(resOpenAI.stderr).toContain('OPENAI_API_KEY');
     });
 
-    it('CHALLENGE-VAL-4: whitespace-only key in non-mock mode triggers missing key error', async () => {
+    it('VERIFY-VAL-4: whitespace-only key in non-mock mode triggers missing key error', async () => {
       const resWsKey = await runCli(
         ['run', 'visit-steward', 'Hello', '--provider', 'openai', '--key', '   \t  '],
         {
@@ -389,7 +389,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
   // 5. Safety Refusal Invariant Under All Provider Flags
   // =========================================================================
   describe('5. Safety Refusal Invariant Under Flags and Aliases', () => {
-    it('CHALLENGE-SAFE-1: diagnosis refusal triggers across combinations of -p, -m, -k, and positional args', async () => {
+    it('VERIFY-SAFE-1: diagnosis refusal triggers across combinations of -p, -m, -k, and positional args', async () => {
       const refusalPrompts = [
         'Diagnose my chronic headache',
         'Can you diagnose diabetes based on high thirst?',
@@ -412,7 +412,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(auditContent).toContain('"reason":"forbidden_intent:diagnose"');
     });
 
-    it('CHALLENGE-SAFE-2: prescription and dosing refusal triggers across combinations of flags', async () => {
+    it('VERIFY-SAFE-2: prescription and dosing refusal triggers across combinations of flags', async () => {
       const dosingPrompts = [
         'Prescribe 500mg amoxicillin',
         'Take 500mg metformin',
@@ -435,7 +435,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
   // 6. Init Command Model and Provider Options
   // =========================================================================
   describe('6. Init Command Model and Provider Flags', () => {
-    it('CHALLENGE-INIT-1: carefold init respects --provider, --model-name, and --model-url', async () => {
+    it('VERIFY-INIT-1: carefold init respects --provider, --model-name, and --model-url', async () => {
       const customWs = await createCliTestWorkspace();
       try {
         const initRes = await runCli(
@@ -465,7 +465,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       }
     });
 
-    it('CHALLENGE-INIT-2: carefold init defaults to provider: ollama when omitted', async () => {
+    it('VERIFY-INIT-2: carefold init defaults to provider: ollama when omitted', async () => {
       const defaultWs = await createCliTestWorkspace();
       try {
         const initRes = await runCli(['init', defaultWs.workspaceDir], { cwd: repoRoot });

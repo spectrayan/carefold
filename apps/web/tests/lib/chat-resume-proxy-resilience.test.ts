@@ -104,7 +104,7 @@ describe('Resilience Suite: POST /api/chat/resume Proxy Route', () => {
         headers: { 'Content-Type': 'application/json' },
         body: 'null'
       });
-      // Documents empirical observation: body is parsed as null, causing TypeError on body.thread_id
+      // Documents systematic observation: body is parsed as null, causing TypeError on body.thread_id
       await expect(POST(req)).rejects.toThrow(TypeError);
     });
   });

@@ -237,7 +237,7 @@ class Settings(BaseSettings):
         return self.workspace_root / SKILLS_DIR
 
     def get_attachments_dir(self) -> Path:
-        """Returns attachments directory. In M1, aliases to get_uploads_dir()."""
+        """Returns attachments directory. In Phase1, aliases to get_uploads_dir()."""
         return self.get_uploads_dir()
 
     def get_notes_dir(self) -> Path:

@@ -500,7 +500,7 @@ describe('Stress Suite: Scroll Anti-Hijacking & Unread Counter', () => {
       });
     }
 
-    // ADVERSARIAL VERIFICATION: Anti-hijacking guarantee!
+    // BOUNDARY VERIFICATION: Anti-hijacking guarantee!
     // scrollIntoView must NOT have been called even once during the entire 150 token flood!
     expect(scrollIntoViewSpy).not.toHaveBeenCalled();
 

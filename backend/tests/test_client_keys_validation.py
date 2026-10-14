@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial Test Suite for LangChain Multi-Provider Model Factory.
+"""Boundary Test Suite for LangChain Multi-Provider Model Factory.
 
 Challenges:
 1. Client Key Overrides & Process Environment Isolation (no os.environ leak or mutation)
@@ -104,12 +104,12 @@ def test_apiKey_camelcase_alias(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
     # 1. apiKey alias works when api_key is None
-    m1 = create_chat_model(provider="openai", apiKey="camel-case-key-1")
-    assert m1.openai_api_key.get_secret_value() == "camel-case-key-1"
+    msg_one = create_chat_model(provider="openai", apiKey="camel-case-key-1")
+    assert msg_one.openai_api_key.get_secret_value() == "camel-case-key-1"
 
     # 2. When both are passed, api_key takes precedence
-    m2 = create_chat_model(provider="openai", api_key="snake-case-priority", apiKey="ignored-camel")
-    assert m2.openai_api_key.get_secret_value() == "snake-case-priority"
+    msg_two = create_chat_model(provider="openai", api_key="snake-case-priority", apiKey="ignored-camel")
+    assert msg_two.openai_api_key.get_secret_value() == "snake-case-priority"
 
 
 def test_concurrent_multi_client_isolation(monkeypatch):
@@ -325,7 +325,7 @@ def test_provider_empty_and_none_defaults_to_ollama():
 
 @pytest.mark.asyncio
 async def test_offline_mock_zero_socket_activity(monkeypatch):
-    """Empirical verification: MockChatModel executes 100% offline without making any network socket connections.
+    """Systematic verification: MockChatModel executes 100% offline without making any network socket connections.
     
     We monkeypatch socket.socket.connect to raise RuntimeError if ANY outbound network call is attempted.
     """

@@ -94,10 +94,10 @@ def _get_persona_text(agent_yaml_path: Path, data: dict) -> str:
 
 
 class TestPersonaWordCountAndStructureStress:
-    """Empirically stress-tests persona word counts and section structural integrity."""
+    """Systematically stress-tests persona word counts and section structural integrity."""
 
     def test_word_count_strictness_across_all_4_personas(self, temp_workspace: Path):
-        """EMPIRICAL VERIFICATION: Every persona must exceed 250 words under both whitespace
+        """SYSTEMATIC VERIFICATION: Every persona must exceed 250 words under both whitespace
         and regex word boundary tokenization, and be within reasonable limits (< 2000 words).
         """
         agents_dir = temp_workspace / "agents"
@@ -124,7 +124,7 @@ class TestPersonaWordCountAndStructureStress:
             assert ws_count < 600, f"Agent '{agent_id}' persona word count {ws_count} is excessively long"
 
     def test_mandatory_headings_exact_sequence_and_substantive_content(self, temp_workspace: Path):
-        """EMPIRICAL VERIFICATION: All 5 mandatory uppercase headers must be present in
+        """SYSTEMATIC VERIFICATION: All 5 mandatory uppercase headers must be present in
         exact sequential order, and every section must contain substantive content (>= 20 words).
         """
         agents_dir = temp_workspace / "agents"
@@ -169,7 +169,7 @@ class TestClosedToolRegistryAndSecurity:
     """Asserts that all agents and skills strictly comply with Phase 0 closed tool registry."""
 
     def test_strict_phase0_tool_containment_and_zero_delegation(self, temp_workspace: Path):
-        """EMPIRICAL VERIFICATION: All agents declare only Phase 0 tools, never declare
+        """SYSTEMATIC VERIFICATION: All agents declare only Phase 0 tools, never declare
         forbidden delegation or code execution tools, and explicitly set can_delegate: false.
         """
         agents_dir = temp_workspace / "agents"
@@ -220,7 +220,7 @@ class TestSkillIntendedUseDisclaimers:
     """Asserts that all companion skills contain all 3 mandatory clinical disclaimers."""
 
     def test_mandatory_intended_use_statements_present_verbatim(self, temp_workspace: Path):
-        """EMPIRICAL VERIFICATION: Every SKILL.md body must contain the 3 required intended-use
+        """SYSTEMATIC VERIFICATION: Every SKILL.md body must contain the 3 required intended-use
         statements verbatim, and check_mandatory_intended_use() must pass without exception.
         """
         skills_dir = temp_workspace / "skills"
@@ -274,7 +274,7 @@ class TestSkillReferenceDocumentsDepthAndStubs:
     ]
 
     def test_reference_documents_depth_and_structure(self, temp_workspace: Path):
-        """All declared reference documents in M3 skills must have # and ## headers,
+        """All declared reference documents in Phase3 skills must have # and ## headers,
         byte size >= 200, and zero refusal/greeting phrases.
         """
         skills_dir = temp_workspace / "skills"

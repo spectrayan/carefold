@@ -145,7 +145,7 @@ async def async_test_session():
 
 
 # ============================================================================
-# Section 1: Synchronous SQLite Undo Tests (contracts_batch_3 compatible)
+# Section 1: Synchronous SQLite Undo Tests (contracts_clinical_domain compatible)
 # ============================================================================
 
 class TestSynchronousSQLiteUndo:

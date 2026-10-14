@@ -9,9 +9,9 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial stress and penetration test suite for Carefold model factory and MockChatModel.
+"""Boundary stress and penetration test suite for Carefold model factory and MockChatModel.
 
-Evaluates 6 challenge dimensions:
+Evaluates 6 verification dimensions:
 1. Concurrent invocations (multi-threaded, multi-task asyncio, racing queue pops).
 2. Malformed parameters (types, boundaries, missing, extra kwargs).
 3. Invalid provider strings (unknown, injection, unicode homoglyphs, null bytes, casing).
@@ -166,7 +166,7 @@ def test_whitespace_api_key_resolution():
 
 
 # ============================================================================
-# Section 3: Invalid Provider Strings & Adversarial Names
+# Section 3: Invalid Provider Strings & Boundary Names
 # ============================================================================
 
 @pytest.mark.parametrize("invalid_provider", [
@@ -191,7 +191,7 @@ def test_whitespace_api_key_resolution():
     "offline",
 ])
 def test_invalid_providers(invalid_provider: str):
-    """Verify that all unsupported, adversarial, injection, and homoglyph provider names
+    """Verify that all unsupported, boundary, injection, and homoglyph provider names
     are cleanly rejected with UnsupportedProviderError."""
     with pytest.raises(UnsupportedProviderError) as exc:
         create_chat_model(provider=invalid_provider)

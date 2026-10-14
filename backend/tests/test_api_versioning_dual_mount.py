@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Test suite for Milestone M4: Standardized Dual-Mounted API Versioning.
+"""Test suite for Milestone Phase4: Standardized Dual-Mounted API Versioning.
 
 Verifies that both canonical /api/v1/* and legacy /api/* respond identically
 with identical status codes, schemas, and data persistence across all core modules.

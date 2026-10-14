@@ -192,7 +192,7 @@ start_backend() {
     py_bin="$(resolve_python_bin)"
 
     if [ "${bg_mode}" = "true" ]; then
-        nohup env PYTHONPATH="${PROJECT_ROOT}/backend/src:${PYTHONPATH:-}" \
+        nohup env PYTHONPATH="${PROJECT_ROOT}/backend/src:${PROJECT_ROOT}/libs/connectors:${PYTHONPATH:-}" \
             CAREFOLD_BACKEND_HOST="${CAREFOLD_BACKEND_HOST}" \
             CAREFOLD_BACKEND_PORT="${CAREFOLD_BACKEND_PORT}" \
             PORT="${CAREFOLD_BACKEND_PORT}" \
@@ -205,7 +205,7 @@ start_backend() {
         echo "backend:${pid}" >> "${PID_FILE}"
         log_success "Backend running (PID: ${pid})"
     else
-        exec env PYTHONPATH="${PROJECT_ROOT}/backend/src:${PYTHONPATH:-}" \
+        exec env PYTHONPATH="${PROJECT_ROOT}/backend/src:${PROJECT_ROOT}/libs/connectors:${PYTHONPATH:-}" \
             CAREFOLD_BACKEND_HOST="${CAREFOLD_BACKEND_HOST}" \
             CAREFOLD_BACKEND_PORT="${CAREFOLD_BACKEND_PORT}" \
             PORT="${CAREFOLD_BACKEND_PORT}" \

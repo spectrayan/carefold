@@ -9,9 +9,9 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial PII Sanitization & Dossier Verification Test Suite.
+"""Boundary PII Sanitization & Dossier Verification Test Suite.
 
-Stress-tests boundary conditions, adversarial inputs, regex precision,
+Stress-tests boundary conditions, boundary inputs, regex precision,
 clinical vitals preservation, ReDoS resistance, and Pydantic validation on dossiers and sanitizers.
 """
 
@@ -220,7 +220,7 @@ class TestClinicalVitalsStrictPreservation:
             "72 bpm",
             "10 mg/mL",
             "O2 saturation: 98% on room air",
-            "BMI: 24.5 kg/m2",
+            "BMI: 24.5 kg/msg_two",
             "Glucose: 95 mg/dL",
             "Hemoglobin A1c: 5.7%",
             "Lisinopril 10 mg PO daily",
@@ -403,7 +403,7 @@ class TestSanitizerReDoSAndPathologicalResilience:
 
 
 # ============================================================================
-# 8. Empirical Defect Isolation: Clinical Collisions with Street Suffixes
+# 8. Systematic Defect Isolation: Clinical Collisions with Street Suffixes
 # ============================================================================
 
 class TestClinicalCollisionsDefectIsolation:

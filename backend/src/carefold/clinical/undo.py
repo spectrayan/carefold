@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # Section 1: Exceptions Specification & Test Contract Interoperability
 # ============================================================================
 
-_c = sys.modules.get("tests.e2e.contracts_batch_3")
+_c = sys.modules.get("tests.e2e.contracts_clinical_domain")
 _c_expired = getattr(_c, "UndoWindowExpiredError", None) if _c else None
 _c_not_undoable = getattr(_c, "ActionNotUndoableError", None) if _c else None
 
@@ -73,7 +73,7 @@ class EntityNotFoundError(UndoError):
 
 def _resolve_undo_window_expired_error() -> type:
     for mod_name, mod in list(sys.modules.items()):
-        if "contracts_batch_3" in mod_name and hasattr(mod, "UndoWindowExpiredError"):
+        if "contracts_clinical_domain" in mod_name and hasattr(mod, "UndoWindowExpiredError"):
             c_err = getattr(mod, "UndoWindowExpiredError")
             if issubclass(c_err, Exception):
                 return c_err
@@ -82,7 +82,7 @@ def _resolve_undo_window_expired_error() -> type:
 
 def _resolve_action_not_undoable_error() -> type:
     for mod_name, mod in list(sys.modules.items()):
-        if "contracts_batch_3" in mod_name and hasattr(mod, "ActionNotUndoableError"):
+        if "contracts_clinical_domain" in mod_name and hasattr(mod, "ActionNotUndoableError"):
             c_err = getattr(mod, "ActionNotUndoableError")
             if issubclass(c_err, Exception):
                 return c_err
@@ -90,7 +90,7 @@ def _resolve_action_not_undoable_error() -> type:
 
 
 # ============================================================================
-# Section 2: Synchronous SQLite Implementation (contracts_batch_3 compatible)
+# Section 2: Synchronous SQLite Implementation (contracts_clinical_domain compatible)
 # ============================================================================
 
 def execute_single_click_undo(
@@ -101,7 +101,7 @@ def execute_single_click_undo(
 ) -> Dict[str, Any]:
     """Reverts a write_local mutation within 7 days and records audited reversal event.
     
-    Guarantees full compatibility with contracts_batch_3.py and SQLite test harnesses.
+    Guarantees full compatibility with contracts_clinical_domain.py and SQLite test harnesses.
     """
     if current_time is None:
         current_time = datetime.now(timezone.utc)

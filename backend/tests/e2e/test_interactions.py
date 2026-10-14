@@ -112,7 +112,7 @@ class TestCrossFeatureInteractions:
         guard_mod = _try_import("carefold.workflows.nodes.output_guardrail_node")
         refl_mod = _try_import("carefold.workflows.nodes.reflection_node")
         if guard_mod is None or refl_mod is None:
-            pytest.skip("M3 nodes pending implementation")
+            pytest.skip("Phase3 nodes pending implementation")
         refl = refl_mod.ReflectionNode()
         res = await refl.execute({"reflection_count": 0, "max_reflections": 3})
         assert res.get("reflection_count") == 1
@@ -162,7 +162,7 @@ class TestCrossFeatureInteractions:
         api_const = _try_import("carefold.constants.api")
         def_const = _try_import("carefold.constants.defaults")
         if api_const is None or def_const is None:
-            pytest.skip("M1 Constants pending implementation")
+            pytest.skip("Phase1 Constants pending implementation")
         assert hasattr(api_const, "CHAT_ENDPOINT")
         assert hasattr(def_const, "MAX_FILE_SIZE_BYTES") or hasattr(def_const, "MAX_ATTACHMENT_SIZE")
 

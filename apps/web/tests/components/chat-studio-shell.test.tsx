@@ -55,12 +55,12 @@ describe('ChatStudioShell Component (/p/[profileId]/chat)', () => {
       'carefold_msgs_thread-rosa-1',
       JSON.stringify([
         {
-          id: 'm1',
+          id: 'msg_one',
           role: 'user',
           content: "I need to get ready for Rosa's cardiology appointment on Tuesday with Dr. Whitfield."
         },
         {
-          id: 'm2',
+          id: 'msg_two',
           role: 'assistant',
           content: "I'll help you prepare for Rosa's visit on Tuesday, Oct 13. Based on her recent discharge summary, I've put together a starter prep sheet with 4 questions ready to ask her cardiologist."
         }

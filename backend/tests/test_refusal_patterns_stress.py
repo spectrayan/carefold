@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial Stress Harness for Refusal Patterns & Disclaimer Clauses.
+"""Boundary Stress Harness for Refusal Patterns & Disclaimer Clauses.
 
 Testing:
 1. ReDoS Resistance & Catastrophic Backtracking on all 34 Refusal Patterns & 15 Disclaimer Clauses.
@@ -249,7 +249,7 @@ def test_smart_quote_contraction_resilience():
 # =========================================================================
 
 def test_pattern_and_clause_counts_exact():
-    """Empirically verifies that exactly 34 refusal patterns and 15 disclaimer clauses are compiled."""
+    """Systematically verifies that exactly 34 refusal patterns and 15 disclaimer clauses are compiled."""
     loader = get_resource_loader()
     patterns = loader.get_compiled_refusal_patterns()
     clauses = loader.get_compiled_disclaimer_clauses()
@@ -270,7 +270,7 @@ def test_pattern_and_clause_counts_exact():
 
 
 def test_disclaimer_clauses_neutralization_all_15():
-    """Empirically verifies that all 15 disclaimer clauses neutralize legitimate disclosures with 0 false positives."""
+    """Systematically verifies that all 15 disclaimer clauses neutralize legitimate disclosures with 0 false positives."""
     disclaimers = [
         "Since I was diagnosed with asthma 5 years ago, how should I prepare for my visit?",
         "Questions for my doctor regarding my diagnosis of hypertension.",

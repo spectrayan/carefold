@@ -66,7 +66,7 @@ async def test_internal_symlink_overwrite_absolute_target(note_workspace: Path):
 
     ctx = Context(note_workspace)
     result = await execute_workspace_note(
-        {"title": "shortcut_abs", "content": "ADVERSARIAL INJECTION ATTEMPT"},
+        {"title": "shortcut_abs", "content": "BOUNDARY INJECTION ATTEMPT"},
         ctx,
     )
 

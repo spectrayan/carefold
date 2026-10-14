@@ -74,7 +74,7 @@ def sql_auth_adapter(sql_session_factory: async_sessionmaker[AsyncSession]):
 
 @pytest.mark.asyncio
 async def test_probe_1_auth_valid_and_invalid_passwords(sql_auth_adapter: SqlAuthAdapter):
-    """Empirical probe: verify authentication with valid vs invalid passwords and email casing."""
+    """Systematic probe: verify authentication with valid vs invalid passwords and email casing."""
     user = await sql_auth_adapter.register_user(
         email="doctor.smith@carefold.local",
         username="drsmith",
@@ -118,7 +118,7 @@ async def test_probe_1_auth_valid_and_invalid_passwords(sql_auth_adapter: SqlAut
 
 @pytest.mark.asyncio
 async def test_probe_2_username_case_sensitivity_defect(sql_auth_adapter: SqlAuthAdapter):
-    """Empirical probe: verify if user registering with uppercase letters in username can authenticate.
+    """Systematic probe: verify if user registering with uppercase letters in username can authenticate.
     
     Bug hypothesis:
     In SqlAuthAdapter.register_user:
@@ -150,7 +150,7 @@ async def test_probe_2_username_case_sensitivity_defect(sql_auth_adapter: SqlAut
 
     # We assert that username authentication works as a user would expect:
     # A user who registered as "AliceSmith" expects to log in with "AliceSmith"!
-    # If this fails, the bug is empirically confirmed!
+    # If this fails, the bug is systematically confirmed!
     assert auth_exact is not None, (
         "CRITICAL DEFECT DETECTED: User registered with username 'AliceSmith' cannot authenticate "
         "using 'AliceSmith'! SqlAuthAdapter.authenticate lowercases query to 'alicesmith' but "
@@ -164,7 +164,7 @@ async def test_probe_2_username_case_sensitivity_defect(sql_auth_adapter: SqlAut
 
 @pytest.mark.asyncio
 async def test_probe_3_timing_attack_protection_dummy_verify(sql_session_factory):
-    """Empirical probe: verify constant-time dummy verification is invoked on user lookup misses."""
+    """Systematic probe: verify constant-time dummy verification is invoked on user lookup misses."""
     mock_hasher = MagicMock()
     mock_hasher.verify.return_value = False
 
@@ -182,7 +182,7 @@ async def test_probe_3_timing_attack_protection_dummy_verify(sql_session_factory
 
 @pytest.mark.asyncio
 async def test_probe_3b_timing_attack_protection_measurements(sql_auth_adapter: SqlAuthAdapter):
-    """Empirical probe: measure real execution duration of non-existent user vs wrong password.
+    """Systematic probe: measure real execution duration of non-existent user vs wrong password.
     
     Both paths must execute OWASP Argon2id password verification, resulting in comparable
     runtimes (typically tens of milliseconds), preventing timing-based user enumeration.
@@ -232,7 +232,7 @@ async def test_probe_3b_timing_attack_protection_measurements(sql_auth_adapter: 
 
 @pytest.mark.asyncio
 async def test_probe_4_session_expiration_and_db_purge(sql_auth_adapter: SqlAuthAdapter):
-    """Empirical probe: verify expired sessions return None and are physically deleted from DB."""
+    """Systematic probe: verify expired sessions return None and are physically deleted from DB."""
     user = await sql_auth_adapter.register_user(
         email="session.expire@carefold.local",
         username="sessionexpire",
@@ -273,7 +273,7 @@ async def test_probe_4_session_expiration_and_db_purge(sql_auth_adapter: SqlAuth
 
 @pytest.mark.asyncio
 async def test_probe_5_single_session_vs_cascade_revocation(sql_auth_adapter: SqlAuthAdapter):
-    """Empirical probe: verify revoke_session targets 1 session while revoke_all_sessions clears all."""
+    """Systematic probe: verify revoke_session targets 1 session while revoke_all_sessions clears all."""
     user1 = await sql_auth_adapter.register_user(
         email="user1.sessions@carefold.local",
         username="user1sessions",
@@ -327,7 +327,7 @@ async def test_probe_5_single_session_vs_cascade_revocation(sql_auth_adapter: Sq
 
 @pytest.mark.asyncio
 async def test_probe_6_disabled_user_cascades_session_revocation(sql_auth_adapter: SqlAuthAdapter):
-    """Empirical probe: verify disabling a user immediately revokes all their active sessions."""
+    """Systematic probe: verify disabling a user immediately revokes all their active sessions."""
     user = await sql_auth_adapter.register_user(
         email="disable.target@carefold.local",
         username="disabletarget",
@@ -362,7 +362,7 @@ async def test_probe_6_disabled_user_cascades_session_revocation(sql_auth_adapte
 
 @pytest.mark.asyncio
 async def test_probe_7_password_reset_strict_single_use(sql_auth_adapter: SqlAuthAdapter):
-    """Empirical probe: verify reset tokens are strictly single-use and marked used_at."""
+    """Systematic probe: verify reset tokens are strictly single-use and marked used_at."""
     user = await sql_auth_adapter.register_user(
         email="reset.user@carefold.local",
         username="resetuser",
@@ -406,7 +406,7 @@ async def test_probe_7_password_reset_strict_single_use(sql_auth_adapter: SqlAut
 
 @pytest.mark.asyncio
 async def test_probe_8_password_reset_cascade_revokes_all_sessions(sql_auth_adapter: SqlAuthAdapter):
-    """Empirical probe: verify consuming a reset token revokes all active sessions for that user."""
+    """Systematic probe: verify consuming a reset token revokes all active sessions for that user."""
     user = await sql_auth_adapter.register_user(
         email="compromised.user@carefold.local",
         username="compromiseduser",
@@ -440,7 +440,7 @@ async def test_probe_8_password_reset_cascade_revokes_all_sessions(sql_auth_adap
 
 @pytest.mark.asyncio
 async def test_probe_9_expired_password_reset_token_rejected(sql_auth_adapter: SqlAuthAdapter):
-    """Empirical probe: verify expired password reset tokens cannot be consumed."""
+    """Systematic probe: verify expired password reset tokens cannot be consumed."""
     user = await sql_auth_adapter.register_user(
         email="expired.reset@carefold.local",
         username="expiredreset",
@@ -469,7 +469,7 @@ async def test_probe_9_expired_password_reset_token_rejected(sql_auth_adapter: S
 
 @pytest.mark.asyncio
 async def test_probe_10_reset_complexity_validation_preserves_token(sql_auth_adapter: SqlAuthAdapter):
-    """Empirical probe: verify invalid new password raises ValueError without consuming token."""
+    """Systematic probe: verify invalid new password raises ValueError without consuming token."""
     user = await sql_auth_adapter.register_user(
         email="retry.reset@carefold.local",
         username="retryreset",

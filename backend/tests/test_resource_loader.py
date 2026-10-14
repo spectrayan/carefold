@@ -48,7 +48,7 @@ class TestConcurrencyResourceLoader:
     """Stress tests concurrent access, thread safety, and race conditions."""
 
     def test_concurrent_get_resource_loader_singleton_race(self):
-        """EMPIRICAL CHALLENGE: Verify if get_resource_loader() is thread-safe on cold start.
+        """SYSTEMATIC VERIFICATION: Verify if get_resource_loader() is thread-safe on cold start.
         
         When 50 threads concurrently invoke get_resource_loader() without a lock,
         does it return a single unique singleton instance or multiple divergent instances?

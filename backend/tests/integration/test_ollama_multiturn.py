@@ -11,7 +11,7 @@
 
 """On-demand real LLM multi-turn integration test suite targeting local Ollama.
 
-Validates Requirement R5 and Milestone M5:
+Validates Requirement R5 and Milestone Phase5:
 - Local Ollama daemon health check probe and graceful skip
 - Live multi-turn conversation execution via compiled LangGraph and AgentExecutionService
 - Phase 1 Context Recall (InputGuardrailNode) retrieving prior turn from BaseStore

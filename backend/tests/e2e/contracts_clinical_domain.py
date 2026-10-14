@@ -60,7 +60,7 @@ def try_import(module_path: str, symbol_name: Optional[str] = None) -> Any:
 
 
 # ============================================================================
-# Section 1: Database Entities & Schema Contracts (M1)
+# Section 1: Database Entities & Schema Contracts (Phase1)
 # ============================================================================
 
 @dataclass
@@ -275,7 +275,7 @@ def init_test_db(db_path: str = ":memory:") -> sqlite3.Connection:
 
 
 # ============================================================================
-# Section 2: FHIR R4 LOINC Vitals Normalization (M2)
+# Section 2: FHIR R4 LOINC Vitals Normalization (Phase2)
 # ============================================================================
 
 LOINC_CODES = {
@@ -351,7 +351,7 @@ def normalize_fhir_vitals(raw_vitals: Dict[str, Any], effective_dt: Optional[dat
 
 
 # ============================================================================
-# Section 3: Adult & Pediatric BMI Engines (M2)
+# Section 3: Adult & Pediatric BMI Engines (Phase2)
 # ============================================================================
 
 def calculate_adult_bmi(weight_kg: float, height_cm: float) -> Dict[str, Any]:
@@ -486,7 +486,7 @@ def calculate_pediatric_bmi_percentile(
 
 
 # ============================================================================
-# Section 4: Diurnal Blood Pressure Trends & AHA/ACC 2025 (M2)
+# Section 4: Diurnal Blood Pressure Trends & AHA/ACC 2025 (Phase2)
 # ============================================================================
 
 def classify_blood_pressure(systolic: float, diastolic: float) -> str:
@@ -574,7 +574,7 @@ def calculate_diurnal_bp_trends(
 
 
 # ============================================================================
-# Section 5: Vitals Red Flags Safety Engine (M2)
+# Section 5: Vitals Red Flags Safety Engine (Phase2)
 # ============================================================================
 
 ACUTE_SYMPTOMS = {
@@ -693,7 +693,7 @@ def check_vitals_red_flags(
 
 
 # ============================================================================
-# Section 6: Appointments & Scheduling Navigation (M3)
+# Section 6: Appointments & Scheduling Navigation (Phase3)
 # ============================================================================
 
 def generate_how_to_book_drafts(
@@ -768,7 +768,7 @@ def evaluate_post_visit_transitions(
 
 
 # ============================================================================
-# Section 7: Reminders & Recurrence Engine (M3)
+# Section 7: Reminders & Recurrence Engine (Phase3)
 # ============================================================================
 
 def advance_rrule_occurrence(current_due: datetime, rrule_str: str, tz_name: str = "UTC") -> datetime:
@@ -904,7 +904,7 @@ def generate_ics_calendar(
 
 
 # ============================================================================
-# Section 8: Consultation Prep Pack Compiler (M4)
+# Section 8: Consultation Prep Pack Compiler (Phase4)
 # ============================================================================
 
 def compile_execution_plan(intent: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
@@ -1002,7 +1002,7 @@ def compile_clinical_prep_pack(
 
 
 # ============================================================================
-# Section 9: Typed Notes & After-Visit Extraction (M4)
+# Section 9: Typed Notes & After-Visit Extraction (Phase4)
 # ============================================================================
 
 VALID_NOTE_TYPES = {
@@ -1054,7 +1054,7 @@ def extract_after_visit_summary(note_content: str) -> Dict[str, Any]:
 
 
 # ============================================================================
-# Section 10: Activity Timeline & Single-Click Undo (M5)
+# Section 10: Activity Timeline & Single-Click Undo (Phase5)
 # ============================================================================
 
 class UndoWindowExpiredError(Exception):

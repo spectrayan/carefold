@@ -379,7 +379,7 @@ class MockChatModel(BaseChatModel):
             "meter reads 42", "glucose meter reads 42",
             "lost control of my bladder", "completely numb",
             "peeling off in painful sheets", "painful sheets", "skin is peeling off",
-            # M2 Extended Specialties Red Flags:
+            # Phase2 Extended Specialties Red Flags:
             "103.5", "103 fever", "fever of 103", "shaking chills",
             "fiery red", "hot to touch", "cannot bear any weight", "septic joint",
             "excruciating lower abdominal", "haven't urinated at all for the past",
@@ -470,13 +470,13 @@ class MockChatModel(BaseChatModel):
                 "endoscopy", "colonoscopy", "food trigger", "kidney", "egfr", "creatinine",
                 "diabetes", "glucose", "cgm", "joint", "mobility", "physical therapy",
                 "lesion", "abcde", "rash", "skin", "body map", "action plan", "bristol", "agenda",
-                # M2 Extended Specialties Keywords:
+                # Phase2 Extended Specialties Keywords:
                 "cancer", "chemo", "radiation", "oncology", "biopsy", "tumor",
                 "arthritis", "lupus", "autoimmune", "stiffness", "flare", "biologic",
                 "urinary", "bladder", "prostate", "psa", "kidney stone", "hematuria", "voiding",
                 "eye", "vision", "cataract", "glaucoma", "retina", "drops", "optometrist", "ophthalm",
                 "ear", "nose", "throat", "sinusitis", "hearing", "vertigo", "tonsil", "tinnitus", "audiolog", " ent ",
-                # M3 Administrative Specialties Keywords:
+                # Phase3 Administrative Specialties Keywords:
                 "prior-auth", "pa requirement", "step therapy", "peer-to-peer", "approval criteria",
                 "claims", "denial", "appeal", "erisa", "eob", "explanation of benefits", "billing dispute",
                 "medical records", "hipaa", "dossier", "lab trend", "roi form", "records request",
@@ -560,7 +560,7 @@ class MockChatModel(BaseChatModel):
             elif any(k in user_text for k in ["ear", "nose", "throat", "sinusitis", "hearing", "vertigo", "tonsil", "tinnitus", "audiolog", " ent "]):
                 skill_id = "ent-prep"
                 doc_name = "sinusitis_and_nasal_symptom_tracker.md" if ("sinus" in user_text or "sinusitis" in user_text) else "tinnitus_and_hearing_test_prep_guide.md"
-            # M3 Administrative Specialties (Must take precedence over benefits-explainer):
+            # Phase3 Administrative Specialties (Must take precedence over benefits-explainer):
             elif any(k in user_text for k in ["prior authorization", "prior-auth", "pa requirement", "step therapy", "peer-to-peer", "approval criteria"]):
                 skill_id = "prior-auth-prep"
                 doc_name = "peer_to_peer_preparation_sheet.md" if ("peer-to-peer" in user_text or "peer to peer" in user_text) else ("step_therapy_appeal_workflow.md" if "step therapy" in user_text else "prior_authorization_checklist.md")
@@ -839,7 +839,7 @@ class MockModelClient:
             "meter reads 42", "glucose meter reads 42",
             "lost control of my bladder", "completely numb",
             "peeling off in painful sheets", "painful sheets", "skin is peeling off",
-            # M2 Extended Specialties Red Flags:
+            # Phase2 Extended Specialties Red Flags:
             "103.5", "103 fever", "fever of 103", "shaking chills",
             "fiery red", "hot to touch", "cannot bear any weight", "septic joint",
             "excruciating lower abdominal", "haven't urinated at all for the past",
@@ -932,13 +932,13 @@ class MockModelClient:
                 "endoscopy", "colonoscopy", "food trigger", "kidney", "egfr", "creatinine",
                 "diabetes", "glucose", "cgm", "joint", "mobility", "physical therapy",
                 "lesion", "abcde", "rash", "skin", "body map", "action plan", "bristol", "agenda",
-                # M2 Extended Specialties Keywords:
+                # Phase2 Extended Specialties Keywords:
                 "cancer", "chemo", "radiation", "oncology", "biopsy", "tumor",
                 "arthritis", "lupus", "autoimmune", "stiffness", "flare", "biologic",
                 "urinary", "bladder", "prostate", "psa", "kidney stone", "hematuria", "voiding",
                 "eye", "vision", "cataract", "glaucoma", "retina", "drops", "optometrist", "ophthalm",
                 "ear", "nose", "throat", "sinusitis", "hearing", "vertigo", "tonsil", "tinnitus", "audiolog", " ent ",
-                # M3 Administrative Specialties Keywords:
+                # Phase3 Administrative Specialties Keywords:
                 "prior-auth", "pa requirement", "step therapy", "peer-to-peer", "approval criteria",
                 "claims", "denial", "appeal", "erisa", "eob", "explanation of benefits", "billing dispute",
                 "medical records", "hipaa", "dossier", "lab trend", "roi form", "records request",
@@ -1016,7 +1016,7 @@ class MockModelClient:
             elif any(k in user_text for k in ["ear", "nose", "throat", "sinusitis", "hearing", "vertigo", "tonsil", "tinnitus", "audiolog", " ent "]):
                 skill_id = "ent-prep"
                 doc_name = "sinusitis_and_nasal_symptom_tracker.md" if ("sinus" in user_text or "sinusitis" in user_text) else "tinnitus_and_hearing_test_prep_guide.md"
-            # M3 Administrative Specialties (Must take precedence over benefits-explainer):
+            # Phase3 Administrative Specialties (Must take precedence over benefits-explainer):
             elif any(k in user_text for k in ["prior authorization", "prior-auth", "pa requirement", "step therapy", "peer-to-peer", "approval criteria"]):
                 skill_id = "prior-auth-prep"
                 doc_name = "peer_to_peer_preparation_sheet.md" if ("peer-to-peer" in user_text or "peer to peer" in user_text) else ("step_therapy_appeal_workflow.md" if "step therapy" in user_text else "prior_authorization_checklist.md")

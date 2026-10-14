@@ -78,7 +78,7 @@ const SAMPLE_PREVENTIVE_ITEMS: PreventiveItem[] = [
 ];
 
 const SAMPLE_IMPORT_BATCH: ImportBatchResponse = {
-  batch_id: 'batch-101',
+  batch_id: 'import_set-101',
   profile_id: 'prof-1',
   format: 'fhir_r4',
   source_name: 'MyChart',
@@ -242,11 +242,11 @@ describe('Preventive Care and Clinical Import Components Suite', () => {
       // Deselect index 1 and commit only index 0
       fireEvent.click(screen.getByTestId('staged-record-checkbox-1'));
       fireEvent.click(screen.getByTestId('commit-import-batch-btn'));
-      expect(onCommit).toHaveBeenCalledWith('batch-101', [0]);
+      expect(onCommit).toHaveBeenCalledWith('import_set-101', [0]);
 
       // Discard
       fireEvent.click(screen.getByTestId('discard-import-batch-btn'));
-      expect(onDiscard).toHaveBeenCalledWith('batch-101');
+      expect(onDiscard).toHaveBeenCalledWith('import_set-101');
     });
 
     it('stages and commits a clinical export through ClinicalImportWizard', async () => {
@@ -335,15 +335,15 @@ describe('Preventive Care and Clinical Import Components Suite', () => {
         expect.objectContaining({ method: 'POST' })
       );
 
-      await commitImportBatch('prof-1', 'batch-1', [0, 1]);
+      await commitImportBatch('prof-1', 'import_set-1', [0, 1]);
       expect(fetchSpy).toHaveBeenCalledWith(
-        '/api/v1/profiles/prof-1/imports/batch-1/commit',
+        '/api/v1/profiles/prof-1/imports/import_set-1/commit',
         expect.objectContaining({ method: 'POST' })
       );
 
-      await discardImportBatch('prof-1', 'batch-1');
+      await discardImportBatch('prof-1', 'import_set-1');
       expect(fetchSpy).toHaveBeenCalledWith(
-        '/api/v1/profiles/prof-1/imports/batch-1/discard',
+        '/api/v1/profiles/prof-1/imports/import_set-1/discard',
         expect.objectContaining({ method: 'POST' })
       );
     });

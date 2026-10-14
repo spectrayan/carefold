@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial Stress Test Suite for Concurrency and Stealth Evasion Interception.
+"""Boundary Stress Test Suite for Concurrency and Stealth Evasion Interception.
 
 Verifies:
 1. 50-concurrency SQLite stress:

@@ -239,7 +239,7 @@ async def test_notes_profile_scoping(profile_test_env):
         )
         assert n_alice.status_code == 201
 
-        # Check DB persistence (M2: Notes are 100% relational DB; no loose files written)
+        # Check DB persistence (Phase2: Notes are 100% relational DB; no loose files written)
         notes_dir = settings.get_notes_dir()
         alice_uid = user_a["user"]["id"]
         mom_file = notes_dir / alice_uid / mom_id / f"{mom_slug}.md"

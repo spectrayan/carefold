@@ -678,7 +678,7 @@ async def test_handle_extract_text_job_missing_attachment_in_db(
 
 
 # =========================================================================
-# 7. Adversarial Stress Tests (Empirical Challenge Suite)
+# 7. Boundary Stress Tests (Systematic Verification Suite)
 # =========================================================================
 
 def test_malformed_truncated_pdf_streams():
@@ -700,14 +700,14 @@ def test_malformed_truncated_pdf_streams():
         b"stream\n"
         b"BT\n"
         b"/F1 12 Tf\n"
-        b"(Adversarial Stream Fallback Recovery) Tj\n"
+        b"(Boundary Stream Fallback Recovery) Tj\n"
         b"ET\n"
         b"endstream\n"
     )
     res_stream = extract_document_text(stream_no_obj, filename="unwrapped_stream.pdf")
     assert res_stream.status == "completed"
     assert res_stream.format == "pdf"
-    assert "Adversarial Stream Fallback Recovery" in res_stream.text
+    assert "Boundary Stream Fallback Recovery" in res_stream.text
     assert res_stream.metadata.get("parser") == "regex_stream"
     assert res_stream.metadata.get("fallback_from_pypdf") is True
 
@@ -718,11 +718,11 @@ def test_malformed_truncated_pdf_streams():
     assert "Hello World" in res_hex.text
     assert res_hex.metadata.get("fallback_from_pypdf") is True
 
-    # 4. Array string TJ operations: [(Adversarial) 10 ( Array)] TJ
-    array_stream = b"%PDF-1.4\nBT /F1 12 Tf [(Adversarial) 10 ( Array)] TJ ET\n"
+    # 4. Array string TJ operations: [(Boundary) 10 ( Array)] TJ
+    array_stream = b"%PDF-1.4\nBT /F1 12 Tf [(Boundary) 10 ( Array)] TJ ET\n"
     res_array = extract_document_text(array_stream, filename="array.pdf")
     assert res_array.status == "completed"
-    assert "Adversarial Array" in res_array.text
+    assert "Boundary Array" in res_array.text
 
     # 5. Unterminated BT block
     res_unterminated = extract_document_text(b"%PDF-1.4\nBT (Unterminated text", filename="unterminated.pdf")

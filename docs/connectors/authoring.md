@@ -72,7 +72,7 @@ terms:
 ```
 
 ### Authentication Modes
-- **OAuth 2.0 with PKCE (`type: oauth2`)**: Uses `pkce: true` (S256 challenge), `client_source: byo` (user-supplied client credentials stored encrypted at rest), and optional `token_rotation: true` for providers like Withings that rotate refresh tokens on every exchange.
+- **OAuth 2.0 with PKCE (`type: oauth2`)**: Uses `pkce: true` (S256 verification), `client_source: byo` (user-supplied client credentials stored encrypted at rest), and optional `token_rotation: true` for providers like Withings that rotate refresh tokens on every exchange.
 - **Basic / App-Specific Password (`type: basic`)**: Used for standards-based protocols such as CalDAV (`caldav.icloud.com`, `caldav.fastmail.com`, or self-hosted `localhost`).
 
 ---

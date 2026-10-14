@@ -38,7 +38,7 @@ Carefold autonomous healthcare agents operate across a wide spectrum of tools—
 In an unconstrained agentic execution environment, tools present four critical failure modes:
 
 1. **Catastrophic Irreversible Execution**: An autonomous model could book an unwanted procedure, delete a patient profile, or mutate clinical records without human verification.
-2. **Indirect Prompt Injection & Data Exfiltration**: When an agent processes untrusted inputs (e.g., patient-uploaded medical bills, third-party PDF records, web search snippets, or external FHIR payloads), adversarial instructions embedded in those documents can hijack model reasoning to invoke external egress tools, silently exfiltrating Protected Health Information (PHI).
+2. **Indirect Prompt Injection & Data Exfiltration**: When an agent processes untrusted inputs (e.g., patient-uploaded medical bills, third-party PDF records, web search snippets, or external FHIR payloads), boundary instructions embedded in those documents can hijack model reasoning to invoke external egress tools, silently exfiltrating Protected Health Information (PHI).
 3. **Replay Attacks and TOCTOU (Time-of-Check to Time-of-Use)**: If approval records can be consumed more than once, or if the parameters executed upon resumption do not match what the human reviewed, an attacker or race condition can replay or tamper with approved operations.
 4. **Unfenced Network Egress**: Tools executing arbitrary outbound HTTP requests create unauthorized communication channels, violating healthcare network boundaries and compliance mandates.
 
@@ -314,7 +314,7 @@ stateDiagram-v2
 - **Tool Registry & Declarations**: `backend/src/carefold/engine/tool_registry.py` (`ToolSpec`, `RiskTier`, `TrustLevel`)
 - **Approvals API Router**: `backend/src/carefold/api/approvals.py` (`list_pending_approvals`, `decide_approval`)
 - **Database Model**: `backend/src/carefold/db/models.py` (`Approval`)
-- **Alembic Migration**: `backend/src/carefold/db/migrations/versions/0003_autonomy_batch_1.py`
+- **Alembic Migration**: `backend/src/carefold/db/migrations/versions/0003_household_profiles_and_audit.py`
 - **Unit & Truth Table Tests**: `backend/tests/test_policy_gate.py`
 - **Verification Commands**:
   ```bash

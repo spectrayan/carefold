@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Empirical adversarial test harness for Milestone 1 (R1 SQL Layer & Declarative Schemas).
+"""Systematic boundary test harness for Milestone 1 (R1 SQL Layer & Declarative Schemas).
 
 Tests:
 1. Transaction rollback on error and auto-commit in `get_db`.
@@ -42,12 +42,12 @@ from carefold.db.session import (
 
 
 # ==============================================================================
-# CHALLENGE AREA 1: TRANSACTION COMMIT AND ROLLBACK IN get_db
+# VERIFICATION AREA 1: TRANSACTION COMMIT AND ROLLBACK IN get_db
 # ==============================================================================
 
 @pytest.mark.asyncio
 async def test_get_db_commits_on_clean_generator_exit(tmp_path: Path, monkeypatch):
-    """Empirical probe: verify get_db() auto-commits records upon clean generator exit."""
+    """Systematic probe: verify get_db() auto-commits records upon clean generator exit."""
     db_file = tmp_path / "test_get_db_commit.db"
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"
     monkeypatch.setenv("CAREFOLD_DATABASE_URL", url)
@@ -82,7 +82,7 @@ async def test_get_db_commits_on_clean_generator_exit(tmp_path: Path, monkeypatc
 
 @pytest.mark.asyncio
 async def test_get_db_rolls_back_on_unhandled_exception(tmp_path: Path, monkeypatch):
-    """Empirical probe: verify get_db() rolls back dirty transactions when an exception is raised."""
+    """Systematic probe: verify get_db() rolls back dirty transactions when an exception is raised."""
     db_file = tmp_path / "test_get_db_rollback.db"
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"
     monkeypatch.setenv("CAREFOLD_DATABASE_URL", url)
@@ -174,12 +174,12 @@ async def test_get_db_rolls_back_on_commit_integrity_error(tmp_path: Path, monke
 
 
 # ==============================================================================
-# CHALLENGE AREA 2: CASCADE DELETES (User -> Session & User -> PasswordReset)
+# VERIFICATION AREA 2: CASCADE DELETES (User -> Session & User -> PasswordReset)
 # ==============================================================================
 
 @pytest.mark.asyncio
 async def test_cascade_delete_orm_level(tmp_path: Path):
-    """Empirical probe: verify ORM session.delete(user) cascades to multiple Sessions and PasswordResets."""
+    """Systematic probe: verify ORM session.delete(user) cascades to multiple Sessions and PasswordResets."""
     db_file = tmp_path / "cascade_orm.db"
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"
     engine = create_db_engine(url)
@@ -253,7 +253,7 @@ async def test_cascade_delete_orm_level(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_cascade_delete_raw_sql_foreign_key_enforcement(tmp_path: Path):
-    """Empirical probe: verify raw SQL DELETE triggers SQLite database-level ON DELETE CASCADE."""
+    """Systematic probe: verify raw SQL DELETE triggers SQLite database-level ON DELETE CASCADE."""
     db_file = tmp_path / "cascade_raw_sql.db"
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"
     engine = create_db_engine(url)
@@ -321,7 +321,7 @@ async def test_cascade_delete_raw_sql_foreign_key_enforcement(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_foreign_key_rejects_orphans_on_insert(tmp_path: Path):
-    """Empirical probe: verify SQLite rejects inserting Session with non-existent user_id."""
+    """Systematic probe: verify SQLite rejects inserting Session with non-existent user_id."""
     db_file = tmp_path / "fk_reject.db"
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"
     engine = create_db_engine(url)
@@ -344,12 +344,12 @@ async def test_foreign_key_rejects_orphans_on_insert(tmp_path: Path):
 
 
 # ==============================================================================
-# CHALLENGE AREA 3: LOWERCASE EMAIL VALIDATION & UNIQUE CONSTRAINTS
+# VERIFICATION AREA 3: LOWERCASE EMAIL VALIDATION & UNIQUE CONSTRAINTS
 # ==============================================================================
 
 @pytest.mark.asyncio
 async def test_email_lowercase_normalization_on_init_and_mutation(tmp_path: Path):
-    """Empirical probe: verify email normalization on instantiation, whitespace, and attribute mutation."""
+    """Systematic probe: verify email normalization on instantiation, whitespace, and attribute mutation."""
     db_file = tmp_path / "email_norm.db"
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"
     engine = create_db_engine(url)
@@ -389,7 +389,7 @@ async def test_email_lowercase_normalization_on_init_and_mutation(tmp_path: Path
 
 @pytest.mark.asyncio
 async def test_email_duplicate_case_insensitive_collision(tmp_path: Path):
-    """Empirical probe: verify uniqueness constraint prevents duplicate emails regardless of casing."""
+    """Systematic probe: verify uniqueness constraint prevents duplicate emails regardless of casing."""
     db_file = tmp_path / "email_dup.db"
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"
     engine = create_db_engine(url)
@@ -424,7 +424,7 @@ async def test_email_duplicate_case_insensitive_collision(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_email_query_by_normalized_string(tmp_path: Path):
-    """Empirical probe: verify SELECT queries accurately retrieve users via normalized email."""
+    """Systematic probe: verify SELECT queries accurately retrieve users via normalized email."""
     db_file = tmp_path / "email_query.db"
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"
     engine = create_db_engine(url)
@@ -451,12 +451,12 @@ async def test_email_query_by_normalized_string(tmp_path: Path):
 
 
 # ==============================================================================
-# CHALLENGE AREA 4: SYSTEM SETTING JSON CRUD & SECRET MASKING
+# VERIFICATION AREA 4: SYSTEM SETTING JSON CRUD & SECRET MASKING
 # ==============================================================================
 
 @pytest.mark.asyncio
 async def test_system_setting_json_types_and_nested_payloads(tmp_path: Path):
-    """Empirical probe: verify SystemSetting handles complex nested structures and various JSON types."""
+    """Systematic probe: verify SystemSetting handles complex nested structures and various JSON types."""
     db_file = tmp_path / "setting_json.db"
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"
     engine = create_db_engine(url)
@@ -510,7 +510,7 @@ async def test_system_setting_json_types_and_nested_payloads(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_system_setting_primitive_scalars(tmp_path: Path):
-    """Empirical probe: verify SystemSetting can store raw JSON scalars (int, bool, string, null)."""
+    """Systematic probe: verify SystemSetting can store raw JSON scalars (int, bool, string, null)."""
     db_file = tmp_path / "setting_primitives.db"
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"
     engine = create_db_engine(url)
@@ -546,7 +546,7 @@ async def test_system_setting_primitive_scalars(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_system_setting_secret_flag_and_update_lifecycle(tmp_path: Path):
-    """Empirical probe: verify is_secret flag preservation, value mutation, and deletion."""
+    """Systematic probe: verify is_secret flag preservation, value mutation, and deletion."""
     db_file = tmp_path / "setting_secret.db"
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"
     engine = create_db_engine(url)
@@ -600,7 +600,7 @@ async def test_system_setting_secret_flag_and_update_lifecycle(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_system_setting_malformed_json_error_handling(tmp_path: Path):
-    """Empirical probe: verify get_value() raises json.JSONDecodeError if value_json is invalid."""
+    """Systematic probe: verify get_value() raises json.JSONDecodeError if value_json is invalid."""
     db_file = tmp_path / "setting_malformed.db"
     url = f"sqlite+aiosqlite:///{db_file.resolve()}"
     engine = create_db_engine(url)

@@ -44,7 +44,7 @@ Authoritative stress-testing and verification for:
    - Missing attachment handling: FileNotFoundError on non-existent sandboxed files.
 6. Concurrency & Stress Harness:
    - Multi-threaded and multi-task concurrent executions.
-7. Empirical Defects Verification:
+7. Systematic Defects Verification:
    - Defect 1: Truncation of uncomma'd 4-digit dollar figures ($1000 -> $100, $6000 -> $600) in _heuristic_dossier_extractor.
    - Defect 2: Alternation omission in copay regex (Primary care copay: $25 dropped or misclassified to office_visit).
 """
@@ -114,7 +114,7 @@ from carefold.workflows.subgraphs.extraction.tool import (
 
 
 class MockStructuredChatModel(BaseChatModel):
-    """Subclass of BaseChatModel implementing with_structured_output for empirical testing."""
+    """Subclass of BaseChatModel implementing with_structured_output for systematic testing."""
     target_dossier: Any = None
 
     @property

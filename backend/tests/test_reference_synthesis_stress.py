@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial tests for in-memory reference doc synthesis.
+"""Boundary tests for in-memory reference doc synthesis.
 
 Verifies:
 1. In-memory reference doc synthesis under read-only disk and missing file conditions.
@@ -17,7 +17,7 @@ Verifies:
 3. Actual filesystem chmod 555 read-only directory handling.
 4. Refusal filtering when LLM returns conversational disclaimers.
 5. Orchestrator state population for provisioned_references when disk is read-only.
-6. Malformed/adversarial document names and edge cases.
+6. Malformed/boundary document names and edge cases.
 """
 
 from __future__ import annotations
@@ -211,7 +211,7 @@ async def test_orchestrator_dynamic_provisioning_under_readonly_disk():
 
 @pytest.mark.asyncio
 async def test_doc_names_and_path_safety():
-    """Verify that unusual or adversarial doc names are handled safely without crashing."""
+    """Verify that unusual or boundary doc names are handled safely without crashing."""
     node = SkillGeneratorNode(model=None)
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -314,7 +314,7 @@ def test_execution_plan_validation_and_field_sync():
 
 @pytest.mark.asyncio
 async def test_reproduce_defect_prior_auth_hijacked_by_visit_steward():
-    """EMPIRICAL CHALLENGE REPRODUCTION:
+    """SYSTEMATIC VERIFICATION REPRODUCTION:
 
     Demonstrates that OrchestratorNode._route over-eagerly hijacks prior-auth queries
     containing generic words like 'medication' and routes them to 'visit-steward' as

@@ -144,7 +144,7 @@ class SkillGeneratorNode(BaseNode):
         if not (stripped.startswith("#") or "##" in stripped):
             return False
 
-        # 2. Substantial content threshold (satisfies empirical stress suite)
+        # 2. Substantial content threshold (satisfies systematic stress suite)
         if len(stripped.encode("utf-8")) < 200 or len(stripped.split()) < 50:
             return False
 

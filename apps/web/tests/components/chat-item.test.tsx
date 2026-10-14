@@ -111,7 +111,7 @@ describe('ChatMessageItem Component', () => {
   });
 
   // -------------------------------------------------------------------------
-  // M9 Enhancements: Role Badges
+  // Phase9 Enhancements: Role Badges
   // -------------------------------------------------------------------------
   it('renders subtle "You" role badge on user message', () => {
     const message: ChatMessage = {
@@ -140,7 +140,7 @@ describe('ChatMessageItem Component', () => {
   });
 
   // -------------------------------------------------------------------------
-  // M9 Enhancements: Theme-Aware Timestamps
+  // Phase9 Enhancements: Theme-Aware Timestamps
   // -------------------------------------------------------------------------
   it('renders formatted timestamp with theme-aware classes on user message', () => {
     const message: ChatMessage = {
@@ -195,7 +195,7 @@ describe('ChatMessageItem Component', () => {
   });
 
   // -------------------------------------------------------------------------
-  // M9 Enhancements: Bottom Toolbar Placement & Class Compliance
+  // Phase9 Enhancements: Bottom Toolbar Placement & Class Compliance
   // -------------------------------------------------------------------------
   it('positions action toolbar at the bottom of user message bubble without -top-3.5 or absolute', () => {
     const message: ChatMessage = {

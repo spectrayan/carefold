@@ -19,7 +19,7 @@ Tests and stress-tests:
    - Manifests completely omitting taxonomy fields.
    - Manifests with partial taxonomy specifications.
    - Default list independence (no mutable shared default state).
-3. Adversarial / Boundary Input Handling:
+3. Boundary / Boundary Input Handling:
    - Extra / unexpected fields in manifests and payloads.
    - Explicit null values in non-nullable schema fields.
    - Unicode, emoji, and large strings in category and tags.
@@ -405,7 +405,7 @@ class TestDefaultsAndBackwardCompatibility:
 
 
 # ============================================================================
-# 3. Adversarial / Boundary Input Handling
+# 3. Boundary / Boundary Input Handling
 # ============================================================================
 
 class TestAdversarialInputs:
@@ -611,7 +611,7 @@ class TestSerializationAndRoundTrip:
 # ============================================================================
 
 class TestLoaderIntegrationStress:
-    """Stress tests load_agent and load_skill under adversarial filesystem scenarios."""
+    """Stress tests load_agent and load_skill under boundary filesystem scenarios."""
 
     def test_load_agent_yaml_inputs(self, tmp_path: Path):
         """Test agent loading with missing, partial, extra, and invalid YAML attributes."""

@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Unit and adversarial tests for Phase 0 closed tools sandbox."""
+"""Unit and boundary tests for Phase 0 closed tools sandbox."""
 
 import os
 import re

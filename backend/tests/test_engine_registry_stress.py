@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial engine and registry stress-fuzzing suite.
+"""Boundary engine and registry stress-fuzzing suite.
 
 Verifies:
 1. Stress-tests create_carefold_agent() with various subagent combinations and Ollama configurations.
@@ -216,7 +216,7 @@ class TestAgentRegistrySubagentDiscoveryAndTools:
         ],
     )
     def test_get_subagent_invalid_ids_return_none(self, agent_registry: AgentRegistry, invalid_id: Any):
-        """Fuzzes get_subagent with adversarial, malformed, and traversal inputs."""
+        """Fuzzes get_subagent with boundary, malformed, and traversal inputs."""
         assert agent_registry.get_subagent(invalid_id) is None
 
     def test_get_subagent_immutability(self, agent_registry: AgentRegistry):

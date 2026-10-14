@@ -55,7 +55,7 @@ class ReferenceExecutionPlan(BaseModel):
     reasoning: str = ""
 
 
-# Try importing real plan schema if implemented in M3
+# Try importing real plan schema if implemented in Phase3
 try:
     from carefold.schemas.plan import (  # type: ignore
         ExecutionPlan as RealExecutionPlan,

@@ -75,7 +75,7 @@ def sql_settings_adapter(sql_session_factory: async_sessionmaker[AsyncSession]):
 
 @pytest.mark.asyncio
 async def test_probe_1_complex_nested_json_serialization(sql_settings_adapter: SqlSettingsAdapter):
-    """Empirical probe: verify JSON serialization for complex nested structures, unicode, and types."""
+    """Systematic probe: verify JSON serialization for complex nested structures, unicode, and types."""
     test_cases = {
         "nested_dict": {"lvl1": {"lvl2": {"lvl3": {"lvl4": "deep_val"}}}},
         "mixed_types": {
@@ -129,7 +129,7 @@ async def test_probe_1_complex_nested_json_serialization(sql_settings_adapter: S
 
 @pytest.mark.asyncio
 async def test_probe_2_cache_consistency_and_invalidation(sql_settings_adapter: SqlSettingsAdapter):
-    """Empirical probe: verify selective and global cache invalidation forces fresh DB reads."""
+    """Systematic probe: verify selective and global cache invalidation forces fresh DB reads."""
     await sql_settings_adapter.set_setting("k1", "v1")
     await sql_settings_adapter.set_setting("k2", "v2")
     await sql_settings_adapter.set_setting("k3", "v3")
@@ -162,7 +162,7 @@ async def test_probe_2_cache_consistency_and_invalidation(sql_settings_adapter: 
 
 @pytest.mark.asyncio
 async def test_probe_3_secret_masking_all_settings(sql_settings_adapter: SqlSettingsAdapter):
-    """Empirical probe: verify get_all_settings masks secret values with '••••••••'."""
+    """Systematic probe: verify get_all_settings masks secret values with '••••••••'."""
     await sql_settings_adapter.set_setting("api.key", "sk-secret-12345", is_secret=True)
     await sql_settings_adapter.set_setting("db.password", "super-secret-db-pass", is_secret=True)
     await sql_settings_adapter.set_setting("app.name", "Carefold", is_secret=False)
@@ -196,7 +196,7 @@ async def test_probe_3_secret_masking_all_settings(sql_settings_adapter: SqlSett
 
 @pytest.mark.asyncio
 async def test_probe_4_cache_isolation_no_poisoning(sql_settings_adapter: SqlSettingsAdapter):
-    """Empirical probe: verify get_all_settings(mask_secrets=True) does NOT poison internal cache."""
+    """Systematic probe: verify get_all_settings(mask_secrets=True) does NOT poison internal cache."""
     await sql_settings_adapter.set_setting(
         "secret.dict",
         {"api_token": "token-xyz-789", "env": "prod"},
@@ -224,7 +224,7 @@ async def test_probe_4_cache_isolation_no_poisoning(sql_settings_adapter: SqlSet
 
 @pytest.mark.asyncio
 async def test_probe_5_delete_eviction_and_null_handling(sql_settings_adapter: SqlSettingsAdapter):
-    """Empirical probe: verify delete_setting evicts cache and distinguishes null values."""
+    """Systematic probe: verify delete_setting evicts cache and distinguishes null values."""
     # 1. Null value stored
     await sql_settings_adapter.set_setting("null_key", None)
     assert "null_key" in sql_settings_adapter._cache
@@ -253,7 +253,7 @@ async def test_probe_5_delete_eviction_and_null_handling(sql_settings_adapter: S
 
 @pytest.mark.asyncio
 async def test_probe_6_concurrent_cache_hits(sql_settings_adapter: SqlSettingsAdapter):
-    """Empirical probe: verify 100 concurrent tasks reading cached settings survive without lock contention."""
+    """Systematic probe: verify 100 concurrent tasks reading cached settings survive without lock contention."""
     for i in range(10):
         await sql_settings_adapter.set_setting(f"item.{i}", {"val": i, "status": "ok"})
 
@@ -273,7 +273,7 @@ async def test_probe_6_concurrent_cache_hits(sql_settings_adapter: SqlSettingsAd
 
 @pytest.mark.asyncio
 async def test_probe_7_disabled_auth_adapter_zero_db_bypass():
-    """Empirical probe: verify DisabledAuthAdapter functions without any DB engine or session."""
+    """Systematic probe: verify DisabledAuthAdapter functions without any DB engine or session."""
     adapter = DisabledAuthAdapter()
     assert isinstance(adapter, AuthPort)
 
@@ -330,7 +330,7 @@ async def test_probe_7_disabled_auth_adapter_zero_db_bypass():
 
 @pytest.mark.asyncio
 async def test_probe_8_disabled_auth_adapter_custom_steward_and_dto():
-    """Empirical probe: verify custom steward injection and RegisterUserRequest DTO support."""
+    """Systematic probe: verify custom steward injection and RegisterUserRequest DTO support."""
     custom_steward = UserProfile(
         id="11111111-2222-3333-4444-555555555555",
         email="custom@provider.org",
@@ -359,7 +359,7 @@ async def test_probe_8_disabled_auth_adapter_custom_steward_and_dto():
 
 @pytest.mark.asyncio
 async def test_probe_9_hostile_keys_and_sql_injection(sql_settings_adapter: SqlSettingsAdapter):
-    """Empirical probe: verify SQL injection attacks in setting keys are safely neutralized."""
+    """Systematic probe: verify SQL injection attacks in setting keys are safely neutralized."""
     sqli_keys = [
         "'; DROP TABLE system_settings; --",
         "' OR '1'='1",
@@ -384,7 +384,7 @@ async def test_probe_9_hostile_keys_and_sql_injection(sql_settings_adapter: SqlS
 
 @pytest.mark.asyncio
 async def test_probe_10_non_json_serializable_rejection(sql_settings_adapter: SqlSettingsAdapter):
-    """Empirical probe: verify TypeError is raised for non-serializable objects without DB changes."""
+    """Systematic probe: verify TypeError is raised for non-serializable objects without DB changes."""
     with pytest.raises(TypeError):
         await sql_settings_adapter.set_setting("invalid.set", {1, 2, 3})
 

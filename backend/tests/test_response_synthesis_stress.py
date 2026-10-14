@@ -23,7 +23,7 @@ Tests:
 3. GraphBuilder integration:
    - Graph inspection: dispatcher, response_synthesizer, output_guardrail
    - Conditional routing for SINGLE vs PARALLEL vs PIPELINE execution plans
-4. Clinical safety adversarial emergency gating:
+4. Clinical safety boundary emergency gating:
    - Varied emergency formulations (acute chest pain, stroke FAST, anaphylaxis)
    - Verifying robust refusal flags and reason formatting
 """
@@ -48,7 +48,7 @@ from carefold.workflows.state import AgentState
 
 
 # ============================================================================
-# Section 1: ResponseSynthesizerNode Adversarial Stress Tests
+# Section 1: ResponseSynthesizerNode Boundary Stress Tests
 # ============================================================================
 
 class TestResponseSynthesizerAdversarial:
@@ -163,7 +163,7 @@ class TestResponseSynthesizerAdversarial:
 # ============================================================================
 
 class TestZeroBodyAuditConcurrency:
-    """Empirical verification of zero-body redaction and audit file locking."""
+    """Systematic verification of zero-body redaction and audit file locking."""
 
     @pytest.mark.asyncio
     async def test_zero_body_redaction_guarantee(self, tmp_path: Path):
@@ -252,7 +252,7 @@ class TestZeroBodyAuditConcurrency:
 # ============================================================================
 
 class TestGraphBuilderIntegration:
-    """Verifies graph compilation, inspection, and node wiring for M5."""
+    """Verifies graph compilation, inspection, and node wiring for Phase5."""
 
     def test_graph_inspection_includes_dispatcher_and_synthesizer(self):
         """Graph inspection must report dispatcher and response_synthesizer nodes."""
@@ -360,11 +360,11 @@ class TestGraphBuilderIntegration:
 
 
 # ============================================================================
-# Section 4: Clinical Safety Adversarial Emergency Gating
+# Section 4: Clinical Safety Boundary Emergency Gating
 # ============================================================================
 
 class TestClinicalSafetyEmergencyAdversarial:
-    """Empirical verification that acute emergency queries trigger refusal."""
+    """Systematic verification that acute emergency queries trigger refusal."""
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(

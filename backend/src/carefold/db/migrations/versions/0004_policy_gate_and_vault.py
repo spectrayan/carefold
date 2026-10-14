@@ -11,8 +11,8 @@
 
 """Autonomy Batch 2 schema evolution: Deep Entity Scoping (notes & chat_threads profile_id NOT NULL).
 
-Revision ID: 0004_autonomy_batch_2
-Revises: 0003_autonomy_batch_1
+Revision ID: 0004_policy_gate_and_vault
+Revises: 0003_household_profiles_and_audit
 Create Date: 2026-10-12 23:30:00.000000
 
 """
@@ -25,8 +25,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "0004_autonomy_batch_2"
-down_revision: Union[str, None] = "0003_autonomy_batch_1"
+revision: str = "0004_policy_gate_and_vault"
+down_revision: Union[str, None] = "0003_household_profiles_and_audit"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

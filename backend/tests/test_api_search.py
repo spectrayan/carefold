@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Unit and integration tests for REST Profile Search API endpoint (AU-26, M4)."""
+"""Unit and integration tests for REST Profile Search API endpoint (AU-26, Phase4)."""
 
 from __future__ import annotations
 

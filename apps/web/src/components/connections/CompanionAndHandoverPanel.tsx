@@ -35,7 +35,7 @@ import type {
   TeenHandoverPayload,
   TeenHandoverResponse,
   ViewerSectionKey,
-} from '@/types/autonomyBatch6';
+} from '@/types/routinesAndCompanion';
 
 const ALL_VIEWER_SECTIONS: ViewerSectionKey[] = [
   'vitals',

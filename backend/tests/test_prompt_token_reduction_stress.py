@@ -9,11 +9,11 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial stress-testing suite for Prompt Token Reduction & Engine Runner Fuzzing.
+"""Boundary stress-testing suite for Prompt Token Reduction & Engine Runner Fuzzing.
 
 Verifies:
-1. Empirically verifies >=60% system prompt token reduction across all 20 specialist agents + _template.
-2. Empirically verifies complete absence of legacy Section 3 interaction protocols and full skill bodies from Turn-1 prompts.
+1. Systematically verifies >=60% system prompt token reduction across all 20 specialist agents + _template.
+2. Systematically verifies complete absence of legacy Section 3 interaction protocols and full skill bodies from Turn-1 prompts.
 3. Stress-tests and fuzzes agent_factory.py, load_subagent_from_yaml(), load_all_subagents(), and AgentRegistry.
 4. Validates dynamic skill generation prompt assembly and tool resolution.
 """
@@ -67,15 +67,15 @@ def get_all_agent_directories(workspace_root: Path) -> List[Path]:
 
 
 # =============================================================================
-# Section 1: Empirical System Prompt Token Reduction & Protocol Purge
+# Section 1: Systematic System Prompt Token Reduction & Protocol Purge
 # =============================================================================
 
 class TestSystemPromptTokenReductionAndProtocolPurge:
-    """Empirical verification of >=60% token reduction and absence of legacy protocols."""
+    """Systematic verification of >=60% token reduction and absence of legacy protocols."""
 
     @pytest.mark.parametrize("agent_dir", get_all_agent_directories(Path(__file__).resolve().parent.parent.parent), ids=lambda d: d.name)
     def test_native_subagent_token_reduction_exceeds_60_percent(self, agent_dir: Path, workspace_root: Path, token_encoder):
-        """Empirically asserts that native SubAgent prompt (+ root profile suffix) reduces tokens by >= 60%."""
+        """Systematically asserts that native SubAgent prompt (+ root profile suffix) reduces tokens by >= 60%."""
         aid = agent_dir.name
         skills_dir = workspace_root / "skills"
 
@@ -212,7 +212,7 @@ class TestSystemPromptTokenReductionAndProtocolPurge:
 # =============================================================================
 
 class TestAgentFactoryFuzzingAndStressHarness:
-    """Fuzzing and adversarial input harness for loader and factory functions."""
+    """Fuzzing and boundary input harness for loader and factory functions."""
 
     def test_load_subagent_missing_yaml_raises_filenotfound(self, tmp_path):
         """Missing agent.yaml in agent dir must raise FileNotFoundError."""

@@ -12,7 +12,7 @@
 """Dynamic contract shims and cryptographic reference engine for Autonomy Batch 1.
 
 Supports progressive testability by dynamically importing production implementations
-when present (M2–M5), while seamlessly falling back to mathematically identical,
+when present (Phase2–Phase5), while seamlessly falling back to mathematically identical,
 specification-compliant contracts defined in PROJECT.md and ORIGINAL_REQUEST.md.
 """
 

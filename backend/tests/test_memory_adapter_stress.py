@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Comprehensive Adversarial Test Suite for SqliteMemoryAdapter and memory/factory.py.
+"""Comprehensive Boundary Test Suite for SqliteMemoryAdapter and memory/factory.py.
 Target components:
 - SqliteMemoryAdapter:
   1. Namespace collision & delimiter injection
@@ -48,11 +48,11 @@ from carefold.memory.ports.memory_port import MemoryPort, MemoryTier
 
 
 # ==============================================================================
-# PART 1: SqliteMemoryAdapter Adversarial Tests
+# PART 1: SqliteMemoryAdapter Boundary Tests
 # ==============================================================================
 
 class TestSqliteMemoryAdapterAdversarial:
-    """Adversarial stress-tests targeting SqliteMemoryAdapter."""
+    """Boundary stress-tests targeting SqliteMemoryAdapter."""
 
     @pytest.fixture
     async def adapter(self, tmp_path: Path):
@@ -115,7 +115,7 @@ class TestSqliteMemoryAdapterAdversarial:
         Case A: namespace="user:1", key="records" -> id="user:1:records"
         Case B: namespace="user", key="1:records" -> id="user:1:records"
         
-        Adversarial check: Does Case B overwrite Case A?
+        Boundary check: Does Case B overwrite Case A?
         """
         await adapter.remember(
             key="records",
@@ -360,11 +360,11 @@ class TestSqliteMemoryAdapterAdversarial:
 
 
 # ==============================================================================
-# PART 2: Memory Factory Adversarial Tests
+# PART 2: Memory Factory Boundary Tests
 # ==============================================================================
 
 class TestMemoryFactoryAdversarial:
-    """Adversarial stress-tests targeting memory/factory.py."""
+    """Boundary stress-tests targeting memory/factory.py."""
 
     def setup_method(self) -> None:
         reset_memory_ports()
@@ -432,19 +432,19 @@ class TestMemoryFactoryAdversarial:
     def test_cache_invalidation_and_lifecycle(self, tmp_path: Path) -> None:
         """Verifies reset_memory_ports() clears cached singletons."""
         s1 = Settings(catalog_db_path=tmp_path / "db_1.db")
-        m1 = get_memory_port(s1)
-        c1 = get_catalog_port(s1)
+        msg_one = get_memory_port(s1)
+        item_one = get_catalog_port(s1)
 
         # Invalidate cache
         reset_memory_ports()
 
         s2 = Settings(catalog_db_path=tmp_path / "db_2.db")
-        m2 = get_memory_port(s2)
-        c2 = get_catalog_port(s2)
+        msg_two = get_memory_port(s2)
+        item_two = get_catalog_port(s2)
 
         # Must be distinct new objects
-        assert m1 is not m2, "reset_memory_ports() failed to clear _CACHED_MEMORY_PORT"
-        assert c1 is not c2, "reset_memory_ports() failed to clear _CACHED_CATALOG_PORT"
+        assert msg_one is not msg_two, "reset_memory_ports() failed to clear _CACHED_MEMORY_PORT"
+        assert item_one is not item_two, "reset_memory_ports() failed to clear _CACHED_CATALOG_PORT"
 
     # --------------------------------------------------------------------------
     # 8. Overriding Settings Dynamically & Explicit Overrides
@@ -526,7 +526,7 @@ class TestMemoryFactoryAdversarial:
         assert "postgres" in str(exc_cat.value).lower()
 
     def test_empty_string_backend_vulnerability_discovery(self) -> None:
-        """Empirically test whether empty string backend='' properly raises ValueError.
+        """Systematically test whether empty string backend='' properly raises ValueError.
         
         Bug finding: In factory.py, '(backend or cfg.memory_backend)' treats '' as falsy,
         causing create_memory_port(backend='') to fall back to 'sqlite' instead of raising ValueError.

@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial stress and penetration tests for Carefold backend."""
+"""Boundary stress and penetration tests for Carefold backend."""
 
 import json
 import os

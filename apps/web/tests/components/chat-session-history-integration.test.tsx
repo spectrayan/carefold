@@ -94,8 +94,8 @@ describe('ChatClient Session History Sidebar Integration', () => {
     localStorage.setItem(
       'carefold_msgs_thread-visit-steward-111',
       JSON.stringify([
-        { id: 'm1', role: 'user', content: 'First Visit Questions', timestamp: 1000 },
-        { id: 'm2', role: 'assistant', content: 'Here is your visit checklist', timestamp: 2000 }
+        { id: 'msg_one', role: 'user', content: 'First Visit Questions', timestamp: 1000 },
+        { id: 'msg_two', role: 'assistant', content: 'Here is your visit checklist', timestamp: 2000 }
       ])
     );
 
@@ -103,8 +103,8 @@ describe('ChatClient Session History Sidebar Integration', () => {
     localStorage.setItem(
       'carefold_msgs_thread-cardiology-guide-222',
       JSON.stringify([
-        { id: 'm3', role: 'user', content: 'Cardiology Prep', timestamp: 3000 },
-        { id: 'm4', role: 'assistant', content: 'Cardiology guidance ready', timestamp: 4000 }
+        { id: 'msg_three', role: 'user', content: 'Cardiology Prep', timestamp: 3000 },
+        { id: 'msg_four', role: 'assistant', content: 'Cardiology guidance ready', timestamp: 4000 }
       ])
     );
 
@@ -154,8 +154,8 @@ describe('ChatClient Session History Sidebar Integration', () => {
     localStorage.setItem(
       'carefold_msgs_thread-visit-steward-prior',
       JSON.stringify([
-        { id: 'm1', role: 'user', content: 'Check blood pressure meds list' },
-        { id: 'm2', role: 'assistant', content: 'Here is your blood pressure medication review' }
+        { id: 'msg_one', role: 'user', content: 'Check blood pressure meds list' },
+        { id: 'msg_two', role: 'assistant', content: 'Here is your blood pressure medication review' }
       ])
     );
 
@@ -193,7 +193,7 @@ describe('ChatClient Session History Sidebar Integration', () => {
     localStorage.setItem(CAREFOLD_THREADS_INDEX_KEY, JSON.stringify([sessionToDelete]));
     localStorage.setItem(
       'carefold_msgs_thread-to-delete-999',
-      JSON.stringify([{ id: 'm1', role: 'user', content: 'Confidential text to delete' }])
+      JSON.stringify([{ id: 'msg_one', role: 'user', content: 'Confidential text to delete' }])
     );
 
     render(<ChatClient initialAgents={mockAgents} />);

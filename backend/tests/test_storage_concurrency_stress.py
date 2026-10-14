@@ -101,7 +101,7 @@ async def multi_user_env(temp_workspace: Path, monkeypatch):
 # ============================================================================
 
 class TestSchemaMigrationEvolution:
-    """Adversarial stress-testing of SQLite schema evolution from legacy schemas."""
+    """Boundary stress-testing of SQLite schema evolution from legacy schemas."""
 
     def test_legacy_db_with_only_file_path_column_migration(self, tmp_path: Path):
         """Stress-tests upgrading a legacy SQLite database having only 'file_path' and no 'filename'."""

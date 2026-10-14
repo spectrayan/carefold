@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Deep Adversarial Test Suite for Tool Sandbox and Runtime Security.
+"""Deep Boundary Test Suite for Tool Sandbox and Runtime Security.
 
 Verifies:
 1. attach-read: Path traversal permutations, encoding attacks, scheme injections,
@@ -113,7 +113,7 @@ def sandbox_env(tmp_path: Path):
 
 
 # =========================================================================
-# 1. ATTACH-READ ADVERSARIAL STRESS
+# 1. ATTACH-READ BOUNDARY STRESS
 # =========================================================================
 
 @pytest.mark.asyncio
@@ -301,7 +301,7 @@ async def test_attach_read_symlink_defense(sandbox_env):
 
 
 # =========================================================================
-# 2. WORKSPACE-NOTE ADVERSARIAL STRESS
+# 2. WORKSPACE-NOTE BOUNDARY STRESS
 # =========================================================================
 
 @pytest.mark.asyncio
@@ -436,7 +436,7 @@ async def test_workspace_note_concurrency_stress(sandbox_env):
 
 
 # =========================================================================
-# 3. SKILL-DOCS ADVERSARIAL STRESS
+# 3. SKILL-DOCS BOUNDARY STRESS
 # =========================================================================
 
 @pytest.mark.asyncio

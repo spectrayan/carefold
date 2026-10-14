@@ -59,7 +59,7 @@ class DispatchPlan:
     tasks: List[DispatchTask]
 
 
-# Try importing real ExecutionDispatcher if implemented in M4
+# Try importing real ExecutionDispatcher if implemented in Phase4
 try:
     from carefold.workflows.dispatcher import ExecutionDispatcher as RealExecutionDispatcher  # type: ignore
     HAS_REAL_DISPATCHER = True
@@ -231,7 +231,7 @@ class TestMultiAgentExecutionFeatureCoverage:
         assert template_file.is_file(), "agent_execution_prompt.hbs must exist"
         template_content = template_file.read_text(encoding="utf-8")
 
-        # Check if M4 has already landed the unified template
+        # Check if Phase4 has already landed the unified template
         if "# PROVISIONED CLINICAL REFERENCES" not in template_content:
             # Test Handlebars rendering with the specification-defined prompt template
             unified_template = (

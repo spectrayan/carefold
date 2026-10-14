@@ -42,7 +42,7 @@ describe('Resilience Suite: Settings & Model Selection', () => {
   });
 
   // =========================================================================
-  // Section 1: Corrupted & Adversarial localStorage Handling
+  // Section 1: Corrupted & Boundary localStorage Handling
   // =========================================================================
   describe('1. Corrupted & Malformed localStorage JSON Handling', () => {
     it('recovers to DEFAULT_USER_SETTINGS when localStorage contains corrupted syntax', () => {

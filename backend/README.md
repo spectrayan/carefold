@@ -22,7 +22,7 @@ backend/
 │       ├── model/              # OpenAI SSE client & offline MockModelClient
 │       ├── engine/             # Agent runtime coordinating prompts, model calls, tools, safety
 │       └── api/                # FastAPI routers (/health, /agents, /skills, /audit, /chat)
-└── tests/                      # Unit, adversarial, privacy, and integration test suite
+└── tests/                      # Unit, boundary, privacy, and integration test suite
 ```
 
 ## Setup & Running

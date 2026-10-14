@@ -31,7 +31,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from tests.e2e.contracts_batch_3 import (
+from tests.e2e.contracts_clinical_domain import (
     ACUTE_SYMPTOMS,
     HYPOTENSION_SYMPTOMS,
     LOINC_CODES,

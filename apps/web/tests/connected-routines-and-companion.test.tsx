@@ -41,7 +41,7 @@ import {
   fetchViewerSectionPermissions,
   updateViewerSectionPermissions,
   executeTeenHandover,
-} from '@/lib/autonomyBatch6Client';
+} from '@/lib/routinesAndCompanionClient';
 import type {
   CompanionDeviceItem,
   CompanionPairingQrPayload,
@@ -51,7 +51,7 @@ import type {
   SchoolIcsFeedItem,
   StandingRoutineItem,
   TeenHandoverResponse,
-} from '@/types/autonomyBatch6';
+} from '@/types/routinesAndCompanion';
 import type {
   ConnectionItem,
   ConnectorManifestSummary,
@@ -150,7 +150,7 @@ const SAMPLE_COMPANION_DEVICES: CompanionDeviceItem[] = [
   {
     id: 'dev-501',
     profile_id: 'prof-1',
-    device_name: 'Bharat iPhone 16 Pro',
+    device_name: 'Alex iPhone 16 Pro',
     platform: 'ios',
     cert_fingerprint_sha256:
       'A1:B2:C3:D4:E5:F6:01:02:03:04:05:06:07:08:09:10:11:12:13:14:15:16:17:18:19:20:21:22:23:24:25:26',

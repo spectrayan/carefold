@@ -281,8 +281,8 @@ def test_upgrade_head_fresh_sqlite():
         assert notes_cols["linked_appointment_id"]["nullable"] is True
 
 
-def test_downgrade_to_0008_autonomy_batch_6():
-    """Tests downgrading from 0009_autonomy_batch_7 to 0008_autonomy_batch_6 and re-upgrading."""
+def test_downgrade_to_0008_routines_mcp_and_drafts():
+    """Tests downgrading from 0009_companion_and_handover to 0008_routines_mcp_and_drafts and re-upgrading."""
     engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
     with engine.connect() as conn:
         cfg = get_alembic_config(conn)
@@ -291,9 +291,9 @@ def test_downgrade_to_0008_autonomy_batch_6():
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
         assert curr_ver == "0010_i18n_and_locale_storage"
 
-        alembic.command.downgrade(cfg, "0008_autonomy_batch_6")
+        alembic.command.downgrade(cfg, "0008_routines_mcp_and_drafts")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_down == "0008_autonomy_batch_6"
+        assert curr_ver_down == "0008_routines_mcp_and_drafts"
 
         insp = inspect(conn)
         audit_cols_down = {c["name"] for c in insp.get_columns("audit_events")}
@@ -309,8 +309,8 @@ def test_downgrade_to_0008_autonomy_batch_6():
         assert curr_ver_up == "0010_i18n_and_locale_storage"
 
 
-def test_downgrade_to_0007_autonomy_batch_5():
-    """Tests downgrading from head to 0007_autonomy_batch_5 and re-upgrading."""
+def test_downgrade_to_0007_connectors_and_consent():
+    """Tests downgrading from head to 0007_connectors_and_consent and re-upgrading."""
     engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
     with engine.connect() as conn:
         cfg = get_alembic_config(conn)
@@ -319,9 +319,9 @@ def test_downgrade_to_0007_autonomy_batch_5():
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
         assert curr_ver == "0010_i18n_and_locale_storage"
 
-        alembic.command.downgrade(cfg, "0007_autonomy_batch_5")
+        alembic.command.downgrade(cfg, "0007_connectors_and_consent")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_down == "0007_autonomy_batch_5"
+        assert curr_ver_down == "0007_connectors_and_consent"
 
         insp = inspect(conn)
         tables_down = set(insp.get_table_names())
@@ -341,8 +341,8 @@ def test_downgrade_to_0007_autonomy_batch_5():
         assert EXPECTED_AUTONOMY_BATCH_6_TABLES.issubset(tables_up)
 
 
-def test_downgrade_to_0006_autonomy_batch_4():
-    """Tests downgrading from head to 0006_autonomy_batch_4 and re-upgrading."""
+def test_downgrade_to_0006_preventive_and_school_forms():
+    """Tests downgrading from head to 0006_preventive_and_school_forms and re-upgrading."""
     engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
     with engine.connect() as conn:
         cfg = get_alembic_config(conn)
@@ -351,9 +351,9 @@ def test_downgrade_to_0006_autonomy_batch_4():
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
         assert curr_ver == "0010_i18n_and_locale_storage"
 
-        alembic.command.downgrade(cfg, "0006_autonomy_batch_4")
+        alembic.command.downgrade(cfg, "0006_preventive_and_school_forms")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_down == "0006_autonomy_batch_4"
+        assert curr_ver_down == "0006_preventive_and_school_forms"
 
         insp = inspect(conn)
         tables_down = set(insp.get_table_names())
@@ -372,8 +372,8 @@ def test_downgrade_to_0006_autonomy_batch_4():
         assert EXPECTED_AUTONOMY_BATCH_5_TABLES.issubset(tables_up)
 
 
-def test_downgrade_to_0005_autonomy_batch_3():
-    """Tests downgrading from head to 0005_autonomy_batch_3 and re-upgrading."""
+def test_downgrade_to_0005_clinical_domain_records():
+    """Tests downgrading from head to 0005_clinical_domain_records and re-upgrading."""
     engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
     with engine.connect() as conn:
         cfg = get_alembic_config(conn)
@@ -382,9 +382,9 @@ def test_downgrade_to_0005_autonomy_batch_3():
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
         assert curr_ver == "0010_i18n_and_locale_storage"
 
-        alembic.command.downgrade(cfg, "0005_autonomy_batch_3")
+        alembic.command.downgrade(cfg, "0005_clinical_domain_records")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_down == "0005_autonomy_batch_3"
+        assert curr_ver_down == "0005_clinical_domain_records"
 
         insp = inspect(conn)
         tables_down = set(insp.get_table_names())
@@ -405,25 +405,25 @@ def test_downgrade_to_0005_autonomy_batch_3():
         assert EXPECTED_AUTONOMY_BATCH_6_TABLES.issubset(tables_up)
 
 
-def test_downgrade_to_0004_autonomy_batch_2():
-    """Tests downgrading from 0005_autonomy_batch_3 to 0004_autonomy_batch_2 and re-upgrading.
+def test_downgrade_to_0004_policy_gate_and_vault():
+    """Tests downgrading from 0005_clinical_domain_records to 0004_policy_gate_and_vault and re-upgrading.
 
     Asserts:
     1. At 0005: Batch 3 tables exist, notes.linked_appointment_id exists.
     2. Seed profile, appointment, note linked to appointment, health resource, reminder.
     3. Downgrade to 0004: health_resources, appointments, reminders tables are dropped;
        notes.linked_appointment_id column is dropped; note content is preserved.
-    4. alembic_version is 0004_autonomy_batch_2.
+    4. alembic_version is 0004_policy_gate_and_vault.
     5. Re-upgrade to head (0006): Batch 3 and 4 tables and linked_appointment_id re-created,
        existing note data remains intact.
     """
     engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
     with engine.connect() as conn:
         cfg = get_alembic_config(conn)
-        alembic.command.upgrade(cfg, "0005_autonomy_batch_3")
+        alembic.command.upgrade(cfg, "0005_clinical_domain_records")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0005_autonomy_batch_3"
+        assert curr_ver == "0005_clinical_domain_records"
 
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
@@ -469,11 +469,11 @@ def test_downgrade_to_0004_autonomy_batch_2():
         )
         conn.commit()
 
-        # Downgrade to 0004_autonomy_batch_2
-        alembic.command.downgrade(cfg, "0004_autonomy_batch_2")
+        # Downgrade to 0004_policy_gate_and_vault
+        alembic.command.downgrade(cfg, "0004_policy_gate_and_vault")
 
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_down == "0004_autonomy_batch_2"
+        assert curr_ver_down == "0004_policy_gate_and_vault"
 
         insp = inspect(conn)
         tables_down = set(insp.get_table_names())
@@ -491,7 +491,7 @@ def test_downgrade_to_0004_autonomy_batch_2():
         assert note_row[2] == "Review BP meds"
         assert note_row[3] == "prof-b3-test"
 
-        # Re-upgrade to head (0009_autonomy_batch_7)
+        # Re-upgrade to head (0009_companion_and_handover)
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
         assert curr_ver_up == "0010_i18n_and_locale_storage"
@@ -514,22 +514,22 @@ def test_downgrade_to_0004_autonomy_batch_2():
         assert note_row_up[2] is None
 
 
-def test_downgrade_to_0003_autonomy_batch_1():
-    """Tests downgrading from 0004_autonomy_batch_2 to 0003_autonomy_batch_1 and re-upgrading.
+def test_downgrade_to_0003_household_profiles_and_audit():
+    """Tests downgrading from 0004_policy_gate_and_vault to 0003_household_profiles_and_audit and re-upgrading.
 
     Asserts:
     1. At 0004: notes.profile_id and chat_threads.profile_id are NOT NULL.
     2. Downgrade to 0003: profile_id reverts to nullable=True on both tables.
     3. Existing note and chat_thread data survive the batch alter rebuild.
-    4. Re-upgrade to head: profile_id is NOT NULL and version is 0004_autonomy_batch_2.
+    4. Re-upgrade to head: profile_id is NOT NULL and version is 0004_policy_gate_and_vault.
     """
     engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
     with engine.connect() as conn:
         cfg = get_alembic_config(conn)
-        alembic.command.upgrade(cfg, "0004_autonomy_batch_2")
+        alembic.command.upgrade(cfg, "0004_policy_gate_and_vault")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0004_autonomy_batch_2"
+        assert curr_ver == "0004_policy_gate_and_vault"
 
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
@@ -537,31 +537,31 @@ def test_downgrade_to_0003_autonomy_batch_1():
         conn.execute(
             text("""
                 INSERT INTO profiles (id, name, relationship, role, avatar_color, is_primary, created_at, updated_at)
-                VALUES ('prof-m1-test', 'Alice', 'self', 'self', '1', 1, :now, :now)
+                VALUES ('prof-msg_one-test', 'Alice', 'self', 'self', '1', 1, :now, :now)
             """),
             {"now": now},
         )
         conn.execute(
             text("""
                 INSERT INTO notes (id, type, profile_id, slug, title, content, tags_json, created_at, updated_at)
-                VALUES ('note-m1-test', 'scratchpad', 'prof-m1-test', 'test-note', 'Test Note', 'Note content', '[]', :now, :now)
+                VALUES ('note-msg_one-test', 'scratchpad', 'prof-msg_one-test', 'test-note', 'Test Note', 'Note content', '[]', :now, :now)
             """),
             {"now": now},
         )
         conn.execute(
             text("""
                 INSERT INTO chat_threads (id, profile_id, agent_id, title, created_at, updated_at)
-                VALUES ('thread-m1-test', 'prof-m1-test', 'visit-steward', 'Consultation', :now, :now)
+                VALUES ('thread-msg_one-test', 'prof-msg_one-test', 'visit-steward', 'Consultation', :now, :now)
             """),
             {"now": now},
         )
         conn.commit()
 
-        # Downgrade to 0003_autonomy_batch_1
-        alembic.command.downgrade(cfg, "0003_autonomy_batch_1")
+        # Downgrade to 0003_household_profiles_and_audit
+        alembic.command.downgrade(cfg, "0003_household_profiles_and_audit")
 
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_down == "0003_autonomy_batch_1"
+        assert curr_ver_down == "0003_household_profiles_and_audit"
 
         insp = inspect(conn)
         notes_cols = {c["name"]: c for c in insp.get_columns("notes")}
@@ -571,19 +571,19 @@ def test_downgrade_to_0003_autonomy_batch_1():
         assert thread_cols["profile_id"]["nullable"] is True
 
         # Data must be preserved
-        n_row = conn.execute(text("SELECT id, profile_id, title FROM notes WHERE id = 'note-m1-test'")).fetchone()
+        n_row = conn.execute(text("SELECT id, profile_id, title FROM notes WHERE id = 'note-msg_one-test'")).fetchone()
         assert n_row is not None
-        assert n_row[1] == "prof-m1-test"
+        assert n_row[1] == "prof-msg_one-test"
 
-        t_row = conn.execute(text("SELECT id, profile_id, title FROM chat_threads WHERE id = 'thread-m1-test'")).fetchone()
+        t_row = conn.execute(text("SELECT id, profile_id, title FROM chat_threads WHERE id = 'thread-msg_one-test'")).fetchone()
         assert t_row is not None
-        assert t_row[1] == "prof-m1-test"
+        assert t_row[1] == "prof-msg_one-test"
 
         # Re-upgrade to 0004
-        alembic.command.upgrade(cfg, "0004_autonomy_batch_2")
+        alembic.command.upgrade(cfg, "0004_policy_gate_and_vault")
 
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0004_autonomy_batch_2"
+        assert curr_ver_up == "0004_policy_gate_and_vault"
 
         insp_head = inspect(conn)
         notes_cols_head = {c["name"]: c for c in insp_head.get_columns("notes")}
@@ -668,7 +668,7 @@ def test_downgrade_to_baseline_sqlite_batch_rebuild():
 
 
 def test_downgrade_to_0002_autonomy_foundations():
-    """Tests downgrading from 0003_autonomy_batch_1 to 0002_autonomy_foundations.
+    """Tests downgrading from 0003_household_profiles_and_audit to 0002_autonomy_foundations.
 
     Asserts:
     1. Table drops: jobs, approvals, profile_keys are completely dropped.
@@ -687,14 +687,14 @@ def test_downgrade_to_0002_autonomy_foundations():
         conn.execute(
             text("""
                 INSERT INTO profiles (id, name, relationship, role, avatar_color, is_primary, created_at, updated_at)
-                VALUES ('prof-m2-test', 'Alice', 'self', 'self', '1', 1, :now, :now)
+                VALUES ('prof-msg_two-test', 'Alice', 'self', 'self', '1', 1, :now, :now)
             """),
             {"now": now},
         )
         conn.execute(
             text("""
                 INSERT INTO connections (id, user_id, profile_id, connector_id, status, config_json, created_at, updated_at)
-                VALUES ('conn-m2-test', 'user-1', 'prof-m2-test', 'epic-fhir', 'active', '{}', :now, :now)
+                VALUES ('conn-msg_two-test', 'user-1', 'prof-msg_two-test', 'epic-fhir', 'active', '{}', :now, :now)
             """),
             {"now": now},
         )
@@ -704,8 +704,8 @@ def test_downgrade_to_0002_autonomy_foundations():
                     id, connection_id, profile_id, token_version, dek_version,
                     encrypted_blob, aad_binding, created_at, updated_at
                 ) VALUES (
-                    'cred-m2-test', 'conn-m2-test', 'prof-m2-test', 1, 2,
-                    'encrypted_blob_payload_xyz', 'prof-m2-test|conn-m2-test|2', :now, :now
+                    'cred-msg_two-test', 'conn-msg_two-test', 'prof-msg_two-test', 1, 2,
+                    'encrypted_blob_payload_xyz', 'prof-msg_two-test|conn-msg_two-test|2', :now, :now
                 )
             """),
             {"now": now},
@@ -713,7 +713,7 @@ def test_downgrade_to_0002_autonomy_foundations():
         conn.execute(
             text("""
                 INSERT INTO profile_keys (id, profile_id, encrypted_dek, dek_version, created_at, updated_at)
-                VALUES ('pk-m2-test', 'prof-m2-test', 'enc_dek_hex_123', 1, :now, :now)
+                VALUES ('pk-msg_two-test', 'prof-msg_two-test', 'enc_dek_hex_123', 1, :now, :now)
             """),
             {"now": now},
         )
@@ -723,7 +723,7 @@ def test_downgrade_to_0002_autonomy_foundations():
                     id, profile_id, run_id, tool_name, args_redacted, payload_hash,
                     risk_tier, status, expires_at, created_at
                 ) VALUES (
-                    'appr-m2-test', 'prof-m2-test', 'run-1', 'test_tool', '{}', 'hash123',
+                    'appr-msg_two-test', 'prof-msg_two-test', 'run-1', 'test_tool', '{}', 'hash123',
                     'write_external', 'pending', :now, :now
                 )
             """),
@@ -734,7 +734,7 @@ def test_downgrade_to_0002_autonomy_foundations():
                 INSERT INTO jobs (
                     id, profile_id, kind, payload, next_run_at, status, created_at, updated_at
                 ) VALUES (
-                    'job-m2-test', 'prof-m2-test', 'reminder', '{}', :now, 'pending', :now, :now
+                    'job-msg_two-test', 'prof-msg_two-test', 'reminder', '{}', :now, 'pending', :now, :now
                 )
             """),
             {"now": now},
@@ -761,12 +761,12 @@ def test_downgrade_to_0002_autonomy_foundations():
 
         # Assert credential data was preserved through the SQLite batch table rebuild
         row = conn.execute(
-            text("SELECT id, connection_id, profile_id, encrypted_blob FROM credentials WHERE id = 'cred-m2-test'")
+            text("SELECT id, connection_id, profile_id, encrypted_blob FROM credentials WHERE id = 'cred-msg_two-test'")
         ).fetchone()
         assert row is not None
-        assert row[0] == "cred-m2-test"
-        assert row[1] == "conn-m2-test"
-        assert row[2] == "prof-m2-test"
+        assert row[0] == "cred-msg_two-test"
+        assert row[1] == "conn-msg_two-test"
+        assert row[2] == "prof-msg_two-test"
         assert row[3] == "encrypted_blob_payload_xyz"
 
         # Re-upgrade back to head

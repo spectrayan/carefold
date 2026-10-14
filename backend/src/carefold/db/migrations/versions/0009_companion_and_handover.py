@@ -11,8 +11,8 @@
 
 """Autonomy Batch 7 schema evolution: tamper-evident audit hash chain columns and email_drafts delivery tracking.
 
-Revision ID: 0009_autonomy_batch_7
-Revises: 0008_autonomy_batch_6
+Revision ID: 0009_companion_and_handover
+Revises: 0008_routines_mcp_and_drafts
 Create Date: 2026-10-13 22:05:00.000000
 
 """
@@ -23,8 +23,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "0009_autonomy_batch_7"
-down_revision: Union[str, None] = "0008_autonomy_batch_6"
+revision: str = "0009_companion_and_handover"
+down_revision: Union[str, None] = "0008_routines_mcp_and_drafts"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

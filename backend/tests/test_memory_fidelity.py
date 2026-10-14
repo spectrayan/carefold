@@ -11,7 +11,7 @@
 
 """SqliteMemoryAdapter Payload Fidelity and Factory Test Suite.
 
-Adversarial stress-testing of SqliteMemoryAdapter and factory.py:
+Boundary stress-testing of SqliteMemoryAdapter and factory.py:
 1. Payload type fidelity (JSON string vs dict, int vs str, bool vs str, float vs str, etc.)
 2. reinforce() with non-finite floats (NaN, +Inf, -Inf -> ValueError) and boundary deltas
 3. create_memory_port / create_catalog_port with whitespace ("  "), None, and unsupported backend strings
@@ -38,7 +38,7 @@ from carefold.memory.ports.memory_port import MemoryPort, MemoryTier
 
 
 # ==============================================================================
-# 1. Payload Type Fidelity Challenge Suite
+# 1. Payload Type Fidelity Verification Suite
 # ==============================================================================
 
 class TestPayloadTypeFidelity:
@@ -225,7 +225,7 @@ class TestPayloadTypeFidelity:
 
 
 # ==============================================================================
-# 2. reinforce() Float & Boundary Handling Challenge Suite
+# 2. reinforce() Float & Boundary Handling Verification Suite
 # ==============================================================================
 
 class TestReinforceAdversarial:
@@ -241,7 +241,7 @@ class TestReinforceAdversarial:
 
     @pytest.mark.asyncio
     async def test_reinforce_nan_raises_value_error(self, adapter: SqliteMemoryAdapter):
-        """Challenge reinforce() with NaN: must raise ValueError."""
+        """Verification reinforce() with NaN: must raise ValueError."""
         with pytest.raises(ValueError, match="delta must be a finite float"):
             await adapter.reinforce("test_mem", namespace="reinforce_ns", delta=float("nan"))
 
@@ -250,7 +250,7 @@ class TestReinforceAdversarial:
 
     @pytest.mark.asyncio
     async def test_reinforce_positive_inf_raises_value_error(self, adapter: SqliteMemoryAdapter):
-        """Challenge reinforce() with +Inf: must raise ValueError."""
+        """Verification reinforce() with +Inf: must raise ValueError."""
         with pytest.raises(ValueError, match="delta must be a finite float"):
             await adapter.reinforce("test_mem", namespace="reinforce_ns", delta=float("inf"))
 
@@ -259,7 +259,7 @@ class TestReinforceAdversarial:
 
     @pytest.mark.asyncio
     async def test_reinforce_negative_inf_raises_value_error(self, adapter: SqliteMemoryAdapter):
-        """Challenge reinforce() with -Inf: must raise ValueError."""
+        """Verification reinforce() with -Inf: must raise ValueError."""
         with pytest.raises(ValueError, match="delta must be a finite float"):
             await adapter.reinforce("test_mem", namespace="reinforce_ns", delta=float("-inf"))
 
@@ -268,7 +268,7 @@ class TestReinforceAdversarial:
 
     @pytest.mark.asyncio
     async def test_reinforce_zero_delta(self, adapter: SqliteMemoryAdapter):
-        """Challenge reinforce() with zero delta (0.0): salience unchanged, access_count incremented."""
+        """Verification reinforce() with zero delta (0.0): salience unchanged, access_count incremented."""
         item_before = await adapter.get("test_mem", namespace="reinforce_ns")
         assert item_before is not None
         initial_salience = item_before["salience"]
@@ -284,7 +284,7 @@ class TestReinforceAdversarial:
 
     @pytest.mark.asyncio
     async def test_reinforce_negative_delta_within_bounds(self, adapter: SqliteMemoryAdapter):
-        """Challenge reinforce() with negative delta that decays salience but remains > 0."""
+        """Verification reinforce() with negative delta that decays salience but remains > 0."""
         # Initial salience is 1.0. Delta = -0.4 -> new salience should be 0.6.
         await adapter.reinforce("test_mem", namespace="reinforce_ns", delta=-0.4)
 
@@ -295,7 +295,7 @@ class TestReinforceAdversarial:
 
     @pytest.mark.asyncio
     async def test_reinforce_negative_delta_clamped_at_zero(self, adapter: SqliteMemoryAdapter):
-        """Challenge reinforce() with large negative delta: must clamp strictly at 0.0."""
+        """Verification reinforce() with large negative delta: must clamp strictly at 0.0."""
         await adapter.reinforce("test_mem", namespace="reinforce_ns", delta=-100.0)
 
         item = await adapter.get("test_mem", namespace="reinforce_ns")
@@ -304,7 +304,7 @@ class TestReinforceAdversarial:
 
     @pytest.mark.asyncio
     async def test_reinforce_large_positive_delta(self, adapter: SqliteMemoryAdapter):
-        """Challenge reinforce() with large positive delta: salience increases cleanly without overflow."""
+        """Verification reinforce() with large positive delta: salience increases cleanly without overflow."""
         await adapter.reinforce("test_mem", namespace="reinforce_ns", delta=1_000_000.0)
 
         item = await adapter.get("test_mem", namespace="reinforce_ns")
@@ -314,69 +314,69 @@ class TestReinforceAdversarial:
 
     @pytest.mark.asyncio
     async def test_reinforce_non_existent_key_graceful(self, adapter: SqliteMemoryAdapter):
-        """Challenge reinforce() with non-existent key: does not crash or raise error."""
+        """Verification reinforce() with non-existent key: does not crash or raise error."""
         await adapter.reinforce("does_not_exist", namespace="reinforce_ns", delta=0.5)
         item = await adapter.get("does_not_exist", namespace="reinforce_ns")
         assert item is None
 
 
 # ==============================================================================
-# 3. Factory Backend String Validation Challenge Suite
+# 3. Factory Backend String Validation Verification Suite
 # ==============================================================================
 
 class TestFactoryValidationAdversarial:
     """Stress-test create_memory_port and create_catalog_port validation."""
 
     def test_create_memory_port_whitespace_strings_raise_value_error(self):
-        """Challenge create_memory_port with whitespace strings: must raise ValueError."""
+        """Verification create_memory_port with whitespace strings: must raise ValueError."""
         whitespace_cases = ["  ", " ", "\t", "\n", " \t \n "]
         for ws in whitespace_cases:
             with pytest.raises(ValueError, match="Unsupported memory backend"):
                 create_memory_port(backend=ws)
 
     def test_create_catalog_port_whitespace_strings_raise_value_error(self):
-        """Challenge create_catalog_port with whitespace strings: must raise ValueError."""
+        """Verification create_catalog_port with whitespace strings: must raise ValueError."""
         whitespace_cases = ["  ", " ", "\t", "\n", " \t \n "]
         for ws in whitespace_cases:
             with pytest.raises(ValueError, match="Unsupported catalog backend"):
                 create_catalog_port(backend=ws)
 
     def test_create_memory_port_empty_string_raises_value_error(self):
-        """Challenge create_memory_port with empty string "": must raise ValueError."""
+        """Verification create_memory_port with empty string "": must raise ValueError."""
         with pytest.raises(ValueError, match="Unsupported memory backend"):
             create_memory_port(backend="")
 
     def test_create_catalog_port_empty_string_raises_value_error(self):
-        """Challenge create_catalog_port with empty string "": must raise ValueError."""
+        """Verification create_catalog_port with empty string "": must raise ValueError."""
         with pytest.raises(ValueError, match="Unsupported catalog backend"):
             create_catalog_port(backend="")
 
     def test_create_memory_port_none_returns_sqlite_default(self):
-        """Challenge create_memory_port with backend=None: returns SqliteMemoryAdapter."""
+        """Verification create_memory_port with backend=None: returns SqliteMemoryAdapter."""
         port = create_memory_port(backend=None)
         assert isinstance(port, SqliteMemoryAdapter)
 
     def test_create_catalog_port_none_returns_sqlite_default(self):
-        """Challenge create_catalog_port with backend=None: returns SqliteCatalogAdapter."""
+        """Verification create_catalog_port with backend=None: returns SqliteCatalogAdapter."""
         port = create_catalog_port(backend=None)
         assert isinstance(port, SqliteCatalogAdapter)
 
     def test_create_memory_port_unsupported_strings_raise_value_error(self):
-        """Challenge create_memory_port with unsupported backend names."""
+        """Verification create_memory_port with unsupported backend names."""
         unsupported = ["redis", "mongo", "dynamodb", "unsupported_xyz", "sqlite_fts5"]
         for backend_name in unsupported:
             with pytest.raises(ValueError, match="Unsupported memory backend"):
                 create_memory_port(backend=backend_name)
 
     def test_create_catalog_port_unsupported_strings_raise_value_error(self):
-        """Challenge create_catalog_port with unsupported backend names."""
+        """Verification create_catalog_port with unsupported backend names."""
         unsupported = ["redis", "mongo", "dynamodb", "unsupported_xyz", "sqlite_fts5"]
         for backend_name in unsupported:
             with pytest.raises(ValueError, match="Unsupported catalog backend"):
                 create_catalog_port(backend=backend_name)
 
     def test_create_memory_port_spector_and_postgres_not_implemented(self):
-        """Challenge spector and postgres backends: spector succeeds, postgres raises NotImplementedError."""
+        """Verification spector and postgres backends: spector succeeds, postgres raises NotImplementedError."""
         port = create_memory_port(backend="spector")
         assert isinstance(port, MemoryPort)
         assert hasattr(port, "store")
@@ -386,7 +386,7 @@ class TestFactoryValidationAdversarial:
             create_memory_port(backend="postgres")
 
     def test_create_catalog_port_spector_and_postgres_not_implemented(self):
-        """Challenge spector and postgres backends: must raise NotImplementedError."""
+        """Verification spector and postgres backends: must raise NotImplementedError."""
         with pytest.raises(NotImplementedError, match="Backend 'spector' is not yet implemented"):
             create_catalog_port(backend="spector")
 
@@ -394,7 +394,7 @@ class TestFactoryValidationAdversarial:
             create_catalog_port(backend="postgres")
 
     def test_settings_with_whitespace_backend_raises_value_error(self):
-        """Challenge factory when Settings itself contains whitespace memory_backend."""
+        """Verification factory when Settings itself contains whitespace memory_backend."""
         settings = Settings(memory_backend="   ")
         with pytest.raises(ValueError, match="Unsupported memory backend"):
             create_memory_port(settings=settings)
@@ -505,7 +505,7 @@ class TestNamespaceIsolationAndPersistence:
 
 
 # ==============================================================================
-# 5. Advanced Adversarial Injection, Concurrency & Unicode Stress Suite
+# 5. Advanced Boundary Injection, Concurrency & Unicode Stress Suite
 # ==============================================================================
 
 class TestAdvancedAdversarialEdgeCases:
@@ -535,7 +535,7 @@ class TestAdvancedAdversarialEdgeCases:
 
     @pytest.mark.asyncio
     async def test_sql_injection_in_namespace_and_key(self, adapter: SqliteMemoryAdapter):
-        """Challenge SQL injection payloads in namespace and key parameters."""
+        """Verification SQL injection payloads in namespace and key parameters."""
         malicious_ns = "ns'; DROP TABLE memories; --"
         malicious_key = "key'; DELETE FROM memories WHERE '1'='1'; --"
         payload = {"safe": True, "notes": "' OR '1'='1"}
@@ -562,7 +562,7 @@ class TestAdvancedAdversarialEdgeCases:
 
     @pytest.mark.asyncio
     async def test_fts_query_syntax_no_crash(self, adapter: SqliteMemoryAdapter):
-        """Challenge FTS5 parser with malformed, unbalanced, and syntax-breaking queries."""
+        """Verification FTS5 parser with malformed, unbalanced, and syntax-breaking queries."""
         await adapter.remember("doc1", "clinical cardiology examination", MemoryTier.SEMANTIC, namespace="fts_ns")
 
         adversarial_queries = [
@@ -601,21 +601,21 @@ class TestAdvancedAdversarialEdgeCases:
 
         # +0.5 -> 1.5, access_count = 1
         await adapter.reinforce("seq_mem", namespace="seq_ns", delta=0.5)
-        m1 = await adapter.get("seq_mem", namespace="seq_ns")
-        assert math.isclose(m1["salience"], 1.5)
-        assert m1["access_count"] == 1
+        msg_one = await adapter.get("seq_mem", namespace="seq_ns")
+        assert math.isclose(msg_one["salience"], 1.5)
+        assert msg_one["access_count"] == 1
 
         # -2.0 -> clamped at 0.0, access_count = 2
         await adapter.reinforce("seq_mem", namespace="seq_ns", delta=-2.0)
-        m2 = await adapter.get("seq_mem", namespace="seq_ns")
-        assert m2["salience"] == 0.0
-        assert m2["access_count"] == 2
+        msg_two = await adapter.get("seq_mem", namespace="seq_ns")
+        assert msg_two["salience"] == 0.0
+        assert msg_two["access_count"] == 2
 
         # +0.25 -> 0.25, access_count = 3
         await adapter.reinforce("seq_mem", namespace="seq_ns", delta=0.25)
-        m3 = await adapter.get("seq_mem", namespace="seq_ns")
-        assert math.isclose(m3["salience"], 0.25)
-        assert m3["access_count"] == 3
+        msg_three = await adapter.get("seq_mem", namespace="seq_ns")
+        assert math.isclose(msg_three["salience"], 0.25)
+        assert msg_three["access_count"] == 3
 
     @pytest.mark.asyncio
     async def test_multilingual_unicode_fidelity(self, adapter: SqliteMemoryAdapter):

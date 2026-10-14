@@ -67,7 +67,7 @@ async def test_legacy_database_migration_renames_note_table_and_preserves_data(t
     """Verifies that an older database with table 'note' and without profile columns is migrated cleanly."""
     db_file = tmp_path / "legacy_carefold.db"
 
-    # 1. Construct raw SQLite legacy database (pre-M2 schema)
+    # 1. Construct raw SQLite legacy database (pre-Phase2 schema)
     with sqlite3.connect(str(db_file)) as conn:
         conn.execute("PRAGMA foreign_keys = OFF;")
         # Legacy profiles without short_name or avatar_url

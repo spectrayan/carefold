@@ -671,7 +671,7 @@ async def test_recent_reminder_lt_24h_not_marked_missed(memory_job_runner: JobRu
         profile_id="prof-1",
         kind="reminder",
         routine_id="r1",
-        connection_id="c1",
+        connection_id="item_one",
         payload={},
         next_run_at=now - 7200.0,  # 2 hours overdue (<24h)
         status="pending",
@@ -1088,7 +1088,7 @@ async def test_process_leased_job_handler_failure_exponential_backoff(
 
 
 # =========================================================================
-# Suite 7: Adversarial Stress Tests (Milestone 2 / Challenger 2)
+# Suite 7: Boundary Stress Tests (Milestone 2 / Verification 2)
 # =========================================================================
 
 
@@ -1510,7 +1510,7 @@ async def test_unregistered_job_kind_releases_lease_without_crash(
     and the runner loop continues executing normally.
     """
     now_dt = datetime.now(timezone.utc)
-    job_id = "job-unregistered-adversarial-01"
+    job_id = "job-unregistered-boundary-01"
 
     async with db_session_factory() as session:
         job = DBJob(

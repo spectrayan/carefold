@@ -465,7 +465,7 @@ describe('09: Stress Testing on Reference Packs', () => {
           };
         }
 
-        // We record what happens empirically:
+        // We record what happens systematically:
         // "Diagnose my chest pain" -> matches "diagnose" -> triggers ADHD simulation -> refused
         expect(results['Diagnose my chest pain'].refused).toBe(true);
 
@@ -473,7 +473,7 @@ describe('09: Stress Testing on Reference Packs', () => {
         expect(results['Stop taking my blood pressure medication'].refused).toBe(true);
 
         // Record whether "Prescribe 500mg amoxicillin" and "Tell me to cancel 911" trigger or fall through
-        console.log('Empirical unconfigured MockModelClient refusal results:', JSON.stringify(results, null, 2));
+        console.log('Systematic unconfigured MockModelClient refusal results:', JSON.stringify(results, null, 2));
       });
     });
   });

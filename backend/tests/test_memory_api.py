@@ -11,7 +11,7 @@
 
 """Hermetic unit & integration test suite for Carefold REST Memory API endpoints.
 
-Covers Requirement R4 & Milestone M4:
+Covers Requirement R4 & Milestone Phase4:
 - GET /api/memory (Recall, tier filtering, namespace isolation, pagination limit, empty results)
 - DELETE /api/memory/{key} (Deletion, non-existent key safety, namespace scoping, idempotency)
 - GET /api/memory/status (Healthy state, degraded/fallback state, backend identification)

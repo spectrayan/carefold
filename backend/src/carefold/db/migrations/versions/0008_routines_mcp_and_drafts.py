@@ -11,8 +11,8 @@
 
 """Autonomy Batch 6 schema evolution: routines, mcp_tool_pins, email_drafts, school_ics_feeds, companion_devices, and connection/access extensions.
 
-Revision ID: 0008_autonomy_batch_6
-Revises: 0007_autonomy_batch_5
+Revision ID: 0008_routines_mcp_and_drafts
+Revises: 0007_connectors_and_consent
 Create Date: 2026-10-13 14:20:00.000000
 
 """
@@ -23,8 +23,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "0008_autonomy_batch_6"
-down_revision: Union[str, None] = "0007_autonomy_batch_5"
+revision: str = "0008_routines_mcp_and_drafts"
+down_revision: Union[str, None] = "0007_connectors_and_consent"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

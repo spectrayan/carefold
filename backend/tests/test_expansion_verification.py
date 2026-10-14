@@ -9,21 +9,21 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Automated Verification Suite for Milestones M2, M3, and M4.
+"""Automated Verification Suite for Milestones Phase2, Phase3, and Phase4.
 
 Validates:
-1. Extended Medical & Surgical Navigators 9–13 (M2):
+1. Extended Medical & Surgical Navigators 9–13 (Phase2):
    - oncology-navigator / oncology-prep
    - rheuma-guide / rheuma-prep
    - urology-guide / urology-prep
    - eye-guide / vision-prep
    - ent-guide / ent-prep
-2. Healthcare Administration Stewards 14–17 (M3):
+2. Healthcare Administration Stewards 14–17 (Phase3):
    - prior-auth-navigator / prior-auth-prep
    - claims-appeals-guide / claims-appeals-prep
    - records-coordinator / records-management
    - formulary-guide / formulary-navigation
-3. System Infrastructure Agents 18–19 (M4):
+3. System Infrastructure Agents 18–19 (Phase4):
    - agents/_system/triage-auditor/
    - agents/_system/quality-reviewer/
 4. Persona word counts (>=250 words) and 5 uppercase mandatory headers.
@@ -170,7 +170,7 @@ def repo_root() -> Path:
 
 
 class TestExpansionAgentLoading:
-    """Validates schema conformance and loader integrity for M2, M3, M4 agents."""
+    """Validates schema conformance and loader integrity for Phase2, Phase3, Phase4 agents."""
 
     @pytest.mark.parametrize("agent_id,expected", {**M2_SPECIALTY_AGENTS, **M3_ADMIN_AGENTS}.items())
     def test_domain_agents_load_cleanly(self, repo_root: Path, agent_id: str, expected: Dict[str, Any]):
@@ -339,7 +339,7 @@ class TestExpansionCatalog:
 
 
 class TestExpansionGoldenEvals:
-    """Runs deterministic offline golden evaluations for all M2 and M3 agents."""
+    """Runs deterministic offline golden evaluations for all Phase2 and Phase3 agents."""
 
     @pytest.mark.parametrize("agent_id", list(M2_SPECIALTY_AGENTS.keys()) + list(M3_ADMIN_AGENTS.keys()))
     @pytest.mark.asyncio

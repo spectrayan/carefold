@@ -47,10 +47,10 @@ const mockRosaAppointment = {
   prepCompletedQuestions: 4,
   prepTotalQuestions: 6,
   checklist: [
-    { id: 'c1', text: 'Questions for cardiologist ready', isDone: true },
-    { id: 'c2', text: 'Bring current medication list and BP log', isDone: false },
-    { id: 'c3', text: 'Bring prior auth approval letter', isDone: false },
-    { id: 'c4', text: 'Note recent symptom dates', isDone: false }
+    { id: 'item_one', text: 'Questions for cardiologist ready', isDone: true },
+    { id: 'item_two', text: 'Bring current medication list and BP log', isDone: false },
+    { id: 'item_three', text: 'Bring prior auth approval letter', isDone: false },
+    { id: 'item_four', text: 'Note recent symptom dates', isDone: false }
   ],
   savedToNotesTimestamp: "Saved to Rosa's notes · Oct 6"
 };

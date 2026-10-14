@@ -175,31 +175,31 @@ class TestReciprocalRankFusionHybridSearch:
         # candidate_2: Rank #2 in BM25, Rank #2 in Vector -> normalized score must be 61 / 62 ≈ 0.983871
         # candidate_3: Rank #3 in BM25, not present in Vector -> normalized score = (0.5/63) * 61 ≈ 0.484127
         mem.lexical_mock_hits = [
-            SearchRecord(id="c1", text="Doc 1 content", score=10.0, tags=[], metadata={"chunk_id": "c1", "document_id": "d1"}),
-            SearchRecord(id="c2", text="Doc 2 content", score=8.0, tags=[], metadata={"chunk_id": "c2", "document_id": "d2"}),
-            SearchRecord(id="c3", text="Doc 3 content", score=5.0, tags=[], metadata={"chunk_id": "c3", "document_id": "d3"}),
+            SearchRecord(id="item_one", text="Doc 1 content", score=10.0, tags=[], metadata={"chunk_id": "item_one", "document_id": "d1"}),
+            SearchRecord(id="item_two", text="Doc 2 content", score=8.0, tags=[], metadata={"chunk_id": "item_two", "document_id": "d2"}),
+            SearchRecord(id="item_three", text="Doc 3 content", score=5.0, tags=[], metadata={"chunk_id": "item_three", "document_id": "d3"}),
         ]
         mem.vector_mock_hits = [
-            RecallRecord(id="c1", text="Doc 1 content", score=0.95, tier=MemoryTier.SEMANTIC, tags=[], valence=0, arousal=0, importance=1.0, metadata={"chunk_id": "c1", "document_id": "d1"}, similarity=0.95, age_days=0.0, decay_factor=1.0),
-            RecallRecord(id="c2", text="Doc 2 content", score=0.85, tier=MemoryTier.SEMANTIC, tags=[], valence=0, arousal=0, importance=1.0, metadata={"chunk_id": "c2", "document_id": "d2"}, similarity=0.85, age_days=0.0, decay_factor=1.0),
+            RecallRecord(id="item_one", text="Doc 1 content", score=0.95, tier=MemoryTier.SEMANTIC, tags=[], valence=0, arousal=0, importance=1.0, metadata={"chunk_id": "item_one", "document_id": "d1"}, similarity=0.95, age_days=0.0, decay_factor=1.0),
+            RecallRecord(id="item_two", text="Doc 2 content", score=0.85, tier=MemoryTier.SEMANTIC, tags=[], valence=0, arousal=0, importance=1.0, metadata={"chunk_id": "item_two", "document_id": "d2"}, similarity=0.85, age_days=0.0, decay_factor=1.0),
         ]
 
         results = await adapter.search(query="chest pain", profile_id="prof-rrf", mode="hybrid")
         assert len(results) == 3
 
-        # Rank 1: c1
-        assert results[0].chunk_id == "c1"
+        # Rank 1: item_one
+        assert results[0].chunk_id == "item_one"
         assert results[0].score == 1.0
         assert results[0].lexical_score == 10.0
         assert results[0].semantic_score == 0.95
 
-        # Rank 2: c2
-        assert results[1].chunk_id == "c2"
+        # Rank 2: item_two
+        assert results[1].chunk_id == "item_two"
         expected_c2 = round(((0.5 / 62) + (0.5 / 62)) * 61, 6)
         assert results[1].score == expected_c2
 
-        # Rank 3: c3
-        assert results[2].chunk_id == "c3"
+        # Rank 3: item_three
+        assert results[2].chunk_id == "item_three"
         expected_c3 = round((0.5 / 63) * 61, 6)
         assert results[2].score == expected_c3
 

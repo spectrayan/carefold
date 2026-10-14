@@ -33,7 +33,7 @@ import type {
   EmailDraftItem,
   GmailStagedCandidate,
   SchoolIcsFeedItem,
-} from '@/types/autonomyBatch6';
+} from '@/types/routinesAndCompanion';
 
 export interface EmailDraftsAndSchoolFeedsPanelProps {
   gmailCandidates: GmailStagedCandidate[];

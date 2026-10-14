@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Unit and adversarial tests for manifest loaders and permission union engine."""
+"""Unit and boundary tests for manifest loaders and permission union engine."""
 
 from pathlib import Path
 import pytest

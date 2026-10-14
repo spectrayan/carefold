@@ -68,7 +68,7 @@ function calculateContrastRatio(hex1: string, hex2: string): number {
 }
 
 // =============================================================================
-// ADVERSARIAL STRESS TEST SUITE
+// BOUNDARY STRESS TEST SUITE
 // =============================================================================
 
 describe('Stress Suite: Contrast, Accessibility & Resilience', () => {
@@ -454,8 +454,8 @@ describe('Stress Suite: Contrast, Accessibility & Resilience', () => {
       }
 
       const allViolations = scanDir(srcDir);
-      // Document exact locations of remaining invalid classes in unmigrated M9/M10 files:
-      // ToolTraceCard.tsx (M10), ChatMessageItem.tsx (M9), AttachmentUploader.tsx (M10)
+      // Document exact locations of remaining invalid classes in unmigrated Phase9/M10 files:
+      // ToolTraceCard.tsx (M10), ChatMessageItem.tsx (Phase9), AttachmentUploader.tsx (M10)
       const violatingFiles = Array.from(new Set(allViolations.map((v) => v.file)));
 
       violatingFiles.forEach((file) => {
@@ -465,7 +465,7 @@ describe('Stress Suite: Contrast, Accessibility & Resilience', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 5. EDGE CASE & ADVERSARIAL STRESS TESTING
+  // 5. EDGE CASE & BOUNDARY STRESS TESTING
   // ---------------------------------------------------------------------------
   describe('Dimension 5: Edge Cases & Resilience', () => {
     it('handles corrupted localStorage theme values gracefully without throwing', () => {
@@ -517,29 +517,29 @@ describe('Stress Suite: Contrast, Accessibility & Resilience', () => {
     });
 
     it('renders gracefully when suggestions or starters arrays are empty or undefined', () => {
-      const { container: c1 } = render(
+      const { container: item_one } = render(
         <SuggestedQuestionsChips
           suggestions={[]}
           onSelectSuggestion={vi.fn()}
         />
       );
-      expect(c1.firstChild).toBeNull();
+      expect(item_one.firstChild).toBeNull();
 
-      const { container: c2 } = render(
+      const { container: item_two } = render(
         <SuggestedQuestionsChips
           suggestions={['   ', '']}
           onSelectSuggestion={vi.fn()}
         />
       );
-      expect(c2.firstChild).toBeNull();
+      expect(item_two.firstChild).toBeNull();
 
-      const { container: c3 } = render(
+      const { container: item_three } = render(
         <StartersChips
           starters={[]}
           onSelectStarter={vi.fn()}
         />
       );
-      expect(c3.firstChild).toBeNull();
+      expect(item_three.firstChild).toBeNull();
     });
 
     it('handles extremely long prompt strings without breaking layout or omitting truncation classes', () => {

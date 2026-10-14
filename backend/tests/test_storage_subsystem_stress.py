@@ -232,7 +232,7 @@ class TestVector2ConcurrencyAndCollision:
         saved_filenames = [r.filename for r in results]
         unique_filenames = set(saved_filenames)
 
-        # CHALLENGE ASSERTION: If unique_filenames < num_tasks, uploads were clobbered!
+        # VERIFICATION ASSERTION: If unique_filenames < num_tasks, uploads were clobbered!
         assert len(unique_filenames) == num_tasks, (
             f"Concurrency Failure: {num_tasks} concurrent uploads produced only "
             f"{len(unique_filenames)} unique filenames. Filenames: {saved_filenames}. "
@@ -294,7 +294,7 @@ class TestVector2ConcurrencyAndCollision:
 
         await asyncio.gather(reader(), deleter_recreator())
 
-        # CHALLENGE ASSERTION: get_file must never leak raw FileNotFoundError
+        # VERIFICATION ASSERTION: get_file must never leak raw FileNotFoundError
         raw_fnf_errors = [e for e in caught_unhandled_exceptions if isinstance(e, FileNotFoundError)]
         assert len(raw_fnf_errors) == 0, (
             f"Concurrency Failure: get_file raised {len(raw_fnf_errors)} unhandled "

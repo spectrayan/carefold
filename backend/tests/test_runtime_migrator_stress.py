@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial stress tests for Carefold runtime auto-migration engine (runtime_migrator.py).
+"""Boundary stress tests for Carefold runtime auto-migration engine (runtime_migrator.py).
 
 Covers edge cases, failure modes, and stress scenarios:
 1. Corrupted WAL files and corrupted database files

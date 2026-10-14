@@ -38,7 +38,7 @@ To help us triage and remediate the issue rapidly, please provide:
 ### In-Scope Vulnerabilities
 - **Tool Sandbox Escapes**: Path traversal attacks (`../`), symlink escapes, or arbitrary file system reads outside `attachments/` and `workspace/notes/`.
 - **PII Leakage**: Failures in the sanitization pipeline that cause unmasked Social Security Numbers, Medical Record Numbers, or patient addresses to enter logs or LLM context.
-- **Safety Boundary Bypasses**: Adversarial prompt injections that induce the runtime to diagnose acute illnesses, prescribe medications, or bypass emergency red-flag refusals.
+- **Safety Boundary Bypasses**: Boundary prompt injections that induce the runtime to diagnose acute illnesses, prescribe medications, or bypass emergency red-flag refusals.
 - **Grounding Failures**: Numerical hallucination bugs where ungrounded financial or clinical tokens bypass the validator node.
 - **Injection Attacks**: SQLite injection in FTS5 adapters or remote code execution via unsafe deserialization.
 

@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial Test Suite for Persona Purity & Separation of Concerns.
+"""Boundary Test Suite for Persona Purity & Separation of Concerns.
 
 Targeting:
 1. Obfuscated Tool Syntax & Hidden Directives:
@@ -103,7 +103,7 @@ def get_all_reference_filenames() -> Set[str]:
 
 
 class TestPersonaAdversarialHardening:
-    """Adversarial test suite for persona purity."""
+    """Boundary test suite for persona purity."""
 
     def test_persona_file_inventory_completeness(self):
         """Verify persona files exist for all public specialist agents and template."""

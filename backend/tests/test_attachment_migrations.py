@@ -48,7 +48,7 @@ async def test_fresh_db_has_attachment_storage_columns_and_indices(tmp_path: Pat
 
 @pytest.mark.asyncio
 async def test_migration_adds_missing_columns_and_backfills_legacy_db(tmp_path: Path):
-    """Simulates a legacy pre-M3 database and verifies safe schema evolution and backfill."""
+    """Simulates a legacy pre-Phase3 database and verifies safe schema evolution and backfill."""
     db_file = tmp_path / "legacy_test.db"
 
     # 1. Create a legacy SQLite table using raw sqlite3 matching workspace/carefold.db exactly

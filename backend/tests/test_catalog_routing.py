@@ -538,7 +538,7 @@ class TestStep4PatternFallbackAndBounds:
 
 
 # ============================================================================
-# Test Suite 5: Adversarial Compound Queries & Precedence Collisions
+# Test Suite 5: Boundary Compound Queries & Precedence Collisions
 # ============================================================================
 
 class TestPrecedenceCollisionsInRoutingPatterns:
@@ -823,7 +823,7 @@ class TestCandidateSetBoundedness:
 
 
 # ============================================================================
-# Test Suite 8: Adversarial LLM Output Formatting & Error Recovery
+# Test Suite 8: Boundary LLM Output Formatting & Error Recovery
 # ============================================================================
 
 class TestAdversarialParsingAndRecovery:
@@ -918,7 +918,7 @@ class TestAdversarialParsingAndRecovery:
 
 
 # ============================================================================
-# Test Suite 9: Adversarial FTS Injection & Sanitization
+# Test Suite 9: Boundary FTS Injection & Sanitization
 # ============================================================================
 
 class TestAdversarialFTSInjectionAndSanitization:

@@ -11,8 +11,8 @@
 
 """Autonomy Batch 5 schema evolution: consent_grants, sync_runs, and connections extensions.
 
-Revision ID: 0007_autonomy_batch_5
-Revises: 0006_autonomy_batch_4
+Revision ID: 0007_connectors_and_consent
+Revises: 0006_preventive_and_school_forms
 Create Date: 2026-10-13 13:30:00.000000
 
 """
@@ -23,8 +23,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "0007_autonomy_batch_5"
-down_revision: Union[str, None] = "0006_autonomy_batch_4"
+revision: str = "0007_connectors_and_consent"
+down_revision: Union[str, None] = "0006_preventive_and_school_forms"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

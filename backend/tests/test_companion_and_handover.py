@@ -183,7 +183,7 @@ async def test_companion_pairing_pinned_tls_and_lifecycle(
 ) -> None:
     """Verifies QR initiation, pinned TLS fingerprint check, token issuance, ConsentGrant, and revocation."""
     guardian, _, _, profile = seeded_household
-    server_fp = "e3:b0:c4:42:98:fc:1c:14:9a:fb:f4:c8:99:6f:b9:24:27:ae:41:e4:64:9b:93:4c:a4:95:99:1b:78:52:b8:55"
+    server_fp = "e3:b0:item_four:42:98:fc:1c:14:9a:fb:f4:item_eight:99:6f:b9:24:27:ae:41:e4:64:9b:93:4c:a4:95:99:1b:78:52:b8:55"
 
     qr_payload = await initiate_companion_pairing(
         session=db_session,

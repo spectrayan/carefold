@@ -21,7 +21,7 @@ describe('evaluatePasswordStrength - Robustness & Stress Suite', () => {
     });
   });
 
-  describe('1. Exact 10-Character Boundary Challenges', () => {
+  describe('1. Exact 10-Character Boundary Checks', () => {
     it('rejects 9-character passwords even when containing all 4 character classes', () => {
       // Contains upper, lower, digit, special, but length is 9 (< 10)
       const pw9 = 'Ab1!cdefg';

@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial Test Suite for SSE Streaming and Thread State Isolation.
+"""Boundary Test Suite for SSE Streaming and Thread State Isolation.
 
 Aggressively tests:
 1. SQLite Checkpointing & Server Restart Simulation:
@@ -21,7 +21,7 @@ Aggressively tests:
 2. Thread State Isolation & Concurrency Stress:
    - High concurrency (10 concurrent threads simultaneously writing to SQLite).
    - Zero state leakage / contamination across distinct thread_ids.
-   - Adversarial thread_ids (SQL injection attempts, URI characters, spaces, unicode).
+   - Boundary thread_ids (SQL injection attempts, URI characters, spaces, unicode).
 
 3. SSE Streaming Event Sequencing & Payload Integrity:
    - Strict ordering: tool_start -> tool_end -> token* -> suggestions -> done.
@@ -149,7 +149,7 @@ async def test_server_restart_multi_turn_persistence(temp_workspace: Path):
        persists in SQLite checkpoints.db.
     2. Model in Turn 4 has access to all prior turns without state corruption.
     """
-    thread_id = "restart-adversarial-thread-4turns-001"
+    thread_id = "restart-boundary-thread-4turns-001"
     chats_dir = temp_workspace / "chats"
     db_file = chats_dir / "checkpoints.db"
     attachments_dir = temp_workspace / "attachments" / "default_user" / "default_profile"
@@ -404,7 +404,7 @@ async def test_concurrent_thread_isolation(temp_workspace: Path):
 
 
 @pytest.mark.parametrize(
-    "adversarial_thread_id",
+    "special_thread_id",
     [
         "thread-with/slash:colon?query=1&amp=2#hash",
         "thread with spaces and punctuation!@$",
@@ -417,16 +417,16 @@ async def test_concurrent_thread_isolation(temp_workspace: Path):
     ],
 )
 @pytest.mark.asyncio
-async def test_thread_id_special_characters(temp_workspace: Path, adversarial_thread_id: str):
+async def test_thread_id_special_characters(temp_workspace: Path, special_thread_id: str):
     """Verifies that special characters, SQL injection patterns, and prefix collisions isolate cleanly."""
     mock = MockModelClient()
-    mock.queue_response(f"Confirmed thread {adversarial_thread_id}")
+    mock.queue_response(f"Confirmed thread {special_thread_id}")
 
     events = []
     async for ev in execute_agent_run(
         agent_id="visit-steward",
-        prompt=f"Testing thread identifier {adversarial_thread_id}",
-        thread_id=adversarial_thread_id,
+        prompt=f"Testing thread identifier {special_thread_id}",
+        thread_id=special_thread_id,
         model_client=mock,
         workspace_root=temp_workspace,
     ):
@@ -434,7 +434,7 @@ async def test_thread_id_special_characters(temp_workspace: Path, adversarial_th
 
     done = next(e for e in events if e["type"] == "done")
     assert done["refused"] is False
-    assert done["threadId"] == adversarial_thread_id
+    assert done["threadId"] == special_thread_id
 
 
 # ============================================================================

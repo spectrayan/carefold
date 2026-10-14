@@ -50,7 +50,7 @@ CONSTITUENT_DISCLAIMER_PATTERNS = [
 ]
 
 
-# Try importing real ResponseSynthesizerNode if implemented in M5
+# Try importing real ResponseSynthesizerNode if implemented in Phase5
 try:
     from carefold.workflows.nodes.response_synthesizer_node import ResponseSynthesizerNode as RealResponseSynthesizerNode  # type: ignore
     HAS_REAL_SYNTHESIZER = True

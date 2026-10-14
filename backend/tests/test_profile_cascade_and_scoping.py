@@ -833,8 +833,8 @@ async def test_21_note_list_scoped_filtering(cascade_test_env):
         pid1 = p_resp1.json()["id"]
         pid2 = p_resp2.json()["id"]
 
-        client.post("/api/notes", headers=user_a["headers"], json={"title": "N1", "content": "C1", "profile_id": pid1})
-        client.post("/api/notes", headers=user_a["headers"], json={"title": "N2", "content": "C2", "profile_id": pid2})
+        client.post("/api/notes", headers=user_a["headers"], json={"title": "N1", "content": "ItemOne", "profile_id": pid1})
+        client.post("/api/notes", headers=user_a["headers"], json={"title": "N2", "content": "ItemTwo", "profile_id": pid2})
 
         # Alice lists notes for P1
         list_p1 = client.get(f"/api/notes?profile_id={pid1}", headers=user_a["headers"]).json()
@@ -1127,7 +1127,7 @@ def test_33_alembic_0004_upgrade_downgrade_cycle():
         assert thread_cols["profile_id"]["nullable"] is False
 
         # 2. Downgrade to 0003
-        alembic.command.downgrade(cfg, "0003_autonomy_batch_1")
+        alembic.command.downgrade(cfg, "0003_household_profiles_and_audit")
         insp_down = inspect(conn)
 
         notes_cols_down = {c["name"]: c for c in insp_down.get_columns("notes")}
@@ -1149,7 +1149,7 @@ def test_34_alembic_0004_legacy_null_backfill():
         cfg = get_alembic_config(conn)
 
         # 1. Upgrade only to 0003
-        alembic.command.upgrade(cfg, "0003_autonomy_batch_1")
+        alembic.command.upgrade(cfg, "0003_household_profiles_and_audit")
 
         # 2. Seed user, primary profile, and orphaned note/thread rows with NULL profile_id
         uid = str(uuid.uuid4())

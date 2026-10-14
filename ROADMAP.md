@@ -8,7 +8,7 @@ The Carefold roadmap outlines the architectural and community milestones driving
 
 ```
 ┌───────────────────────────┐      ┌───────────────────────────┐      ┌───────────────────────────┐      ┌───────────────────────────┐
-│  Phase 0–1: Core & Hex    │ ──►  │ Phase 2: Autonomy M1–M6   │ ──►  │  Phase 3: i18n & WCAG AA  │ ──►  │ Phase 4: Spector & P2P    │
+│  Phase 0–1: Core & Hex    │ ──►  │ Phase 2: Autonomy Phase1–Phase6   │ ──►  │  Phase 3: i18n & WCAG AA  │ ──►  │ Phase 4: Spector & P2P    │
 │    (Completed — v0.3.0)   │      │ (Completed — AU-01..AU-81)│      │ (Current — Batch 8 v0.4.0)│      │        (2027 Roadmap)     │
 └───────────────────────────┘      └───────────────────────────┘      └───────────────────────────┘      └───────────────────────────┘
 ```
@@ -50,22 +50,22 @@ The Carefold roadmap outlines the architectural and community milestones driving
 
 ---
 
-## Phase 2: Carefold Autonomy Milestones M1–M6 (`AU-01`–`AU-81`) (Completed — Q4 2026)
+## Phase 2: Carefold Autonomy Milestones Phase1–Phase6 (`AU-01`–`AU-81`) (Completed — Q4 2026)
 
-- [x] **Milestone M1 (`AU-01`–`AU-20`): Control Loop, Envelope Keyring Vault & Multi-Profile Identity**:
+- [x] **Milestone Phase1 (`AU-01`–`AU-20`): Control Loop, Envelope Keyring Vault & Multi-Profile Identity**:
   - Multi-user & household care profiles (`users`, `sessions`, `profiles`, `profile_access`, `profile_consents`, `viewer_invites`) with fail-closed RBAC (`owner`, `caregiver`, `viewer`) and Mode L / Mode S deployment tiers (`ADR 0006`).
   - 4-tier tool execution policy gate (`read`, `write_local`, `write_external`, `irreversible`) across `A0`–`A2` autonomy levels, monotone taint propagation (`UntrustedResult`), and single-use `Approval` tokens (`ADR 0004`).
   - Per-profile cryptographic envelope encryption (`profile_keys`, `HKDF-SHA256` AES-256-GCM DEKs, `ADR 0005`) with deterministic crypto-shredding (`Titan S2`).
-- [x] **Milestone M2 (`AU-21`–`AU-27`): Hybrid SearchIndex, Document Intelligence & Partitioned CAS**:
+- [x] **Milestone Phase2 (`AU-21`–`AU-27`): Hybrid SearchIndex, Document Intelligence & Partitioned CAS**:
   - Per-profile Content-Addressed Storage (`attachments`, `profile_attachments`) eliminating cross-tenant deduplication side-channels (`ADR 0007`).
   - Hybrid retrieval (`chunks`, `chunks_fts` BM25 + `chunks_vec` `sqlite-vec` float32 embeddings with Reciprocal Rank Fusion `RRF` and Maximal Marginal Relevance `MMR`) and 3-tier memory consolidation (`working` $\rightarrow$ `episodic` $\rightarrow$ `semantic`).
-- [x] **Milestone M3 (`AU-28`–`AU-40`): Clinical Organizer, Preventive Care & Health Imports**:
+- [x] **Milestone Phase3 (`AU-28`–`AU-40`): Clinical Organizer, Preventive Care & Health Imports**:
   - HL7 FHIR R4 clinical repository (`health_resources`), `appointments`, `reminders`, USPSTF/CDC/ACIP `preventive_records` engine, pediatric `school_forms` autofill, PHI-sanitized web search, and idempotent `import_batches` (Apple Health XML, C-CDA XML, FHIR R4 Bundles, CSV vitals).
-- [x] **Milestone M4 (`AU-51`–`AU-56`): Scoped Connector SDK (`libs/connectors`) & v1 Starter Connectors**:
+- [x] **Milestone Phase4 (`AU-51`–`AU-56`): Scoped Connector SDK (`libs/connectors`) & v1 Starter Connectors**:
   - OAuth 2.0 PKCE (`S256`) broker, granular `consent_grants` matrix (`connector × profile × category × purpose`), `ScopedHttp` egress allowlisting, and starter connectors (`withings`, `google-calendar`, `caldav`, `epic-smart`).
-- [x] **Milestone M5 (`AU-57`–`AU-63`): Remote MCP Pinning, Routines, School ICS & iOS Companion**:
+- [x] **Milestone Phase5 (`AU-57`–`AU-63`): Remote MCP Pinning, Routines, School ICS & iOS Companion**:
   - Curated `gmail-mcp` (`gmail_search_messages`, `gmail_get_thread`, `gmail_send_message`), `mcp_tool_pins` SHA-256 schema drift protection (`Titan S7`), standing `routines`, `email_drafts`, `school_ics_feeds`, and iOS HealthKit companion pairing (`companion_devices`).
-- [x] **Milestone M6 (`AU-64`–`AU-65`, `AU-70`–`AU-81`): Coordinated v2 Connectors, Stateless Relay, Audit Hash Chain & Compliance Packs**:
+- [x] **Milestone Phase6 (`AU-64`–`AU-65`, `AU-70`–`AU-81`): Coordinated v2 Connectors, Stateless Relay, Audit Hash Chain & Compliance Packs**:
   - Stateless PKCE OAuth callback bounce relay (`ADR 0008`), v2 connectors (`oracle-health`, `athenahealth`, `cms-blue-button`, `oura`, `google-health`, `microsoft-graph`, `zocdoc` / SMART Scheduling Links), offline RFC 7515 JWS-verified SMART Health Cards (`.smart-health-card`), SHA-256 `audit_events` hash chain, local cross-encoder reranker, Android Health Connect companion, signed `.carefold` packaging (`carefold.packaging`), and compliance packs (`docs/compliance/`).
 
 ---

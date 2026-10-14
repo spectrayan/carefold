@@ -26,7 +26,7 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 from carefold.safety.vitals import VitalsEmergencyFlag, check_vitals_red_flags
-from tests.e2e.contracts_batch_3 import EmergencyRedFlag
+from tests.e2e.contracts_clinical_domain import EmergencyRedFlag
 
 
 # ============================================================================
@@ -236,7 +236,7 @@ def test_fhir_r4_blood_pressure_observation_parsing():
 
 
 # ============================================================================
-# Section 8: Single-Component Blood Pressure Evaluation (AU-32 / Challenger)
+# Section 8: Single-Component Blood Pressure Evaluation (AU-32 / Verification)
 # ============================================================================
 
 @pytest.mark.parametrize(
@@ -297,7 +297,7 @@ def test_single_component_bp_negative_controls(vitals: Dict[str, Any], symptoms:
 
 
 # ============================================================================
-# Section 9: Symptom Negation Filtering (AU-32 / Challenger)
+# Section 9: Symptom Negation Filtering (AU-32 / Verification)
 # ============================================================================
 
 @pytest.mark.parametrize(
@@ -431,7 +431,7 @@ def test_multi_vital_priority_dual_emergency_combines_directives():
 
 
 # ============================================================================
-# Section 11: Malformed and Non-Numeric Input Resilience (AU-32 / Challenger)
+# Section 11: Malformed and Non-Numeric Input Resilience (AU-32 / Verification)
 # ============================================================================
 
 @pytest.mark.parametrize(
@@ -467,7 +467,7 @@ def test_malformed_input_graceful_handling(
 
 
 # ============================================================================
-# Section 12: Challenger Boundary Control Verification (T01 – T15)
+# Section 12: Verification Boundary Control Verification (T01 – T15)
 # ============================================================================
 
 @pytest.mark.parametrize(

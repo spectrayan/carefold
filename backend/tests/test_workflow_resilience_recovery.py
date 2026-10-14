@@ -301,7 +301,7 @@ class TestThreadStatePersistence:
         cleared = await service.clear_thread_state(thread_id)
         assert cleared is True
 
-        # EMPIRICAL OBSERVATION: clear_thread_state in service.py currently returns
+        # SYSTEMATIC OBSERVATION: clear_thread_state in service.py currently returns
         # `state is not None`, but does NOT execute a DELETE/purge against checkpointer!
         # Thus state_after is still present in the checkpointer:
         state_after = await service.get_thread_state(thread_id)

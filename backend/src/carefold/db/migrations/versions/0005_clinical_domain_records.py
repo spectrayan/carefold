@@ -11,8 +11,8 @@
 
 """Autonomy Batch 3 schema evolution: health_resources, appointments, reminders, notes.linked_appointment_id.
 
-Revision ID: 0005_autonomy_batch_3
-Revises: 0004_autonomy_batch_2
+Revision ID: 0005_clinical_domain_records
+Revises: 0004_policy_gate_and_vault
 Create Date: 2026-10-13 04:30:00.000000
 
 """
@@ -23,8 +23,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "0005_autonomy_batch_3"
-down_revision: Union[str, None] = "0004_autonomy_batch_2"
+revision: str = "0005_clinical_domain_records"
+down_revision: Union[str, None] = "0004_policy_gate_and_vault"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

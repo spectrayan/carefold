@@ -60,7 +60,7 @@ import type {
   TeenHandoverPayload,
   TeenHandoverResponse,
   ViewerSectionKey,
-} from '@/types/autonomyBatch6';
+} from '@/types/routinesAndCompanion';
 import type {
   AuditChainVerificationResponse,
   OsServiceDescriptorItem,
@@ -68,12 +68,12 @@ import type {
   SmartSchedulingSlotItem,
   V2ConnectorSummary,
   ZocdocBookingPreview,
-} from '@/types/autonomyBatch7';
+} from '@/types/coordinatedCare';
 import type {
   DiscoverSmartSchedulingSlotsPayload,
   PreviewZocdocBookingPayload,
   VerifySmartHealthCardPayload,
-} from '@/lib/autonomyBatch7Client';
+} from '@/lib/coordinatedCareClient';
 
 export type ConnectionsHubTab =
   | 'connections'

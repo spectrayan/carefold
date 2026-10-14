@@ -17,7 +17,7 @@ Challenges:
    - Verify prompt is strictly under 500 tokens, contains all 5 domains, and has 0 agent catalog descriptions.
    - Scalability: Compare prompt size with 50 synthetic agents vs 5 agents.
    - Verify single-hop prompt grows linearly O(N), while Two-Hop Tier-1 is constant and Tier-2 is strictly capped at <= 8 candidates.
-2. Backward Compatibility Challenge:
+2. Backward Compatibility Verification:
    - Test OrchestratorNode(catalog=None) across existing test paths:
      * Attachments: attachments, document_dossiers, document_text, raw_text -> document-extractor.
      * Explicit bypass: current_agent, routed_subgraph, case-insensitivity, underscore preservation, self-routing guards.
@@ -28,7 +28,7 @@ Challenges:
      * Parameterless fallback across domains.
      * Attachments and bypass handling.
      * Model-driven structured output and optional catalog injection.
-3. High-Stress Adversarial Edge Cases:
+3. High-Stress Boundary Edge Cases:
    - Empty catalog fallback chain.
    - 100+ synthetic agents in identical domain/category verifying limit=8 truncation.
    - Malformed model responses and connection exceptions.
@@ -151,11 +151,11 @@ async def memory_catalog() -> SqliteCatalogAdapter:
 
 
 # ============================================================================
-# Section 1: Token Bounds & Prompt Invariant Empirical Stress Testing
+# Section 1: Token Bounds & Prompt Invariant Systematic Stress Testing
 # ============================================================================
 
 class TestTokenBoundsAndPromptInvariants:
-    """Empirically measures token bounds and structural invariants of Tier-1 prompt."""
+    """Systematically measures token bounds and structural invariants of Tier-1 prompt."""
 
     def test_tier1_prompt_token_bounds_across_tokenizers(self):
         """Verifies TIER1_DOMAIN_CLASSIFIER_PROMPT is strictly under 500 tokens across encodings."""
@@ -207,7 +207,7 @@ class TestTokenBoundsAndPromptInvariants:
 # ============================================================================
 
 class TestCatalogScalabilityAndTwoHopLimits:
-    """Empirically verifies prompt scaling properties between Single-Hop and Two-Hop routing."""
+    """Systematically verifies prompt scaling properties between Single-Hop and Two-Hop routing."""
 
     @pytest.mark.asyncio
     async def test_scalability_single_hop_vs_two_hop_prompt_growth(self, temp_workspace: Path):
@@ -317,7 +317,7 @@ class TestCatalogScalabilityAndTwoHopLimits:
 
 
 # ============================================================================
-# Section 3: Backward Compatibility Challenge for OrchestratorNode(catalog=None)
+# Section 3: Backward Compatibility Verification for OrchestratorNode(catalog=None)
 # ============================================================================
 
 class TestBackwardCompatibilityCatalogNone:
@@ -564,7 +564,7 @@ class TestSupervisorNodeBackwardCompatibility:
 
 
 # ============================================================================
-# Section 5: High-Stress Adversarial Edge Cases
+# Section 5: High-Stress Boundary Edge Cases
 # ============================================================================
 
 class TestAdversarialEdgeCasesAndResilience:

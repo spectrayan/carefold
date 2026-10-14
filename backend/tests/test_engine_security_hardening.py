@@ -11,7 +11,7 @@
 
 """Engine Security Hardening Test Suite.
 
-Adversarial stress verification covering:
+Boundary stress verification covering:
 1. Rapid Concurrent Requests & Turn Interruptions in AgentExecutionService
 2. Cyclic Delegation Detection & Circuit-Breaking in OrchestratorNode
 3. Re-Entrancy, Malformed Checkpointer States, & Reflection Counter Overflows

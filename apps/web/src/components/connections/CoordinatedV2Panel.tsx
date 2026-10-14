@@ -37,12 +37,12 @@ import type {
   SmartSchedulingSlotItem,
   V2ConnectorSummary,
   ZocdocBookingPreview,
-} from '@/types/autonomyBatch7';
+} from '@/types/coordinatedCare';
 import type {
   DiscoverSmartSchedulingSlotsPayload,
   PreviewZocdocBookingPayload,
   VerifySmartHealthCardPayload,
-} from '@/lib/autonomyBatch7Client';
+} from '@/lib/coordinatedCareClient';
 
 export interface CoordinatedV2PanelProps {
   shcResult?: SmartHealthCardVerificationResult | null;

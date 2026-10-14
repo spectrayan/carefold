@@ -58,7 +58,7 @@ class SimulatedAsyncMemoryClient:
         tags: Optional[List[str]] = None,
         interest: float = 0.0,
         urgency: float = 0.0,
-        challenge: float = 0.0,
+        verification: float = 0.0,
         valence: int = 0,
         arousal: int = 0,
         metadata: Optional[Dict[str, Any]] = None,

@@ -60,7 +60,7 @@ describe('RecordSearch Component', () => {
       },
       {
         document_id: 'nephrology-visit.md',
-        chunk_id: 'nephrology-visit.md#c1',
+        chunk_id: 'nephrology-visit.md#item_one',
         content: 'Recommended dietary adjustments: low sodium, manage blood pressure.',
         score: 0.745,
         profile_id: 'prof_123',

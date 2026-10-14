@@ -21,7 +21,7 @@ import { MessageToolbar } from '@/components/chat/MessageToolbar';
 import { CodeBlock, normalizeLanguage, tokenizeCode } from '@/components/chat/CodeBlock';
 import { SAFE_REFUSAL_TEMPLATE } from '@/types/api';
 
-describe('Resilience Challenge: Layout, Toolbars & Code Blocks', () => {
+describe('Resilience Suite: Layout, Toolbars & Code Blocks', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -128,7 +128,7 @@ describe('Resilience Challenge: Layout, Toolbars & Code Blocks', () => {
         <MessageToolbar
           role="assistant"
           content="Test message"
-          messageId="m1"
+          messageId="msg_one"
           onRegenerate={vi.fn()}
         />
       );

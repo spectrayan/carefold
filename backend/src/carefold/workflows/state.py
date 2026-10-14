@@ -160,7 +160,7 @@ class AgentState(TypedDict, total=False):
     provisioned_references: Dict[str, Any]
     specialist_outputs: Dict[str, Any]
 
-    # Phase 1 Cognitive Memory Recall fields (M3, R3)
+    # Phase 1 Cognitive Memory Recall fields (Phase3, R3)
     recalled_memories: List[Dict[str, Any]]
     memory_context: Optional[str]
 

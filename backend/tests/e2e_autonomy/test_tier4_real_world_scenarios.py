@@ -85,7 +85,7 @@ async def test_t4_scenario_chronic_care_hypertension_visit_prep(
     )
     args_export = {
         "url": "https://portal.provider.org/v2/dossier",
-        "patient": "Bharat",
+        "patient": "Alex",
         "avg_bp": "140/89",
     }
 
@@ -96,7 +96,7 @@ async def test_t4_scenario_chronic_care_hypertension_visit_prep(
     approval_id = res4.approval_id
 
     # Step 5: Patient reviews dossier card and approves
-    approval_store.decide(approval_id, sample_profile_id, "approved", None, "patient-bharat", ["manage"])
+    approval_store.decide(approval_id, sample_profile_id, "approved", None, "patient-alex", ["manage"])
 
     # Step 6: Atomic resume completes export
     res5 = await execute_tool_call(

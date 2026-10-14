@@ -131,7 +131,7 @@ describe('Stress Test: Scroll Tracking & Anti-Hijack Guarantee', () => {
       });
     }
 
-    // ADVERSARIAL ASSERTION: scrollIntoView MUST NOT have been called while scrolled up!
+    // BOUNDARY ASSERTION: scrollIntoView MUST NOT have been called while scrolled up!
     expect(scrollIntoViewSpy).not.toHaveBeenCalled();
 
     // Verify unread badge accumulated all 8 tokens
@@ -369,9 +369,9 @@ describe('Stress Test: ThinkingIndicator & ToolTrace Stability', () => {
 
 describe('Stress Test: Tailwind CSS v3 Hygiene Across Components', () => {
   it('validates rendered DOM across components contains 0 Tailwind v4 invalid classes', () => {
-    const { container: c1 } = render(<ThinkingIndicator />);
-    const { container: c2 } = render(<ScrollToBottomButton visible={true} onClick={vi.fn()} unreadCount={3} />);
-    const { container: c3 } = render(
+    const { container: item_one } = render(<ThinkingIndicator />);
+    const { container: item_two } = render(<ScrollToBottomButton visible={true} onClick={vi.fn()} unreadCount={3} />);
+    const { container: item_three } = render(
       <ToolTraceCard
         trace={{
           tool: 'test-tool',
@@ -382,9 +382,9 @@ describe('Stress Test: Tailwind CSS v3 Hygiene Across Components', () => {
         defaultExpanded={true}
       />
     );
-    const { container: c4 } = render(<ChatClient initialAgents={mockAgents} />);
+    const { container: item_four } = render(<ChatClient initialAgents={mockAgents} />);
 
-    const fullRenderedHtml = [c1.innerHTML, c2.innerHTML, c3.innerHTML, c4.innerHTML].join('\n');
+    const fullRenderedHtml = [item_one.innerHTML, item_two.innerHTML, item_three.innerHTML, item_four.innerHTML].join('\n');
 
     expect(fullRenderedHtml).not.toContain('shadow-xs');
     expect(fullRenderedHtml).not.toContain('shadow-2xs');

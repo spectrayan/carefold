@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Adversarial Test Suite for Response Synthesis & Output Guardrail Nodes.
+"""Boundary Test Suite for Response Synthesis & Output Guardrail Nodes.
 
 Targets:
 - ResponseSynthesizerNode (Phase 5 of Orchestrator-Driven Architecture)
@@ -175,7 +175,7 @@ class TestZeroBodyAuditLogging:
             sensitive_output_2 = "NEPHROLOGY_CONFIDENTIAL_STAGE_4_RENAL_FAILURE"
 
             state: Dict[str, Any] = {
-                "thread_id": "thread-adversarial-123",
+                "thread_id": "thread-boundary-123",
                 "prompt": f"Patient query containing {sensitive_ssn} and {sensitive_clinical_fact}",
                 "specialist_outputs": {
                     "cardiology-guide": f"{sensitive_output_1} with fluid management",
@@ -201,7 +201,7 @@ class TestZeroBodyAuditLogging:
             # 1. Structural audit metadata is present
             assert entry.get("event") == "synthesis"
             assert entry.get("allowed") is True
-            assert entry.get("thread_id") == "thread-adversarial-123"
+            assert entry.get("thread_id") == "thread-boundary-123"
             assert entry.get("target_agents") == ["cardiology-guide", "nephrology-guide"]
             assert "timestamp" in entry
             assert "ts" in entry

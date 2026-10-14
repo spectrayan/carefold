@@ -337,7 +337,7 @@ def test_api_chat_validation_errors(client: TestClient):
 
 
 # ============================================================================
-# Enhanced SSE Streaming & Session Tests (M7 Requirements)
+# Enhanced SSE Streaming & Session Tests (Phase7 Requirements)
 # ============================================================================
 
 @pytest.fixture

@@ -501,7 +501,7 @@ async def test_engine_no_suggestions_on_safety_refusal(temp_workspace: Path):
 
 
 # ============================================================================
-# 6. Concurrency Safety & Stealth Evasion Guardrails (M7 Iteration 2)
+# 6. Concurrency Safety & Stealth Evasion Guardrails (Phase7 Iteration 2)
 # ============================================================================
 
 @pytest.mark.asyncio

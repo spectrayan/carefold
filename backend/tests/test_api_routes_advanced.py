@@ -46,7 +46,7 @@ Scope of Tests:
    - Exact category: category="navigation.appointments" matches only visit-steward.
    - Dot-segment boundary check: category="nav" does NOT match navigation.insurance (boundary safe).
    - Case insensitivity: category="NAVIGATION".
-5. Combined Filters & Adversarial Inputs:
+5. Combined Filters & Boundary Inputs:
    - Combined query: domain=navigation&risk_class=administrative&page=1&per_page=10
      Verifies that because valid risk_class is "admin" (not "administrative"), returns 200 OK with [].
    - Combined query: domain=navigation&risk_class=admin&page=1&per_page=10 -> returns benefits-guide.
@@ -374,14 +374,14 @@ class TestCategoryPrefixFiltering:
 
 
 # ============================================================================
-# 5. Combined Filters & Adversarial Inputs
+# 5. Combined Filters & Boundary Inputs
 # ============================================================================
 
 class TestCombinedFilters:
     """Tests combinations of domain, risk_class, category, search, and pagination."""
 
     def test_combined_domain_navigation_risk_class_administrative(self, client: TestClient):
-        """Resilience Challenge:
+        """Resilience Suite:
         The prompt tests: `domain=navigation&risk_class=administrative&page=1&per_page=10`.
         In the Carefold taxonomy, the risk class is 'admin', NOT 'administrative'.
         Verify that passing risk_class='administrative' returns 200 OK with empty list []
@@ -482,7 +482,7 @@ class TestCategoryTreeIntegrity:
 
 
 # ============================================================================
-# 7. Adversarial Strings & Injection Attempts
+# 7. Boundary Strings & Injection Attempts
 # ============================================================================
 
 class TestAdversarialInputs:
@@ -502,7 +502,7 @@ class TestAdversarialInputs:
         ],
     )
     def test_domain_and_category_params(self, client: TestClient, malicious_payload: str):
-        """Adversarial query parameters should not cause 500 error; return 200 with [] safe list."""
+        """Boundary query parameters should not cause 500 error; return 200 with [] safe list."""
         res_agents = client.get(f"/api/agents?domain={malicious_payload}")
         assert res_agents.status_code == 200
         assert res_agents.json() == []

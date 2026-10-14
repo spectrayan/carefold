@@ -39,7 +39,7 @@ from carefold.settings.ports import SECRET_MASK
 
 
 @pytest.fixture
-async def m5_challenge_env(monkeypatch):
+async def m5_auth_test_env(monkeypatch):
     """Establishes an isolated multi-user, multi-session test environment."""
     engine = create_db_engine("sqlite+aiosqlite:///:memory:")
     await init_db(engine)
@@ -187,7 +187,7 @@ ADMIN_ENDPOINTS = [
 
 
 @pytest.mark.parametrize("method,path,payload", ADMIN_ENDPOINTS)
-def test_admin_endpoints_unauthenticated_returns_401(client: TestClient, m5_challenge_env, method, path, payload):
+def test_admin_endpoints_unauthenticated_returns_401(client: TestClient, m5_auth_test_env, method, path, payload):
     """Probe 1A: Every /api/admin/* endpoint rejects unauthenticated requests with 401."""
     resp = client.request(method, path, json=payload if payload else None)
     assert resp.status_code == 401, f"{method} {path} expected 401, got {resp.status_code}: {resp.text}"
@@ -197,7 +197,7 @@ def test_admin_endpoints_unauthenticated_returns_401(client: TestClient, m5_chal
 
 
 @pytest.mark.parametrize("method,path,payload", ADMIN_ENDPOINTS)
-def test_admin_endpoints_invalid_token_returns_401(client: TestClient, m5_challenge_env, method, path, payload):
+def test_admin_endpoints_invalid_token_returns_401(client: TestClient, m5_auth_test_env, method, path, payload):
     """Probe 1B: Every /api/admin/* endpoint rejects invalid/expired session tokens with 401."""
     resp = client.request(
         method,
@@ -210,9 +210,9 @@ def test_admin_endpoints_invalid_token_returns_401(client: TestClient, m5_challe
 
 
 @pytest.mark.parametrize("method,path,payload", ADMIN_ENDPOINTS)
-def test_admin_endpoints_member_role_forbidden_403(client: TestClient, m5_challenge_env, method, path, payload):
+def test_admin_endpoints_member_role_forbidden_403(client: TestClient, m5_auth_test_env, method, path, payload):
     """Probe 1C: Every /api/admin/* endpoint rejects member role with 403 Forbidden."""
-    member_token = m5_challenge_env["member_token"]
+    member_token = m5_auth_test_env["member_token"]
     resp = client.request(
         method,
         path,
@@ -224,9 +224,9 @@ def test_admin_endpoints_member_role_forbidden_403(client: TestClient, m5_challe
 
 
 @pytest.mark.parametrize("method,path,payload", ADMIN_ENDPOINTS)
-def test_admin_endpoints_steward_role_forbidden_403(client: TestClient, m5_challenge_env, method, path, payload):
+def test_admin_endpoints_steward_role_forbidden_403(client: TestClient, m5_auth_test_env, method, path, payload):
     """Probe 1D: Every /api/admin/* endpoint rejects steward role with 403 Forbidden."""
-    steward_token = m5_challenge_env["steward_token"]
+    steward_token = m5_auth_test_env["steward_token"]
     resp = client.request(
         method,
         path,
@@ -238,9 +238,9 @@ def test_admin_endpoints_steward_role_forbidden_403(client: TestClient, m5_chall
 
 
 @pytest.mark.parametrize("method,path,payload", ADMIN_ENDPOINTS)
-def test_admin_endpoints_disabled_admin_forbidden_403(client: TestClient, m5_challenge_env, method, path, payload):
+def test_admin_endpoints_disabled_admin_forbidden_403(client: TestClient, m5_auth_test_env, method, path, payload):
     """Probe 1E: Disabled admin account is rejected with 403 Account is disabled."""
-    disabled_token = m5_challenge_env["disabled_admin_token"]
+    disabled_token = m5_auth_test_env["disabled_admin_token"]
     resp = client.request(
         method,
         path,
@@ -251,9 +251,9 @@ def test_admin_endpoints_disabled_admin_forbidden_403(client: TestClient, m5_cha
     assert "Account is disabled" in resp.json()["detail"]
 
 
-def test_admin_endpoints_active_admin_authorized(client: TestClient, m5_challenge_env):
+def test_admin_endpoints_active_admin_authorized(client: TestClient, m5_auth_test_env):
     """Probe 1F: Active admin token is authorized on GET /api/admin/settings, users, and diagnostics."""
-    admin_token = m5_challenge_env["admin1_token"]
+    admin_token = m5_auth_test_env["admin1_token"]
     cookies = {"carefold_session": admin_token}
 
     for path in ["/api/admin/settings", "/api/admin/users", "/api/admin/diagnostics"]:
@@ -270,10 +270,10 @@ def test_admin_endpoints_active_admin_authorized(client: TestClient, m5_challeng
 # Probe Suite 2: Self-Deletion Prevention and Session Revocation
 # ============================================================================
 
-def test_admin_self_deletion_prevented_cookie(client: TestClient, m5_challenge_env):
+def test_admin_self_deletion_prevented_cookie(client: TestClient, m5_auth_test_env):
     """Probe 2A: Current admin cannot delete own account via session cookie."""
-    admin1 = m5_challenge_env["admin1"]
-    admin1_token = m5_challenge_env["admin1_token"]
+    admin1 = m5_auth_test_env["admin1"]
+    admin1_token = m5_auth_test_env["admin1_token"]
 
     resp = client.delete(
         f"/api/admin/users/{admin1.id}",
@@ -283,10 +283,10 @@ def test_admin_self_deletion_prevented_cookie(client: TestClient, m5_challenge_e
     assert "Cannot delete own account" in resp.json()["detail"]
 
 
-def test_admin_self_deletion_prevented_bearer(client: TestClient, m5_challenge_env):
+def test_admin_self_deletion_prevented_bearer(client: TestClient, m5_auth_test_env):
     """Probe 2B: Current admin cannot delete own account via Authorization Bearer header."""
-    admin1 = m5_challenge_env["admin1"]
-    admin1_token = m5_challenge_env["admin1_token"]
+    admin1 = m5_auth_test_env["admin1"]
+    admin1_token = m5_auth_test_env["admin1_token"]
 
     resp = client.delete(
         f"/api/admin/users/{admin1.id}",
@@ -297,11 +297,11 @@ def test_admin_self_deletion_prevented_bearer(client: TestClient, m5_challenge_e
 
 
 @pytest.mark.asyncio
-async def test_admin_delete_other_user_cascades_and_revokes_all_sessions(client: TestClient, m5_challenge_env):
+async def test_admin_delete_other_user_cascades_and_revokes_all_sessions(client: TestClient, m5_auth_test_env):
     """Probe 2C: Admin deleting another user succeeds, deletes DB record, and immediately revokes all active sessions."""
-    admin1_token = m5_challenge_env["admin1_token"]
-    member = m5_challenge_env["member"]
-    member_tokens = m5_challenge_env["member_tokens"]
+    admin1_token = m5_auth_test_env["admin1_token"]
+    member = m5_auth_test_env["member"]
+    member_tokens = m5_auth_test_env["member_tokens"]
 
     # Verify member tokens are active before deletion
     for token in member_tokens:
@@ -336,11 +336,11 @@ async def test_admin_delete_other_user_cascades_and_revokes_all_sessions(client:
     assert admin_check.status_code == 200
 
 
-def test_admin_can_delete_another_admin(client: TestClient, m5_challenge_env):
+def test_admin_can_delete_another_admin(client: TestClient, m5_auth_test_env):
     """Probe 2D: Admin 1 can delete Admin 2 (cross-admin deletion); Admin 2's session is revoked, Admin 1 survives."""
-    admin1_token = m5_challenge_env["admin1_token"]
-    admin2 = m5_challenge_env["admin2"]
-    admin2_token = m5_challenge_env["admin2_token"]
+    admin1_token = m5_auth_test_env["admin1_token"]
+    admin2 = m5_auth_test_env["admin2"]
+    admin2_token = m5_auth_test_env["admin2_token"]
 
     # Admin 2 active
     a2_check = client.get("/api/auth/me", cookies={"carefold_session": admin2_token})
@@ -363,9 +363,9 @@ def test_admin_can_delete_another_admin(client: TestClient, m5_challenge_env):
     assert a1_after.status_code == 200
 
 
-def test_admin_delete_nonexistent_user_returns_404(client: TestClient, m5_challenge_env):
+def test_admin_delete_nonexistent_user_returns_404(client: TestClient, m5_auth_test_env):
     """Probe 2E: Attempting to delete a nonexistent user UUID returns 404."""
-    admin1_token = m5_challenge_env["admin1_token"]
+    admin1_token = m5_auth_test_env["admin1_token"]
     resp = client.delete(
         "/api/admin/users/00000000-dead-beef-0000-000000000000",
         cookies={"carefold_session": admin1_token},
@@ -378,9 +378,9 @@ def test_admin_delete_nonexistent_user_returns_404(client: TestClient, m5_challe
 # Probe Suite 3: Settings Masking, Preservation & Secret Clobber Stress
 # ============================================================================
 
-def test_get_settings_masks_sensitive_keys(client: TestClient, m5_challenge_env):
+def test_get_settings_masks_sensitive_keys(client: TestClient, m5_auth_test_env):
     """Probe 3A: GET /api/admin/settings masks sensitive keys with •••••••• and exposes zero plaintext."""
-    admin1_token = m5_challenge_env["admin1_token"]
+    admin1_token = m5_auth_test_env["admin1_token"]
     resp = client.get("/api/admin/settings", cookies={"carefold_session": admin1_token})
     assert resp.status_code == 200
     data = resp.json()["settings"]
@@ -397,9 +397,9 @@ def test_get_settings_masks_sensitive_keys(client: TestClient, m5_challenge_env)
     assert "sk-ant-api03" not in resp.text
 
 
-def test_put_settings_updates_unmasked_setting(client: TestClient, m5_challenge_env):
+def test_put_settings_updates_unmasked_setting(client: TestClient, m5_auth_test_env):
     """Probe 3B: PUT /api/admin/settings correctly modifies unmasked settings."""
-    admin1_token = m5_challenge_env["admin1_token"]
+    admin1_token = m5_auth_test_env["admin1_token"]
     cookies = {"carefold_session": admin1_token}
 
     put_resp = client.put(
@@ -421,10 +421,10 @@ def test_put_settings_updates_unmasked_setting(client: TestClient, m5_challenge_
 
 
 @pytest.mark.asyncio
-async def test_put_settings_submitting_masked_placeholder_does_not_clobber_secret(client: TestClient, m5_challenge_env):
+async def test_put_settings_submitting_masked_placeholder_does_not_clobber_secret(client: TestClient, m5_auth_test_env):
     """Probe 3C: Submitting masked placeholder •••••••• must NOT clobber the real stored secret."""
-    admin1_token = m5_challenge_env["admin1_token"]
-    settings_adapter = m5_challenge_env["settings"]
+    admin1_token = m5_auth_test_env["admin1_token"]
+    settings_adapter = m5_auth_test_env["settings"]
     cookies = {"carefold_session": admin1_token}
 
     original_secret = "sk-proj-super-secret-key-12345"
@@ -460,10 +460,10 @@ async def test_put_settings_submitting_masked_placeholder_does_not_clobber_secre
 
 
 @pytest.mark.asyncio
-async def test_put_settings_updating_secret_with_new_plaintext_value(client: TestClient, m5_challenge_env):
+async def test_put_settings_updating_secret_with_new_plaintext_value(client: TestClient, m5_auth_test_env):
     """Probe 3D: Admin supplying new plaintext secret key updates secret and retains is_secret masking."""
-    admin1_token = m5_challenge_env["admin1_token"]
-    settings_adapter = m5_challenge_env["settings"]
+    admin1_token = m5_auth_test_env["admin1_token"]
+    settings_adapter = m5_auth_test_env["settings"]
     cookies = {"carefold_session": admin1_token}
 
     new_secret = "sk-proj-brand-new-openai-key-99999"
@@ -487,9 +487,9 @@ async def test_put_settings_updating_secret_with_new_plaintext_value(client: Tes
 # Probe Suite 4: System Diagnostics Endpoint Integrity
 # ============================================================================
 
-def test_admin_diagnostics_endpoint_integrity(client: TestClient, m5_challenge_env):
+def test_admin_diagnostics_endpoint_integrity(client: TestClient, m5_auth_test_env):
     """Probe 4A: GET /api/admin/diagnostics returns complete, grounded diagnostic metrics."""
-    admin1_token = m5_challenge_env["admin1_token"]
+    admin1_token = m5_auth_test_env["admin1_token"]
     cookies = {"carefold_session": admin1_token}
 
     resp = client.get("/api/admin/diagnostics", cookies=cookies)

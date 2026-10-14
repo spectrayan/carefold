@@ -27,7 +27,7 @@ Scope:
    - 25 concurrent salience reinforcements on the exact same key.
 5. Concurrent deletion and indexing resilience:
    - Audits catalog deletion (delete_agent, delete_skill) and memory deletion (forget) under write bursts.
-6. Boundary conditions and adversarial queries under concurrent load:
+6. Boundary conditions and boundary queries under concurrent load:
    - FTS5 syntax bombs, SQL injection payloads, 100KB payloads, unicode symbols, empty queries.
 """
 
@@ -67,7 +67,7 @@ def _build_test_agent(
     category: str = "wellness.stress",
     tags: Optional[List[str]] = None,
     hidden: bool = False,
-    description: str = "Adversarial stress testing agent",
+    description: str = "Boundary stress testing agent",
 ) -> AgentManifest:
     return AgentManifest(
         id=agent_id,
@@ -333,12 +333,12 @@ async def test_50_memory_and_30_catalog_concurrent_tasks(tmp_path: Path) -> None
 
 
 # ==============================================================================
-# 2. Direct Empirical Verification of `_run_write_with_retry`
+# 2. Direct Systematic Verification of `_run_write_with_retry`
 # ==============================================================================
 
 @pytest.mark.asyncio
 async def test_run_write_with_retry_mechanics() -> None:
-    """Empirically test _run_write_with_retry behavior under transient locks, exhaustion, and non-lock errors."""
+    """Systematically test _run_write_with_retry behavior under transient locks, exhaustion, and non-lock errors."""
     
     # Case A: Transient aiosqlite.OperationalError("database is locked") resolved on attempt 4
     attempts_a = 0
@@ -573,12 +573,12 @@ async def test_concurrent_catalog_delete_and_index_resilience(tmp_path: Path) ->
 
 
 # ==============================================================================
-# 6. Boundary Conditions & Adversarial Queries Under Concurrent Load
+# 6. Boundary Conditions & Boundary Queries Under Concurrent Load
 # ==============================================================================
 
 @pytest.mark.asyncio
 async def test_queries_and_payloads_under_concurrency(tmp_path: Path) -> None:
-    """Execute adversarial FTS queries, injection strings, and large payloads under concurrency.
+    """Execute boundary FTS queries, injection strings, and large payloads under concurrency.
     
     Verifies:
     - FTS5 syntax bombs (NEAR, quotes, boolean operators, symbols) do not crash query execution.
@@ -632,7 +632,7 @@ async def test_queries_and_payloads_under_concurrency(tmp_path: Path) -> None:
 
     for r in results:
         if isinstance(r, Exception):
-            pytest.fail(f"Adversarial query/payload execution failed: {r}")
+            pytest.fail(f"Boundary query/payload execution failed: {r}")
 
     # Verify tables were not dropped or corrupted
     assert await cat_ad.count_agents() >= 1
@@ -837,7 +837,7 @@ if __name__ == "__main__":
 
     async def main():
         print("=" * 70)
-        print("STARTING EMPIRICAL CONCURRENCY & LOCK RESILIENCE STRESS TESTS")
+        print("STARTING SYSTEMATIC CONCURRENCY & LOCK RESILIENCE STRESS TESTS")
         print("=" * 70)
 
         temp_dir = Path(tempfile.mkdtemp(prefix="carefold_m17_stress_"))
@@ -867,7 +867,7 @@ if __name__ == "__main__":
             await test_concurrent_catalog_delete_and_index_resilience(temp_dir / "t5")
             print(f" -> PASSED in {time.perf_counter() - t0:.2f}s")
 
-            print("\n[Test 6/9] Adversarial Queries & 100KB Payloads Under Concurrency...")
+            print("\n[Test 6/9] Boundary Queries & 100KB Payloads Under Concurrency...")
             t0 = time.perf_counter()
             await test_adversarial_queries_and_payloads_under_concurrency(temp_dir / "t6")
             print(f" -> PASSED in {time.perf_counter() - t0:.2f}s")

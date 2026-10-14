@@ -31,7 +31,7 @@ import type {
   CreateStandingRoutinePayload,
   McpToolPinItem,
   StandingRoutineItem,
-} from '@/types/autonomyBatch6';
+} from '@/types/routinesAndCompanion';
 
 export interface McpPinsAndRoutinesPanelProps {
   mcpPins: McpToolPinItem[];

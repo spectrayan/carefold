@@ -15,7 +15,7 @@ Scope:
    - Singular documents ("copay", "benefit", "prescription") queried by plurals ("copays", "benefits", "prescriptions")
    - Plural documents queried by singulars
    - Irregular plurals and healthcare domain terminology
-2. Malformed/adversarial queries:
+2. Malformed/boundary queries:
    - Unclosed double quotes (`"copay`)
    - Syntax colons (`tag:health`)
    - Boolean keywords (`AND OR NOT NEAR`)
@@ -33,7 +33,7 @@ Scope:
    - Invalid float (NaN) delta handling
 4. Namespace isolation & security:
    - Independent namespace separation (read, write, delete, salience)
-   - Adversarial delimiter injection: colon collisions across `namespace` and `key`
+   - Boundary delimiter injection: colon collisions across `namespace` and `key`
      (e.g., `namespace="user:1", key="records"` vs `namespace="user", key="1:records"`)
 5. Catalog tag filtering post-limit edge case:
    - Post-SQL LIMIT filtering behavior for tags in `search_agents` and `search_skills`
@@ -131,7 +131,7 @@ class TestFTS5PorterStemming:
     async def test_memory_adapter_plural_queries_match_singular_documents(
         self, memory_adapter: SqliteMemoryAdapter
     ) -> None:
-        """Challenge: Document has strictly singular words ('copay', 'benefit', 'prescription').
+        """Verification: Document has strictly singular words ('copay', 'benefit', 'prescription').
         Queries with plural forms ('copays', 'benefits', 'prescriptions') must match via Porter stemmer.
         """
         await memory_adapter.remember(
@@ -172,7 +172,7 @@ class TestFTS5PorterStemming:
     async def test_memory_adapter_singular_queries_match_plural_documents(
         self, memory_adapter: SqliteMemoryAdapter
     ) -> None:
-        """Challenge: Document has plural words ('copays', 'benefits', 'prescriptions').
+        """Verification: Document has plural words ('copays', 'benefits', 'prescriptions').
         Queries with singular forms must match via Porter stemmer.
         """
         await memory_adapter.remember(
@@ -191,7 +191,7 @@ class TestFTS5PorterStemming:
     async def test_catalog_adapter_stemming_verification(
         self, catalog_adapter: SqliteCatalogAdapter
     ) -> None:
-        """Challenge: Catalog manifests with singular descriptions match plural queries."""
+        """Verification: Catalog manifests with singular descriptions match plural queries."""
         agent1 = _make_agent(
             agent_id="copay-advisor",
             title="Copay Advisor",
@@ -235,7 +235,7 @@ class TestFTS5PorterStemming:
     async def test_stemming_irregular_plurals_behavior(
         self, memory_adapter: SqliteMemoryAdapter
     ) -> None:
-        """Challenge: Test Porter stemmer behavior on English irregular plurals.
+        """Verification: Test Porter stemmer behavior on English irregular plurals.
         Porter stemmer stems:
         - baby/babies -> babi (matches)
         - child/children -> children vs child (fails)
@@ -256,7 +256,7 @@ class TestFTS5PorterStemming:
 
 
 # ==============================================================================
-# 2. Malformed / Adversarial Query Tests
+# 2. Malformed / Boundary Query Tests
 # ==============================================================================
 
 class TestAdversarialAndMalformedQueries:
@@ -282,7 +282,7 @@ class TestAdversarialAndMalformedQueries:
         memory_adapter: SqliteMemoryAdapter,
         catalog_adapter: SqliteCatalogAdapter,
     ) -> None:
-        """Challenge: Verify that malicious, malformed, punctuation-dense, and injection queries
+        """Verification: Verify that malicious, malformed, punctuation-dense, and injection queries
         never raise sqlite3.OperationalError or break FTS5 MATCH evaluation.
         """
         # Populate adapters with baseline test data
@@ -376,7 +376,7 @@ class TestAdversarialAndMalformedQueries:
         memory_adapter: SqliteMemoryAdapter,
         catalog_adapter: SqliteCatalogAdapter,
     ) -> None:
-        """Challenge: When a query contains only punctuation (e.g. ':::???***'),
+        """Verification: When a query contains only punctuation (e.g. ':::???***'),
         sanitization strips all tokens to empty string.
         Verify:
         - MemoryAdapter treats empty sanitized query as a default browse/recency query.
@@ -418,7 +418,7 @@ class TestSalienceReinforcementEdgeCases:
     async def test_positive_reinforcement_and_access_count(
         self, memory_adapter: SqliteMemoryAdapter
     ) -> None:
-        """Challenge: Reinforcing with positive delta increases salience, increments access_count,
+        """Verification: Reinforcing with positive delta increases salience, increments access_count,
         and records last_accessed_at timestamp.
         """
         await memory_adapter.remember("med_1", "Lisinopril 10mg daily", MemoryTier.SEMANTIC, "patient_a")
@@ -442,26 +442,26 @@ class TestSalienceReinforcementEdgeCases:
     async def test_negative_delta_clamping_to_zero(
         self, memory_adapter: SqliteMemoryAdapter
     ) -> None:
-        """Challenge: Negative deltas that would drop salience below 0.0 must clamp strictly to 0.0."""
+        """Verification: Negative deltas that would drop salience below 0.0 must clamp strictly to 0.0."""
         await memory_adapter.remember("temp_note", "Temporary note to decay", MemoryTier.WORKING, "patient_a")
 
         # Moderate negative delta: 1.0 - 0.4 = 0.6
         await memory_adapter.reinforce("temp_note", "patient_a", delta=-0.4)
-        m1 = await memory_adapter.get("temp_note", "patient_a")
-        assert m1 is not None
-        assert math.isclose(m1["salience"], 0.6, rel_tol=1e-5)
-        assert m1["access_count"] == 1
+        msg_one = await memory_adapter.get("temp_note", "patient_a")
+        assert msg_one is not None
+        assert math.isclose(msg_one["salience"], 0.6, rel_tol=1e-5)
+        assert msg_one["access_count"] == 1
 
         # Excessive negative delta: 0.6 - 100.0 must clamp to 0.0 (never negative)
         await memory_adapter.reinforce("temp_note", "patient_a", delta=-100.0)
-        m2 = await memory_adapter.get("temp_note", "patient_a")
-        assert m2 is not None
-        assert m2["salience"] == 0.0
-        assert m2["access_count"] == 2
+        msg_two = await memory_adapter.get("temp_note", "patient_a")
+        assert msg_two is not None
+        assert msg_two["salience"] == 0.0
+        assert msg_two["access_count"] == 2
 
     @pytest.mark.asyncio
     async def test_large_positive_delta(self, memory_adapter: SqliteMemoryAdapter) -> None:
-        """Challenge: Large delta values (1,000,000.0) should apply without float overflow."""
+        """Verification: Large delta values (1,000,000.0) should apply without float overflow."""
         await memory_adapter.remember("critical_alert", "Severe anaphylaxis warning", MemoryTier.SEMANTIC, "patient_a")
         await memory_adapter.reinforce("critical_alert", "patient_a", delta=1_000_000.0)
 
@@ -472,7 +472,7 @@ class TestSalienceReinforcementEdgeCases:
 
     @pytest.mark.asyncio
     async def test_zero_delta_behavior(self, memory_adapter: SqliteMemoryAdapter) -> None:
-        """Challenge: Delta=0.0 leaves salience unchanged, but increments access_count."""
+        """Verification: Delta=0.0 leaves salience unchanged, but increments access_count."""
         await memory_adapter.remember("zero_key", "Touch record without boosting", MemoryTier.EPISODIC, "patient_a")
         await memory_adapter.reinforce("zero_key", "patient_a", delta=0.0)
 
@@ -484,7 +484,7 @@ class TestSalienceReinforcementEdgeCases:
 
     @pytest.mark.asyncio
     async def test_reinforce_non_existent_key(self, memory_adapter: SqliteMemoryAdapter) -> None:
-        """Challenge: Calling reinforce on a key that does not exist must complete without error."""
+        """Verification: Calling reinforce on a key that does not exist must complete without error."""
         await memory_adapter.reinforce("non_existent_key", "patient_a", delta=0.5)
         assert await memory_adapter.get("non_existent_key", "patient_a") is None
 
@@ -492,7 +492,7 @@ class TestSalienceReinforcementEdgeCases:
     async def test_salience_weighting_affects_recall_ranking(
         self, memory_adapter: SqliteMemoryAdapter
     ) -> None:
-        """Challenge: Two records match the exact same query with identical text BM25 relevance.
+        """Verification: Two records match the exact same query with identical text BM25 relevance.
         The record with higher salience must be ranked first.
         """
         await memory_adapter.remember("doc_low", "Standard clinical guidelines for hypertension", MemoryTier.SEMANTIC, "ns_rank")
@@ -511,7 +511,7 @@ class TestSalienceReinforcementEdgeCases:
     async def test_upsert_preserves_salience_and_access_count(
         self, memory_adapter: SqliteMemoryAdapter
     ) -> None:
-        """Challenge: Updating an existing memory via remember() must NOT reset its salience
+        """Verification: Updating an existing memory via remember() must NOT reset its salience
         or access_count back to defaults (1.0 and 0).
         """
         await memory_adapter.remember("key_up", "Initial value", MemoryTier.WORKING, "ns_up")
@@ -535,7 +535,7 @@ class TestSalienceReinforcementEdgeCases:
     async def test_reinforce_non_finite_float_raises_value_error(
         self, memory_adapter: SqliteMemoryAdapter
     ) -> None:
-        """Challenge: Calling reinforce with NaN or Inf delta must raise ValueError to prevent SQLite corruption."""
+        """Verification: Calling reinforce with NaN or Inf delta must raise ValueError to prevent SQLite corruption."""
         await memory_adapter.remember("key_finite", "Finite test", MemoryTier.WORKING, "ns_finite")
         for bad_delta in [float("nan"), float("inf"), float("-inf")]:
             with pytest.raises(ValueError) as exc:
@@ -548,7 +548,7 @@ class TestSalienceReinforcementEdgeCases:
 # ==============================================================================
 
 class TestNamespaceIsolation:
-    """Stress-tests memory isolation between namespaces and adversarial delimiter collisions."""
+    """Stress-tests memory isolation between namespaces and boundary delimiter collisions."""
 
     @pytest.fixture
     async def memory_adapter(self, tmp_path: Path):
@@ -559,7 +559,7 @@ class TestNamespaceIsolation:
 
     @pytest.mark.asyncio
     async def test_standard_namespace_isolation(self, memory_adapter: SqliteMemoryAdapter) -> None:
-        """Challenge: Independent namespaces (e.g. 'tenant_alice' vs 'tenant_bob') must never
+        """Verification: Independent namespaces (e.g. 'tenant_alice' vs 'tenant_bob') must never
         share or leak memories across recall(), get(), forget(), or reinforce().
         """
         # Alice and Bob store data with identical key
@@ -609,7 +609,7 @@ class TestNamespaceIsolation:
     async def test_colon_delimiter_collision_vulnerability(
         self, memory_adapter: SqliteMemoryAdapter
     ) -> None:
-        """CRITICAL CHALLENGE:
+        """CRITICAL VERIFICATION:
         SqliteMemoryAdapter computes memory primary key as `mem_id = f"{namespace}:{key}"`.
         Because colons are standard in healthcare namespaces (e.g. 'user:101', 'agent:visit-steward'),
         a malicious or colliding tenant can forge IDs across namespace boundaries:
@@ -636,7 +636,7 @@ class TestNamespaceIsolation:
     async def test_colon_delimiter_overwrite_and_deletion_vulnerability(
         self, memory_adapter: SqliteMemoryAdapter
     ) -> None:
-        """CRITICAL CHALLENGE:
+        """CRITICAL VERIFICATION:
         Verify that Tenant 2 CANNOT overwrite, delete, or alter the salience of Tenant 1's records
         due to delimiter isolation and composite key filtering.
         """
@@ -691,7 +691,7 @@ class TestCatalogPostLimitTagFiltering:
     async def test_agent_tag_filtering_post_sql_limit_bug(
         self, catalog_adapter: SqliteCatalogAdapter
     ) -> None:
-        """CHALLENGE / FINDING:
+        """VERIFICATION / FINDING:
         In SqliteCatalogAdapter.search_agents, SQL executes `LIMIT ? OFFSET ?` first,
         and THEN Python filters `[m for m in manifests if any(t in requested_tags ...)]`.
         
@@ -721,7 +721,7 @@ class TestCatalogPostLimitTagFiltering:
     async def test_skill_tag_filtering_post_sql_limit_bug(
         self, catalog_adapter: SqliteCatalogAdapter
     ) -> None:
-        """CHALLENGE / FINDING:
+        """VERIFICATION / FINDING:
         Verify that SQL executes tag filtering before applying LIMIT ? OFFSET ?,
         ensuring skills matching tags beyond the initial window are discovered.
         """
@@ -761,7 +761,7 @@ class TestCategoryTreeConstruction:
     async def test_deep_nested_and_duplicate_categories(
         self, catalog_adapter: SqliteCatalogAdapter
     ) -> None:
-        """Challenge: Nested categories ('a.b.c.d') with duplicate entries and domain prefixes."""
+        """Verification: Nested categories ('a.b.c.d') with duplicate entries and domain prefixes."""
         # 1. Deep category with domain prefix: clinical.oncology.solid_tumor.lung.nsclc
         a1 = _make_agent("ag1", domain=AgentDomain.CLINICAL, category="clinical.oncology.solid_tumor.lung.nsclc")
         # 2. Duplicate deep category
@@ -793,7 +793,7 @@ class TestCategoryTreeConstruction:
     async def test_empty_and_malformed_category_strings(
         self, catalog_adapter: SqliteCatalogAdapter
     ) -> None:
-        """Challenge: Empty strings, None, whitespace, dots-only, and category equals domain."""
+        """Verification: Empty strings, None, whitespace, dots-only, and category equals domain."""
         rows = [
             {"domain": "clinical", "category": ""},
             {"domain": "clinical", "category": None},
@@ -814,7 +814,7 @@ class TestCategoryTreeConstruction:
     async def test_domain_filtering_in_category_tree(
         self, catalog_adapter: SqliteCatalogAdapter
     ) -> None:
-        """Challenge: Filter tree by domain with mixed case."""
+        """Verification: Filter tree by domain with mixed case."""
         a1 = _make_agent("ag1", domain=AgentDomain.NAVIGATION, category="navigation.insurance")
         a2 = _make_agent("ag2", domain=AgentDomain.WELLNESS, category="wellness.habits")
         await catalog_adapter.index_agent(a1)
@@ -848,7 +848,7 @@ class TestCaseInsensitiveFiltering:
     async def test_case_insensitive_domain_and_category_search(
         self, catalog_adapter: SqliteCatalogAdapter
     ) -> None:
-        """Challenge: Mixed-case domain and category parameters in both browse and FTS modes."""
+        """Verification: Mixed-case domain and category parameters in both browse and FTS modes."""
         agent = _make_agent(
             "case-agent",
             title="Benefits Specialist",
@@ -899,7 +899,7 @@ class TestRapidSequentialAndConcurrentCatalog:
     async def test_rapid_sequential_indexing_and_updates(
         self, catalog_adapter: SqliteCatalogAdapter
     ) -> None:
-        """Challenge: Indexing 50 agents sequentially, then updating them with new titles/descriptions.
+        """Verification: Indexing 50 agents sequentially, then updating them with new titles/descriptions.
         Verify FTS consistency and no duplicate or ghost records in SQLite FTS5.
         """
         for i in range(50):
@@ -933,7 +933,7 @@ class TestRapidSequentialAndConcurrentCatalog:
     async def test_concurrent_indexing_and_searching(
         self, catalog_adapter: SqliteCatalogAdapter
     ) -> None:
-        """Challenge: Multiple concurrent coroutines indexing and querying simultaneously.
+        """Verification: Multiple concurrent coroutines indexing and querying simultaneously.
         Verify that asyncio.Lock prevents 'database locked' or race condition errors.
         """
         async def index_batch(start_idx: int, count: int) -> None:

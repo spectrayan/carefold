@@ -412,7 +412,7 @@ class TestProbeAttachmentsCrossTenant:
 
         # 3. Bob attempts to access Alice's partition directly: "{user_a_id}/{uploaded_filename}"
         res_cross = await execute_attach_read({"path": f"{user_a_id}/{uploaded_filename}"}, ctx_bob)
-        # Empirical test: In a secure multi-tenant system, Bob (user_id=user_b_id) MUST NOT be able
+        # Systematic test: In a secure multi-tenant system, Bob (user_id=user_b_id) MUST NOT be able
         # to read Alice's attachment by passing Alice's partition prefix.
         assert res_cross.success is False, (
             f"VULNERABILITY DETECTED: Cross-tenant attachment leakage in attach_read! "

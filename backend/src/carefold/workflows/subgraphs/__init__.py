@@ -13,7 +13,7 @@
 
 Houses encapsulated LangGraph subgraphs for:
 - Specialist Multi-Agent Supervisor Subgraph (F-33)
-- Document Extraction & Attachment Ingestion Subgraph (M4 / R2)
+- Document Extraction & Attachment Ingestion Subgraph (Phase4 / R2)
 """
 
 from __future__ import annotations

@@ -29,7 +29,7 @@ describe('10: CLI Skills Manifest & Tool Hardening Suite', () => {
     await ws.cleanup();
   });
 
-  it('CLI-CHALLENGE-1: rejects adding local skill declaring unauthorized tool bash in metadata.tools', async () => {
+  it('CLI-VERIFY-1: rejects adding local skill declaring unauthorized tool bash in metadata.tools', async () => {
     const rogueLocalDir = path.join(ws.workspaceDir, 'rogue_source_bash');
     await fs.mkdir(rogueLocalDir, { recursive: true });
     await fs.writeFile(
@@ -57,7 +57,7 @@ metadata:
     expect(await ws.exists('skills/rogue-bash')).toBe(false);
   });
 
-  it('CLI-CHALLENGE-2: rejects adding local skill declaring unauthorized tool in allowed-tools', async () => {
+  it('CLI-VERIFY-2: rejects adding local skill declaring unauthorized tool in allowed-tools', async () => {
     const rogueLocalDir = path.join(ws.workspaceDir, 'rogue_source_allowed_tools');
     await fs.mkdir(rogueLocalDir, { recursive: true });
     await fs.writeFile(
@@ -80,7 +80,7 @@ allowed-tools: curl
     expect(await ws.exists('skills/rogue-allowed')).toBe(false);
   });
 
-  it('CLI-CHALLENGE-3: rejects adding local skill missing mandatory intended-use statements', async () => {
+  it('CLI-VERIFY-3: rejects adding local skill missing mandatory intended-use statements', async () => {
     const badLocalDir = path.join(ws.workspaceDir, 'bad_disclaimers');
     await fs.mkdir(badLocalDir, { recursive: true });
     await fs.writeFile(
@@ -103,7 +103,7 @@ No safety boundaries declared here.
     expect(await ws.exists('skills/bad-disclaimers')).toBe(false);
   });
 
-  it('CLI-CHALLENGE-4: handles broken skills in skill list gracefully without crashing', async () => {
+  it('CLI-VERIFY-4: handles broken skills in skill list gracefully without crashing', async () => {
     // Create an invalid skill directly in skills/
     await ws.createFile(
       'skills/broken-skill/SKILL.md',
@@ -127,7 +127,7 @@ metadata:
     expect(res.stdout).toContain('exec');
   });
 
-  it('CLI-CHALLENGE-5: blocks running raw skill declaring unauthorized tools via carefold run --skill', async () => {
+  it('CLI-VERIFY-5: blocks running raw skill declaring unauthorized tools via carefold run --skill', async () => {
     // Plant an unauthorized skill directly in skills/
     await ws.createFile(
       'skills/unauth-skill/SKILL.md',
@@ -151,7 +151,7 @@ metadata:
     expect(res.stderr).toMatch(/Tool 'rm'.*not in Phase 0 closed registry/i);
   });
 
-  it('CLI-CHALLENGE-6: successfully installs and runs native ADR-0003 skill via skill add and run --skill', async () => {
+  it('CLI-VERIFY-6: successfully installs and runs native ADR-0003 skill via skill add and run --skill', async () => {
     const validLocalDir = path.join(ws.workspaceDir, 'my_custom_skill');
     await fs.mkdir(validLocalDir, { recursive: true });
     await fs.writeFile(

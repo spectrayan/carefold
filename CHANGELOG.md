@@ -146,7 +146,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enhanced agent cards with caregiver badges (`data-testid="caregiver-badge"`) and formatted care stage badges (`data-testid="care-stage-badge"`).
   - Added accessible empty-state UI with "Clear all filters" button (`data-testid="clear-all-filters-btn"`) resetting all active filters.
   - Implemented `formatCareStage` helper in `apps/web/src/lib/utils.ts`.
-  - Added automated test coverage in `apps/web/tests/components/marketplace-filters.test.tsx` and `apps/web/tests/lib/categories-proxy-route.test.ts`, and updated `apps/web/tests/adversarial/marketplace-adversarial.test.tsx`.
+  - Added automated test coverage in `apps/web/tests/components/marketplace-filters.test.tsx` and `apps/web/tests/lib/categories-proxy-route.test.ts`, and updated `apps/web/tests/boundary/marketplace-boundary.test.tsx`.
 - **Markdown & JSON Dossier Export in Consultation Header (Web)** (`#34`):
   - Added `DossierExportMenu` component in `apps/web/src/components/chat/DossierExportMenu.tsx` positioned in the consultation header adjacent to the New Session button.
   - Implemented pure client-side export utilities in `apps/web/src/lib/dossierExport.ts` (`formatDossierMarkdown`, `formatDossierJson`, `generateDossierFilename`, `downloadBlob`, `exportDossier`) with 0 network roundtrips.

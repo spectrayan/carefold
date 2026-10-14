@@ -100,10 +100,10 @@ def _get_persona_text(agent_yaml_path: Path, data: dict) -> str:
 # ============================================================================
 
 class TestPersonaWordCountAndStructureStress:
-    """Empirically stress-tests persona word counts and section structural integrity."""
+    """Systematically stress-tests persona word counts and section structural integrity."""
 
     def test_word_count_strictness_across_all_8_personas(self, temp_workspace: Path):
-        """EMPIRICAL VERIFICATION: Every persona must exceed 250 words under both whitespace
+        """SYSTEMATIC VERIFICATION: Every persona must exceed 250 words under both whitespace
         and regex word boundary tokenization, and be within reasonable limits (< 2000 words).
         """
         agents_dir = temp_workspace / "agents"
@@ -141,14 +141,14 @@ class TestPersonaWordCountAndStructureStress:
         assert len(word_counts) == 8
 
     def test_word_count_truncation_detection(self):
-        """Adversarial oracle: a persona truncated to 39 words MUST be detected and rejected."""
+        """Boundary oracle: a persona truncated to 39 words MUST be detected and rejected."""
         dummy_words = ["word"] * 39
         truncated_persona = " ".join(dummy_words)
         assert len(truncated_persona.split()) == 39
         assert len(truncated_persona.split()) < 40
 
     def test_all_5_mandatory_headings_present_and_strictly_ordered(self, temp_workspace: Path):
-        """EMPIRICAL VERIFICATION: All 5 mandatory uppercase headings must be present
+        """SYSTEMATIC VERIFICATION: All 5 mandatory uppercase headings must be present
         in strict sequential order across all 8 personas.
         """
         agents_dir = temp_workspace / "agents"
@@ -172,7 +172,7 @@ class TestPersonaWordCountAndStructureStress:
                 )
 
     def test_all_5_sections_have_substantial_content(self, temp_workspace: Path):
-        """EMPIRICAL VERIFICATION: Each section under each heading must contain substantive
+        """SYSTEMATIC VERIFICATION: Each section under each heading must contain substantive
         guidance (at least 20 words each) and not just empty or placeholder headers.
         """
         agents_dir = temp_workspace / "agents"
@@ -202,7 +202,7 @@ class TestPersonaWordCountAndStructureStress:
 # ============================================================================
 
 class TestClosedToolRegistryAndDelegationLockdown:
-    """Empirically stress-tests tool registry lockdown and absence of delegation tools."""
+    """Systematically stress-tests tool registry lockdown and absence of delegation tools."""
 
     def test_agents_closed_tool_registry(self, temp_workspace: Path):
         """All 8 agents must only declare allowed Phase 0 tools and zero delegation/unauthorized tools."""
@@ -244,7 +244,7 @@ class TestClosedToolRegistryAndDelegationLockdown:
             )
 
     def test_tool_validator_rejects_unauthorized_tools_mutation(self):
-        """Adversarial stress: validate_tools_in_phase0 must reject arbitrary tools outside PHASE_0_REGISTRY."""
+        """Boundary stress: validate_tools_in_phase0 must reject arbitrary tools outside PHASE_0_REGISTRY."""
         with pytest.raises(ToolValidationError):
             validate_tools_in_phase0(["web_search"], "adversarial_test")
 
@@ -252,7 +252,7 @@ class TestClosedToolRegistryAndDelegationLockdown:
             validate_tools_in_phase0(["execute_code", "attach-read"], "adversarial_test")
 
     def test_specialist_delegation_tool_oracle(self):
-        """Adversarial oracle: a specialist navigator declaring delegation tools must be caught by policy."""
+        """Boundary oracle: a specialist navigator declaring delegation tools must be caught by policy."""
         specialist_declared = ["attach-read", "delegate_to_agent"]
         forbidden_for_navigators = {"delegate_to_agent", "list_agents"}
         assert not set(specialist_declared).isdisjoint(forbidden_for_navigators)
@@ -264,7 +264,7 @@ class TestClosedToolRegistryAndDelegationLockdown:
 # ============================================================================
 
 class TestMandatoryIntendedUseStatements:
-    """Empirically stress-tests intended-use statements in all 8 SKILL.md files."""
+    """Systematically stress-tests intended-use statements in all 8 SKILL.md files."""
 
     def test_all_8_skills_contain_all_3_intended_use_statements(self, temp_workspace: Path):
         """All 8 skills must contain the 3 required intended-use statements verbatim."""
@@ -288,7 +288,7 @@ class TestMandatoryIntendedUseStatements:
                 )
 
     def test_check_mandatory_intended_use_oracle(self):
-        """Adversarial oracle: omission of any of the 3 statements causes validation failure."""
+        """Boundary oracle: omission of any of the 3 statements causes validation failure."""
         base_text = (
             "Not a clinician and not emergency care.\n"
             "If this is an emergency, contact local emergency services.\n"
@@ -323,7 +323,7 @@ class TestMandatoryIntendedUseStatements:
 # ============================================================================
 
 class TestSkillReferencesIntegrityAndDepth:
-    """Empirically stress-tests references/ in all 8 skills."""
+    """Systematically stress-tests references/ in all 8 skills."""
 
     def test_all_8_skills_have_ge_2_reference_files_with_substantial_content(self, temp_workspace: Path):
         """All 8 skills must have >= 2 markdown reference files, each > 200 bytes, > 50 words, with headers."""
@@ -383,7 +383,7 @@ class TestSkillReferencesIntegrityAndDepth:
 # ============================================================================
 
 class TestSafetyBoundariesAndRedFlags:
-    """Empirically stress-tests clinical safety boundaries and emergency referral requirements."""
+    """Systematically stress-tests clinical safety boundaries and emergency referral requirements."""
 
     def test_all_8_personas_contain_strict_anti_diagnostic_anti_prescribing_terms(self, temp_workspace: Path, repo_root: Path):
         """All 8 agents combined with carefold profile must explicitly disclaim diagnosing, prescribing, and dosage calculations."""
@@ -436,7 +436,7 @@ class TestSafetyBoundariesAndRedFlags:
 # ============================================================================
 
 class TestCompanionSkillCouplingAndManifestSymmetry:
-    """Empirically stress-tests the 1-to-1 relationship between agents and skills."""
+    """Systematically stress-tests the 1-to-1 relationship between agents and skills."""
 
     def test_agent_skill_one_to_one_symmetry(self, temp_workspace: Path):
         """Every agent declares its corresponding companion skill, and domains/categories match."""
@@ -467,7 +467,7 @@ class TestCompanionSkillCouplingAndManifestSymmetry:
 # ============================================================================
 
 class TestStartersAndGoldenEvalsRobustness:
-    """Empirically stress-tests starter prompts and golden eval coverage."""
+    """Systematically stress-tests starter prompts and golden eval coverage."""
 
     def test_starters_json_contains_diverse_organ_prompts(self, temp_workspace: Path):
         """All 8 agents must provide at least 3 distinct starter questions in starters.json."""
@@ -518,7 +518,7 @@ class TestStartersAndGoldenEvalsRobustness:
 # ============================================================================
 
 class TestCatalogIndexingAndDiscoveryStress:
-    """Empirically stress-tests indexing and searching all 8 agents in SQLite FTS5."""
+    """Systematically stress-tests indexing and searching all 8 agents in SQLite FTS5."""
 
     @pytest.mark.asyncio
     async def test_all_8_agents_and_skills_index_and_query_fts(self, temp_workspace: Path):

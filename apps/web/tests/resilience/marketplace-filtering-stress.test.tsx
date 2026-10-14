@@ -140,7 +140,7 @@ describe('Stress Suite: Marketplace UI & Icon Resolution', () => {
       expect(screen.queryByTestId('category-badge')).not.toBeInTheDocument();
     });
 
-    it('challenges built-in Object properties as icon names (e.g. constructor, toString)', () => {
+    it('validates built-in Object properties as icon names (e.g. constructor, toString)', () => {
       // In JS ES Modules, namespace objects (import * as LucideIcons) have a null prototype ([Module: null prototype]),
       // so 'constructor' in LucideIcons evaluates to false and safely falls back without throwing!
       const agentWithConstructorIcon: AgentSummary = {
@@ -155,7 +155,7 @@ describe('Stress Suite: Marketplace UI & Icon Resolution', () => {
       expect(container.querySelector('svg.lucide-shield')).toBeInTheDocument();
     });
 
-    it('challenges non-icon exports like createLucideIcon', () => {
+    it('validates non-icon exports like createLucideIcon', () => {
       const agentWithCreateLucideIcon: AgentSummary = {
         ...baseAgent,
         id: 'helper-fn-icon-agent',

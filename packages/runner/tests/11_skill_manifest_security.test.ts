@@ -49,7 +49,7 @@ describe('11: Runner, CLI & Pack Validation Stress Suite', () => {
   // 1. MANIFEST MUTATION & TAMPERING PROBES
   // =========================================================================
   describe('Manifest Mutation & Tampering Probes', () => {
-    it('CHALLENGE-MUT-1: fails closed when SKILL.md is missing entirely', async () => {
+    it('VERIFY-MUT-1: fails closed when SKILL.md is missing entirely', async () => {
       const emptyDir = path.join(ws, 'skills', 'empty-skill');
       await fs.mkdir(emptyDir, { recursive: true });
 
@@ -57,7 +57,7 @@ describe('11: Runner, CLI & Pack Validation Stress Suite', () => {
       await expect(loadSkill(emptyDir)).rejects.toThrow(/Missing required SKILL\.md/i);
     });
 
-    it('CHALLENGE-MUT-2: fails closed on 0-byte SKILL.md file', async () => {
+    it('VERIFY-MUT-2: fails closed on 0-byte SKILL.md file', async () => {
       const zeroDir = path.join(ws, 'skills', 'zero-byte-skill');
       await fs.mkdir(zeroDir, { recursive: true });
       await fs.writeFile(path.join(zeroDir, 'SKILL.md'), '');
@@ -65,7 +65,7 @@ describe('11: Runner, CLI & Pack Validation Stress Suite', () => {
       await expect(loadSkill(zeroDir)).rejects.toThrow(ManifestValidationError);
     });
 
-    it('CHALLENGE-MUT-3: fails closed on malformed/corrupted YAML frontmatter syntax', async () => {
+    it('VERIFY-MUT-3: fails closed on malformed/corrupted YAML frontmatter syntax', async () => {
       const malformedDir = path.join(ws, 'skills', 'corrupt-yaml-skill');
       await fs.mkdir(malformedDir, { recursive: true });
       await fs.writeFile(
@@ -85,7 +85,7 @@ metadata:
       await expect(loadSkill(malformedDir)).rejects.toThrow(/Malformed YAML frontmatter/i);
     });
 
-    it('CHALLENGE-MUT-4: fails closed when frontmatter is missing required "name"', async () => {
+    it('VERIFY-MUT-4: fails closed when frontmatter is missing required "name"', async () => {
       const noNameDir = path.join(ws, 'skills', 'no-name-skill');
       await fs.mkdir(noNameDir, { recursive: true });
       await fs.writeFile(
@@ -106,7 +106,7 @@ metadata:
       await expect(loadSkill(noNameDir)).rejects.toThrow(/name: Required/i);
     });
 
-    it('CHALLENGE-MUT-5: fails closed when frontmatter is missing required "description"', async () => {
+    it('VERIFY-MUT-5: fails closed when frontmatter is missing required "description"', async () => {
       const noDescDir = path.join(ws, 'skills', 'no-desc-skill');
       await fs.mkdir(noDescDir, { recursive: true });
       await fs.writeFile(
@@ -127,7 +127,7 @@ metadata:
       await expect(loadSkill(noDescDir)).rejects.toThrow(/description: Required/i);
     });
 
-    it('CHALLENGE-MUT-6: fails closed when metadata specifies illegal risk_class', async () => {
+    it('VERIFY-MUT-6: fails closed when metadata specifies illegal risk_class', async () => {
       const illegalRiskDir = path.join(ws, 'skills', 'illegal-risk-skill');
       await fs.mkdir(illegalRiskDir, { recursive: true });
       await fs.writeFile(
@@ -150,7 +150,7 @@ metadata:
       await expect(loadSkill(illegalRiskDir)).rejects.toThrow(/metadata\.risk_class/i);
     });
 
-    it('CHALLENGE-MUT-7: verifies priority when carefold.yaml and carefold.yaml.migrated coexist', async () => {
+    it('VERIFY-MUT-7: verifies priority when carefold.yaml and carefold.yaml.migrated coexist', async () => {
       const dualDir = path.join(ws, 'skills', 'dual-manifest-skill');
       await fs.mkdir(dualDir, { recursive: true });
       await fs.writeFile(
@@ -192,7 +192,7 @@ tools:
       expect(skill.tools).not.toContain('workspace-note');
     });
 
-    it('CHALLENGE-MUT-8: seamlessly loads from carefold.yaml.migrated when carefold.yaml is absent', async () => {
+    it('VERIFY-MUT-8: seamlessly loads from carefold.yaml.migrated when carefold.yaml is absent', async () => {
       const migratedDir = path.join(ws, 'skills', 'migrated-only-skill');
       await fs.mkdir(migratedDir, { recursive: true });
       await fs.writeFile(
@@ -229,7 +229,7 @@ forbidden:
       expect(skill.forbidden).toContain('diagnose');
     });
 
-    it('CHALLENGE-MUT-9: loads native ADR-0003 metadata: without any carefold.yaml file', async () => {
+    it('VERIFY-MUT-9: loads native ADR-0003 metadata: without any carefold.yaml file', async () => {
       const nativeDir = path.join(ws, 'skills', 'native-adr0003-skill');
       await fs.mkdir(nativeDir, { recursive: true });
       await fs.writeFile(
@@ -266,7 +266,7 @@ metadata:
       expect(skill.forbidden).toEqual(['diagnose', 'prescribe', 'dose']);
     });
 
-    it('CHALLENGE-MUT-10: fails closed when carefold.yaml.migrated contains malformed YAML', async () => {
+    it('VERIFY-MUT-10: fails closed when carefold.yaml.migrated contains malformed YAML', async () => {
       const corruptMigratedDir = path.join(ws, 'skills', 'corrupt-migrated-skill');
       await fs.mkdir(corruptMigratedDir, { recursive: true });
       await fs.writeFile(
@@ -294,7 +294,7 @@ description: Valid frontmatter
   // 2. UNAUTHORIZED TOOLS FAIL-CLOSED PROBES (e.g. bash, exec, curl)
   // =========================================================================
   describe('Unauthorized Tools Fail-Closed Security Boundary', () => {
-    it('CHALLENGE-TOOL-1: fails closed when metadata.tools declares bash', async () => {
+    it('VERIFY-TOOL-1: fails closed when metadata.tools declares bash', async () => {
       const rogueDir = path.join(ws, 'skills', 'rogue-bash-skill');
       await fs.mkdir(rogueDir, { recursive: true });
       await fs.writeFile(
@@ -316,7 +316,7 @@ metadata:
       await expect(loadSkill(rogueDir)).rejects.toThrow(/Tool 'bash'.*not in Phase 0 closed registry/i);
     });
 
-    it('CHALLENGE-TOOL-2: fails closed when metadata.tools declares curl and exec', async () => {
+    it('VERIFY-TOOL-2: fails closed when metadata.tools declares curl and exec', async () => {
       const rogueDir = path.join(ws, 'skills', 'rogue-curl-skill');
       await fs.mkdir(rogueDir, { recursive: true });
       await fs.writeFile(
@@ -339,7 +339,7 @@ metadata:
       await expect(loadSkill(rogueDir)).rejects.toThrow(/not in Phase 0 closed registry/i);
     });
 
-    it('CHALLENGE-TOOL-3: fails closed when allowed-tools declares bash without metadata.tools', async () => {
+    it('VERIFY-TOOL-3: fails closed when allowed-tools declares bash without metadata.tools', async () => {
       const rogueDir = path.join(ws, 'skills', 'rogue-allowed-tools-skill');
       await fs.mkdir(rogueDir, { recursive: true });
       await fs.writeFile(
@@ -359,7 +359,7 @@ allowed-tools: bash
       await expect(loadSkill(rogueDir)).rejects.toThrow(/Tool 'bash'.*not in Phase 0 closed registry/i);
     });
 
-    it('CHALLENGE-TOOL-4: fails closed when carefold.yaml.migrated declares unauthorized tool rm', async () => {
+    it('VERIFY-TOOL-4: fails closed when carefold.yaml.migrated declares unauthorized tool rm', async () => {
       const rogueDir = path.join(ws, 'skills', 'rogue-rm-skill');
       await fs.mkdir(rogueDir, { recursive: true });
       await fs.writeFile(
@@ -386,7 +386,7 @@ tools:
       await expect(loadSkill(rogueDir)).rejects.toThrow(/Tool 'rm'.*not in Phase 0 closed registry/i);
     });
 
-    it('CHALLENGE-TOOL-5: loadAgent fails closed when agent.yaml declares unauthorized tool exec', async () => {
+    it('VERIFY-TOOL-5: loadAgent fails closed when agent.yaml declares unauthorized tool exec', async () => {
       const rogueAgentDir = path.join(ws, 'agents', 'rogue-exec-agent');
       await fs.mkdir(rogueAgentDir, { recursive: true });
       await fs.writeFile(
@@ -409,7 +409,7 @@ persona: Rogue agent instructions
       );
     });
 
-    it('CHALLENGE-TOOL-6: executeTool refuses to execute bash, exec, curl, sh, eval, or process.exit', async () => {
+    it('VERIFY-TOOL-6: executeTool refuses to execute bash, exec, curl, sh, eval, or process.exit', async () => {
       const context: ExecutionContext = {
         workspaceRoot: ws,
         skillsDir: path.join(ws, 'skills'),
@@ -436,7 +436,7 @@ persona: Rogue agent instructions
       }
     });
 
-    it('CHALLENGE-TOOL-7: prototype pollution / property injection in executeTool fails closed', async () => {
+    it('VERIFY-TOOL-7: prototype pollution / property injection in executeTool fails closed', async () => {
       const context: ExecutionContext = {
         workspaceRoot: ws,
         skillsDir: path.join(ws, 'skills'),
@@ -459,7 +459,7 @@ persona: Rogue agent instructions
       }
     });
 
-    it('CHALLENGE-TOOL-8: agent execution rejects model tool-call to bash and fails closed safely', async () => {
+    it('VERIFY-TOOL-8: agent execution rejects model tool-call to bash and fails closed safely', async () => {
       // Mock model client that returns a malicious tool call to 'bash'
       const mockMaliciousModel = {
         getModelName: () => 'malicious-mock',
@@ -536,7 +536,7 @@ persona: Rogue agent instructions
   // 3. MANDATORY INTENDED-USE DISCLAIMERS BOUNDARY
   // =========================================================================
   describe('Mandatory Intended-Use Disclaimers Boundary', () => {
-    it('CHALLENGE-DISC-1: fails when "Not a clinician" is omitted', async () => {
+    it('VERIFY-DISC-1: fails when "Not a clinician" is omitted', async () => {
       const dir = path.join(ws, 'skills', 'omit-clinician-skill');
       await fs.mkdir(dir, { recursive: true });
       await fs.writeFile(
@@ -556,7 +556,7 @@ metadata:
       await expect(loadSkill(dir)).rejects.toThrow(/Not a clinician and not emergency care/i);
     });
 
-    it('CHALLENGE-DISC-2: fails when "Emergency services" is omitted', async () => {
+    it('VERIFY-DISC-2: fails when "Emergency services" is omitted', async () => {
       const dir = path.join(ws, 'skills', 'omit-emergency-skill');
       await fs.mkdir(dir, { recursive: true });
       await fs.writeFile(
@@ -576,7 +576,7 @@ metadata:
       await expect(loadSkill(dir)).rejects.toThrow(/contact local emergency services/i);
     });
 
-    it('CHALLENGE-DISC-3: fails when "Do not change medication" is omitted', async () => {
+    it('VERIFY-DISC-3: fails when "Do not change medication" is omitted', async () => {
       const dir = path.join(ws, 'skills', 'omit-med-skill');
       await fs.mkdir(dir, { recursive: true });
       await fs.writeFile(
@@ -601,7 +601,7 @@ metadata:
   // 4. STANDALONE PACK VALIDATOR (scripts/validate-packs.mjs) TAMPERING PROBES
   // =========================================================================
   describe('Standalone Pack Validator Tampering & Boundary Resistance', () => {
-    it('CHALLENGE-PACK-1: validate-packs detects tampered skill missing golden evals', async () => {
+    it('VERIFY-PACK-1: validate-packs detects tampered skill missing golden evals', async () => {
       // Create a tampered skill in skills/ directory temporarily
       const rootDir = path.resolve(__dirname, '../../..');
       const scriptPath = path.join(rootDir, 'scripts', 'validate-packs.mjs');
@@ -651,7 +651,7 @@ metadata:
       }
     });
 
-    it('CHALLENGE-PACK-2: validate-packs detects sub-threshold golden evals count (< 5)', async () => {
+    it('VERIFY-PACK-2: validate-packs detects sub-threshold golden evals count (< 5)', async () => {
       const rootDir = path.resolve(__dirname, '../../..');
       const scriptPath = path.join(rootDir, 'scripts', 'validate-packs.mjs');
       const testSkillDir = path.join(rootDir, 'skills', '__adversarial_probe_evals');
@@ -702,7 +702,7 @@ metadata:
       }
     });
 
-    it('CHALLENGE-PACK-3: validate-packs detects sub-threshold refusal cases (< 2)', async () => {
+    it('VERIFY-PACK-3: validate-packs detects sub-threshold refusal cases (< 2)', async () => {
       const rootDir = path.resolve(__dirname, '../../..');
       const scriptPath = path.join(rootDir, 'scripts', 'validate-packs.mjs');
       const testSkillDir = path.join(rootDir, 'skills', '__adversarial_probe_refusal');
@@ -755,7 +755,7 @@ metadata:
       }
     });
 
-    it('CHALLENGE-PACK-4: validate-packs detects malformed JSON in golden.jsonl', async () => {
+    it('VERIFY-PACK-4: validate-packs detects malformed JSON in golden.jsonl', async () => {
       const rootDir = path.resolve(__dirname, '../../..');
       const scriptPath = path.join(rootDir, 'scripts', 'validate-packs.mjs');
       const testSkillDir = path.join(rootDir, 'skills', '__adversarial_probe_malformed');
@@ -805,7 +805,7 @@ metadata:
       }
     });
 
-    it('CHALLENGE-PACK-5: validate-packs detects missing manifest (no carefold.yaml and no metadata:)', async () => {
+    it('VERIFY-PACK-5: validate-packs detects missing manifest (no carefold.yaml and no metadata:)', async () => {
       const rootDir = path.resolve(__dirname, '../../..');
       const scriptPath = path.join(rootDir, 'scripts', 'validate-packs.mjs');
       const testSkillDir = path.join(rootDir, 'skills', '__adversarial_probe_no_manifest');

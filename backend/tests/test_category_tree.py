@@ -76,7 +76,7 @@ def _make_agent(
 # ==============================================================================
 
 class TestCategoryTreeHierarchyEmpirical:
-    """Empirical challenge for CatalogPort.get_category_tree() hierarchy and roll-up semantics."""
+    """Systematic verification for CatalogPort.get_category_tree() hierarchy and roll-up semantics."""
 
     @pytest.fixture
     async def adapter(self, tmp_path: Path):
@@ -87,7 +87,7 @@ class TestCategoryTreeHierarchyEmpirical:
 
     @pytest.mark.asyncio
     async def test_get_category_tree_zero_agents(self, adapter: SqliteCatalogAdapter) -> None:
-        """Challenge 1.1: 0 agents in catalog.
+        """Verification 1.1: 0 agents in catalog.
         
         Must return total=0 and all 5 canonical domains with count=0 and empty categories.
         """
@@ -107,7 +107,7 @@ class TestCategoryTreeHierarchyEmpirical:
 
     @pytest.mark.asyncio
     async def test_get_category_tree_single_agent_each_domain(self, adapter: SqliteCatalogAdapter) -> None:
-        """Challenge 1.2: 1 agent in each canonical domain in turn."""
+        """Verification 1.2: 1 agent in each canonical domain in turn."""
         canonical_enums = [
             AgentDomain.CLINICAL,
             AgentDomain.THERAPY,
@@ -136,7 +136,7 @@ class TestCategoryTreeHierarchyEmpirical:
 
     @pytest.mark.asyncio
     async def test_get_category_tree_agent_without_category(self, adapter: SqliteCatalogAdapter) -> None:
-        """Challenge 1.3: Agent with empty category string."""
+        """Verification 1.3: Agent with empty category string."""
         agent = _make_agent("no-cat-agent", domain=AgentDomain.WELLNESS, category="")
         await adapter.index_agent(agent)
 
@@ -147,7 +147,7 @@ class TestCategoryTreeHierarchyEmpirical:
 
     @pytest.mark.asyncio
     async def test_get_category_tree_agent_category_equals_domain(self, adapter: SqliteCatalogAdapter) -> None:
-        """Challenge 1.4: Agent where category string is exactly the domain name.
+        """Verification 1.4: Agent where category string is exactly the domain name.
         
         Should not create a redundant self-referential subcategory.
         """
@@ -161,7 +161,7 @@ class TestCategoryTreeHierarchyEmpirical:
 
     @pytest.mark.asyncio
     async def test_get_category_tree_multilevel_dot_categories(self, adapter: SqliteCatalogAdapter) -> None:
-        """Challenge 1.5: Multi-level dot categories.
+        """Verification 1.5: Multi-level dot categories.
         
         Examples from specification:
         - "clinical.pediatrics.allergy"
@@ -227,7 +227,7 @@ class TestCategoryTreeHierarchyEmpirical:
 
     @pytest.mark.asyncio
     async def test_get_category_tree_many_agents_stress(self, adapter: SqliteCatalogAdapter) -> None:
-        """Challenge 1.6: Stress test with 60 agents across domains and subcategories."""
+        """Verification 1.6: Stress test with 60 agents across domains and subcategories."""
         categories = {
             AgentDomain.CLINICAL: ["clinical.pediatrics.allergy", "clinical.cardiology", "clinical.neurology.pediatric"],
             AgentDomain.THERAPY: ["therapy.cbt", "therapy.physical.rehab", "therapy.speech"],
@@ -268,7 +268,7 @@ class TestCategoryTreeHierarchyEmpirical:
 
     @pytest.mark.asyncio
     async def test_get_category_tree_domain_filter(self, adapter: SqliteCatalogAdapter) -> None:
-        """Challenge 1.7: Category tree domain_filter parameter."""
+        """Verification 1.7: Category tree domain_filter parameter."""
         await adapter.index_agent(_make_agent("clin-1", domain=AgentDomain.CLINICAL, category="clinical.cardio"))
         await adapter.index_agent(_make_agent("clin-2", domain=AgentDomain.CLINICAL, category="clinical.neuro"))
         await adapter.index_agent(_make_agent("nav-1", domain=AgentDomain.NAVIGATION, category="navigation.insurance"))
@@ -295,7 +295,7 @@ class TestCategoryTreeHierarchyEmpirical:
 # ==============================================================================
 
 class TestFactoryAndSettingsEmpirical:
-    """Empirical challenge for dynamic memory adapter factory and Settings integration."""
+    """Systematic verification for dynamic memory adapter factory and Settings integration."""
 
     def setup_method(self) -> None:
         reset_memory_ports()
@@ -304,7 +304,7 @@ class TestFactoryAndSettingsEmpirical:
         reset_memory_ports()
 
     def test_factory_sqlite_backend_default(self, tmp_path: Path) -> None:
-        """Challenge 2.1: get_memory_port() & get_catalog_port() with sqlite backend."""
+        """Verification 2.1: get_memory_port() & get_catalog_port() with sqlite backend."""
         db_path = tmp_path / "factory_sqlite.db"
         settings = Settings(memory_backend="sqlite", catalog_db_path=db_path)
 
@@ -317,7 +317,7 @@ class TestFactoryAndSettingsEmpirical:
         assert isinstance(cat, SqliteCatalogAdapter)
 
     def test_factory_not_implemented_error_spector(self) -> None:
-        """Challenge 2.2: MemoryPort succeeds for 'spector', CatalogPort raises NotImplementedError."""
+        """Verification 2.2: MemoryPort succeeds for 'spector', CatalogPort raises NotImplementedError."""
         spector_settings = Settings(
             memory_backend="spector",
             spector_url="http://custom-spector:8080",
@@ -346,7 +346,7 @@ class TestFactoryAndSettingsEmpirical:
             create_catalog_port(backend="spector")
 
     def test_factory_not_implemented_error_postgres(self) -> None:
-        """Challenge 2.3: NotImplementedError raised for 'postgres'."""
+        """Verification 2.3: NotImplementedError raised for 'postgres'."""
         postgres_settings = Settings(memory_backend="postgres")
 
         # get_memory_port
@@ -368,7 +368,7 @@ class TestFactoryAndSettingsEmpirical:
             create_catalog_port(backend="postgres")
 
     def test_factory_value_error_for_invalid_backends(self) -> None:
-        """Challenge 2.4: ValueError raised for unrecognized/invalid backends."""
+        """Verification 2.4: ValueError raised for unrecognized/invalid backends."""
         invalid_backends = ["redis", "mongodb", "dynamodb", "", "   ", "cassandra", "memcached"]
 
         for backend in invalid_backends:
@@ -389,28 +389,28 @@ class TestFactoryAndSettingsEmpirical:
                 create_catalog_port(backend=backend)
 
     def test_factory_reset_memory_ports_clears_singletons(self, tmp_path: Path) -> None:
-        """Challenge 2.5: reset_memory_ports() clears cached singletons."""
+        """Verification 2.5: reset_memory_ports() clears cached singletons."""
         settings_1 = Settings(catalog_db_path=tmp_path / "db1.db")
-        m1 = get_memory_port(settings_1)
-        c1 = get_catalog_port(settings_1)
+        msg_one = get_memory_port(settings_1)
+        item_one = get_catalog_port(settings_1)
 
         # Same call returns identical singleton instances
-        assert get_memory_port() is m1
-        assert get_catalog_port() is c1
+        assert get_memory_port() is msg_one
+        assert get_catalog_port() is item_one
 
         # Reset singletons
         reset_memory_ports()
 
         # New call creates distinct new instances
         settings_2 = Settings(catalog_db_path=tmp_path / "db2.db")
-        m2 = get_memory_port(settings_2)
-        c2 = get_catalog_port(settings_2)
+        msg_two = get_memory_port(settings_2)
+        item_two = get_catalog_port(settings_2)
 
-        assert m2 is not m1
-        assert c2 is not c1
+        assert msg_two is not msg_one
+        assert item_two is not item_one
 
     def test_factory_explicit_set_memory_and_catalog_ports(self, tmp_path: Path) -> None:
-        """Challenge 2.6: set_memory_port() and set_catalog_port() overrides."""
+        """Verification 2.6: set_memory_port() and set_catalog_port() overrides."""
         mem_custom = create_memory_port(db_path=tmp_path / "custom_m.db")
         cat_custom = create_catalog_port(db_path=tmp_path / "custom_c.db")
 
@@ -435,11 +435,11 @@ class TestFactoryAndSettingsEmpirical:
 # ==============================================================================
 
 class TestConcurrencyAndDatabaseLockingEmpirical:
-    """Empirical challenge for concurrency, race conditions, and SQLite locking issues."""
+    """Systematic verification for concurrency, race conditions, and SQLite locking issues."""
 
     @pytest.mark.asyncio
     async def test_concurrent_catalog_index_and_search_single_adapter(self, tmp_path: Path) -> None:
-        """Challenge 3.1: 40 concurrent index and search tasks using asyncio.gather().
+        """Verification 3.1: 40 concurrent index and search tasks using asyncio.gather().
         
         Tests that async lock and transaction handling prevent 'database is locked' errors.
         """
@@ -491,7 +491,7 @@ class TestConcurrencyAndDatabaseLockingEmpirical:
 
     @pytest.mark.asyncio
     async def test_concurrent_memory_read_write_operations(self, tmp_path: Path) -> None:
-        """Challenge 3.2: 40 concurrent memory operations (remember, recall, reinforce, forget)."""
+        """Verification 3.2: 40 concurrent memory operations (remember, recall, reinforce, forget)."""
         db_file = tmp_path / "concurrent_memory.db"
         adapter = SqliteMemoryAdapter(db_path=db_file)
 
@@ -532,7 +532,7 @@ class TestConcurrencyAndDatabaseLockingEmpirical:
 
     @pytest.mark.asyncio
     async def test_concurrent_multi_adapter_file_access(self, tmp_path: Path) -> None:
-        """Challenge 3.3: Multiple separate adapter instances connecting to the same SQLite file.
+        """Verification 3.3: Multiple separate adapter instances connecting to the same SQLite file.
         
         Simulates multi-process/multi-worker concurrency.
         Verifies WAL mode (PRAGMA journal_mode = WAL) and busy timeout (PRAGMA busy_timeout = 10000)

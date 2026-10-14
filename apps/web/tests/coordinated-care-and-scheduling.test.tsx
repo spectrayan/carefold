@@ -22,7 +22,7 @@ import {
   verifyProfileAuditChain,
   fetchOsServiceDescriptors,
   fetchV2ConnectorCatalog,
-} from '@/lib/autonomyBatch7Client';
+} from '@/lib/coordinatedCareClient';
 import type {
   AuditChainVerificationResponse,
   OsServiceDescriptorItem,
@@ -30,7 +30,7 @@ import type {
   SmartSchedulingSlotItem,
   V2ConnectorSummary,
   ZocdocBookingPreview,
-} from '@/types/autonomyBatch7';
+} from '@/types/coordinatedCare';
 import type {
   ConnectionItem,
   ConnectorManifestSummary,

@@ -461,7 +461,7 @@ class TestAllowlistBoundaryEnforcement:
 
     @pytest.mark.asyncio
     async def test_tool_node_standalone_vs_wrapper_boundary(self):
-        """Empirically tests ToolNode standalone behavior with allowed_tools parameter."""
+        """Systematically tests ToolNode standalone behavior with allowed_tools parameter."""
         # 1. Standalone ToolNode with explicit allowed_tools=[] strictly denies tools
         restricted_node = ToolNode(allowed_tools=[])
         state = {

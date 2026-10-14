@@ -12,7 +12,7 @@
 """Multi-Agent Routing & Registry Robustness Test Suite.
 
 Exhaustively verifies:
-1. OrchestratorNode routing across ambiguous, multi-domain, and adversarial prompts.
+1. OrchestratorNode routing across ambiguous, multi-domain, and boundary prompts.
 2. Explicit routing bypass mechanics and normalization (including underscore preservation and loop guards).
 3. Fallback resilience on non-existent agents, malformed model JSON, API errors, and None models.
 4. Delegation loop prevention in AgentRegistry (strict exclusion of can_delegate=True agents).
