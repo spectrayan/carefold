@@ -237,3 +237,13 @@ All AI coding assistants (e.g., Cursor, Claude Code, GitHub Copilot, Gemini CLI)
    - Commit only production code, tests and test fixtures, agent/skill packs, user and contributor documentation, and the build, CI, and release tooling those require (for example `scripts/licenses.mjs`, `scripts/bump-version.mjs`, `scripts/validate-packs.mjs`).
    - Never commit one-off operational or administrative scripts (GitHub organization or team provisioning, account setup, migrations run once by hand), AI-agent planning or session artifacts (implementation plans, task lists, walkthroughs, scratch notes, audit reports), local runtime data (`chats/`, `logs/`, `workspace/`, `attachments/`, `catalog.db`), or personal configuration.
    - Organization governance automation belongs in the internal tooling repository, not in this product repository.
+
+## Cursor Cloud specific instructions
+
+Local development uses SQLite under `~/.carefold`. PostgreSQL and Ollama are optional. Without Ollama, `/api/health` reports `degraded` and `modelReachable: false`; that is expected.
+
+- Backend: `backend/.venv` on `http://127.0.0.1:8010` (`/api/health`, `/api/v1/agents`).
+- Web: `pnpm --filter web dev` on port `3010`. Open `http://localhost:3010`. Next.js dev blocks client assets when the page is opened as `127.0.0.1`, so the first-run login form will not hydrate on that host.
+- First launch has no user. Register the local administrator from the login page before using household or agent routes.
+- `backend/tests/test_start_script.py` runs `scripts/start.sh stop`, which terminates listeners on ports `8010` and `3010`. Restart those servers after the pytest suite.
+- One frontend unit test, `suppresses the reminder for 30 days once dismissed` in `apps/web/tests/unit/profile-consent.test.ts`, fails when the current date falls inside its hard-coded dismissal window. The rest of `pnpm --filter web test --exclude "**/api/**"` passes.
