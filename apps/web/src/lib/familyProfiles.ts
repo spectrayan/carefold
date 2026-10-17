@@ -563,12 +563,15 @@ export function checkTeenHandoverStatus(
   };
 }
 
-export function dismissTeenHandoverReminder(profileId: string): void {
+export function dismissTeenHandoverReminder(
+  profileId: string,
+  dismissedAt: Date = new Date()
+): void {
   if (typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(
       `carefold_teen_handover_dismissed_${profileId}`,
-      new Date().toISOString()
+      dismissedAt.toISOString()
     );
   } catch {
     // ignore

@@ -154,8 +154,8 @@ describe('Per-Profile Clinical Consent & Teen Handover Suite (#87)', () => {
       // Before dismissal
       expect(checkTeenHandoverStatus(teenProfile, referenceDate).shouldShowReminder).toBe(true);
 
-      // Dismiss reminder
-      dismissTeenHandoverReminder('ava');
+      // Dismiss reminder at referenceDate
+      dismissTeenHandoverReminder('ava', referenceDate);
 
       // Check right after dismissal (same day)
       const statusAfter = checkTeenHandoverStatus(teenProfile, referenceDate);
