@@ -40,6 +40,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { AgentFormModal } from '@/components/agents/AgentFormModal';
 import { SkillFormModal } from '@/components/skills/SkillFormModal';
+import { grantClinicalConsent } from '@/lib/clinicalConsent';
 import { useI18n } from '@/i18n';
 
 export interface AgentsClientProps {
@@ -390,6 +391,11 @@ export function AgentsClient({
 
                   <Link
                     href={profilePath(activeProfileId, `chat?agent=${encodeURIComponent(agent.id)}`)}
+                    onClick={() => {
+                      if (isClinical) {
+                        grantClinicalConsent(agent.id);
+                      }
+                    }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:text-[#04201a] shadow-sm transition min-h-[36px]"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />

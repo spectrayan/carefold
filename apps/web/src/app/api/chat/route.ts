@@ -103,22 +103,53 @@ export async function POST(req: Request | NextRequest): Promise<Response> {
     threadId: resolvedThreadId
   };
 
-    const incomingCookie = req.headers.get('cookie');
-    const authHeader = req.headers.get('authorization');
+  const incomingCookie = req.headers.get('cookie');
+  const authHeader = req.headers.get('authorization');
   try {
-    const backendRes = await fetch(`${backendUrl}/api/v1/chat`, {
+    const proxyHeaders = {
+      'Content-Type': 'application/json',
+      ...(incomingCookie ? { cookie: incomingCookie } : {}),
+      ...(authHeader ? { authorization: authHeader } : {}),
+      ...(apiKey ? { 'x-api-key': apiKey } : {}),
+      ...(provider ? { 'x-provider': provider } : {}),
+      ...(model ? { 'x-model': model } : {})
+    };
+
+    let backendRes = await fetch(`${backendUrl}/api/v1/chat`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(incomingCookie ? { cookie: incomingCookie } : {}),
-        ...(authHeader ? { authorization: authHeader } : {}),
-        ...(apiKey ? { 'x-api-key': apiKey } : {}),
-        ...(provider ? { 'x-provider': provider } : {}),
-        ...(model ? { 'x-model': model } : {})
-      },
+      headers: proxyHeaders,
       body: JSON.stringify(payload),
       signal: req.signal
     });
+
+    if (backendRes.status === 404) {
+      const meRes = await fetch(`${backendUrl}/api/v1/profiles/me`, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          ...(incomingCookie ? { cookie: incomingCookie } : {}),
+          ...(authHeader ? { authorization: authHeader } : {})
+        },
+        signal: req.signal
+      }).catch(() => null);
+
+      if (meRes && meRes.ok) {
+        const meProfile = await meRes.json().catch(() => null);
+        if (meProfile && typeof meProfile.id === 'string' && meProfile.id !== resolvedProfileId) {
+          const retryPayload = {
+            ...payload,
+            profile_id: meProfile.id,
+            profileId: meProfile.id
+          };
+          backendRes = await fetch(`${backendUrl}/api/v1/chat`, {
+            method: 'POST',
+            headers: proxyHeaders,
+            body: JSON.stringify(retryPayload),
+            signal: req.signal
+          });
+        }
+      }
+    }
 
     if (!backendRes.ok) {
       const errText = await backendRes.text().catch(() => '');

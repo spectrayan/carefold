@@ -54,7 +54,7 @@ import {
   getApiKeyForProvider,
   getEndpointForProvider
 } from '@/lib/settings';
-import { hasClinicalConsent } from '@/lib/clinicalConsent';
+import { hasClinicalConsent, grantClinicalConsent } from '@/lib/clinicalConsent';
 import {
   listSessions,
   deleteSession,
@@ -64,7 +64,7 @@ import {
 import { getScopedStorageKey, getStorageUserId } from '@/lib/storageNamespace';
 import { stripReferencePreamble, stripSuggestionLeakage } from '@/components/ChatMessageItem';
 import { detectProfileAmbiguity } from '@/lib/profileMentions';
-import { loadHouseholdProfiles, getHouseholdProfile } from '@/lib/familyProfiles';
+import { loadHouseholdProfiles, getHouseholdProfile, fetchHouseholdProfiles } from '@/lib/familyProfiles';
 import { profilePath } from '@/lib/routes';
 import type { AgentSummary, ChatMessage } from '@/lib/types';
 import type { CareProfile } from '@/app/p/[profileId]/HomeDashboardClient';
@@ -149,10 +149,17 @@ export function ChatStudioShell({
   const { user } = useAuth();
   const { t } = useI18n();
   const [hasMounted, setHasMounted] = useState(false);
+  const [profileSyncTick, setProfileSyncTick] = useState(0);
 
   useEffect(() => {
     setHasMounted(true);
-  }, []);
+    const existing = getHouseholdProfile(profileIdProp);
+    if (!existing || existing.id === 'me') {
+      fetchHouseholdProfiles()
+        .then(() => setProfileSyncTick((n) => n + 1))
+        .catch(() => {});
+    }
+  }, [profileIdProp]);
 
   // Active Profile Resolution
   const profile: CareProfile = useMemo(() => {
@@ -184,7 +191,7 @@ export function ChatStudioShell({
       colorSlot: 1,
       role: 'Personal care'
     };
-  }, [initialProfile, profileIdProp, user, hasMounted, t]);
+  }, [initialProfile, profileIdProp, user, hasMounted, profileSyncTick, t]);
 
   // Agent Selection Dropdown
   const [isAgentMenuOpen, setIsAgentMenuOpen] = useState<boolean>(false);
@@ -545,13 +552,22 @@ export function ChatStudioShell({
     const effectiveModel = getEffectiveModel(settings);
     const apiKey = getApiKeyForProvider(settings, settings.provider);
     const customEndpoint = getEndpointForProvider(settings, settings.provider);
-    const allowClinical = hasClinicalConsent(selectedAgent.id);
+    if (selectedAgent.risk_class === 'clinical_assist' && !hasClinicalConsent(selectedAgent.id)) {
+      grantClinicalConsent(selectedAgent.id);
+    }
+    const allowClinical =
+      selectedAgent.risk_class === 'clinical_assist' ? true : hasClinicalConsent(selectedAgent.id);
 
     let accumulatedAssistantText = '';
     let refusalMessage = '';
 
     try {
-      const resolvedProfileId = profile.id || profileIdProp || 'me';
+      const latestHousehold = getHouseholdProfile(profileIdProp);
+      const resolvedProfileId =
+        (profile.id && profile.id !== 'me' ? profile.id : undefined) ||
+        (latestHousehold?.id && latestHousehold.id !== 'me' ? latestHousehold.id : undefined) ||
+        profileIdProp ||
+        'me';
       const res = await fetch('/api/v1/chat', {
         method: 'POST',
         headers: {
@@ -687,6 +703,15 @@ export function ChatStudioShell({
                 );
               } else if (eventType === 'error') {
                 setSuggestedQuestions([]);
+                if (data.message) {
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === assistantMsgId && !msg.content
+                        ? { ...msg, content: data.message, isStreaming: false }
+                        : msg
+                    )
+                  );
+                }
               }
             } catch {
               // ignore partial chunk

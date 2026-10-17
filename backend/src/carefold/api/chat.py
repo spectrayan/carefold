@@ -28,7 +28,7 @@ from carefold.api.deps import get_current_user, resolve_owner_user_id
 from carefold.api.profiles import auto_provision_primary_me_profile, get_user_profile_access
 from carefold.auth.ports import UserProfile
 from carefold.config import settings
-from carefold.db.models import ChatThread, Profile
+from carefold.db.models import Agent, ChatThread, Profile
 from carefold.db.session import get_db
 from carefold.constants.api import (
     HTTP_400_BAD_REQUEST,
@@ -82,7 +82,10 @@ async def chat_stream(
         if system_candidate.is_dir():
             agent_dir = system_candidate
         else:
-            raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Agent '{agent_id}' not found.")
+            a_stmt = select(Agent).where(Agent.id == agent_id)
+            a_res = await db.execute(a_stmt)
+            if a_res.scalar_one_or_none() is None:
+                raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Agent '{agent_id}' not found.")
 
     raw_profile_id = request.get_profile_id()
     profile_id = (raw_profile_id or "").strip()
