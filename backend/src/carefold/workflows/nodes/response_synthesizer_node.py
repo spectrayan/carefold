@@ -104,6 +104,9 @@ class ResponseSynthesizerNode(BaseNode):
             single_out = state.get("output")
             if not single_out:
                 for m in reversed(state.get("messages", [])):
+                    msg_type = getattr(m, "type", "")
+                    if msg_type in ("human", "user") or (isinstance(m, dict) and m.get("role") in ("user", "human")):
+                        break
                     if isinstance(m, AIMessage) and m.content:
                         single_out = m.content
                         break

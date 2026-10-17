@@ -594,7 +594,14 @@ class AgentExecutionService:
         user_content = prompt
         if attachments:
             user_content += f"\n\n[Attached files: {', '.join(attachments)}]"
-        initial_messages.append(HumanMessage(content=user_content))
+        if (
+            initial_messages
+            and isinstance(initial_messages[-1], HumanMessage)
+            and str(initial_messages[-1].content or "").strip() in (prompt.strip(), user_content.strip())
+        ):
+            initial_messages[-1] = HumanMessage(content=user_content)
+        else:
+            initial_messages.append(HumanMessage(content=user_content))
 
         # 5. Resolve Checkpointer Database Path
         db_path = self.db_path or resolve_checkpointer_path(ws_root)
@@ -619,6 +626,7 @@ class AgentExecutionService:
 
         initial_input: Dict[str, Any] = {
             "messages": initial_messages,
+            "prompt": prompt,
             "thread_id": thread_id,
             "user_id": effective_user_id,
             "profile_id": effective_profile_id,
@@ -633,6 +641,12 @@ class AgentExecutionService:
             "is_refusal": False,
             "refusal_reason": None,
             "output": "",
+            "iteration_count": 0,
+            "reflection_count": 0,
+            "tool_calls": [],
+            "error": None,
+            "error_exception": None,
+            "next_step": "",
             "follow_up_suggestions": [],
             "document_dossiers": [],
             "store_bodies": effective_store_bodies,
@@ -692,6 +706,22 @@ class AgentExecutionService:
         # 6. Stream Execution Events
         try:
             async with _resolve_checkpointer() as checkpointer:
+                # If checkpointer already holds prior messages for this thread, only append the new user turn
+                if checkpointer is not None and len(initial_messages) > 1:
+                    try:
+                        cp_lookup_cfg = {"configurable": {"thread_id": thread_id}}
+                        existing_tup = None
+                        if hasattr(checkpointer, "aget_tuple"):
+                            existing_tup = await checkpointer.aget_tuple(cp_lookup_cfg)
+                        elif hasattr(checkpointer, "get_tuple"):
+                            existing_tup = checkpointer.get_tuple(cp_lookup_cfg)
+                        if existing_tup and getattr(existing_tup, "checkpoint", None):
+                            cp_msgs = existing_tup.checkpoint.get("channel_values", {}).get("messages", [])
+                            if cp_msgs:
+                                initial_input["messages"] = [HumanMessage(content=user_content)]
+                    except Exception:
+                        pass
+
                 # Retrieve BaseStore from explicit parameter, self.memory_adapter, self.store, or kwargs
                 effective_store = (
                     store

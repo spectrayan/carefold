@@ -423,23 +423,35 @@ class AgentExecutionNode(BaseNode):
 
         # 3. Build messages list
         raw_messages = list(state.get("messages", []))
-        lc_messages: List[BaseMessage] = []
+        parsed_messages: List[BaseMessage] = []
         for m in raw_messages:
             if isinstance(m, BaseMessage):
-                lc_messages.append(m)
+                parsed_messages.append(m)
             elif isinstance(m, dict):
                 role = m.get("role", "")
                 content = str(m.get("content", ""))
                 if role == "system":
-                    lc_messages.append(SystemMessage(content=content))
+                    parsed_messages.append(SystemMessage(content=content))
                 elif role in ("assistant", "ai"):
-                    lc_messages.append(AIMessage(content=content, tool_calls=m.get("tool_calls", [])))
+                    parsed_messages.append(AIMessage(content=content, tool_calls=m.get("tool_calls", [])))
                 elif role == "tool":
-                    lc_messages.append(
+                    parsed_messages.append(
                         ToolMessage(content=content, tool_call_id=m.get("tool_call_id", "call_0"))
                     )
                 else:
-                    lc_messages.append(HumanMessage(content=content))
+                    parsed_messages.append(HumanMessage(content=content))
+
+        # Strip orphan AIMessage tool_calls that were never followed by a ToolMessage
+        lc_messages: List[BaseMessage] = []
+        for idx, msg in enumerate(parsed_messages):
+            if isinstance(msg, AIMessage) and getattr(msg, "tool_calls", None):
+                next_is_tool = (idx + 1 < len(parsed_messages)) and isinstance(parsed_messages[idx + 1], ToolMessage)
+                if not next_is_tool:
+                    txt = str(getattr(msg, "content", "") or "").strip()
+                    if txt:
+                        lc_messages.append(AIMessage(content=txt))
+                    continue
+            lc_messages.append(msg)
 
         # Prepend system prompt if not already present
         if system_prompt and not (lc_messages and isinstance(lc_messages[0], SystemMessage)):
@@ -464,8 +476,16 @@ class AgentExecutionNode(BaseNode):
         while hasattr(raw_model, "bound") and getattr(raw_model, "bound", None) is not None:
             raw_model = raw_model.bound
 
+        iteration_count = int(state.get("iteration_count", 0) or 0)
+        max_tool_iterations = int(state.get("max_tool_iterations", 3) or 3)
+
         bound_model = raw_model
-        if tools and hasattr(raw_model, "bind_tools") and callable(raw_model.bind_tools):
+        if (
+            tools
+            and iteration_count < max_tool_iterations
+            and hasattr(raw_model, "bind_tools")
+            and callable(raw_model.bind_tools)
+        ):
             try:
                 bound_model = raw_model.bind_tools(tools)
             except (NotImplementedError, Exception) as err:
@@ -528,6 +548,19 @@ class AgentExecutionNode(BaseNode):
             response = AIMessage(content=str(response))
 
         tool_calls = getattr(response, "tool_calls", []) or []
+        if tool_calls and iteration_count >= max_tool_iterations:
+            tool_calls = []
+            if not str(getattr(response, "content", "") or "").strip():
+                try:
+                    if hasattr(raw_model, "ainvoke"):
+                        response = await raw_model.ainvoke(lc_messages)
+                    else:
+                        response = raw_model.invoke(lc_messages)
+                    if not isinstance(response, BaseMessage):
+                        response = AIMessage(content=str(response))
+                except Exception as err:
+                    logger.debug("Final-turn unbound fallback failed: %s", err)
+
         next_step = "tools" if tool_calls else "output_guardrail"
 
         return {

@@ -314,9 +314,22 @@ export function ChatStudioShell({
   // Threads State
   const [threadSearch, setThreadSearch] = useState('');
   const [activeThreadId, setActiveThreadId] = useState<string>(
-    initialThreadId || `thread-${profile.id}-1`
+    initialThreadId || (agentParam ? `thread-${profile.id}-${agentParam}` : `thread-${profile.id}-1`)
   );
   const [sessions, setSessions] = useState<ChatSessionMeta[]>([]);
+
+  useEffect(() => {
+    if (!initialThreadId && agentParam) {
+      const existingForAgent = listSessions().find(
+        (s) =>
+          s.agentId === agentParam &&
+          (((s as any).profileId && (s as any).profileId === profile.id) ||
+            s.id.includes(profile.id) ||
+            (profile.id === 'me' && !s.id.includes('rosa') && !s.id.includes('leo')))
+      );
+      setActiveThreadId(existingForAgent?.id || `thread-${profile.id}-${agentParam}`);
+    }
+  }, [agentParam, initialThreadId, profile.id]);
 
   useEffect(() => {
     setSuggestedQuestions([]);
@@ -352,6 +365,7 @@ export function ChatStudioShell({
         return {
           id: s.id,
           title: s.title,
+          agentId: s.agentId,
           agentTitle: s.agentTitle || 'Visit Steward',
           timeStr,
           group
@@ -920,7 +934,10 @@ export function ChatStudioShell({
                       >
                         <button
                           type="button"
-                          onClick={() => setActiveThreadId(t.id)}
+                          onClick={() => {
+                            setActiveThreadId(t.id);
+                            if (t.agentId) setSelectedAgentId(t.agentId);
+                          }}
                           className="flex-1 text-left p-2.5 min-w-0 min-h-[44px] cursor-pointer"
                         >
                           <div className="text-xs font-semibold text-[var(--cf-fg)] truncate">
@@ -973,7 +990,10 @@ export function ChatStudioShell({
                         >
                           <button
                             type="button"
-                            onClick={() => setActiveThreadId(t.id)}
+                            onClick={() => {
+                              setActiveThreadId(t.id);
+                              if (t.agentId) setSelectedAgentId(t.agentId);
+                            }}
                             className="flex-1 text-left p-2.5 min-w-0 min-h-[44px] cursor-pointer"
                           >
                             <div className="text-xs font-semibold text-[var(--cf-fg)] truncate">
@@ -1118,6 +1138,8 @@ export function ChatStudioShell({
                               data-testid={`select-agent-${a.id}`}
                               onClick={() => {
                                 setSelectedAgentId(a.id);
+                                const existingForAgent = profileThreads.find((pt) => pt.agentId === a.id);
+                                setActiveThreadId(existingForAgent?.id || `thread-${profile.id}-${a.id}`);
                                 setIsAgentMenuOpen(false);
                                 setAgentSearchQuery('');
                               }}

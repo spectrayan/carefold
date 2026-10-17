@@ -37,11 +37,16 @@ class OutputGuardrailNode(BaseNode):
         output_text = state.get("output", "")
         if not output_text:
             messages: List[Any] = state.get("messages", [])
-            last_ai = next((m for m in reversed(messages) if isinstance(m, AIMessage)), None)
-            if last_ai:
-                output_text = str(getattr(last_ai, "content", "") or "")
-            elif messages and isinstance(messages[-1], dict) and messages[-1].get("role") in ("assistant", "ai"):
-                output_text = str(messages[-1].get("content", ""))
+            for m in reversed(messages):
+                msg_type = getattr(m, "type", "")
+                if msg_type in ("human", "user") or (isinstance(m, dict) and m.get("role") in ("user", "human")):
+                    break
+                if isinstance(m, AIMessage) and getattr(m, "content", ""):
+                    output_text = str(getattr(m, "content", "") or "")
+                    break
+                elif isinstance(m, dict) and m.get("role") in ("assistant", "ai") and m.get("content"):
+                    output_text = str(m.get("content", ""))
+                    break
 
         safety_check = check_safety_refusal(output_text)
 
