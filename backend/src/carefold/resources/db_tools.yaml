@@ -1,0 +1,506 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan (https://spectrayan.com)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0 and the
+# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+# Personal and household local use only. Commercial use, hosted service
+# offering, rebranding, white-labeling, and redistribution of modified
+# forks are prohibited without a written commercial license from Spectrayan.
+#
+# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+
+# Declarative MCP Toolbox for Databases (googleapis/genai-toolbox) configuration
+# for Carefold profile-scoped relational persistence (Mode L SQLite & Mode S PostgreSQL).
+#
+# Security Invariants:
+# 1. Parameterized SQL Only: Agents invoke named tools with typed parameters; raw SQL
+#    generation by the LLM is strictly impossible.
+# 2. Context-Bound Tenant Isolation: `:profile_id`, `:id`, `:locale`, `:now`, and
+#    `:content_hash` are bound automatically from `ToolContext` and never exposed
+#    in the LLM-writable JSON Schema.
+# 3. 4-Tier Policy Gate: Every tool declares `risk_tier` ('read' or 'write_local')
+#    enforced by `ToolExecutionGate` and recorded in `AuditEventRecord`.
+
+sources:
+  carefold-sqlite:
+    kind: sqlite
+    database: ${CAREFOLD_DB_PATH:~/.carefold/carefold.db}
+  carefold-postgres:
+    kind: postgres
+    host: ${CAREFOLD_PG_HOST:127.0.0.1}
+    port: ${CAREFOLD_PG_PORT:5432}
+    database: ${CAREFOLD_PG_DATABASE:carefold}
+
+tools:
+  upsert_clinical_note:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: write_local
+    entity: note
+    description: >-
+      Create or update a clinical visit preparation checklist, symptom log, question list,
+      after-visit summary, or general note directly in the patient's profile database.
+    statement: |
+      INSERT INTO notes (
+        id, profile_id, slug, title, type, content, locale, tags_json,
+        linked_appointment_id, created_at, updated_at
+      ) VALUES (
+        :id, :profile_id, :slug, :title, :note_type, :content, :locale, :tags_json,
+        :linked_appointment_id, :now, :now
+      )
+      RETURNING id, profile_id, slug, title, type, locale, created_at, updated_at;
+    parameters:
+      - name: slug
+        type: string
+        description: URL-safe note slug (e.g. 'urology-visit-plan', 'cardiology-questions').
+        required: false
+        default: ""
+      - name: title
+        type: string
+        description: Human-readable title for the note.
+        required: true
+      - name: note_type
+        type: string
+        description: Note category ('visit', 'symptom', 'question', 'after_visit', 'school', 'scratchpad', 'general').
+        required: false
+        default: "visit"
+      - name: content
+        type: string
+        description: Markdown-formatted note body content.
+        required: true
+      - name: tags_json
+        type: string
+        description: JSON array of string tags (e.g. '["urology", "visit-prep"]').
+        required: false
+        default: "[]"
+      - name: linked_appointment_id
+        type: string
+        description: Optional appointment UUID to associate with this note.
+        required: false
+        default: null
+
+  list_clinical_notes:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: note
+    description: >-
+      List saved clinical and navigation notes for the active patient profile,
+      ordered by most recently updated.
+    statement: |
+      SELECT id, profile_id, slug, title, type, locale, tags_json, linked_appointment_id, created_at, updated_at
+      FROM notes
+      WHERE profile_id = :profile_id
+        AND (:note_type = '' OR type = :note_type)
+      ORDER BY updated_at DESC
+      LIMIT :limit;
+    parameters:
+      - name: note_type
+        type: string
+        description: Optional filter by note type ('visit', 'symptom', 'question', 'after_visit', 'general').
+        required: false
+        default: ""
+      - name: limit
+        type: integer
+        description: Maximum number of notes to return (1-50).
+        required: false
+        default: 20
+
+  get_clinical_note:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: note
+    description: >-
+      Retrieve the full markdown content and metadata of a saved clinical note by its slug.
+    statement: |
+      SELECT id, profile_id, slug, title, type, content, locale, tags_json, linked_appointment_id, created_at, updated_at
+      FROM notes
+      WHERE profile_id = :profile_id AND slug = :slug
+      ORDER BY updated_at DESC
+      LIMIT 1;
+    parameters:
+      - name: slug
+        type: string
+        description: Note slug identifier (e.g. 'urology-visit-plan').
+        required: true
+
+  record_vital_reading:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: write_local
+    entity: health_resource
+    description: >-
+      Persist a structured vital sign observation (blood pressure, heart rate, blood glucose,
+      SpO2, weight, height, or temperature) into the patient's health_resources table with
+      automated acute red-flag evaluation.
+    statement: |
+      INSERT INTO health_resources (
+        id, profile_id, resource_type, source_type, source_ref, source_id,
+        content_hash, data, status, locale, effective_at, recorded_at, created_at, updated_at
+      ) VALUES (
+        :id, :profile_id, 'observation', :source_type, :source_ref, :source_id,
+        :content_hash, :data, 'active', :locale, :effective_at, :now, :now, :now
+      )
+      RETURNING id, profile_id, resource_type, source_type, effective_at, status;
+    parameters:
+      - name: vital_type
+        type: string
+        description: Vital category ('blood_pressure', 'heart_rate', 'blood_glucose', 'spo2', 'weight', 'height', 'temperature').
+        required: true
+      - name: systolic
+        type: number
+        description: Systolic blood pressure in mmHg (required when vital_type is 'blood_pressure').
+        required: false
+        default: null
+      - name: diastolic
+        type: number
+        description: Diastolic blood pressure in mmHg (required when vital_type is 'blood_pressure').
+        required: false
+        default: null
+      - name: value
+        type: number
+        description: Numeric measurement value for single-value vitals (heart_rate, blood_glucose, spo2, weight, height, temperature).
+        required: false
+        default: null
+      - name: unit
+        type: string
+        description: Measurement unit (e.g. 'mmHg', 'bpm', 'mg/dL', '%', 'kg', 'cm', 'C').
+        required: false
+        default: ""
+      - name: effective_at
+        type: string
+        description: Optional ISO-8601 timestamp when the measurement was taken.
+        required: false
+        default: ""
+
+  list_vital_readings:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: health_resource
+    description: >-
+      List recent vital sign observations stored in health_resources for the active profile.
+    statement: |
+      SELECT id, profile_id, resource_type, source_type, data, status, locale, effective_at, recorded_at
+      FROM health_resources
+      WHERE profile_id = :profile_id
+        AND LOWER(resource_type) = 'observation'
+        AND status = 'active'
+      ORDER BY effective_at DESC
+      LIMIT :limit;
+    parameters:
+      - name: limit
+        type: integer
+        description: Maximum number of vital readings to return (1-50).
+        required: false
+        default: 20
+
+  create_appointment_record:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: write_local
+    entity: appointment
+    description: >-
+      Persist an upcoming or scheduled healthcare appointment to the patient's profile database.
+    statement: |
+      INSERT INTO appointments (
+        id, profile_id, title, provider_name, specialty, location, clinic_phone,
+        start_time, end_time, timezone, status, reason, preparation_notes, created_at, updated_at
+      ) VALUES (
+        :id, :profile_id, :title, :provider_name, :specialty, :location, :clinic_phone,
+        :start_time, :end_time, :timezone, :status, :reason, :preparation_notes, :now, :now
+      )
+      RETURNING id, profile_id, title, provider_name, specialty, location, start_time, end_time, timezone, status;
+    parameters:
+      - name: title
+        type: string
+        description: Appointment title (e.g. 'Urology Consultation').
+        required: true
+      - name: start_time
+        type: string
+        description: Scheduled start timestamp in ISO-8601 format.
+        required: true
+      - name: end_time
+        type: string
+        description: Scheduled end timestamp in ISO-8601 format (defaults to 30 minutes after start_time if omitted).
+        required: false
+        default: ""
+      - name: provider_name
+        type: string
+        description: Clinician, physician, or clinic name.
+        required: false
+        default: ""
+      - name: specialty
+        type: string
+        description: Medical specialty (e.g. 'Urology', 'Cardiology', 'Endocrinology').
+        required: false
+        default: ""
+      - name: location
+        type: string
+        description: Physical clinic address or telehealth link.
+        required: false
+        default: ""
+      - name: clinic_phone
+        type: string
+        description: Clinic phone number.
+        required: false
+        default: ""
+      - name: timezone
+        type: string
+        description: IANA timezone identifier (e.g. 'America/Chicago', 'UTC').
+        required: false
+        default: "UTC"
+      - name: status
+        type: string
+        description: Appointment status ('requested', 'scheduled', 'confirmed').
+        required: false
+        default: "scheduled"
+      - name: reason
+        type: string
+        description: Primary visit reason or chief complaint.
+        required: false
+        default: ""
+      - name: preparation_notes
+        type: string
+        description: Pre-visit checklist or preparation instructions.
+        required: false
+        default: ""
+
+  list_appointment_records:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: appointment
+    description: >-
+      List upcoming and historical healthcare appointments for the active profile.
+    statement: |
+      SELECT id, profile_id, title, provider_name, specialty, location, start_time, end_time, timezone, status, reason, preparation_notes
+      FROM appointments
+      WHERE profile_id = :profile_id
+        AND (:status = '' OR status = :status)
+      ORDER BY start_time ASC
+      LIMIT :limit;
+    parameters:
+      - name: status
+        type: string
+        description: Optional status filter ('requested', 'scheduled', 'confirmed', 'completed', 'cancelled').
+        required: false
+        default: ""
+      - name: limit
+        type: integer
+        description: Maximum number of appointments to return (1-50).
+        required: false
+        default: 20
+
+  create_profile_reminder:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: write_local
+    entity: reminder
+    description: >-
+      Create a scheduled clinical prep, medication, vitals, or follow-up reminder in the database.
+    statement: |
+      INSERT INTO reminders (
+        id, profile_id, title, description, category, rrule, timezone,
+        next_due_at, status, created_at, updated_at
+      ) VALUES (
+        :id, :profile_id, :title, :description, :category, :rrule, :timezone,
+        :next_due_at, 'pending', :now, :now
+      )
+      RETURNING id, profile_id, title, category, next_due_at, timezone, status;
+    parameters:
+      - name: title
+        type: string
+        description: Reminder prompt or directive title.
+        required: true
+      - name: next_due_at
+        type: string
+        description: ISO-8601 due timestamp.
+        required: true
+      - name: description
+        type: string
+        description: Optional instructions or context.
+        required: false
+        default: ""
+      - name: category
+        type: string
+        description: Category ('medication', 'vitals', 'appointment', 'prep', 'general').
+        required: false
+        default: "prep"
+      - name: rrule
+        type: string
+        description: Optional RFC 5545 recurrence rule (e.g. 'FREQ=DAILY;INTERVAL=1').
+        required: false
+        default: null
+      - name: timezone
+        type: string
+        description: IANA timezone identifier.
+        required: false
+        default: "UTC"
+
+  list_profile_reminders:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: reminder
+    description: >-
+      List reminders for the active patient profile from the database.
+    statement: |
+      SELECT id, profile_id, title, description, category, rrule, timezone, next_due_at, status
+      FROM reminders
+      WHERE profile_id = :profile_id
+        AND (:status = '' OR status = :status)
+      ORDER BY next_due_at ASC
+      LIMIT :limit;
+    parameters:
+      - name: status
+        type: string
+        description: Optional status filter ('pending', 'snoozed', 'completed', 'missed', 'cancelled').
+        required: false
+        default: ""
+      - name: limit
+        type: integer
+        description: Maximum number of reminders to return (1-50).
+        required: false
+        default: 25
+
+  update_preventive_record:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: write_local
+    entity: preventive_record
+    description: >-
+      Record or update the status of a preventive care screening or immunisation item in the database.
+    statement: |
+      INSERT INTO preventive_records (
+        id, profile_id, rule_id, status, completed_at, notes, schedule_source, created_at, updated_at
+      ) VALUES (
+        :id, :profile_id, :rule_id, :status, :completed_at, :notes, :schedule_source, :now, :now
+      )
+      ON CONFLICT(profile_id, rule_id) DO UPDATE SET
+        status = excluded.status,
+        completed_at = excluded.completed_at,
+        notes = excluded.notes,
+        schedule_source = excluded.schedule_source,
+        updated_at = excluded.updated_at
+      RETURNING id, profile_id, rule_id, status, completed_at, notes, schedule_source;
+    parameters:
+      - name: rule_id
+        type: string
+        description: Preventive care rule identifier (e.g. 'uspstf-colorectal-screening').
+        required: true
+      - name: status
+        type: string
+        description: Updated status ('due', 'completed', 'not_applicable', 'declined').
+        required: true
+      - name: notes
+        type: string
+        description: Optional clinical or patient notes.
+        required: false
+        default: ""
+      - name: completed_at
+        type: string
+        description: Optional ISO-8601 completion timestamp.
+        required: false
+        default: null
+      - name: schedule_source
+        type: string
+        description: Schedule source ('aap_2026' or 'cdc').
+        required: false
+        default: "aap_2026"
+
+  list_preventive_records:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: preventive_record
+    description: >-
+      List saved preventive care screening and immunisation statuses from the database for the active profile.
+    statement: |
+      SELECT id, profile_id, rule_id, status, completed_at, notes, schedule_source, updated_at
+      FROM preventive_records
+      WHERE profile_id = :profile_id
+      ORDER BY updated_at DESC;
+    parameters: []
+
+  create_email_draft_record:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: write_local
+    entity: email_draft
+    description: >-
+      Persist a local email draft (for clinic scheduling, records requests, or insurance questions)
+      in the database. Never sends email automatically.
+    statement: |
+      INSERT INTO email_drafts (
+        id, profile_id, recipient, subject, body, category, status, created_at, updated_at
+      ) VALUES (
+        :id, :profile_id, :recipient, :subject, :body, :category, 'draft', :now, :now
+      )
+      RETURNING id, profile_id, recipient, subject, category, status, created_at;
+    parameters:
+      - name: subject
+        type: string
+        description: Email subject line.
+        required: true
+      - name: body
+        type: string
+        description: Email plaintext body.
+        required: true
+      - name: recipient
+        type: string
+        description: Optional recipient email address.
+        required: false
+        default: ""
+      - name: category
+        type: string
+        description: Draft category ('appointment', 'school', 'insurance', 'general').
+        required: false
+        default: "general"
+
+toolsets:
+  clinical_assist_db:
+    - upsert_clinical_note
+    - list_clinical_notes
+    - get_clinical_note
+    - record_vital_reading
+    - list_vital_readings
+    - create_appointment_record
+    - list_appointment_records
+    - create_profile_reminder
+    - list_profile_reminders
+    - update_preventive_record
+    - list_preventive_records
+  navigation_db:
+    - upsert_clinical_note
+    - list_clinical_notes
+    - get_clinical_note
+    - create_appointment_record
+    - list_appointment_records
+    - create_profile_reminder
+    - list_profile_reminders
+    - create_email_draft_record
+  wellness_db:
+    - upsert_clinical_note
+    - list_clinical_notes
+    - get_clinical_note
+    - record_vital_reading
+    - list_vital_readings
+    - create_profile_reminder
+    - list_profile_reminders
+    - update_preventive_record
+    - list_preventive_records
+  all_db_tools:
+    - upsert_clinical_note
+    - list_clinical_notes
+    - get_clinical_note
+    - record_vital_reading
+    - list_vital_readings
+    - create_appointment_record
+    - list_appointment_records
+    - create_profile_reminder
+    - list_profile_reminders
+    - update_preventive_record
+    - list_preventive_records
+    - create_email_draft_record

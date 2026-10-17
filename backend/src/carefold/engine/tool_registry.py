@@ -150,6 +150,14 @@ class ToolSpec:
         if self.metadata is None:
             object.__setattr__(self, "metadata", {})
 
+    def to_tool_definition(self) -> Dict[str, Any]:
+        """Returns an OpenAI / LangChain bind_tools-compatible dictionary representation."""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "parameters": dict(self.parameters) if self.parameters else {"type": "object", "properties": {}},
+        }
+
 
 class ToolSpecRegistry:
     """Central registry for ToolSpecs with profile-scoped and age-band filtering."""
@@ -1658,10 +1666,16 @@ def _make_builtin_specs() -> List[ToolSpec]:
 
 
 def create_default_registry() -> ToolSpecRegistry:
-    """Creates a ToolSpecRegistry populated with Carefold built-in tools."""
+    """Creates a ToolSpecRegistry populated with Carefold built-in tools and declarative MCP DB tools."""
     registry = ToolSpecRegistry()
     for spec in _make_builtin_specs():
         registry.register(spec)
+    try:
+        from carefold.tools.mcp_db_toolbox import register_db_toolbox_specs
+
+        register_db_toolbox_specs(registry)
+    except Exception as exc:
+        logger.debug("Declarative MCP DB toolbox registration skipped: %s", exc)
     return registry
 
 

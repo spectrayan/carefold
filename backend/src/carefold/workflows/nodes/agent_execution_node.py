@@ -281,9 +281,29 @@ class AgentExecutionNode(BaseNode):
                     if t not in effective_tool_names:
                         effective_tool_names.append(t)
 
+        # Expand declarative MCP database toolset if requested in state
+        db_toolset_name = state.get("db_toolset")
+        if db_toolset_name:
+            try:
+                from carefold.tools.mcp_db_toolbox import get_db_toolbox
+
+                toolbox = get_db_toolbox()
+                if str(db_toolset_name) == "auto":
+                    dom = str(getattr(manifest, "domain", "clinical") or "clinical")
+                    rc = str(getattr(manifest, "risk_class", "clinical_assist") or "clinical_assist")
+                    toolset_tools = toolbox.get_toolset_for_domain(dom, rc)
+                else:
+                    toolset_tools = toolbox.get_toolset(str(db_toolset_name))
+                for t_name in toolset_tools:
+                    if t_name not in effective_tool_names:
+                        effective_tool_names.append(t_name)
+            except Exception as err:
+                logger.debug("MCP DB toolset expansion skipped: %s", err)
+
         if self.tool_registry is not None and hasattr(self.tool_registry, "resolve"):
             return self.tool_registry.resolve(effective_tool_names)
 
+        default_reg = None
         resolved: List[Any] = []
         for t_name in effective_tool_names:
             if t_name in CLOSED_TOOL_DEFINITIONS:
@@ -292,6 +312,14 @@ class AgentExecutionNode(BaseNode):
                 t_obj = self.tool_registry.get(t_name)
                 if t_obj is not None:
                     resolved.append(t_obj)
+            else:
+                if default_reg is None:
+                    from carefold.engine.tool_registry import create_default_registry
+
+                    default_reg = create_default_registry()
+                spec = default_reg.get(t_name)
+                if spec is not None:
+                    resolved.append(spec.to_tool_definition())
         return resolved
 
     async def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -386,10 +414,12 @@ class AgentExecutionNode(BaseNode):
                 for t in self.default_tools
             ]
         else:
-            effective_tool_names = [
-                t.name if hasattr(t, "name") else (t.get("name") if isinstance(t, dict) else str(t))
-                for t in tools
-            ]
+            effective_tool_names = []
+
+        for t in tools:
+            t_name = t.name if hasattr(t, "name") else (t.get("name") if isinstance(t, dict) else str(t))
+            if t_name and t_name not in effective_tool_names:
+                effective_tool_names.append(t_name)
 
         # 3. Build messages list
         raw_messages = list(state.get("messages", []))
