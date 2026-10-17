@@ -55,7 +55,7 @@ async function getInitialLibraryData(): Promise<{
   return { attachments, notes };
 }
 
-export default async function LibraryPage() {
+export default async function LibraryPage({ profileId }: { profileId?: string } = {}) {
   const { attachments, notes } = await getInitialLibraryData();
-  return <LibraryClient initialAttachments={attachments} initialNotes={notes} />;
+  return <LibraryClient initialAttachments={attachments} initialNotes={notes} profileId={profileId || 'me'} />;
 }

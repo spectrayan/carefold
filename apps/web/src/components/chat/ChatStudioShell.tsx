@@ -466,10 +466,21 @@ export function ChatStudioShell({
 
   // Composer Input & Ambiguity State
   const promptParam = searchParams.get('prompt') || initialPrompt || '';
+  const attachParam = searchParams.get('attach');
   const [inputText, setInputText] = useState(promptParam);
+  const [attachedFiles, setAttachedFiles] = useState<string[]>(() =>
+    attachParam && attachParam.trim() ? [attachParam.trim()] : []
+  );
   const [isStreaming, setIsStreaming] = useState(false);
   const [isActivityOpen, setIsActivityOpen] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (attachParam && attachParam.trim()) {
+      const cleanName = attachParam.trim();
+      setAttachedFiles((prev) => (prev.includes(cleanName) ? prev : [...prev, cleanName]));
+    }
+  }, [attachParam]);
 
   // Client-side ambiguity hold state
   const [heldAmbiguity, setHeldAmbiguity] = useState<{
@@ -519,6 +530,10 @@ export function ChatStudioShell({
     if (!text.trim() || isStreaming) return;
     setSuggestedQuestions([]);
 
+    const currentAttachments = attachedFiles.map((f) =>
+      f.startsWith('attachments/') ? f : `attachments/${f}`
+    );
+
     let updatedMessages: ChatMessage[];
     if (baseMessages && baseMessages.length > 0) {
       updatedMessages = baseMessages;
@@ -526,13 +541,15 @@ export function ChatStudioShell({
       const userMsg: ChatMessage = {
         id: `u-${Date.now()}`,
         role: 'user',
-        content: text
+        content: text,
+        ...(currentAttachments.length > 0 ? { attachments: currentAttachments } : {})
       };
       updatedMessages = [...messages, userMsg];
     }
     setMessages(updatedMessages);
     persistMessages(updatedMessages);
     setInputText('');
+    setAttachedFiles([]);
     isAtBottomRef.current = true;
     scrollToBottom(true);
 
@@ -582,6 +599,7 @@ export function ChatStudioShell({
           profileId: resolvedProfileId,
           profile_id: resolvedProfileId,
           prompt: text,
+          ...(currentAttachments.length > 0 ? { attachments: currentAttachments } : {}),
           allow_clinical: allowClinical,
           allowClinical,
           messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
@@ -1362,6 +1380,28 @@ export function ChatStudioShell({
           <div className="p-3 sm:p-4 border-t border-[var(--cf-border)] bg-[var(--cf-surface)] shrink-0">
             <div className="max-w-[760px] mx-auto">
               <div className="rounded-2xl border border-[var(--cf-border-strong)] bg-[var(--cf-surface)] p-3 shadow-sm focus-within:ring-2 focus-within:ring-[var(--cf-focus)] transition-all">
+                {attachedFiles.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                    {attachedFiles.map((file) => (
+                      <span
+                        key={file}
+                        data-testid={`attached-file-chip-${file}`}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                      >
+                        <Paperclip className="w-3 h-3 shrink-0" />
+                        <span className="truncate max-w-[200px]">{file}</span>
+                        <button
+                          type="button"
+                          aria-label={`Remove ${file}`}
+                          onClick={() => setAttachedFiles((prev) => prev.filter((f) => f !== file))}
+                          className="ml-0.5 hover:opacity-75 transition"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <textarea
                   aria-label={`Message ${selectedAgent.title}`}
                   placeholder={t('chat.composer_placeholder', { agent: selectedAgent.title, name: profile.name })}

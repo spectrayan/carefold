@@ -16,6 +16,14 @@ import LibraryPage from '@/app/library/page';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ProfileLibraryPage() {
-  return <LibraryPage />;
+interface ProfileLibraryPageProps {
+  params: Promise<{
+    profileId: string;
+  }>;
+}
+
+export default async function ProfileLibraryPage({ params }: ProfileLibraryPageProps) {
+  const resolvedParams = await params;
+  const profileId = resolvedParams?.profileId || 'me';
+  return <LibraryPage profileId={profileId} />;
 }

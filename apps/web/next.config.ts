@@ -45,6 +45,11 @@ const nextConfig: NextConfig = {
         source: '/library',
         destination: '/p/me/library',
         permanent: false
+      },
+      {
+        source: '/chat',
+        destination: '/p/me/chat',
+        permanent: false
       }
     ];
   },

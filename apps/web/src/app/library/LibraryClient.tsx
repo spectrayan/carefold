@@ -49,12 +49,15 @@ import { useI18n } from '@/i18n';
 interface LibraryClientProps {
   initialAttachments: AttachmentItem[];
   initialNotes: WorkspaceNoteSummary[];
+  profileId?: string;
 }
 
-export function LibraryClient({ initialAttachments, initialNotes }: LibraryClientProps) {
+export function LibraryClient({ initialAttachments, initialNotes, profileId }: LibraryClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { t } = useI18n();
+  const baseLibraryPath = profileId ? `/p/${encodeURIComponent(profileId)}/library` : '/library';
+  const baseChatPath = profileId ? `/p/${encodeURIComponent(profileId)}/chat` : '/chat';
 
   const tabParam = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState<'documents' | 'notes' | 'search'>(
@@ -86,7 +89,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
     setSearchQuery('');
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.set('tab', tab);
-    router.replace(`/library?${newParams.toString()}`);
+    router.replace(`${baseLibraryPath}?${newParams.toString()}`);
   };
 
   // Filtered documents
@@ -474,7 +477,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
                           </td>
                           <td className="px-6 py-4 text-right">
                             <Link
-                              href={`/chat?attach=${encodeURIComponent(doc.filename)}`}
+                              href={`${baseChatPath}?attach=${encodeURIComponent(doc.filename)}`}
                               data-testid={`use-in-chat-${doc.filename}`}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition"
                             >
@@ -515,7 +518,7 @@ export function LibraryClient({ initialAttachments, initialNotes }: LibraryClien
               {!searchQuery && (
                 <div className="mt-6">
                   <Link
-                    href="/chat"
+                    href={baseChatPath}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] font-medium text-sm transition"
                   >
                     <MessageSquare className="w-4 h-4" />

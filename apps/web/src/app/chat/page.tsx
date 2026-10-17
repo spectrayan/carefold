@@ -12,7 +12,7 @@
  */
 
 import React, { Suspense } from 'react';
-import { ChatClient } from './ChatClient';
+import { ChatStudioShell } from '@/components/chat/ChatStudioShell';
 import type { AgentSummary } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -36,8 +36,8 @@ async function getInstalledAgents(): Promise<AgentSummary[]> {
 export default async function ChatPage() {
   const agents = await getInstalledAgents();
   return (
-    <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading chat workspace...</div>}>
-      <ChatClient initialAgents={agents} />
+    <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading consultation studio...</div>}>
+      <ChatStudioShell profileId="me" initialAgents={agents} />
     </Suspense>
   );
 }
