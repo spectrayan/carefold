@@ -364,12 +364,15 @@ async def list_attachments(
             ).order_by(Attachment.created_at.desc())
 
     results: List[Dict[str, Any]] = []
-    seen_filenames = set()
+    seen_keys: set[tuple[str, str, str]] = set()
 
     try:
         res = await db.execute(stmt)
         for att in res.scalars().all():
-            seen_filenames.add(att.filename)
+            dedup_key = (att.profile_id or "", att.filename, att.sha256_hash or "")
+            if dedup_key in seen_keys:
+                continue
+            seen_keys.add(dedup_key)
             if att.user_id and att.profile_id:
                 rel = f"attachments/{att.user_id}/{att.profile_id}/{att.filename}"
             elif att.user_id:

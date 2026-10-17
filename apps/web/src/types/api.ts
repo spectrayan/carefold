@@ -291,16 +291,20 @@ export interface AttachmentUploadResponse {
 }
 
 export interface AttachmentItem {
+  id?: string;
   filename: string;
   path: string;
   size: number;
   timestamp: string;
+  profile_id?: string | null;
 }
 
 export interface WorkspaceNoteSummary {
+  id?: string;
   slug: string;
   title: string;
   agent?: string | null;
+  profile_id?: string | null;
   created_at: string;
   size_bytes: number;
 }

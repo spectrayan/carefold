@@ -53,6 +53,34 @@ interface LibraryClientProps {
   profileId?: string;
 }
 
+function deduplicateAttachments(items: AttachmentItem[]): AttachmentItem[] {
+  const seen = new Set<string>();
+  const result: AttachmentItem[] = [];
+  for (const item of items) {
+    const key = item.id || item.path || item.filename;
+    if (!seen.has(key) && !seen.has(item.filename)) {
+      seen.add(key);
+      seen.add(item.filename);
+      result.push(item);
+    }
+  }
+  return result;
+}
+
+function deduplicateNotes(items: WorkspaceNoteSummary[]): WorkspaceNoteSummary[] {
+  const seen = new Set<string>();
+  const result: WorkspaceNoteSummary[] = [];
+  for (const item of items) {
+    const key = item.id || item.slug;
+    if (!seen.has(key) && !seen.has(item.slug)) {
+      seen.add(key);
+      seen.add(item.slug);
+      result.push(item);
+    }
+  }
+  return result;
+}
+
 export function LibraryClient({ initialAttachments, initialNotes, profileId }: LibraryClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -65,8 +93,12 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
     tabParam === 'notes' ? 'notes' : tabParam === 'search' ? 'search' : 'documents'
   );
 
-  const [attachments, setAttachments] = useState<AttachmentItem[]>(initialAttachments);
-  const [notes, setNotes] = useState<WorkspaceNoteSummary[]>(initialNotes);
+  const [attachments, setAttachments] = useState<AttachmentItem[]>(() =>
+    deduplicateAttachments(initialAttachments)
+  );
+  const [notes, setNotes] = useState<WorkspaceNoteSummary[]>(() =>
+    deduplicateNotes(initialNotes)
+  );
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -75,7 +107,7 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
       fetchNotes()
         .then((items) => {
           if (Array.isArray(items) && items.length > 0) {
-            setNotes(items);
+            setNotes(deduplicateNotes(items));
           }
         })
         .catch(() => {
@@ -86,7 +118,7 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
       fetchAttachments()
         .then((items) => {
           if (Array.isArray(items) && items.length > 0) {
-            setAttachments(items);
+            setAttachments(deduplicateAttachments(items));
           }
         })
         .catch(() => {
@@ -207,7 +239,7 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
       await uploadAttachment(file);
       // Refresh list
       const updated = await fetchAttachments();
-      setAttachments(updated);
+      setAttachments(deduplicateAttachments(updated));
       setDuplicateWarning(null);
     } catch (err: any) {
       setUploadError(err.message || 'Failed to upload document');
@@ -468,11 +500,11 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
-                    {filteredAttachments.map((doc) => {
+                    {filteredAttachments.map((doc, idx) => {
                       const format = getFileFormat(doc.filename);
                       return (
                         <tr
-                          key={doc.filename}
+                          key={doc.id || doc.path || `${doc.filename}-${idx}`}
                           data-testid={`document-row-${doc.filename}`}
                           className="hover:bg-slate-50/75 dark:hover:bg-zinc-800/40 transition"
                         >
@@ -556,9 +588,9 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" data-testid="notes-grid">
-              {filteredNotes.map((note) => (
+              {filteredNotes.map((note, idx) => (
                 <div
-                  key={note.slug}
+                  key={note.id || `${note.slug}-${note.profile_id || idx}`}
                   data-testid={`note-card-${note.slug}`}
                   onClick={() => handleOpenNote(note.slug)}
                   className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm hover:border-emerald-500/50 dark:hover:border-emerald-500/50 hover:shadow-md transition cursor-pointer flex flex-col justify-between gap-4 group"
