@@ -12,6 +12,7 @@
  */
 
 import React from 'react';
+import { cookies } from 'next/headers';
 import { LibraryClient } from './LibraryClient';
 import type { AttachmentItem, WorkspaceNoteSummary } from '@/types/api';
 
@@ -22,14 +23,24 @@ async function getInitialLibraryData(): Promise<{
   notes: WorkspaceNoteSummary[];
 }> {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const reqHeaders: Record<string, string> = { Accept: 'application/json' };
+  try {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+    if (cookieHeader) {
+      reqHeaders.Cookie = cookieHeader;
+    }
+  } catch {
+    // Static or test context without request headers
+  }
 
   const [attachmentsRes, notesRes] = await Promise.allSettled([
     fetch(`${backendUrl}/api/v1/attachments`, {
-      headers: { Accept: 'application/json' },
+      headers: reqHeaders,
       cache: 'no-store'
     }),
     fetch(`${backendUrl}/api/v1/notes`, {
-      headers: { Accept: 'application/json' },
+      headers: reqHeaders,
       cache: 'no-store'
     })
   ]);

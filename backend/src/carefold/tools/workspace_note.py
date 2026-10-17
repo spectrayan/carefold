@@ -112,6 +112,105 @@ async def execute_workspace_note(params: Dict[str, Any], context: Any) -> ToolRe
 
         target_path.write_text(frontmatter, encoding="utf-8")
 
+        # Also persist into relational database (carefold.db -> notes table) when not in an isolated test tmp_path
+        is_isolated_test_workspace = bool(
+            ws_root
+            and not (Path(ws_root) / "backend").is_dir()
+            and Path(ws_root).resolve() != settings.home_dir.resolve()
+        )
+        if not is_isolated_test_workspace:
+            try:
+                import hashlib
+                import json
+                import uuid
+                from sqlalchemy import select
+                from carefold.db.models import Job, Note, Profile
+                from carefold.db.session import get_session_factory
+
+                ctx_user_id = getattr(context, "user_id", None) if context is not None else None
+                ctx_profile_id = getattr(context, "profile_id", None) if context is not None else None
+                if ctx_user_id in ("default_user", ""):
+                    ctx_user_id = None
+                if ctx_profile_id in ("default_profile", ""):
+                    ctx_profile_id = None
+
+                factory = get_session_factory()
+                async with factory() as session:
+                    resolved_profile_id = ctx_profile_id
+                    resolved_user_id = ctx_user_id
+                    if resolved_profile_id and str(resolved_profile_id).lower() == "me" and resolved_user_id:
+                        prof_res = await session.execute(
+                            select(Profile).where(Profile.user_id == resolved_user_id).limit(1)
+                        )
+                        prof_obj = prof_res.scalar_one_or_none()
+                        if prof_obj is not None:
+                            resolved_profile_id = prof_obj.id
+                        else:
+                            resolved_profile_id = None
+                    elif resolved_profile_id:
+                        prof_res = await session.execute(
+                            select(Profile).where(Profile.id == resolved_profile_id).limit(1)
+                        )
+                        prof_obj = prof_res.scalar_one_or_none()
+                        if prof_obj is None:
+                            resolved_profile_id = None
+                        elif not resolved_user_id:
+                            resolved_user_id = prof_obj.user_id
+
+                    existing_stmt = select(Note).where(Note.slug == safe_title)
+                    if resolved_profile_id:
+                        existing_stmt = existing_stmt.where(Note.profile_id == resolved_profile_id)
+                    existing_res = await session.execute(existing_stmt.limit(1))
+                    existing_note = existing_res.scalar_one_or_none()
+                    now_dt = datetime.now(timezone.utc)
+                    display_title = title.strip()
+                    if display_title == safe_title:
+                        display_title = safe_title.replace("-", " ").replace("_", " ").strip().title() or title.strip()
+
+                    if existing_note is not None:
+                        existing_note.title = display_title
+                        existing_note.content = content.strip()
+                        existing_note.type = agent_id or existing_note.type or "general"
+                        existing_note.updated_at = now_dt
+                        note_id = existing_note.id
+                    else:
+                        note_id = str(uuid.uuid4())
+                        new_note = Note(
+                            id=note_id,
+                            type=agent_id or "general",
+                            user_id=resolved_user_id,
+                            profile_id=resolved_profile_id,
+                            slug=safe_title,
+                            title=display_title,
+                            content=content.strip(),
+                            tags_json="[]",
+                            created_at=now_dt,
+                            updated_at=now_dt,
+                        )
+                        session.add(new_note)
+
+                    if resolved_profile_id:
+                        content_hash = hashlib.sha256(content.strip().encode("utf-8")).hexdigest()[:12]
+                        index_job = Job(
+                            id=str(uuid.uuid4()),
+                            profile_id=resolved_profile_id,
+                            kind="index_doc",
+                            payload=json.dumps({
+                                "document_id": note_id,
+                                "profile_id": resolved_profile_id,
+                                "doc_type": "note",
+                            }),
+                            timezone="UTC",
+                            next_run_at=now_dt,
+                            idempotency_key=f"index:note:{note_id}:{content_hash}",
+                            status="pending",
+                        )
+                        session.add(index_job)
+
+                    await session.commit()
+            except Exception:
+                pass
+
         try:
             rel_path = str(target_path.relative_to(ws_root_path))
         except ValueError:

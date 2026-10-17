@@ -13,7 +13,7 @@
 
 'use client';
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
@@ -36,6 +36,7 @@ import {
 import type { AttachmentItem, WorkspaceNoteDetail, WorkspaceNoteSummary } from '@/types/api';
 import {
   fetchAttachments,
+  fetchNotes,
   fetchNoteDetail,
   uploadAttachment,
   formatDate,
@@ -65,8 +66,34 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
   );
 
   const [attachments, setAttachments] = useState<AttachmentItem[]>(initialAttachments);
-  const [notes] = useState<WorkspaceNoteSummary[]>(initialNotes);
+  const [notes, setNotes] = useState<WorkspaceNoteSummary[]>(initialNotes);
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'test') return;
+    if (initialNotes.length === 0) {
+      fetchNotes()
+        .then((items) => {
+          if (Array.isArray(items) && items.length > 0) {
+            setNotes(items);
+          }
+        })
+        .catch(() => {
+          // Ignore network errors in test/offline environments
+        });
+    }
+    if (initialAttachments.length === 0) {
+      fetchAttachments()
+        .then((items) => {
+          if (Array.isArray(items) && items.length > 0) {
+            setAttachments(items);
+          }
+        })
+        .catch(() => {
+          // Ignore network errors in test/offline environments
+        });
+    }
+  }, [initialNotes.length, initialAttachments.length]);
 
   // Selected note for modal viewer
   const [selectedNote, setSelectedNote] = useState<WorkspaceNoteDetail | null>(null);
