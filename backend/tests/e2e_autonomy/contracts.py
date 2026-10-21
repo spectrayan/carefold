@@ -476,13 +476,28 @@ class ApprovalStore:
 
         return record
 
-    def consume_atomic(self, approval_id: str, current_args: Dict[str, Any]) -> str:
-        """Atomic consume: approved -> consumed with hash verification (fail-closed)."""
+    def consume_atomic(
+        self,
+        approval_id: str,
+        current_args: Dict[str, Any],
+        *,
+        profile_id: Optional[str] = None,
+        tool_name: Optional[str] = None,
+    ) -> str:
+        """Atomic consume: approved -> consumed with binding and hash verification (fail-closed).
+
+        The execution choke point passes ``profile_id``/``tool_name``; an
+        approval issued for another profile or tool is refused.
+        """
         record = self._records.get(approval_id)
         if not record:
             raise KeyError("Approval not found")
         if record.status != "approved":
             raise ValueError(f"Approval is in status '{record.status}', cannot consume (fail-closed)")
+        if profile_id is not None and record.profile_id != profile_id:
+            raise ValueError("Approval was issued for a different profile (fail-closed)")
+        if tool_name is not None and record.tool_name != tool_name:
+            raise ValueError("Approval was issued for a different tool (fail-closed)")
         if time.time() > record.expires_at:
             record.status = "rejected"
             raise ValueError("Approval has expired (fail-closed)")
