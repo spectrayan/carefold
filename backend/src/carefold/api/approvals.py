@@ -28,6 +28,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from yarvelle_core.audit.redaction import contains_redaction_placeholder, redact_tool_args
+
 from carefold.api.deps import get_current_user, get_db
 from carefold.api.profiles import get_user_profile_access
 from carefold.auth.ports import UserProfile
@@ -317,8 +319,13 @@ async def decide_approval(
 
     # 6. If approved with edited arguments, recompute payload hash and canonical JSON
     if normalized_decision == "approved" and payload.edited_args is not None:
+        if contains_redaction_placeholder(payload.edited_args):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Edited arguments still contain redacted placeholders; supply the full values.",
+            )
         approval.payload_hash = compute_payload_hash(payload.edited_args)
-        approval.args_redacted = canonical_json(payload.edited_args)
+        approval.args_redacted = canonical_json(redact_tool_args(payload.edited_args))
 
     await db.commit()
     await db.refresh(approval)
