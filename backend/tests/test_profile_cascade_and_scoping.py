@@ -104,7 +104,7 @@ from carefold.main import app
 from carefold.memory.adapters.sqlite.memory_adapter import SqliteMemoryAdapter
 from carefold.memory.factory import reset_memory_ports, set_memory_port
 from carefold.memory.ports.memory_port import MemoryTier
-from carefold.vault.dek import get_or_create_dek, delete_profile_keys
+from carefold.vault.dek import get_or_create_dek
 
 
 @pytest.fixture
@@ -186,7 +186,7 @@ def register_and_login(client: TestClient, email: str, password: str, name: str)
 
 @pytest.mark.asyncio
 async def test_01_profile_deletion_cascade_order_verification(cascade_test_env, monkeypatch):
-    """Test 01: Verifies the exact 5-phase deletion cascade sequence."""
+    """Test 01: DB purge (incl. DEK) commits before CAS and memory purges."""
     order_log: list[str] = []
 
     with TestClient(app) as client:
@@ -201,12 +201,18 @@ async def test_01_profile_deletion_cascade_order_verification(cascade_test_env, 
         assert p_resp.status_code == 201
         dad_id = p_resp.json()["id"]
 
-        # Instrument Step 1: delete_profile_keys
-        orig_delete_keys = delete_profile_keys
-        async def spy_delete_keys(db, profile_id):
-            order_log.append("1_dek_drop")
-            return await orig_delete_keys(db, profile_id)
-        monkeypatch.setattr("carefold.api.profiles.delete_profile_keys", spy_delete_keys)
+        # Instrument Step 1: atomic DB purge (all profile rows incl. the DEK)
+        import carefold.api.profiles as profiles_api
+
+        orig_purge = profiles_api.purge_profile_rows
+
+        async def spy_purge(db, profile_id):
+            order_log.append("1_db_purge")
+            purged = await orig_purge(db, profile_id)
+            assert "profile_keys" in purged
+            return purged
+
+        monkeypatch.setattr(profiles_api, "purge_profile_rows", spy_purge)
 
         # Instrument Step 2: shutil.rmtree
         orig_rmtree = shutil.rmtree
@@ -235,10 +241,13 @@ async def test_01_profile_deletion_cascade_order_verification(cascade_test_env, 
         assert del_resp.status_code in (200, 204)
 
         # Verify steps occurred in sequence
-        assert "1_dek_drop" in order_log
+        # The DB transaction (DEK crypto-shred + rows) commits before any
+        # irreversible file or memory purge, so a failed delete leaves no
+        # half-deleted profile behind.
+        assert "1_db_purge" in order_log
         assert "2_cas_rm" in order_log
         assert "3_memory_purge" in order_log
-        assert order_log.index("1_dek_drop") < order_log.index("2_cas_rm") < order_log.index("3_memory_purge")
+        assert order_log.index("1_db_purge") < order_log.index("2_cas_rm") < order_log.index("3_memory_purge")
 
 
 @pytest.mark.asyncio

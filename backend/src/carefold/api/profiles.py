@@ -31,34 +31,14 @@ from carefold.auth.adapters.disabled_adapter import DEFAULT_STEWARD_USER
 from carefold.auth.ports import UserProfile
 from carefold.config import settings
 from carefold.db.models import (
-    Appointment,
-    Approval,
-    Attachment,
     AuditEventRecord,
-    ChatThread,
-    CompanionDevice,
-    Connection,
-    ConsentGrant,
-    Credential,
-    EmailDraft,
-    HealthResource,
-    ImportBatch,
-    Job,
-    McpToolPin,
-    Note,
-    PreventiveRecord,
     Profile,
     ProfileAccess,
     ProfileConsent,
-    ProfileKey,
-    Reminder,
-    Routine,
-    SchoolForm,
-    SchoolIcsFeed,
-    SyncRun,
     User,
     ViewerInvite,
 )
+from carefold.db.base import Base
 from carefold.db.session import get_db
 from carefold.i18n.locale import (
     DEFAULT_LOCALE,
@@ -69,7 +49,6 @@ from carefold.i18n.locale import (
 from carefold.logging import get_logger
 from carefold.memory.factory import get_memory_port
 from carefold.storage.cas import sanitize_partition_segment
-from carefold.vault.dek import delete_profile_keys
 from carefold.schemas.profiles import (
     AccessLevel,
     ProfileAccessGrant,
@@ -939,6 +918,26 @@ async def update_profile(
     return await get_profile(profile.id, user, db)
 
 
+PROFILE_DELETE_SKIP_TABLES = frozenset({"profiles", AuditEventRecord.__tablename__})
+
+
+async def purge_profile_rows(db: AsyncSession, profile_id: str) -> List[str]:
+    """Deletes rows of every mapped table carrying a ``profile_id`` column.
+
+    Tables are visited in reverse foreign-key dependency order so children go
+    before parents. Core and pack tables registered on the shared metadata are
+    covered without core naming any domain model. Core ``Table`` statements are
+    used so scope filters on ORM queries cannot hide rows in other scopes.
+    """
+    purged: List[str] = []
+    for table in reversed(Base.metadata.sorted_tables):
+        if table.name in PROFILE_DELETE_SKIP_TABLES or "profile_id" not in table.c:
+            continue
+        await db.execute(table.delete().where(table.c.profile_id == profile_id))
+        purged.append(table.name)
+    return purged
+
+
 @router.delete("/{profile_id}")
 async def delete_profile(
     profile_id: str,
@@ -973,20 +972,39 @@ async def delete_profile(
             detail="Cannot delete primary 'Me' profile.",
         )
 
-    # -------------------------------------------------------------
-    # 5-Phase Deletion Cascade (AU-11)
-    # -------------------------------------------------------------
-    # Phase 1: Crypto-shredding (Drop DEK from profile_keys)
-    try:
-        shredded = await delete_profile_keys(db, profile.id)
-        logger.info("crypto_shredding_executed", profile_id=profile.id, shredded=shredded)
-    except Exception as vault_err:
-        logger.warning("crypto_shredding_warning", profile_id=profile.id, error=str(vault_err))
+    # Capture identifiers up front: ORM attributes expire on commit/rollback and
+    # must not trigger lazy IO afterwards.
+    target_id: str = profile.id
+    profile_user_id: Optional[str] = profile.user_id
 
-    # Phase 2: CAS file storage directory deletion
-    clean_pid = sanitize_partition_segment(profile.id)
+    # -------------------------------------------------------------
+    # Deletion cascade (AU-11, E13.4)
+    # -------------------------------------------------------------
+    # Phase 1 (atomic): purge every profile-owned row, including the profile DEK
+    # (crypto-shredding), in a single transaction. Nothing irreversible happens
+    # outside the database until this commit succeeds, so a failure leaves the
+    # profile fully intact instead of half-deleted.
+    try:
+        await db.execute(
+            update(AuditEventRecord).where(AuditEventRecord.profile_id == target_id).values(profile_id=None)
+        )
+        purged_tables = await purge_profile_rows(db, target_id)
+        await db.execute(delete(Profile).where(Profile.id == target_id))
+        await db.commit()
+        logger.info("profile_rows_purged", profile_id=target_id, tables=purged_tables)
+    except Exception as db_err:
+        await db.rollback()
+        logger.exception("database_cascade_delete_failed", profile_id=target_id, error=str(db_err))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete profile records; no data was removed.",
+        )
+
+    # Phase 2 (post-commit, best effort): CAS and upload directories. The DEK is
+    # already gone, so any residual ciphertext is unrecoverable.
+    clean_pid = sanitize_partition_segment(target_id)
     candidate_uids = {
-        sanitize_partition_segment(profile.user_id),
+        sanitize_partition_segment(profile_user_id),
         sanitize_partition_segment(owner_id),
         "default",
     }
@@ -997,24 +1015,24 @@ async def delete_profile(
         cas_dir = carefold_home / "data" / "files" / uid_seg / clean_pid
         if cas_dir.is_dir():
             shutil.rmtree(cas_dir, ignore_errors=True)
-            logger.info("cas_files_purged", path=str(cas_dir), profile_id=profile.id)
+            logger.info("cas_files_purged", path=str(cas_dir), profile_id=target_id)
 
         up_dir = uploads_root / uid_seg / clean_pid
         if up_dir.is_dir():
             shutil.rmtree(up_dir, ignore_errors=True)
-            logger.info("uploads_files_purged", path=str(up_dir), profile_id=profile.id)
+            logger.info("uploads_files_purged", path=str(up_dir), profile_id=target_id)
 
-    # Phase 3: Purge Spector cognitive memory and search namespace
+    # Phase 3 (post-commit, best effort): memory namespaces and search index
     try:
         memory_port = get_memory_port()
         namespaces_to_purge = {
-            profile.id,
-            f"profile_{profile.id}",
+            target_id,
+            f"profile_{target_id}",
         }
         if owner_id:
-            namespaces_to_purge.add(f"user_{owner_id}_profile_{profile.id}")
-        if profile.user_id and profile.user_id != owner_id:
-            namespaces_to_purge.add(f"user_{profile.user_id}_profile_{profile.id}")
+            namespaces_to_purge.add(f"user_{owner_id}_profile_{target_id}")
+        if profile_user_id and profile_user_id != owner_id:
+            namespaces_to_purge.add(f"user_{profile_user_id}_profile_{target_id}")
 
         for ns in namespaces_to_purge:
             try:
@@ -1026,53 +1044,14 @@ async def delete_profile(
     except Exception as mem_port_err:
         logger.warning("memory_port_access_failed", error=str(mem_port_err))
 
-    # Optional search index purge hook
     try:
         from carefold.search.factory import get_search_index
+
         search_idx = get_search_index()
         if hasattr(search_idx, "purge_profile"):
-            await search_idx.purge_profile(profile.id)
-    except (ImportError, Exception):
-        pass
-
-    # Phase 4: Explicit database child row cascade deletion
-    try:
-        await db.execute(update(AuditEventRecord).where(AuditEventRecord.profile_id == profile.id).values(profile_id=None))
-        await db.execute(delete(Job).where(Job.profile_id == profile.id))
-        await db.execute(delete(Approval).where(Approval.profile_id == profile.id))
-        await db.execute(delete(Routine).where(Routine.profile_id == profile.id))
-        await db.execute(delete(McpToolPin).where(McpToolPin.profile_id == profile.id))
-        await db.execute(delete(EmailDraft).where(EmailDraft.profile_id == profile.id))
-        await db.execute(delete(SchoolIcsFeed).where(SchoolIcsFeed.profile_id == profile.id))
-        await db.execute(delete(CompanionDevice).where(CompanionDevice.profile_id == profile.id))
-        await db.execute(delete(SyncRun).where(SyncRun.profile_id == profile.id))
-        await db.execute(delete(ConsentGrant).where(ConsentGrant.profile_id == profile.id))
-        await db.execute(delete(Credential).where(Credential.profile_id == profile.id))
-        await db.execute(delete(Connection).where(Connection.profile_id == profile.id))
-        await db.execute(delete(ChatThread).where(ChatThread.profile_id == profile.id))
-        await db.execute(delete(PreventiveRecord).where(PreventiveRecord.profile_id == profile.id))
-        await db.execute(delete(SchoolForm).where(SchoolForm.profile_id == profile.id))
-        await db.execute(delete(ImportBatch).where(ImportBatch.profile_id == profile.id))
-        await db.execute(delete(HealthResource).where(HealthResource.profile_id == profile.id))
-        await db.execute(delete(Reminder).where(Reminder.profile_id == profile.id))
-        await db.execute(delete(Note).where(Note.profile_id == profile.id))
-        await db.execute(delete(Appointment).where(Appointment.profile_id == profile.id))
-        await db.execute(delete(Attachment).where(Attachment.profile_id == profile.id))
-        await db.execute(delete(ViewerInvite).where(ViewerInvite.profile_id == profile.id))
-        await db.execute(delete(ProfileAccess).where(ProfileAccess.profile_id == profile.id))
-        await db.execute(delete(ProfileConsent).where(ProfileConsent.profile_id == profile.id))
-        await db.execute(delete(ProfileKey).where(ProfileKey.profile_id == profile.id))
-
-        # Phase 5: Delete Profile row itself and commit
-        await db.execute(delete(Profile).where(Profile.id == profile.id))
-        await db.commit()
-    except Exception as db_err:
-        await db.rollback()
-        logger.exception("database_cascade_delete_failed", profile_id=profile.id, error=str(db_err))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to cascade delete profile database records: {str(db_err)}",
-        )
+            await search_idx.purge_profile(target_id)
+    except Exception as search_err:
+        logger.warning("search_index_purge_failed", profile_id=target_id, error=str(search_err))
 
     logger.info("profile_deleted", profile_id=profile_id, user_id=owner_id)
     return {"deleted": True, "id": profile_id}
