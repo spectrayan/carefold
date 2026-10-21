@@ -21,6 +21,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
+from yarvelle_core.api.http_security import build_cors_options, enforce_bind_safety
+
 from carefold import __version__
 from carefold.api.router import api_router
 from carefold.config import settings
@@ -41,22 +43,17 @@ configure_logging()
 logger = get_logger("carefold.main")
 
 
+INSECURE_BIND_OVERRIDE_ENV = "CAREFOLD_ALLOW_UNAUTHENTICATED_NETWORK_BIND"
+
+
 def check_host_binding_security(host: str, auth_provider: Optional[str] = None) -> None:
-    """Warns if server is bound to a non-loopback host without authentication."""
-    clean_host = (host or DEFAULT_HOST).strip().lower()
-    clean_auth = (auth_provider or getattr(settings, "auth_provider", "local") or "local").strip().lower()
-    loopback_hosts = ("127.0.0.1", "localhost", "::1")
-    if clean_host not in loopback_hosts and clean_auth == "disabled":
-        logger.warning(
-            "security_warning_non_loopback_unauthenticated",
-            host=clean_host,
-            auth_provider=clean_auth,
-            message=(
-                "Carefold backend is bound to a non-loopback interface with authentication disabled! "
-                "Protected health data and administrative endpoints may be exposed on the local network. "
-                "Set CAREFOLD_AUTH_PROVIDER=local or bind to 127.0.0.1."
-            ),
-        )
+    """Refuses to start when auth is disabled on a non-loopback bind (explicit override only)."""
+    enforce_bind_safety(
+        (host or DEFAULT_HOST).strip(),
+        auth_provider or getattr(settings, "auth_provider", "local"),
+        override_env=INSECURE_BIND_OVERRIDE_ENV,
+        product="Carefold",
+    )
 
 
 @asynccontextmanager
@@ -120,13 +117,7 @@ def create_app() -> FastAPI:
     )
 
     # Configure CORS middleware for Next.js frontend communication
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    app.add_middleware(CORSMiddleware, **build_cors_options(settings.cors_origins))
 
     # Mount canonical versioned API routes under /api/v1
     app.include_router(api_router, prefix=API_V1_PREFIX)
