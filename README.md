@@ -62,8 +62,8 @@ docker pull ghcr.io/spectrayan/carefold:latest
 # Run container (connecting to local Ollama on your host machine)
 docker run -d \
   --name carefold \
-  -p 3000:3000 \
-  -p 8000:8000 \
+  -p 127.0.0.1:3000:3000 \
+  -p 127.0.0.1:8000:8000 \
   -e OLLAMA_URL=http://host.docker.internal:11434/v1 \
   -v carefold-data:/data \
   ghcr.io/spectrayan/carefold:latest

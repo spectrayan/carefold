@@ -165,3 +165,22 @@ def test_ollama_url_resolution_with_carefold_ollama_url(monkeypatch):
     settings = Settings()
     assert settings.ollama_url == "http://ollama:11434/v1"
     assert resolve_base_url("ollama") == "http://ollama:11434/v1"
+
+
+def test_docker_compose_publishes_ports_on_loopback_only():
+    """Every published host port must bind 127.0.0.1, never all interfaces.
+
+    The backend runs with CAREFOLD_HOST=0.0.0.0 inside the container, so the
+    host-side port mapping is the only thing keeping the API (and Ollama) off
+    the LAN by default.
+    """
+    data = yaml.safe_load(_get_compose_path().read_text(encoding="utf-8"))
+    published: List[str] = []
+    for name, service in data["services"].items():
+        for port in service.get("ports", []) or []:
+            mapping = str(port)
+            published.append(f"{name}:{mapping}")
+            assert mapping.startswith("127.0.0.1:"), (
+                f"service '{name}' publishes '{mapping}' on all interfaces; bind it to 127.0.0.1"
+            )
+    assert published, "expected at least one published port"

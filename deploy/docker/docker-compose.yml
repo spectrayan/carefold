@@ -12,7 +12,7 @@ services:
       dockerfile: deploy/docker/Dockerfile
       target: backend
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       - CAREFOLD_HOST=0.0.0.0
       - CAREFOLD_WORKSPACE_ROOT=/app
@@ -41,7 +41,7 @@ services:
       dockerfile: deploy/docker/Dockerfile
       target: web
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       - CAREFOLD_WORKSPACE=/app
       - BACKEND_URL=http://backend:8000
@@ -61,7 +61,7 @@ services:
     image: ollama/ollama:latest
     profiles: ["ollama"]
     ports:
-      - "11434:11434"
+      - "127.0.0.1:11434:11434"
     volumes:
       - ollama-data:/root/.ollama
     restart: unless-stopped
