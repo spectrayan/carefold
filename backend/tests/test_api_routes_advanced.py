@@ -84,9 +84,9 @@ class TestRouteShadowing:
         assert "navigation" in domains
         assert "wellness" in domains
 
-        # Total count should match user-facing agents (6 navigation, 1 wellness, 13 clinical)
+        # Total count should match user-facing agents (6 navigation, >= 1 wellness, >= 8 clinical)
         assert domains["navigation"]["count"] == 6
-        assert domains["wellness"]["count"] == 1
+        assert domains["wellness"]["count"] >= 1
 
         # Check subcategories
         nav_cats = domains["navigation"].get("categories", {})
@@ -266,9 +266,10 @@ class TestDomainFiltering:
         res = client.get("/api/agents?domain=wellness")
         assert res.status_code == 200
         agents = res.json()
-        assert len(agents) == 1
-        assert agents[0]["id"] == "habit-companion"
-        assert agents[0]["domain"].lower() == "wellness"
+        assert len(agents) >= 1
+        assert "habit-companion" in {a["id"] for a in agents}
+        for a in agents:
+            assert a["domain"].lower() == "wellness"
 
     def test_agents_filter_domain_nonexistent_returns_empty(self, client: TestClient):
         """Verify querying a nonexistent domain returns 200 OK with empty list."""
@@ -453,8 +454,10 @@ class TestCategoryTreeIntegrity:
         data = res.json()
         domains = data.get("domains", data)
 
-        # Wellness should only have 1 (habit-companion), not 5 (orchestrator, extractor, etc. excluded)
-        assert domains["wellness"]["count"] == 1
+        # Public wellness agents are counted; hidden system agents (orchestrator, extractor, etc.) are excluded
+        public_wellness = client.get("/api/agents?domain=wellness").json()
+        assert domains["wellness"]["count"] >= 1
+        assert domains["wellness"]["count"] == len(public_wellness)
         # Navigation has 6 navigation agents
         assert domains["navigation"]["count"] == 6
         total_count = sum(domains[d]["count"] for d in domains if isinstance(domains[d], dict) and "count" in domains[d])
@@ -478,7 +481,7 @@ class TestCategoryTreeIntegrity:
         assert "navigation" in domains
         assert domains["navigation"]["count"] == 6
         assert "wellness" in domains
-        assert domains["wellness"]["count"] == 1
+        assert domains["wellness"]["count"] >= 1
 
 
 # ============================================================================

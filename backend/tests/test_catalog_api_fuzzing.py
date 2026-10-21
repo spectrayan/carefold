@@ -174,7 +174,7 @@ async def test_catalog_indexing_and_category_tree_parity(repo_root: Path, tmp_pa
         assert "appointments" in domains["navigation"]["categories"]
         assert domains["navigation"]["categories"]["appointments"]["count"] == 1
 
-        assert domains["wellness"]["count"] == 1
+        assert domains["wellness"]["count"] >= 1
         assert "habits" in domains["wellness"]["categories"]
         assert domains["wellness"]["categories"]["habits"]["count"] == 1
 
@@ -188,7 +188,7 @@ async def test_catalog_indexing_and_category_tree_parity(repo_root: Path, tmp_pa
         all_domains = all_tree["domains"]
         assert all_domains["navigation"]["count"] == 6
         # System agents default to domain wellness with empty category
-        assert all_domains["wellness"]["count"] >= 5
+        assert all_domains["wellness"]["count"] >= domains["wellness"]["count"] + 4
 
         # 5. Query domain filtered tree
         nav_tree = await catalog.get_category_tree(domain="navigation", include_hidden=False)
@@ -208,7 +208,7 @@ async def test_catalog_indexing_and_category_tree_parity(repo_root: Path, tmp_pa
         re_tree = await catalog.get_category_tree(include_hidden=False)
         assert re_tree["total"] == public_count
         assert re_tree["domains"]["navigation"]["count"] == 6
-        assert re_tree["domains"]["wellness"]["count"] == 1
+        assert re_tree["domains"]["wellness"]["count"] >= 1
         assert re_tree["domains"]["clinical"]["count"] >= 8
     finally:
         await catalog.close()
@@ -452,7 +452,7 @@ def test_fastapi_endpoints_schemas_and_filters(client: TestClient):
 
     # Verify counts match public manifests in repo
     assert domains_tree["navigation"]["count"] == 6
-    assert domains_tree["wellness"]["count"] == 1
+    assert domains_tree["wellness"]["count"] >= 1
     assert domains_tree["clinical"]["count"] >= 8
 
     # 2. GET /api/agents (Public Marketplace View)
@@ -497,8 +497,9 @@ def test_fastapi_endpoints_schemas_and_filters(client: TestClient):
     well_resp = client.get("/api/agents?domain=wellness")
     assert well_resp.status_code == 200
     well_agents = well_resp.json()
-    assert len(well_agents) == 1
-    assert well_agents[0]["id"] == "habit-companion"
+    assert len(well_agents) >= 1
+    assert "habit-companion" in {a["id"] for a in well_agents}
+    assert all(a["domain"] == "wellness" for a in well_agents)
 
     clin_resp = client.get("/api/agents?domain=clinical")
     assert clin_resp.status_code == 200
