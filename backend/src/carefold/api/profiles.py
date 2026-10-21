@@ -48,7 +48,7 @@ from carefold.i18n.locale import (
 )
 from carefold.logging import get_logger
 from carefold.memory.factory import get_memory_port
-from carefold.storage.cas import sanitize_partition_segment
+from carefold.storage.cas import SINGLE_USER_PARTITION, sanitize_partition_segment
 from carefold.schemas.profiles import (
     AccessLevel,
     ProfileAccessGrant,
@@ -1002,11 +1002,13 @@ async def delete_profile(
 
     # Phase 2 (post-commit, best effort): CAS and upload directories. The DEK is
     # already gone, so any residual ciphertext is unrecoverable.
+    # Cleanup sweeps every partition this profile's files could live in,
+    # including the single-user one; this is a purge, not an access path.
     clean_pid = sanitize_partition_segment(target_id)
     candidate_uids = {
-        sanitize_partition_segment(profile_user_id),
-        sanitize_partition_segment(owner_id),
-        "default",
+        sanitize_partition_segment(profile_user_id, default=SINGLE_USER_PARTITION),
+        sanitize_partition_segment(owner_id, default=SINGLE_USER_PARTITION),
+        SINGLE_USER_PARTITION,
     }
     carefold_home = settings.home_dir.resolve()
     uploads_root = settings.get_uploads_dir().resolve()
