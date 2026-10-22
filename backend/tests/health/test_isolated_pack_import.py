@@ -45,7 +45,7 @@ assert hasattr(carefold, "__version__"), "carefold must expose __version__"
 pack = carefold.get_pack()
 assert pack.id == "health"
 assert pack.domain == "health"
-assert pack.version == "0.5.0b1"
+assert pack.version == carefold.__version__
 
 # 3. Verify health ToolSpecs (17 tools)
 from carefold.tools import get_health_tool_specs
