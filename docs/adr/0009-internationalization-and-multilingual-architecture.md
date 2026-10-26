@@ -27,6 +27,7 @@
 | **Deciders** | Carefold Core Maintainers, Clinical AI Reviewers |
 | **Consulted** | Technical Lead & TSC Chair, Clinical Safety Working Group |
 | **Informed** | Carefold Open-Source Community |
+| **Upstream Core ADR** | [Yarvelle Core ADR-0011](https://yarvelle.github.io/yarvelle-core/adr/0011-internationalization-and-multilingual-architecture/) — [Core ADR-0002 (Dynamic MCP DB Toolbox)](https://yarvelle.github.io/yarvelle-core/adr/0002-dynamic-mcp-db-toolbox/) |
 | **Related** | ADR-0001 (Orchestrator-Driven Agent Architecture), ADR-0002 (Hexagonal Memory & Catalog Ports), ADR-0007 (Content-Addressed Storage & Hybrid Search) |
 
 ---

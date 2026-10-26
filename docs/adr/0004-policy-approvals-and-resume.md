@@ -27,6 +27,7 @@
 | **Deciders** | Carefold Core Maintainers, Architecture Working Group, Clinical AI Reviewers |
 | **Consulted** | Technical Lead & TSC Chair, Security Engineering Reviewers |
 | **Informed** | Carefold Open-Source Community |
+| **Upstream Core ADR** | [Yarvelle Core ADR-0006](https://yarvelle.github.io/yarvelle-core/adr/0006-policy-approvals-and-resume/) — [Core ADR-0002 (Dynamic MCP DB Toolbox)](https://yarvelle.github.io/yarvelle-core/adr/0002-dynamic-mcp-db-toolbox/) |
 | **Related** | ADR-0001 (Orchestrator Lifecycle), ADR-0003 (Deep Agents Middleware), ADR-0005 (Vault Threat Model) |
 
 ---

@@ -10,6 +10,7 @@
 | **Deciders** | Carefold Core Maintainers, Systems Architect |
 | **Consulted** | Database Engineering Team, Security Engineering Lead |
 | **Informed** | Carefold Open-Source Community |
+| **Upstream Core ADR** | [Yarvelle Core ADR-0004](https://yarvelle.github.io/yarvelle-core/adr/0004-hexagonal-memory-and-catalog-ports/) — [Core ADR-0002 (Dynamic MCP DB Toolbox)](https://yarvelle.github.io/yarvelle-core/adr/0002-dynamic-mcp-db-toolbox/) |
 
 ---
 

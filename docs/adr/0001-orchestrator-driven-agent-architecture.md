@@ -10,6 +10,7 @@
 | **Deciders** | Carefold Core Maintainers, Clinical AI Reviewers |
 | **Consulted** | Medical Informatics Lead, Security Engineering Team |
 | **Informed** | Carefold Open-Source Community |
+| **Upstream Core ADR** | [Yarvelle Core ADR-0003](https://yarvelle.github.io/yarvelle-core/adr/0003-orchestrator-driven-agent-architecture/) — [Core ADR-0002 (Dynamic MCP DB Toolbox)](https://yarvelle.github.io/yarvelle-core/adr/0002-dynamic-mcp-db-toolbox/) |
 
 ---
 

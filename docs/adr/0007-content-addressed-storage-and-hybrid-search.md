@@ -27,6 +27,7 @@
 | **Deciders** | Carefold Core Maintainers, Clinical AI Reviewers |
 | **Consulted** | Technical Lead & TSC Chair, Security Engineering Team |
 | **Informed** | Carefold Open-Source Community |
+| **Upstream Core ADR** | [Yarvelle Core ADR-0009](https://yarvelle.github.io/yarvelle-core/adr/0009-content-addressed-storage-and-hybrid-search/) — [Core ADR-0002 (Dynamic MCP DB Toolbox)](https://yarvelle.github.io/yarvelle-core/adr/0002-dynamic-mcp-db-toolbox/) |
 | **Related** | ADR-0002 (Hexagonal Memory Ports), ADR-0005 (Vault Threat Model), ADR-0006 (Deployment Modes & Requirement Tiers) |
 
 ---

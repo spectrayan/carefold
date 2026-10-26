@@ -10,6 +10,7 @@
 | **Deciders** | Carefold Core Maintainers, Clinical AI Reviewers |
 | **Consulted** | Medical Informatics Lead, Security Engineering Team |
 | **Informed** | Carefold Open-Source Community |
+| **Upstream Core ADR** | [Yarvelle Core ADR-0005](https://yarvelle.github.io/yarvelle-core/adr/0005-progressive-disclosure-skill-context-management/) — [Core ADR-0002 (Dynamic MCP DB Toolbox)](https://yarvelle.github.io/yarvelle-core/adr/0002-dynamic-mcp-db-toolbox/) |
 | **Supersedes** | Partially supersedes skill-provisioning aspects of ADR-0001 §Phase 3 |
 | **Related** | ADR-0001 (Orchestrator Architecture), ADR-0002 (Hexagonal Memory Ports) |
 

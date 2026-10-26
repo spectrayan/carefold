@@ -1,6 +1,8 @@
 # Architecture Overview
 
-Carefold is engineered as a production-grade healthcare AI agent marketplace and local-first execution runtime built on [`yarvelle-core`](https://github.com/yarvelle/yarvelle-core) and `@yarvelle/ui`. It balances clinical empathy and specialty depth with deterministic safety boundaries and household-controlled privacy.
+Carefold is engineered as a production-grade healthcare AI agent marketplace and local-first execution runtime built on [`yarvelle-core`](https://yarvelle.github.io/yarvelle-core/) ([GitHub](https://github.com/yarvelle/yarvelle-core)) and `@yarvelle/ui`. It balances clinical empathy and specialty depth with deterministic safety boundaries and household-controlled privacy.
+
+Core runtime capabilities—including [Multi-Agent Blackboard Deliberation (Core ADR-0001)](https://yarvelle.github.io/yarvelle-core/adr/0001-multi-agent-deliberation/) and the [Dynamic Multi-Dialect MCP Database Toolbox & AST Sandbox (Core ADR-0002)](https://yarvelle.github.io/yarvelle-core/adr/0002-dynamic-mcp-db-toolbox/)—are documented in the [Yarvelle Core ADR Catalog](https://yarvelle.github.io/yarvelle-core/adr/).
 
 ---
 
