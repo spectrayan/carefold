@@ -69,8 +69,8 @@ export const SkillMetadataSchema = z.object({
 }).passthrough();
 
 export const SkillFrontmatterSchema = z.object({
-  name: z.string().min(1, 'Skill name is required in SKILL.md frontmatter'),
-  description: z.string().min(1, 'Skill description is required in SKILL.md frontmatter'),
+  name: z.string({ error: (iss) => iss.input === undefined ? 'Required' : 'Expected string' }).min(1, 'Skill name is required in SKILL.md frontmatter'),
+  description: z.string({ error: (iss) => iss.input === undefined ? 'Required' : 'Expected string' }).min(1, 'Skill description is required in SKILL.md frontmatter'),
   license: z.string().optional(),
   'allowed-tools': z.string().optional(),
   compatibility: z.string().optional(),
@@ -85,15 +85,39 @@ export const CarefoldConfigSchema = z.object({
     model: z.string().default('llama3.2'),
     apiKey: z.string().default(''),
     temperature: z.number().optional()
-  }).default({}),
+  }).default({
+    provider: 'ollama',
+    baseUrl: 'http://127.0.0.1:11434/v1',
+    model: 'llama3.2',
+    apiKey: ''
+  }),
   audit: z.object({
     enabled: z.boolean().default(true),
     store_bodies: z.boolean().default(false),
     log_path: z.string().default('logs/audit.jsonl')
-  }).default({}),
+  }).default({
+    enabled: true,
+    store_bodies: false,
+    log_path: 'logs/audit.jsonl'
+  }),
   allow_clinical: z.boolean().default(false),
   telemetry: z.boolean().default(false)
-}).default({});
+}).default({
+  version: '0.1.0',
+  model: {
+    provider: 'ollama',
+    baseUrl: 'http://127.0.0.1:11434/v1',
+    model: 'llama3.2',
+    apiKey: ''
+  },
+  audit: {
+    enabled: true,
+    store_bodies: false,
+    log_path: 'logs/audit.jsonl'
+  },
+  allow_clinical: false,
+  telemetry: false
+});
 
 export const ScopeDefinitionSchema = z.object({
   id: z.string().min(1),
