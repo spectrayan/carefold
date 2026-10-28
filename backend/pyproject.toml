@@ -23,7 +23,7 @@ dependencies = [
     "langchain-google-genai>=2.0.0",
     "langchain-ollama>=1.1.0",
     "langgraph>=0.2.0",
-    "langgraph-checkpoint-sqlite>=2.0.0",
+    "langgraph-checkpoint-sqlite>=3.1.2",
     "aiosqlite>=0.20.0",
     "structlog>=24.1.0",
     "python-multipart>=0.0.18",
@@ -41,12 +41,15 @@ dependencies = [
     "pypdf>=4.0.0",
     "defusedxml>=0.7.1",
     "fhir.resources>=8.0.0",
+    "certifi>=2026.10.18",
+    "opentelemetry-api>=1.45.1",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
+    "pytest-xdist>=3.6.1",
     "licenseheaders>=0.8.8",
     "import-linter>=2.0",
     "build>=1.2.0",
