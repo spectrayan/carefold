@@ -7,12 +7,24 @@ on:
       - 'deploy/docker/**'
       - '**/Dockerfile*'
       - '.github/workflows/container-security.yml'
+      - 'package.json'
+      - 'frontend/package.json'
+      - 'tools/**/package.json'
+      - 'pnpm-lock.yaml'
+      - 'backend/pyproject.toml'
+      - 'backend/uv.lock'
   pull_request:
     branches: [main]
     paths:
       - 'deploy/docker/**'
       - '**/Dockerfile*'
       - '.github/workflows/container-security.yml'
+      - 'package.json'
+      - 'frontend/package.json'
+      - 'tools/**/package.json'
+      - 'pnpm-lock.yaml'
+      - 'backend/pyproject.toml'
+      - 'backend/uv.lock'
   schedule:
     - cron: '0 4 * * 1'  # Weekly Monday 4:00 AM UTC
   workflow_dispatch:
