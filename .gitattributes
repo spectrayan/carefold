@@ -1,0 +1,25 @@
+# Default behavior: normalize line endings to LF for all text files
+* text=auto eol=lf
+
+# Explicitly enforce LF for scripting, config, and documentation files
+*.sh text eol=lf
+*.py text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.mjs text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf
+*.md text eol=lf
+
+# Declare binary files so Git doesn't try to merge or alter them
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.pdf binary
