@@ -34,7 +34,7 @@ from carefold.constants.paths import AGENTS_DIR, SKILLS_DIR
 from carefold.memory.ports.catalog_port import CatalogPort
 from carefold.resources.loader import get_resource_loader
 from carefold.schemas.manifest import AgentManifest
-from carefold.schemas.plan import AgentTask, ExecutionMode, ExecutionPlan
+from carefold.schemas.plan import AgentTask, DeliberationConfig, ExecutionMode, ExecutionPlan
 from carefold.schemas.routing import RoutingHints
 from carefold.templates.engine import render_template
 from carefold.workflows.nodes.base import BaseNode
@@ -592,7 +592,72 @@ class OrchestratorNode(BaseNode):
 
         prompt_lower = prompt_text.lower()
 
-        # 2. Check for cross-functional pipeline mode: specialty -> administrative (prior auth / formulary / claims)
+        # 2. Check for deliberation mode (ExecutionMode.DELIBERATE)
+        deliberation_keywords = (
+            "deliberate",
+            "deliberation",
+            "cross-examine",
+            "peer critique",
+            "roundtable",
+            "panel discussion",
+            "committee review",
+            "peer review",
+        )
+        wants_deliberation = any(dk in prompt_lower for dk in deliberation_keywords)
+        deliberation_config = state.get("deliberation_config")
+
+        if deliberation_config or wants_deliberation:
+            target_agents: List[str] = []
+            if hasattr(self, "registry") and self.registry:
+                for aid in self.registry.list_agent_ids():
+                    if aid.startswith("_") or aid in (
+                        "orchestrator",
+                        "document-extractor",
+                        "suggestion-generator",
+                        "skill-generator",
+                        "quality-reviewer",
+                        "triage-auditor",
+                        "db-operator",
+                    ):
+                        continue
+                    if aid in prompt_lower or aid.replace("-", " ") in prompt_lower:
+                        if aid not in target_agents:
+                            target_agents.append(aid)
+            if target_agent and target_agent not in target_agents and target_agent not in ("orchestrator",):
+                target_agents.insert(0, target_agent)
+            if candidates:
+                for c in candidates:
+                    if c.id not in target_agents and c.id not in ("orchestrator",):
+                        target_agents.append(c.id)
+
+            if len(target_agents) >= 2:
+                config_obj = (
+                    DeliberationConfig.model_validate(deliberation_config)
+                    if isinstance(deliberation_config, dict)
+                    else (
+                        deliberation_config
+                        if isinstance(deliberation_config, DeliberationConfig)
+                        else DeliberationConfig()
+                    )
+                )
+                tasks = [
+                    AgentTask(
+                        agent_id=ag_id,
+                        instructions=f"Deliberation proposal and peer critique for {ag_id}",
+                        task_description=f"Deliberation round for {ag_id}",
+                        priority=1,
+                    )
+                    for ag_id in target_agents
+                ]
+                return ExecutionPlan(
+                    mode=ExecutionMode.DELIBERATE,
+                    target_agents=target_agents,
+                    tasks=tasks,
+                    deliberation_config=config_obj,
+                    reasoning=f"Multi-agent deliberation requested among: {', '.join(target_agents)}",
+                )
+
+        # 3. Check for cross-functional pipeline mode: specialty -> administrative (prior auth / formulary / claims)
         auth_keywords = (
             "prior auth",
             "prior-auth",

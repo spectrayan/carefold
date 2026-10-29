@@ -315,6 +315,25 @@ class ExecutionDispatcher(BaseNode):
                 accumulated_outputs[aid] = res
                 outputs[aid] = res
 
+        elif mode_val == "deliberate":
+            from yarvelle_core.workflows.deliberation.engine import DeliberationEngine
+
+            delib_config = getattr(plan, "deliberation_config", None) if plan else None
+            if delib_config is None and isinstance(plan, dict):
+                delib_config = plan.get("deliberation_config")
+
+            engine = DeliberationEngine(
+                model=self.model,
+                registry=self.registry,
+                tool_registry=self.tool_registry,
+                default_tools=self.default_tools,
+                config=delib_config,
+                session=state.get("session") or state.get("db_session"),
+                session_factory=state.get("session_factory"),
+            )
+            res_state = await engine.run(state)
+            outputs = res_state.get("specialist_outputs", {})
+
         state["specialist_outputs"] = outputs
         return outputs
 
@@ -322,12 +341,23 @@ class ExecutionDispatcher(BaseNode):
         """LangGraph node execution interface."""
         plan = state.get("execution_plan")
         outputs = await self.dispatch(state, plan)
-        next_step = "response_synthesizer" if len(outputs) > 1 else "output_guardrail"
+        mode = plan.get("mode") if isinstance(plan, dict) else getattr(plan, "mode", None)
+        mode_val = getattr(mode, "value", str(mode)).lower() if mode else "single"
+
+        if mode_val == "deliberate" or state.get("deliberation_state") is not None:
+            next_step = "response_synthesizer"
+        else:
+            next_step = "response_synthesizer" if len(outputs) > 1 else "output_guardrail"
+
         result: Dict[str, Any] = {
             "specialist_outputs": outputs,
             "next_step": next_step,
         }
-        if len(outputs) == 1:
+        if state.get("deliberation_state") is not None:
+            result["deliberation_state"] = state["deliberation_state"]
+        if state.get("output"):
+            result["output"] = state["output"]
+        elif len(outputs) == 1:
             result["output"] = next(iter(outputs.values()))
         return result
 
