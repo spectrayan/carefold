@@ -45,6 +45,12 @@ import { EmergencyEscalationCard } from '@/components/chat/EmergencyEscalationCa
 import { DossierCard } from '@/components/chat/DossierCard';
 import { ApprovalCard } from '@/components/chat/ApprovalCard';
 import { ExecutionPlanCard } from '@/components/chat/ExecutionPlanCard';
+import {
+  DeliberationRoundtable,
+  type DeliberationRoundtableData,
+  type DeliberationSpecialistProposal,
+  type DeliberationPeerCritique,
+} from '@yarvelle/ui';
 import { AttachmentPicker } from '@/components/chat/AttachmentPicker';
 import { StartersChips } from '@/components/StartersChips';
 import { SuggestedQuestionsChips } from '@/components/SuggestedQuestionsChips';
@@ -754,6 +760,193 @@ export function ChatStudioShell({
                       : msg
                   )
                 );
+              } else if (eventType === 'panel_start') {
+                setMessages((prev) =>
+                  prev.map((msg) => {
+                    if (msg.id !== assistantMsgId) return msg;
+                    const existing: DeliberationRoundtableData = msg.roundtable || {
+                      agents: [],
+                      proposals: {},
+                      critiques: {},
+                      staged_actions: [],
+                      rounds_used: 1,
+                      converged: false,
+                    };
+                    return {
+                      ...msg,
+                      roundtable: {
+                        ...existing,
+                        panel_id: data.panel_id || existing.panel_id,
+                        title: data.title || existing.title,
+                        agents: data.agents || existing.agents,
+                        shared_constraints: data.shared_constraints || existing.shared_constraints,
+                        skipped_constraints: data.skipped_constraints || existing.skipped_constraints,
+                        rounds_used: 1,
+                        converged: false,
+                      },
+                    };
+                  })
+                );
+              } else if (eventType === 'deliberation_proposal') {
+                const round = Number(data.round || data.round_num || 1);
+                const newProposal: DeliberationSpecialistProposal = {
+                  agent_id: data.agent_id,
+                  round_num: round,
+                  scope: data.scope,
+                  summary: data.summary || '',
+                  recommendations: data.recommendations,
+                  resource_claims: data.resource_claims,
+                  resource_claim_units: data.resource_claim_units,
+                  dependencies: data.dependencies,
+                  staged_actions: data.staged_actions,
+                  tainted: data.tainted,
+                  confidence: data.confidence,
+                };
+                setMessages((prev) =>
+                  prev.map((msg) => {
+                    if (msg.id !== assistantMsgId) return msg;
+                    const rt: DeliberationRoundtableData = msg.roundtable || {
+                      agents: [],
+                      proposals: {},
+                      critiques: {},
+                      staged_actions: [],
+                      rounds_used: round,
+                      converged: false,
+                    };
+                    const prevProps = (rt.proposals && !Array.isArray(rt.proposals))
+                      ? { ...rt.proposals }
+                      : {};
+                    const roundProps = { ...(prevProps[round] || {}), [data.agent_id]: newProposal };
+                    prevProps[round] = roundProps;
+
+                    const agents = rt.agents.includes(data.agent_id)
+                      ? rt.agents
+                      : [...rt.agents, data.agent_id];
+
+                    const staged = data.staged_actions && Array.isArray(data.staged_actions)
+                      ? [...(rt.staged_actions || []), ...data.staged_actions]
+                      : rt.staged_actions;
+
+                    return {
+                      ...msg,
+                      roundtable: {
+                        ...rt,
+                        agents,
+                        proposals: prevProps,
+                        staged_actions: staged,
+                        rounds_used: Math.max(rt.rounds_used || 1, round),
+                      },
+                    };
+                  })
+                );
+              } else if (eventType === 'deliberation_critique') {
+                const round = Number(data.round || data.round_num || 1);
+                const newCritique: DeliberationPeerCritique = {
+                  reviewer_agent_id: data.reviewer_id || data.reviewer_agent_id,
+                  target_agent_id: data.target_id || data.target_agent_id,
+                  round_num: round,
+                  stance: (data.stance || 'endorse').toLowerCase() as any,
+                  issue_type: data.issue_type || 'synergy',
+                  critique: data.critique || '',
+                  proposed_resolution: data.proposed_resolution || '',
+                  resolved: data.resolved,
+                };
+                setMessages((prev) =>
+                  prev.map((msg) => {
+                    if (msg.id !== assistantMsgId) return msg;
+                    const rt: DeliberationRoundtableData = msg.roundtable || {
+                      agents: [],
+                      proposals: {},
+                      critiques: {},
+                      staged_actions: [],
+                      rounds_used: round,
+                      converged: false,
+                    };
+                    const prevCritiques = (rt.critiques && !Array.isArray(rt.critiques))
+                      ? { ...rt.critiques }
+                      : {};
+                    const roundCritiques = [...(prevCritiques[round] || []), newCritique];
+                    prevCritiques[round] = roundCritiques;
+
+                    return {
+                      ...msg,
+                      roundtable: {
+                        ...rt,
+                        critiques: prevCritiques,
+                        rounds_used: Math.max(rt.rounds_used || 1, round),
+                      },
+                    };
+                  })
+                );
+              } else if (eventType === 'deliberation_revision') {
+                const round = Number(data.round || data.round_num || 2);
+                const revisedProposal: DeliberationSpecialistProposal = {
+                  agent_id: data.agent_id,
+                  round_num: round,
+                  scope: data.scope,
+                  summary: data.summary || '',
+                  recommendations: data.recommendations,
+                  resource_claims: data.resource_claims,
+                  resource_claim_units: data.resource_claim_units,
+                  dependencies: data.dependencies,
+                  staged_actions: data.staged_actions,
+                  tainted: data.tainted,
+                  confidence: data.confidence,
+                };
+                setMessages((prev) =>
+                  prev.map((msg) => {
+                    if (msg.id !== assistantMsgId) return msg;
+                    const rt: DeliberationRoundtableData = msg.roundtable || {
+                      agents: [],
+                      proposals: {},
+                      critiques: {},
+                      staged_actions: [],
+                      rounds_used: round,
+                      converged: false,
+                    };
+                    const prevProps = (rt.proposals && !Array.isArray(rt.proposals))
+                      ? { ...rt.proposals }
+                      : {};
+                    const roundProps = { ...(prevProps[round] || {}), [data.agent_id]: revisedProposal };
+                    prevProps[round] = roundProps;
+
+                    return {
+                      ...msg,
+                      roundtable: {
+                        ...rt,
+                        proposals: prevProps,
+                        rounds_used: Math.max(rt.rounds_used || 1, round),
+                      },
+                    };
+                  })
+                );
+              } else if (eventType === 'deliberation_end') {
+                const converged = data.reason === 'converged';
+                setMessages((prev) =>
+                  prev.map((msg) => {
+                    if (msg.id !== assistantMsgId) return msg;
+                    const rt: DeliberationRoundtableData = msg.roundtable || {
+                      agents: [],
+                      proposals: {},
+                      critiques: {},
+                      staged_actions: [],
+                      rounds_used: 1,
+                      converged: false,
+                    };
+                    return {
+                      ...msg,
+                      roundtable: {
+                        ...rt,
+                        converged,
+                        termination_reason: data.reason || (converged ? 'converged' : 'max_rounds'),
+                        rounds_used: data.rounds_used !== undefined ? data.rounds_used : rt.rounds_used,
+                        minority_reports: data.minority_reports || rt.minority_reports,
+                        open_amendments: data.open_amendments || rt.open_amendments,
+                        staged_actions: data.staged_actions || rt.staged_actions,
+                      },
+                    };
+                  })
+                );
               } else if (eventType === 'suggestions') {
                 const list = data.suggestions || data.followUpSuggestions;
                 if (Array.isArray(list) && list.length > 0) {
@@ -792,10 +985,14 @@ export function ChatStudioShell({
                 const isEmergency = Boolean(
                   (data.refusalReason && data.refusalReason.startsWith('emergency_red_flag'))
                 );
+                const incomingDelib = data.deliberation_state || data.roundtable;
                 setMessages((prev) =>
                   prev.map((msg) => {
                     if (msg.id !== assistantMsgId) return msg;
                     const finalEmergency = isEmergency || Boolean(msg.isEmergency);
+                    const finalRoundtable = incomingDelib
+                      ? { ...(msg.roundtable || { agents: [] }), ...incomingDelib }
+                      : msg.roundtable;
                     return {
                       ...msg,
                       content: finalEmergency
@@ -806,6 +1003,7 @@ export function ChatStudioShell({
                       refusalReason: data.refusalReason || msg.refusalReason,
                       boundaryWarning: hasBoundaryWarning || (!isRefusal && Boolean(msg.boundaryWarning)),
                       boundaryReason: data.boundaryReason || (hasBoundaryWarning ? data.refusalReason : msg.boundaryReason),
+                      roundtable: finalRoundtable,
                       isStreaming: false
                     };
                   })
@@ -1455,6 +1653,18 @@ export function ChatStudioShell({
                       {m.plan && (
                         <div data-testid="embedded-execution-plan-card" className="w-full max-w-[85%] sm:max-w-[78%] mb-3">
                           <ExecutionPlanCard plan={m.plan} activeTraces={traces} />
+                        </div>
+                      )}
+
+                      {/* Embedded DeliberationRoundtable */}
+                      {m.roundtable && (
+                        <div data-testid="embedded-deliberation-roundtable" className="w-full max-w-[85%] sm:max-w-[78%] mb-3">
+                          <DeliberationRoundtable
+                            {...m.roundtable}
+                            onApproveStagedAction={async (actionId) => {
+                              handleResume(actionId);
+                            }}
+                          />
                         </div>
                       )}
 

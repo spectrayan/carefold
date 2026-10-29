@@ -23,6 +23,7 @@ import { EmergencyEscalationCard } from './chat/EmergencyEscalationCard';
 import { DossierCard } from './chat/DossierCard';
 import { ApprovalCard } from './chat/ApprovalCard';
 import { ExecutionPlanCard } from './chat/ExecutionPlanCard';
+import { DeliberationRoundtable, type DeliberationRoundtableData } from '@yarvelle/ui';
 import { formatFriendlyChatError } from '@/lib/chatErrors';
 import type { ApprovalRecord, ExecutionPlan } from '@/lib/types';
 
@@ -43,6 +44,7 @@ export interface ChatMessage {
   attachments?: string[];
   approval?: ApprovalRecord;
   plan?: ExecutionPlan;
+  roundtable?: DeliberationRoundtableData;
   error?: string;
   isError?: boolean;
 }
@@ -240,6 +242,20 @@ export function ChatMessageItem({
       {message.plan && (
         <div data-testid="embedded-execution-plan-card" className="mb-3">
           <ExecutionPlanCard plan={message.plan} activeTraces={traces} />
+        </div>
+      )}
+
+      {/* Embedded Multi-Agent Deliberation Roundtable */}
+      {message.roundtable && (
+        <div data-testid="embedded-deliberation-roundtable" className="mb-3">
+          <DeliberationRoundtable
+            {...message.roundtable}
+            onApproveStagedAction={async (actionId) => {
+              if (onResume) {
+                onResume(actionId, threadId);
+              }
+            }}
+          />
         </div>
       )}
 
