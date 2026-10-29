@@ -19,6 +19,10 @@ from typing import Any
 from yarvelle_core.tools.mcp_db_toolbox import *  # noqa: F401, F403
 import yarvelle_core.tools.mcp_db_toolbox as _target_module
 
+from carefold.clinical.db_hooks import register_carefold_db_toolbox
+
+register_carefold_db_toolbox()
+
 sys.modules[__name__] = _target_module
 
 

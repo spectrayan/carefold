@@ -66,6 +66,7 @@ EXPECTED_SYSTEM_AGENT_IDS: Set[str] = {
     # System Infrastructure Agents
     "triage-auditor",
     "quality-reviewer",
+    "db-operator",
 }
 
 
