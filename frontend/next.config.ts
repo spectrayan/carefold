@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
   reactStrictMode: true,
   agentRules: false,
+  // Next 16 dev blocks cross-origin client assets/HMR; allow the loopback IP so the app
+  // hydrates when opened as http://127.0.0.1:3010 (not just http://localhost:3010).
+  allowedDevOrigins: ['127.0.0.1'],
   typescript: {
     ignoreBuildErrors: false
   },

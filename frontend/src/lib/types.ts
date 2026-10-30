@@ -22,6 +22,7 @@ export * from '../types/schedule.js';
 export * from '../types/activity.js';
 
 import type { ExecutionPlan } from '../types/activity.js';
+import type { DeliberationRoundtableData } from '@yarvelle/ui';
 
 // ---------------------------------------------------------------------------
 // Tool Trace Types (Canonical Domain Definitions)
@@ -66,6 +67,7 @@ export interface ChatMessage {
   approval?: ApprovalRecord;
   contextSources?: ContextSourceItem[];
   plan?: ExecutionPlan;
+  roundtable?: DeliberationRoundtableData;
   error?: string;
   isError?: boolean;
 }

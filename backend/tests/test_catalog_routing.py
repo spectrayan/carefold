@@ -232,6 +232,7 @@ ALL_17_SPECIALISTS = [
 
 BASE_AGENT_IDS = ["benefits-guide", "habit-companion", "visit-steward"]
 SYSTEM_AGENT_IDS = [
+    "db-operator",
     "document-extractor",
     "orchestrator",
     "quality-reviewer",

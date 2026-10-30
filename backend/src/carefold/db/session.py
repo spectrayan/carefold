@@ -452,6 +452,26 @@ def _run_schema_migrations(connection) -> None:
                 WHERE storage_key IS NULL;
             """)
 
+    _ensure_approvals_schema(connection)
+
+
+def _ensure_approvals_schema(connection: Connection) -> None:
+    """Ensures approvals.agent_id exists on pre-0.1.2 databases already stamped at 0011_scopes."""
+    inspector = inspect(connection)
+    if "approvals" not in inspector.get_table_names():
+        return
+    approval_cols = {c["name"] for c in inspector.get_columns("approvals")}
+    if "agent_id" not in approval_cols:
+        connection.exec_driver_sql("ALTER TABLE approvals ADD COLUMN agent_id VARCHAR(64);")
+        logger.info("migration_added_column", table="approvals", column="agent_id")
+    existing_indices = {
+        idx["name"] for idx in inspector.get_indexes("approvals") if idx.get("name")
+    }
+    if "ix_approvals_agent_id" not in existing_indices:
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_approvals_agent_id ON approvals (agent_id);"
+        )
+
 
 def get_alembic_config(connection: Optional[Connection] = None) -> Config:
     """Constructs and returns Alembic Config pointing to carefold migrations."""
@@ -573,6 +593,7 @@ def run_alembic_migrations(connection: Connection) -> None:
         script = alembic.script.ScriptDirectory.from_config(cfg)
         heads = set(script.get_heads())
         if heads and heads.issubset(current_revs):
+            _ensure_approvals_schema(connection)
             logger.info("database_already_at_head", revisions=list(current_revs))
             return
 
@@ -589,6 +610,7 @@ def run_alembic_migrations(connection: Connection) -> None:
     else:
         logger.info("upgrading_versioned_database_to_head")
         alembic.command.upgrade(cfg, "head")
+    _ensure_approvals_schema(connection)
 
 
 def get_pack_alembic_config(

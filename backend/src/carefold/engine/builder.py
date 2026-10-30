@@ -673,7 +673,7 @@ class GraphBuilder:
                 if plan and self.include_dispatcher and dispatcher_node is not None:
                     mode = plan.get("mode") if isinstance(plan, dict) else getattr(plan, "mode", None)
                     mode_val = getattr(mode, "value", str(mode)).lower()
-                    if mode_val in ("parallel", "pipeline"):
+                    if mode_val in ("parallel", "pipeline", "deliberate"):
                         return "dispatcher"
 
                 if (

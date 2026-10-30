@@ -153,7 +153,7 @@ def test_upgrade_head_fresh_sqlite():
 
         appr_cols = {c["name"] for c in insp.get_columns("approvals")}
         expected_appr_cols = {
-            "id", "profile_id", "run_id", "thread_id", "tool_name",
+            "id", "profile_id", "run_id", "thread_id", "agent_id", "tool_name",
             "args_redacted", "payload_hash", "destination_hosts",
             "risk_tier", "status", "expires_at", "created_at",
             "decided_at", "decided_by",

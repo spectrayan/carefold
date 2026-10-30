@@ -175,6 +175,12 @@ To scale beyond hundreds of specialist agents without context overflow, Carefold
   - If no confident match is found, the workflow safely defaults to `visit-steward` or `triage-auditor`.
 - **Dynamic Skill Provisioning**:
   - Only the reference documents and skills declared by the routed specialist are loaded into the prompt context, keeping token utilization minimal and eliminating distraction.
+- **Multi-Agent Deliberation (`ExecutionMode.DELIBERATE`)**:
+  - When a request explicitly asks for a panel/roundtable review (or a `deliberation_config` is supplied) and at least two specialists resolve, the orchestrator emits a `DELIBERATE` plan. `ExecutionDispatcher` hands it to the upstream yarvelle-core `DeliberationEngine` ([Core ADR-0001](https://yarvelle.github.io/yarvelle-core/adr/0001-multi-agent-deliberation/)), and the result always flows through `ResponseSynthesizerNode`.
+
+### 4.2.1 MCP Database Toolbox
+
+Profile-scoped relational tools run on the yarvelle-core MCP DB Toolbox ([Core ADR-0002](https://yarvelle.github.io/yarvelle-core/adr/0002-dynamic-mcp-db-toolbox/)). Carefold registers its declarative SQL tools from `backend/src/carefold/resources/db_tools.yaml`, which execute natively in core alongside the dynamic AST-sandboxed `db_inspect_schema`, `db_execute_query`, and `db_mutate_records` tools used by the `db-operator` system agent. Pack hooks in `backend/src/carefold/clinical/db_hooks.py` are reserved for logic SQL cannot express: `record_vital_reading` (HL7 FHIR R4 LOINC `Observation` synthesis plus vitals red-flag evaluation) and `upsert_clinical_note` (slug upsert, search indexing, and workspace markdown mirroring).
 
 ### 4.3 SSE Streaming Wire Protocol
 
@@ -189,6 +195,7 @@ Real-time interactions stream from the FastAPI backend to the Next.js client usi
 | `suggestions` | `{"suggestions": ["...", "..."]}` | Context-aware follow-up suggestion chips for the UI. |
 | `disclaimer` | `{"text": "..."}` | Mandatory non-clinical disclaimer banner. |
 | `refusal` | `{"reason": "...", "message": "...", "category": "..."}` | Triggered on emergency red flags or clinical boundary refusal. Optional `category` identifies acute emergency sign. |
+| `panel_start`, `deliberation_proposal`, `deliberation_critique`, `deliberation_revision`, `deliberation_end` | Deliberation round payloads | Live multi-agent deliberation events rendered by the `@yarvelle/ui` `DeliberationRoundtable`. |
 | `done` | `{"thread_id": "...", "status": "ok"}` | Final completion packet closing the stream. |
 
 ---

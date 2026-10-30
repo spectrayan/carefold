@@ -9,7 +9,7 @@ description = "Carefold local-first AI and agentic runtime backend"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "yarvelle-core>=0.1.1",
+    "yarvelle-core>=0.1.2",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
     "pydantic>=2.8.0",

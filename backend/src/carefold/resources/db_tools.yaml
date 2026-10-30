@@ -197,7 +197,7 @@ tools:
         default: 20
 
   create_appointment_record:
-    kind: sqlite-sql
+    kind: sql
     source: carefold-sqlite
     risk_tier: write_local
     entity: appointment
@@ -209,7 +209,8 @@ tools:
         start_time, end_time, timezone, status, reason, preparation_notes, created_at, updated_at
       ) VALUES (
         :id, :profile_id, :title, :provider_name, :specialty, :location, :clinic_phone,
-        :start_time, :end_time, :timezone, :status, :reason, :preparation_notes, :now, :now
+        :start_time, COALESCE(NULLIF(:end_time, ''), datetime(:start_time, '+30 minutes')),
+        :timezone, :status, :reason, :preparation_notes, :now, :now
       )
       RETURNING id, profile_id, title, provider_name, specialty, location, start_time, end_time, timezone, status;
     parameters:

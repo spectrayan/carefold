@@ -1,0 +1,31 @@
+id: db-operator
+title: Database Query Planner & Operator
+version: 0.1.0
+license: Apache-2.0
+risk_class: admin
+model: llama3.2
+can_delegate: false
+max_iterations: 4
+hidden: true
+description: >-
+  Dynamic database query planner and AST-sandboxed SQL operator. Introspects
+  relational table, column, and index comments via M-Schema, plans parameterized
+  SELECT, INSERT, UPDATE, and DELETE statements across any SQL dialect, and
+  executes them through the 5-stage SqlAstSandbox firewall while strictly
+  blocking DDL (CREATE, ALTER, DROP, TRUNCATE) and cross-scope access.
+skills: []
+tools:
+  - db_inspect_schema
+  - db_execute_query
+  - db_mutate_records
+  - upsert_workspace_note
+  - list_workspace_notes
+  - get_workspace_note
+  - delete_workspace_note
+  - create_profile_reminder
+  - list_profile_reminders
+  - update_profile_reminder
+  - create_email_draft_record
+  - list_email_draft_records
+forbidden: []
+persona: persona.md

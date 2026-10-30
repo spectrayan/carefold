@@ -758,13 +758,18 @@ class AgentExecutionService:
                     # Attempt import from builder.py, fallback to graph.py
                     try:
                         from carefold.engine.builder import GraphBuilder
+                        from carefold.agents.registry import AgentRegistry
+                        use_supervisor = (agent.id == "orchestrator" or effective_agent_id == "orchestrator" or bool(kwargs.get("execution_plan")))
+                        agent_reg = AgentRegistry(agents_dir, skills_dir) if use_supervisor else None
                         builder_instance = (
-                            GraphBuilder(include_supervisor=False)
+                            GraphBuilder(include_supervisor=use_supervisor, registry=agent_reg)
                             .with_model(active_model)
                             .with_checkpointer(checkpointer)
                             .with_execution_context(execution_context)
                             .with_tools(effective_tools)
                         )
+                        if agent_reg:
+                            builder_instance = builder_instance.with_registry(agent_reg)
                         if effective_store is not None:
                             builder_instance = builder_instance.with_store(effective_store)
                         compiled_graph = builder_instance.build(checkpointer=checkpointer, store=effective_store)
@@ -849,6 +854,19 @@ class AgentExecutionService:
                             if cits:
                                 citations.extend(cits)
                                 yield {"type": "citations", "citations": cits}
+                        elif name in (
+                            "panel_start",
+                            "deliberation_proposal",
+                            "deliberation_critique",
+                            "deliberation_revision",
+                            "deliberation_end",
+                        ):
+                            logger.info(
+                                "deliberation_event_forwarded",
+                                event_name=name,
+                                thread_id=thread_id,
+                            )
+                            yield {"type": name, **data}
 
                     elif ev_kind == "on_chain_end":
                         if not refusal_triggered and not accumulated_text:
@@ -1173,8 +1191,11 @@ class AgentExecutionService:
             else:
                 try:
                     from carefold.engine.builder import GraphBuilder
+                    from carefold.agents.registry import AgentRegistry
+                    use_supervisor = (getattr(rec, "agent_id", None) in ("orchestrator", "supervisor"))
+                    agent_reg = AgentRegistry(agents_dir, skills_dir) if use_supervisor else None
                     compiled_graph = (
-                        GraphBuilder(include_supervisor=False)
+                        GraphBuilder(include_supervisor=use_supervisor, registry=agent_reg)
                         .with_model(active_model)
                         .with_checkpointer(cp)
                         .build(checkpointer=cp, store=effective_store)
@@ -1214,7 +1235,17 @@ class AgentExecutionService:
                     elif ev_kind == "on_custom_event":
                         name = event.get("name")
                         data = event.get("data", {})
-                        if name in (SSE_EVENT_TOOL_START, SSE_EVENT_TOOL_END, SSE_EVENT_REFUSAL, SSE_EVENT_SUGGESTIONS):
+                        if name in (
+                            SSE_EVENT_TOOL_START,
+                            SSE_EVENT_TOOL_END,
+                            SSE_EVENT_REFUSAL,
+                            SSE_EVENT_SUGGESTIONS,
+                            "panel_start",
+                            "deliberation_proposal",
+                            "deliberation_critique",
+                            "deliberation_revision",
+                            "deliberation_end",
+                        ):
                             yield data
                             if name == SSE_EVENT_SUGGESTIONS:
                                 suggestions = data.get("suggestions", [])

@@ -61,6 +61,7 @@ def upgrade() -> None:
             sa.Column("profile_id", sa.String(36), sa.ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False),
             sa.Column("run_id", sa.String(64), nullable=False),
             sa.Column("thread_id", sa.String(64), nullable=True),
+            sa.Column("agent_id", sa.String(64), nullable=True),
             sa.Column("tool_name", sa.String(128), nullable=False),
             sa.Column("args_redacted", sa.Text(), nullable=False, server_default="{}"),
             sa.Column("payload_hash", sa.String(64), nullable=False),
@@ -75,6 +76,7 @@ def upgrade() -> None:
         op.create_index("ix_approvals_profile_id", "approvals", ["profile_id"], unique=False)
         op.create_index("ix_approvals_run_id", "approvals", ["run_id"], unique=False)
         op.create_index("ix_approvals_thread_id", "approvals", ["thread_id"], unique=False)
+        op.create_index("ix_approvals_agent_id", "approvals", ["agent_id"], unique=False)
         op.create_index("ix_approvals_tool_name", "approvals", ["tool_name"], unique=False)
         op.create_index("ix_approvals_payload_hash", "approvals", ["payload_hash"], unique=False)
         op.create_index("ix_approvals_status", "approvals", ["status"], unique=False)
