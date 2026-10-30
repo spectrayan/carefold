@@ -436,7 +436,7 @@ async def test_two_hop_fallback_chain(tmp_path: Path):
 # Part 6: FastAPI REST Endpoints & Schema Validation
 # ============================================================================
 
-def test_fastapi_endpoints_schemas_and_filters(client: TestClient):
+def test_fastapi_endpoints_schemas_and_filters(client: TestClient, repo_root: Path):
     """Systematically test /api/agents/categories, /api/agents, and /api/skills endpoints."""
 
     # 1. GET /api/agents/categories
@@ -479,10 +479,15 @@ def test_fastapi_endpoints_schemas_and_filters(client: TestClient):
     hidden_resp = client.get("/api/agents?include_hidden=true")
     assert hidden_resp.status_code == 200
     hidden_agents = hidden_resp.json()
-    assert len(hidden_agents) == len(agents) + 6
+    system_agent_dirs = [
+        p for p in (repo_root / "agents" / "_system").iterdir()
+        if p.is_dir() and (p / "agent.yaml").is_file()
+    ]
+    assert len(hidden_agents) == len(agents) + len(system_agent_dirs)
     hidden_ids = [a["id"] for a in hidden_agents]
     assert "orchestrator" in hidden_ids
     assert "document-extractor" in hidden_ids
+    assert "db-operator" in hidden_ids
     assert "skill-generator" in hidden_ids
     assert "suggestion-generator" in hidden_ids
     assert "_template" not in hidden_ids
