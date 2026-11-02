@@ -82,16 +82,16 @@ Carefold organizes clinical, administrative, and wellness specialists under clea
 | `heart-care-coordinator` | `clinical` | `cardiology` | `clinical_assist` | `cardiology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
 | `lung-breathing-coordinator` | `clinical` | `pulmonology` | `clinical_assist` | `pulmonology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
 | `skin-care-coordinator` | `clinical` | `dermatology` | `clinical_assist` | `derma-prep`, `clinical-safety-boundaries` |
-| `digestive-health-coordinator` | `clinical` | `gastroenterology` | `clinical_assist` | `gastro-prep`, `clinical-safety-boundaries` |
-| `brain-nerve-health-coordinator` | `clinical` | `neurology` | `clinical_assist` | `neurology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
+| `digestive-care-coordinator` | `clinical` | `gastroenterology` | `clinical_assist` | `gastro-prep`, `clinical-safety-boundaries` |
+| `brain-nerve-care-coordinator` | `clinical` | `neurology` | `clinical_assist` | `neurology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
 | `kidney-care-coordinator` | `clinical` | `nephrology` | `clinical_assist` | `nephrology-prep`, `clinical-safety-boundaries` |
 | `diabetes-thyroid-coordinator` | `clinical` | `endocrinology` | `clinical_assist` | `endocrinology-prep`, `clinical-safety-boundaries` |
 | `autoimmune-care-coordinator` | `clinical` | `rheumatology` | `clinical_assist` | `rheuma-prep`, `clinical-safety-boundaries` |
 | `bone-joint-care-coordinator` | `clinical` | `orthopedics` | `clinical_assist` | `ortho-prep`, `clinical-safety-boundaries` |
-| `bladder-pelvic-health-coordinator` | `clinical` | `urology` | `clinical_assist` | `urology-prep`, `clinical-safety-boundaries` |
+| `bladder-pelvic-care-coordinator` | `clinical` | `urology` | `clinical_assist` | `urology-prep`, `clinical-safety-boundaries` |
 | `ent-care-coordinator` | `clinical` | `ent` | `clinical_assist` | `ent-prep`, `clinical-safety-boundaries` |
 | `eye-care-coordinator` | `clinical` | `ophthalmology` | `clinical_assist` | `vision-prep`, `clinical-safety-boundaries` |
-| `blood-health-coordinator` | `clinical` | `hematology` | `clinical_assist` | `hematology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
+| `blood-care-coordinator` | `clinical` | `hematology` | `clinical_assist` | `hematology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
 | `cancer-care-coordinator` | `clinical` | `oncology` | `clinical_assist` | `oncology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
 | `dental-care-coordinator` | `clinical` | `dentistry` | `clinical_assist` | `oral-health-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
 | `foot-care-coordinator` | `clinical` | `podiatry` | `clinical_assist` | `podiatry-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |

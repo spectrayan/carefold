@@ -144,7 +144,7 @@ persona_suggestions:
       - "Can you help me structure a respiratory symptom log?"
       - "How can I prepare a summary of my breathing patterns for my doctor?"
 
-  brain_nerve_health_coordinator:
+  brain_nerve_care_coordinator:
     headache_keywords: ["headache", "migraine", "aura", "trigger", "temple"]
     headache_chips:
       - "What details are most helpful to log in a migraine diary?"
@@ -160,7 +160,7 @@ persona_suggestions:
       - "Can you help me assemble a timeline of my neurological symptoms?"
       - "How should I record symptom flare-ups ahead of my appointment?"
 
-  digestive_health_coordinator:
+  digestive_care_coordinator:
     diet_keywords: ["food", "diet", "fodmap", "trigger", "dairy", "gluten", "meal"]
     diet_chips:
       - "How can I structure a 14-day digestive food and symptom diary?"
@@ -267,7 +267,7 @@ persona_suggestions:
       - "How do I document daily functional limitations ahead of my visit?"
       - "Can you help me organize a summary of my autoimmune flare history?"
 
-  bladder_pelvic_health_coordinator:
+  bladder_pelvic_care_coordinator:
     urinary_keywords: ["bladder", "urinary", "prostate", "frequency", "incontinence", "flow"]
     urinary_chips:
       - "How can I keep a 3-day bladder diary tracking intake and output?"

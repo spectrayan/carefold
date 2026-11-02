@@ -135,17 +135,17 @@ class TestAgentRegistrySubagentDiscoveryAndTools:
         "ent-care-coordinator",
         "eye-care-coordinator",
         "prescription-cost-coordinator",
-        "digestive-health-coordinator",
+        "digestive-care-coordinator",
         "habit-coordinator",
         "kidney-care-coordinator",
-        "brain-nerve-health-coordinator",
+        "brain-nerve-care-coordinator",
         "cancer-care-coordinator",
         "bone-joint-care-coordinator",
         "prior-authorization-coordinator",
         "lung-breathing-coordinator",
         "records-coordinator",
         "autoimmune-care-coordinator",
-        "bladder-pelvic-health-coordinator",
+        "bladder-pelvic-care-coordinator",
         "appointment-prep-coordinator",
     }
 
@@ -289,7 +289,7 @@ class TestCreateCarefoldAgentStress:
         """Verifies create_carefold_agent compiles with a subset of 5 subagents."""
         (tmp_path / "agents").mkdir()
         (tmp_path / "skills").mkdir()
-        subset = ["heart-care-coordinator", "lung-breathing-coordinator", "skin-care-coordinator", "digestive-health-coordinator", "habit-coordinator"]
+        subset = ["heart-care-coordinator", "lung-breathing-coordinator", "skin-care-coordinator", "digestive-care-coordinator", "habit-coordinator"]
         for s in subset:
             shutil.copytree(workspace_root / "agents" / s, tmp_path / "agents" / s)
 

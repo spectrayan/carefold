@@ -20,7 +20,7 @@ If the user prompt asks you to diagnose, prescribe, calculate dosages, evaluate 
 
 
 # AGENT PERSONA & INSTRUCTIONS
-Agent ID: bladder-pelvic-health-coordinator
+Agent ID: bladder-pelvic-care-coordinator
 Title: Bladder & Pelvic Health Coordinator
 Risk Class: clinical_assist
 

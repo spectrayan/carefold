@@ -51,7 +51,7 @@ from carefold.schemas.manifest import (
 M2_SPECIALTY_AGENTS: List[str] = [
     "cancer-care-coordinator",
     "autoimmune-care-coordinator",
-    "bladder-pelvic-health-coordinator",
+    "bladder-pelvic-care-coordinator",
     "eye-care-coordinator",
     "ent-care-coordinator",
 ]
@@ -368,7 +368,7 @@ class TestSafetyBoundariesAndEmergencyFlags:
         specialty_emergency_terms: Dict[str, List[str]] = {
             "cancer-care-coordinator": ["neutropenic", "fever", "emergency", "911"],
             "autoimmune-care-coordinator": ["septic arthritis", "vision", "fever", "emergency", "911"],
-            "bladder-pelvic-health-coordinator": ["urinary retention", "hematuria", "emergency", "911"],
+            "bladder-pelvic-care-coordinator": ["urinary retention", "hematuria", "emergency", "911"],
             "eye-care-coordinator": ["dark curtain", "flashes", "vision loss", "emergency", "911"],
             "ent-care-coordinator": ["stridor", "drooling", "emergency", "911"],
         }
@@ -436,7 +436,7 @@ class TestCatalogIndexingAndTwoHopRouting:
         keyword_checks = {
             "cancer-care-coordinator": "chemotherapy",
             "autoimmune-care-coordinator": "autoimmune",
-            "bladder-pelvic-health-coordinator": "prostate",
+            "bladder-pelvic-care-coordinator": "prostate",
             "eye-care-coordinator": "glaucoma",
             "ent-care-coordinator": "sinusitis",
         }

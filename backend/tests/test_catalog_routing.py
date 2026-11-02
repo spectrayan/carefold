@@ -92,7 +92,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "I am experiencing shortness of breath and wheezing, my asthma inhaler is not helping",
     },
     {
-        "id": "brain-nerve-health-coordinator",
+        "id": "brain-nerve-care-coordinator",
         "skill": "neurology-prep",
         "domain": "clinical",
         "category": "clinical.neurology",
@@ -101,7 +101,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "Severe migraine headaches with numbness and peripheral neuropathy tingling",
     },
     {
-        "id": "digestive-health-coordinator",
+        "id": "digestive-care-coordinator",
         "skill": "gastro-prep",
         "domain": "clinical",
         "category": "clinical.gastroenterology",
@@ -165,7 +165,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "Lupus autoimmune flare-up with joint inflammation and prolonged morning stiffness",
     },
     {
-        "id": "bladder-pelvic-health-coordinator",
+        "id": "bladder-pelvic-care-coordinator",
         "skill": "urology-prep",
         "domain": "clinical",
         "category": "clinical.urology",
@@ -600,7 +600,7 @@ class TestPrecedenceCollisionsInRoutingPatterns:
             ),
             (
                 "Urologist doctor visit for prostate bph and urinary frequency",
-                "bladder-pelvic-health-coordinator",
+                "bladder-pelvic-care-coordinator",
                 "appointment-prep-coordinator",
             ),
             (
@@ -722,15 +722,15 @@ class TestCatalogIndexingAndCategoryTreeStress:
         test_queries = [
             ("hypertension arrhythmia palpitations", "heart-care-coordinator"),
             ("asthma inhaler dyspnea", "lung-breathing-coordinator"),
-            ("migraine headache neuropathy", "brain-nerve-health-coordinator"),
-            ("ibs colonoscopy endoscopy", "digestive-health-coordinator"),
+            ("migraine headache neuropathy", "brain-nerve-care-coordinator"),
+            ("ibs colonoscopy endoscopy", "digestive-care-coordinator"),
             ("kidney egfr creatinine", "kidney-care-coordinator"),
             ("diabetes cgm a1c insulin", "diabetes-thyroid-coordinator"),
             ("osteoarthritis joint mobility physical therapy", "bone-joint-care-coordinator"),
             ("rash lesion mole abcde", "skin-care-coordinator"),
             ("oncologist chemotherapy radiation tumor", "cancer-care-coordinator"),
             ("methotrexate biologics rheumatoid lupus", "autoimmune-care-coordinator"),
-            ("voiding nocturia prostate bph", "bladder-pelvic-health-coordinator"),
+            ("voiding nocturia prostate bph", "bladder-pelvic-care-coordinator"),
             ("amsler grid cataract visual acuity glaucoma", "eye-care-coordinator"),
             ("audiogram tinnitus vertigo sinusitis", "ent-care-coordinator"),
             ("step therapy prior authorization", "prior-authorization-coordinator"),

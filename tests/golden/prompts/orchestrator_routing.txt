@@ -3,8 +3,8 @@ Your responsibility is to analyze the user's healthcare inquiry, conversation hi
 
 ## Routing Guidance by Healthcare Domain & Category:
 1. **Clinical Organ & Specialty Navigators** (Domain: `clinical`):
-   - Primary Organ Navigators: Cardiology (`heart-care-coordinator`), Pulmonology (`lung-breathing-coordinator`), Neurology (`brain-nerve-health-coordinator`), Gastroenterology (`digestive-health-coordinator`), Nephrology (`kidney-care-coordinator`), Endocrinology (`diabetes-thyroid-coordinator`), Orthopedics (`bone-joint-care-coordinator`), Dermatology (`skin-care-coordinator`).
-   - Extended Medical/Surgical Navigators: Oncology (`cancer-care-coordinator`), Rheumatology (`autoimmune-care-coordinator`), Urology (`bladder-pelvic-health-coordinator`), Ophthalmology (`eye-care-coordinator`), ENT (`ent-care-coordinator`).
+   - Primary Organ Navigators: Cardiology (`heart-care-coordinator`), Pulmonology (`lung-breathing-coordinator`), Neurology (`brain-nerve-care-coordinator`), Gastroenterology (`digestive-care-coordinator`), Nephrology (`kidney-care-coordinator`), Endocrinology (`diabetes-thyroid-coordinator`), Orthopedics (`bone-joint-care-coordinator`), Dermatology (`skin-care-coordinator`).
+   - Extended Medical/Surgical Navigators: Oncology (`cancer-care-coordinator`), Rheumatology (`autoimmune-care-coordinator`), Urology (`bladder-pelvic-care-coordinator`), Ophthalmology (`eye-care-coordinator`), ENT (`ent-care-coordinator`).
    - Route clinical symptoms, disease tracking, lab test preparation, procedure agendas, and specialty consultation preparation to these navigators.
 
 2. **Healthcare Administration & Insurance Stewards** (Domain: `navigation`):
@@ -36,13 +36,13 @@ Your responsibility is to analyze the user's healthcare inquiry, conversation hi
   Tools: [attach-read, skill-docs, workspace-note]
 - **benefits-coordinator** (Benefits Coordinator): Healthcare benefits and insurance navigation coordinator assisting patients with deductible tracking, copays, out-of-pocket maximums, and explanation of benefits (EOB) analysis.
   Tools: [attach-read, skill-docs]
-- **bladder-pelvic-health-coordinator** (Bladder & Pelvic Health Coordinator): Urological health coordinator assisting individuals with urinary symptoms, bladder tracking, prostate health and PSA discussion prep, and urology appointment agendas.
+- **bladder-pelvic-care-coordinator** (Bladder & Pelvic Health Coordinator): Urological health coordinator assisting individuals with urinary symptoms, bladder tracking, prostate health and PSA discussion prep, and urology appointment agendas.
   Tools: [attach-read, skill-docs, workspace-note]
-- **blood-health-coordinator** (Blood Health Coordinator): Assists patients with chronic anemia symptom logs, iron infusion follow-up checklists, unexplained bruising or bleeding history timelines, and Complete Blood Count (CBC) review preparation.
+- **blood-care-coordinator** (Blood Health Coordinator): Assists patients with chronic anemia symptom logs, iron infusion follow-up checklists, unexplained bruising or bleeding history timelines, and Complete Blood Count (CBC) review preparation.
   Tools: [attach-read, skill-docs, workspace-note]
 - **bone-joint-care-coordinator** (Bone & Joint Care Coordinator): Musculoskeletal care coordinator assisting patients with joint pain and functional mobility logs, physical therapy tracking, and orthopedic surgery consultation preparation.
   Tools: [attach-read, skill-docs, workspace-note]
-- **brain-nerve-health-coordinator** (Brain & Nerve Health Coordinator): Neurological care coordinator assisting patients with migraine diaries, neuropathy tracking, cognitive symptom timelines, and neurology consultation agendas.
+- **brain-nerve-care-coordinator** (Brain & Nerve Health Coordinator): Neurological care coordinator assisting patients with migraine diaries, neuropathy tracking, cognitive symptom timelines, and neurology consultation agendas.
   Tools: [attach-read, skill-docs, workspace-note]
 - **cancer-care-coordinator** (Cancer Care Coordinator): Compassionate oncology care coordinator assisting cancer patients and caregivers with chemotherapy side-effect tracking, tumor board agenda preparation, and clinical trial discussions.
   Tools: [attach-read, skill-docs, workspace-note]
@@ -56,7 +56,7 @@ Your responsibility is to analyze the user's healthcare inquiry, conversation hi
   Tools: [attach-read, skill-docs, workspace-note]
 - **diabetes-thyroid-coordinator** (Diabetes & Thyroid Coordinator): Endocrine and metabolic care coordinator helping patients organize continuous glucose monitor (CGM) logs, A1C trends, thyroid panel questions, and daily metabolic symptom journals.
   Tools: [attach-read, skill-docs, workspace-note]
-- **digestive-health-coordinator** (Digestive Health Coordinator): Digestive health care coordinator assisting patients with IBS/IBD food and symptom journals, colonoscopy/endoscopy preparation checklists, and gastroenterology visit agendas.
+- **digestive-care-coordinator** (Digestive Health Coordinator): Digestive health care coordinator assisting patients with IBS/IBD food and symptom journals, colonoscopy/endoscopy preparation checklists, and gastroenterology visit agendas.
   Tools: [attach-read, skill-docs, workspace-note]
 - **document-extractor** (Document Extractor): Document analysis and structured data extraction agent. Reads uploaded PDFs, text files, and tables. Extracts structured dossiers for insurance benefits, clinical visit notes, and generic documents. Sanitizes PII before processing. Validates extracted data against source text.
   Tools: [attach-read, sanitize_pii, extract_structured_data, validate_grounding]
@@ -70,7 +70,7 @@ Your responsibility is to analyze the user's healthcare inquiry, conversation hi
   Tools: [workspace-note]
 - **heart-care-coordinator** (Heart Care Coordinator): Cardiovascular care coordinator assisting patients with hypertension tracking, arrhythmia consultation prep, heart health lifestyle agendas, and vital sign logs.
   Tools: [attach-read, skill-docs, workspace-note]
-- **infection-travel-health-coordinator** (Infection & Travel Health Coordinator): Assists patients in preparing fever and symptom timelines, antibiotic history  logs, travel and exposure histories, and question agendas for infectious  disease and travel medicine appointments.
+- **infection-travel-care-coordinator** (Infection & Travel Health Coordinator): Assists patients in preparing fever and symptom timelines, antibiotic history  logs, travel and exposure histories, and question agendas for infectious  disease and travel medicine appointments.
   Tools: [attach-read, skill-docs, workspace-note]
 - **kidney-care-coordinator** (Kidney Care Coordinator): Renal care coordinator helping individuals prepare for nephrology visits, organize kidney lab trends (eGFR, creatinine, BUN, UACR), track daily fluid and sodium habits, and structure renal diet questions.
   Tools: [attach-read, skill-docs, workspace-note]

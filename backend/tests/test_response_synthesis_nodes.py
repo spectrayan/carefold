@@ -134,7 +134,7 @@ class TestConflictingCardiorenalSynthesis:
                 "Pulmonology recommendations.\n\n"
                 "Please consult your doctor before modifying any inhaler schedule."
             ),
-            "digestive-health-coordinator": (
+            "digestive-care-coordinator": (
                 "Gastroenterology recommendations.\n\n"
                 "Please consult your physician before altering your diet."
             ),

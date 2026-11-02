@@ -56,13 +56,13 @@ CORE_8_SPECIALISTS: Dict[str, Dict[str, Any]] = {
         "category": "clinical.pulmonology",
         "query": "asthma",
     },
-    "brain-nerve-health-coordinator": {
+    "brain-nerve-care-coordinator": {
         "title": "Brain & Nerve Health Coordinator",
         "companion_skill": "neurology-prep",
         "category": "clinical.neurology",
         "query": "migraine",
     },
-    "digestive-health-coordinator": {
+    "digestive-care-coordinator": {
         "title": "Digestive Health Coordinator",
         "companion_skill": "gastro-prep",
         "category": "clinical.gastroenterology",
@@ -225,8 +225,8 @@ class TestTwoHopSearchQueriesRouting:
         test_queries = {
             "hypertension": "heart-care-coordinator",
             "asthma": "lung-breathing-coordinator",
-            "migraine": "brain-nerve-health-coordinator",
-            "colonoscopy": "digestive-health-coordinator",
+            "migraine": "brain-nerve-care-coordinator",
+            "colonoscopy": "digestive-care-coordinator",
             "eGFR": "kidney-care-coordinator",
             "diabetes CGM": "diabetes-thyroid-coordinator",
             "joint pain": "bone-joint-care-coordinator",
@@ -247,8 +247,8 @@ class TestTwoHopSearchQueriesRouting:
         inquiries = {
             "heart-care-coordinator": "I have high systolic blood pressure readings and heart palpitations",
             "lung-breathing-coordinator": "Experiencing wheezing and dyspnea shortness of breath after using my inhaler",
-            "brain-nerve-health-coordinator": "Severe throbbing unilateral headache with photophobia visual aura",
-            "digestive-health-coordinator": "Prepping for upcoming colonoscopy and tracking abdominal bloating after meals",
+            "brain-nerve-care-coordinator": "Severe throbbing unilateral headache with photophobia visual aura",
+            "digestive-care-coordinator": "Prepping for upcoming colonoscopy and tracking abdominal bloating after meals",
             "kidney-care-coordinator": "Lab report shows elevated serum creatinine and declining eGFR glomerular filtration",
             "diabetes-thyroid-coordinator": "Continuous glucose monitor CGM trending high blood sugar and A1C levels",
             "bone-joint-care-coordinator": "Knee joint pain and physical therapy exercise tracking for orthopedic surgery consultation",
@@ -272,12 +272,12 @@ class TestTwoHopSearchQueriesRouting:
         """Stress-tests search queries with punctuation, boolean operators, and injection attempts."""
         adversarial_tests = [
             ("asthma OR 'hypertension'", "lung-breathing-coordinator"),
-            ("migraine; DROP TABLE agents; --", "brain-nerve-health-coordinator"),
+            ("migraine; DROP TABLE agents; --", "brain-nerve-care-coordinator"),
             ("eGFR / creatinine (mL/min/1.73m^2)", "kidney-care-coordinator"),
             ("diabetes + CGM - insulin *", "diabetes-thyroid-coordinator"),
             ("rash & lesion! #skin", "skin-care-coordinator"),
             ("joint pain: mobility / knee ???", "bone-joint-care-coordinator"),
-            ("colonoscopy...", "digestive-health-coordinator"),
+            ("colonoscopy...", "digestive-care-coordinator"),
             ("hypertension!!!", "heart-care-coordinator"),
         ]
 

@@ -271,7 +271,7 @@ async def test_synthesize_reference_doc_with_extreme_query_and_none_state(tmp_pa
         skill_id="gastro-prep",
         doc_name="ibd_food_tracker.md",
         user_query=huge_query,
-        target_agent="digestive-health-coordinator",
+        target_agent="digestive-care-coordinator",
         state=None,
     )
 

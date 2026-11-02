@@ -51,7 +51,7 @@ describe('clinicalConsent store', () => {
 
     expect(record).toEqual({ grantedAt: '2026-10-05T12:00:00.000Z' });
     expect(hasClinicalConsent('heart-care-coordinator')).toBe(true);
-    expect(hasClinicalConsent('brain-nerve-health-coordinator')).toBe(false);
+    expect(hasClinicalConsent('brain-nerve-care-coordinator')).toBe(false);
 
     const stored = JSON.parse(localStorage.getItem(CLINICAL_CONSENT_STORAGE_KEY) || '{}');
     expect(stored['heart-care-coordinator'].grantedAt).toBe('2026-10-05T12:00:00.000Z');
@@ -59,14 +59,14 @@ describe('clinicalConsent store', () => {
 
   it('withdraws consent for a single agent and for all agents', () => {
     grantClinicalConsent('heart-care-coordinator');
-    grantClinicalConsent('brain-nerve-health-coordinator');
+    grantClinicalConsent('brain-nerve-care-coordinator');
 
     withdrawClinicalConsent('heart-care-coordinator');
     expect(hasClinicalConsent('heart-care-coordinator')).toBe(false);
-    expect(hasClinicalConsent('brain-nerve-health-coordinator')).toBe(true);
+    expect(hasClinicalConsent('brain-nerve-care-coordinator')).toBe(true);
 
     withdrawAllClinicalConsents();
-    expect(hasClinicalConsent('brain-nerve-health-coordinator')).toBe(false);
+    expect(hasClinicalConsent('brain-nerve-care-coordinator')).toBe(false);
     expect(localStorage.getItem(CLINICAL_CONSENT_STORAGE_KEY)).toBeNull();
   });
 
@@ -97,7 +97,7 @@ describe('clinicalConsent store', () => {
       CLINICAL_CONSENT_STORAGE_KEY,
       JSON.stringify({
         'heart-care-coordinator': true,
-        'brain-nerve-health-coordinator': { grantedAt: 'not-a-date' },
+        'brain-nerve-care-coordinator': { grantedAt: 'not-a-date' },
         '../bad': { grantedAt: '2026-10-05T12:00:00.000Z' },
         'skin-care-coordinator': { grantedAt: '2026-10-05T12:00:00.000Z' }
       })

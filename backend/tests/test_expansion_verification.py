@@ -15,7 +15,7 @@ Validates:
 1. Extended Medical & Surgical Navigators 9–13 (Phase2):
    - cancer-care-coordinator / oncology-prep
    - autoimmune-care-coordinator / rheuma-prep
-   - bladder-pelvic-health-coordinator / urology-prep
+   - bladder-pelvic-care-coordinator / urology-prep
    - eye-care-coordinator / vision-prep
    - ent-care-coordinator / ent-prep
 2. Healthcare Administration Stewards 14–17 (Phase3):
@@ -77,7 +77,7 @@ M2_SPECIALTY_AGENTS: Dict[str, Dict[str, Any]] = {
         "icon": "Flame",
         "fts_query": "autoimmune",
     },
-    "bladder-pelvic-health-coordinator": {
+    "bladder-pelvic-care-coordinator": {
         "title": "Bladder & Pelvic Health Coordinator",
         "companion_skill": "urology-prep",
         "domain": AgentDomain.CLINICAL,
@@ -320,7 +320,7 @@ class TestExpansionCatalog:
         search_terms = {
             "cancer-care-coordinator": "chemotherapy",
             "autoimmune-care-coordinator": "autoimmune",
-            "bladder-pelvic-health-coordinator": "voiding",
+            "bladder-pelvic-care-coordinator": "voiding",
             "eye-care-coordinator": "glaucoma",
             "ent-care-coordinator": "sinusitis",
             "prior-authorization-coordinator": "prior authorization",

@@ -130,7 +130,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "severe acute dyspnea with blue lips, struggling to speak full sentences",
     },
     {
-        "id": "brain-nerve-health-coordinator",
+        "id": "brain-nerve-care-coordinator",
         "title": "Brain & Nerve Health Coordinator",
         "domain": "clinical",
         "category": "clinical.neurology",
@@ -146,7 +146,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "sudden unilateral facial drooping, right arm numbness, and slurred speech",
     },
     {
-        "id": "digestive-health-coordinator",
+        "id": "digestive-care-coordinator",
         "title": "Digestive Health Coordinator",
         "domain": "clinical",
         "category": "clinical.gastroenterology",
@@ -258,7 +258,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "acutely hot, red, intensely painful swollen single knee with 103F fever",
     },
     {
-        "id": "bladder-pelvic-health-coordinator",
+        "id": "bladder-pelvic-care-coordinator",
         "title": "Bladder & Pelvic Health Coordinator",
         "domain": "clinical",
         "category": "clinical.urology",

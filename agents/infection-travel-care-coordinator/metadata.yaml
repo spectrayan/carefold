@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: blood-health-coordinator
-title: Blood Health Coordinator
+id: infection-travel-care-coordinator
+title: Infection & Travel Health Coordinator
 version: 0.1.0
 license: Apache-2.0
 care_stages:
@@ -25,17 +25,17 @@ care_stages:
   - follow_up
 target_audience:
   - patient_adult
-  - hematology_patient
+  - traveler
   - caregiver
 tags:
-  - hematology
-  - blood-disorders
-  - anemia
-  - iron-infusion
-  - cbc
-icon: Activity
+  - infectious-disease
+  - fever
+  - antibiotics
+  - travel-medicine
+  - infection
+icon: ShieldAlert
 maturity: stable
 hidden: false
 domain: clinical
-category: clinical.hematology
+category: clinical.infectious_disease
 risk_class: clinical_assist

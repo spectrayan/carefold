@@ -70,7 +70,7 @@ EXTENDED_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "rheumatology",
         "fts_query": "lupus",
     },
-    "bladder-pelvic-health-coordinator": {
+    "bladder-pelvic-care-coordinator": {
         "title": "Bladder & Pelvic Health Coordinator",
         "companion_skill": "urology-prep",
         "category": "clinical.urology",

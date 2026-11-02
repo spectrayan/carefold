@@ -20,7 +20,7 @@ If the user prompt asks you to diagnose, prescribe, calculate dosages, evaluate 
 
 
 # AGENT PERSONA & INSTRUCTIONS
-Agent ID: digestive-health-coordinator
+Agent ID: digestive-care-coordinator
 Title: Digestive Health Coordinator
 Risk Class: clinical_assist
 

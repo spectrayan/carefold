@@ -52,7 +52,7 @@ autoimmune-care-coordinator:
   - '\b(morning\s*stiffness|autoimmune\s*flare|lupus\s*flare|arthritis\s*flare|joint\s*flare|malar\s*rash|raynauds?|joint\s*inflammation)\b'
   - '\b(biologics?|dmard|dmards|methotrexate|humira|enbrel|infliximab|anti-?ccp|rheumatoid\s*factor|antinuclear\s*antibody|ana\s*titer|sed\s*rate|esr|crp\s*inflammation)\b'
 
-bladder-pelvic-health-coordinator:
+bladder-pelvic-care-coordinator:
   - '\b(urology|urologist|urological|bladder|urinary|prostate|bph|enlarged\s*prostate|prostatitis|urethra|ureteral|pelvic\s*floor)\b'
   - '\b(voiding|voiding\s*diary|nocturia|urinary\s*frequency|urinary\s*urgency|incontinence|urinary\s*incontinence|weak\s*stream|urinary\s*retention|hematuria|blood\s*in\s*urine|dysuria|uti|urinary\s*tract\s*infection)\b'
   - '\b(kidney\s*stones?|nephrolithiasis|lithotripsy|cystoscopy|psa|prostate\s*specific\s*antigen|vasectomy|urodynamics|prostate\s*biopsy)\b'
@@ -80,12 +80,12 @@ lung-breathing-coordinator:
   - '\b(shortness\s*of\s*breath|dyspnea|wheezing?|chronic\s*cough|sputum|phlegm|chest\s*congestion|hypoxemia|stridor)\b'
   - '\b(inhaler|albuterol|nebulizer|spirometry|pft|pulmonary\s*function|peak\s*flow|oxygen\s*saturation|spo2|bronchoscopy|cpap|bipap)\b'
 
-brain-nerve-health-coordinator:
+brain-nerve-care-coordinator:
   - '\b(neurology|neurologist|neurological|neuro|brain|migraine|migraines|headache|headaches|neuropathy|peripheral\s*neuropathy|seizure|seizures|epilepsy|convulsions?|dementia|alzheimers?|concussion|parkinsons?|multiple\s*sclerosis|neuralgia)\b'
   - '\b(numbness|tingling|paresthesia|brain\s*fog|cognitive\s*(?:decline|impairment|symptom|symptoms)|memory\s*loss|tremors?|ataxia|facial\s*droop|slurred\s*speech)\b'
   - '\b(eeg|electroencephalogram|emg|electromyography|nerve\s*conduction|brain\s*mri|lumbar\s*puncture|neurological\s*exam)\b'
 
-digestive-health-coordinator:
+digestive-care-coordinator:
   - '\b(gastro|gastroenterology|gastroenterologist|digestive|stomach|bowel|bowels|colon|intestinal|intestines|ibs|ibd|crohns?|colitis|ulcerative\s*colitis|gerd|acid\s*reflux|heartburn|celiac|gastritis|peptic\s*ulcer|diverticulitis|pancreatitis)\b'
   - '\b(abdominal\s*pain|stomach\s*cramps?|bloating|constipation|diarrhea|chronic\s*nausea|acid\s*indigestion|food\s*triggers?)\b'
   - '\b(endoscopy|colonoscopy|egd|bowel\s*prep|fecal\s*calprotectin|stool\s*test|colon\s*polyps?|liver\s*enzymes?)\b'

@@ -20,7 +20,7 @@ If the user prompt asks you to diagnose, prescribe, calculate dosages, evaluate 
 
 
 # AGENT PERSONA & INSTRUCTIONS
-Agent ID: blood-health-coordinator
+Agent ID: blood-care-coordinator
 Title: Blood Health Coordinator
 Risk Class: clinical_assist
 

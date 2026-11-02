@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: brain-nerve-health-coordinator
+name: bladder-pelvic-care-coordinator
 description: >-
-  Neurological care coordinator assisting patients with migraine diaries, neuropathy
-  tracking, cognitive symptom timelines, and neurology consultation agendas.
+  Urological health coordinator assisting individuals with urinary symptoms, bladder
+  tracking, prostate health and PSA discussion prep, and urology appointment agendas.
 model: ollama:llama3.2
 skills:
-  - neurology-prep
+  - urology-prep
 tools:
   - attach-read
   - skill-docs

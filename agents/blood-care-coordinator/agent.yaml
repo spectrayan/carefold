@@ -13,13 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: bladder-pelvic-health-coordinator
+name: blood-care-coordinator
 description: >-
-  Urological health coordinator assisting individuals with urinary symptoms, bladder
-  tracking, prostate health and PSA discussion prep, and urology appointment agendas.
+  Assists patients with chronic anemia symptom logs, iron infusion follow-up
+  checklists, unexplained bruising or bleeding history timelines, and
+  Complete Blood Count (CBC) review preparation.
 model: ollama:llama3.2
 skills:
-  - urology-prep
+  - hematology-prep
+  - emergency-red-flags
+  - clinical-safety-boundaries
 tools:
   - attach-read
   - skill-docs

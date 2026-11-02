@@ -350,7 +350,7 @@ async def test_admin_without_explicit_grant_denied_audit_and_management(audit_en
         # Record audit event for Owner's profile
         await record_audit(
             {
-                "agent_id": "brain-nerve-health-coordinator",
+                "agent_id": "brain-nerve-care-coordinator",
                 "event": "run",
                 "profile_id": profile_id,
                 "actor_user_id": user_owner["id"],

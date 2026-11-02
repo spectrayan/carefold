@@ -88,7 +88,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.pulmonology",
     },
     {
-        "id": "brain-nerve-health-coordinator",
+        "id": "brain-nerve-care-coordinator",
         "companion_skill": "neurology-prep",
         "domain": "clinical",
         "category": "clinical.neurology",
@@ -97,7 +97,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.neurology",
     },
     {
-        "id": "digestive-health-coordinator",
+        "id": "digestive-care-coordinator",
         "companion_skill": "gastro-prep",
         "domain": "clinical",
         "category": "clinical.gastroenterology",
@@ -161,7 +161,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.rheumatology",
     },
     {
-        "id": "bladder-pelvic-health-coordinator",
+        "id": "bladder-pelvic-care-coordinator",
         "companion_skill": "urology-prep",
         "domain": "clinical",
         "category": "clinical.urology",

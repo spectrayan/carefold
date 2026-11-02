@@ -238,7 +238,7 @@ class TestOrchestratorExplicitRoutingNoHijack:
             (
                 "cancer-care-coordinator",
                 "Help me prepare an organized agenda of questions for my follow-up oncology appointment regarding chemotherapy side effects and neuropathy.",
-                ["brain-nerve-health-coordinator"],
+                ["brain-nerve-care-coordinator"],
             ),
             (
                 "cancer-care-coordinator",
@@ -270,7 +270,7 @@ class TestOrchestratorExplicitRoutingNoHijack:
             (
                 "kidney-care-coordinator",
                 "Nephrology guidance on chronic kidney disease (CKD) lab results, with incidental gastro stomach acid and neuropathy.",
-                ["digestive-health-coordinator", "brain-nerve-health-coordinator"],
+                ["digestive-care-coordinator", "brain-nerve-care-coordinator"],
             ),
             (
                 "kidney-care-coordinator",
@@ -281,7 +281,7 @@ class TestOrchestratorExplicitRoutingNoHijack:
             (
                 "diabetes-thyroid-coordinator",
                 "Managing my diabetes, glucose numbers, and insulin pump; also have migraines and shortness of breath.",
-                ["brain-nerve-health-coordinator", "lung-breathing-coordinator"],
+                ["brain-nerve-care-coordinator", "lung-breathing-coordinator"],
             ),
             (
                 "diabetes-thyroid-coordinator",
@@ -292,17 +292,17 @@ class TestOrchestratorExplicitRoutingNoHijack:
             (
                 "lung-breathing-coordinator",
                 "Pulmonology consultation for chronic cough and asthma, with mild acid reflux and eczema skin lesions.",
-                ["digestive-health-coordinator", "skin-care-coordinator"],
+                ["digestive-care-coordinator", "skin-care-coordinator"],
             ),
             # Gastro Guide: incidental migraines, arthritis
             (
-                "digestive-health-coordinator",
+                "digestive-care-coordinator",
                 "Gastroenterology guidance for irritable bowel syndrome (IBS) flares and joint pain with headaches.",
-                ["autoimmune-care-coordinator", "brain-nerve-health-coordinator"],
+                ["autoimmune-care-coordinator", "brain-nerve-care-coordinator"],
             ),
             # Neurology Guide: incidental heart palpitations, rash
             (
-                "brain-nerve-health-coordinator",
+                "brain-nerve-care-coordinator",
                 "Neurology guidance for chronic migraines and peripheral neuropathy, noting occasional heart palpitations.",
                 ["heart-care-coordinator"],
             ),
@@ -395,7 +395,7 @@ class TestOrchestratorExplicitMultiSpecialistCoordination:
             (
                 "cancer-care-coordinator",
                 "Please coordinate with both oncology and neurology regarding chemotherapy-induced neuropathy.",
-                ["cancer-care-coordinator", "brain-nerve-health-coordinator"],
+                ["cancer-care-coordinator", "brain-nerve-care-coordinator"],
                 "coordinate",
             ),
             (
@@ -423,9 +423,9 @@ class TestOrchestratorExplicitMultiSpecialistCoordination:
                 "multiple specialists",
             ),
             (
-                "digestive-health-coordinator",
+                "digestive-care-coordinator",
                 "I request a team of specialists to look at my gastro stomach pain and migraines simultaneously.",
-                ["digestive-health-coordinator", "brain-nerve-health-coordinator"],
+                ["digestive-care-coordinator", "brain-nerve-care-coordinator"],
                 "team of specialists",
             ),
             (

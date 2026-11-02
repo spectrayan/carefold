@@ -54,7 +54,7 @@ const mockAuditEvents: AuditEvent[] = [
   },
   {
     ts: '2026-10-07T12:20:00.000Z',
-    agent_id: 'brain-nerve-health-coordinator',
+    agent_id: 'brain-nerve-care-coordinator',
     event: 'boundary_warning',
     allowed: true,
     reason: 'clinical_boundary_candidate',

@@ -13,29 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: infection-travel-health-coordinator
-title: Infection & Travel Health Coordinator
-version: 0.1.0
-license: Apache-2.0
-care_stages:
-  - pre_visit
-  - during_visit
-  - post_visit
-  - daily_living
-  - follow_up
-target_audience:
-  - patient_adult
-  - traveler
-  - caregiver
-tags:
-  - infectious-disease
-  - fever
-  - antibiotics
-  - travel-medicine
-  - infection
-icon: ShieldAlert
-maturity: stable
-hidden: false
-domain: clinical
-category: clinical.infectious_disease
-risk_class: clinical_assist
+name: infection-travel-care-coordinator
+description: >-
+  Assists patients in preparing fever and symptom timelines, antibiotic history 
+  logs, travel and exposure histories, and question agendas for infectious 
+  disease and travel medicine appointments.
+model: ollama:llama3.2
+skills:
+  - infectious-disease-prep
+  - emergency-red-flags
+  - clinical-safety-boundaries
+tools:
+  - attach-read
+  - skill-docs
+  - workspace-note
+persona: persona.md
+max_iterations: 3

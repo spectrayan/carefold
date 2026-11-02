@@ -39,8 +39,8 @@ EXPECTED_PUBLIC_AGENT_IDS: Set[str] = {
     # Core Organ Navigators
     "heart-care-coordinator",
     "lung-breathing-coordinator",
-    "brain-nerve-health-coordinator",
-    "digestive-health-coordinator",
+    "brain-nerve-care-coordinator",
+    "digestive-care-coordinator",
     "kidney-care-coordinator",
     "diabetes-thyroid-coordinator",
     "bone-joint-care-coordinator",
@@ -48,7 +48,7 @@ EXPECTED_PUBLIC_AGENT_IDS: Set[str] = {
     # Extended Specialty Navigators
     "cancer-care-coordinator",
     "autoimmune-care-coordinator",
-    "bladder-pelvic-health-coordinator",
+    "bladder-pelvic-care-coordinator",
     "eye-care-coordinator",
     "ent-care-coordinator",
     # Healthcare Administration Stewards

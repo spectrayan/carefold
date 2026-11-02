@@ -69,7 +69,7 @@ CORE_ORGAN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "pulmonology",
         "fts_query": "asthma",
     },
-    "brain-nerve-health-coordinator": {
+    "brain-nerve-care-coordinator": {
         "title": "Brain & Nerve Health Coordinator",
         "companion_skill": "neurology-prep",
         "category": "clinical.neurology",
@@ -77,7 +77,7 @@ CORE_ORGAN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "neurology",
         "fts_query": "migraine",
     },
-    "digestive-health-coordinator": {
+    "digestive-care-coordinator": {
         "title": "Digestive Health Coordinator",
         "companion_skill": "gastro-prep",
         "category": "clinical.gastroenterology",

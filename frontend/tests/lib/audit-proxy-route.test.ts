@@ -95,13 +95,13 @@ describe('Audit Proxy Route (apps/web/src/app/api/audit/route.ts)', () => {
     vi.stubGlobal('fetch', fetchSpy);
 
     const req = new Request(
-      'http://localhost:3000/api/audit?limit=25&agent_id=brain-nerve-health-coordinator&event=refuse'
+      'http://localhost:3000/api/audit?limit=25&agent_id=brain-nerve-care-coordinator&event=refuse'
     );
     await getAuditRoute(req);
 
     const calledUrl = fetchSpy.mock.calls[0][0];
     expect(calledUrl).toContain('limit=25');
-    expect(calledUrl).toContain('agent_id=brain-nerve-health-coordinator');
+    expect(calledUrl).toContain('agent_id=brain-nerve-care-coordinator');
     expect(calledUrl).toContain('event=refuse');
     expect(calledUrl).toContain('full=false');
   });

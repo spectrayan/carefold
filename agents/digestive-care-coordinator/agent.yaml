@@ -13,29 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: digestive-health-coordinator
-title: Digestive Health Coordinator
-version: 0.1.0
-license: Apache-2.0
-care_stages:
-  - pre_visit
-  - during_visit
-  - post_visit
-  - daily_living
-target_audience:
-  - patient_adult
-  - gi_patient
-  - caregiver
-tags:
-  - gastroenterology
-  - ibs
-  - ibd
-  - colonoscopy-prep
-  - food-journal
-  - digestive-health
-icon: Utensils
-maturity: stable
-hidden: false
-domain: clinical
-category: clinical.gastroenterology
-risk_class: clinical_assist
+name: digestive-care-coordinator
+description: >-
+  Digestive health care coordinator assisting patients with IBS/IBD food and symptom
+  journals, colonoscopy/endoscopy preparation checklists, and gastroenterology visit
+  agendas.
+model: ollama:llama3.2
+skills:
+  - gastro-prep
+tools:
+  - attach-read
+  - skill-docs
+  - workspace-note
+persona: persona.md
+max_iterations: 3

@@ -51,8 +51,8 @@ from carefold.schemas.manifest import (
 CORE_ORGAN_AGENTS: List[str] = [
     "heart-care-coordinator",
     "lung-breathing-coordinator",
-    "brain-nerve-health-coordinator",
-    "digestive-health-coordinator",
+    "brain-nerve-care-coordinator",
+    "digestive-care-coordinator",
     "kidney-care-coordinator",
     "diabetes-thyroid-coordinator",
     "bone-joint-care-coordinator",
@@ -543,8 +543,8 @@ class TestCatalogIndexingAndDiscoveryStress:
         search_terms = {
             "heart-care-coordinator": "blood pressure",
             "lung-breathing-coordinator": "inhaler",
-            "brain-nerve-health-coordinator": "headache",
-            "digestive-health-coordinator": "colonoscopy",
+            "brain-nerve-care-coordinator": "headache",
+            "digestive-care-coordinator": "colonoscopy",
             "kidney-care-coordinator": "creatinine",
             "diabetes-thyroid-coordinator": "glucose",
             "bone-joint-care-coordinator": "mobility",
