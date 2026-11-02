@@ -101,7 +101,7 @@ ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
 
 MANDATORY_PERSONA_HEADERS: List[str] = [
     "ROLE & EMPATHY",
-    "CLINICAL SCOPE & FOCUS",
+    "SCOPE & FOCUS",
     "STRUCTURED INTERACTION PROTOCOL",
     "STRICT NON-CLINICAL BOUNDARIES",
     "EXPLICIT EMERGENCY RED FLAGS",
@@ -229,7 +229,7 @@ class TestAdminSpecialtiesPersonas:
             manifest, _, _ = load_agent(agent_path)
             persona_text = manifest.persona if isinstance(manifest.persona, str) else str(manifest.persona)
             assert "ROLE & EMPATHY" in persona_text
-            assert "CLINICAL SCOPE & FOCUS" in persona_text
+            assert "SCOPE & FOCUS" in persona_text
 
     def test_all_4_personas_enforce_safety_boundaries_and_red_flags(self, temp_workspace: Path):
         """Universal profile must explicitly declare prohibitions against diagnosing, prescribing, and dosage."""

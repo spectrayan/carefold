@@ -1,11 +1,11 @@
-# Clinical Quality Reviewer Agent
+# Quality Reviewer Agent
 
-The **Clinical Quality Reviewer** (`quality-reviewer`) is an internal system infrastructure agent in the Carefold multi-agent architecture.
+The **Quality Reviewer** (`quality-reviewer`) is an internal system infrastructure agent in the Carefold multi-agent architecture.
 It evaluates drafted agent responses produced by clinical navigators and administrative stewards to guarantee the highest standards of empathetic patient communication, plain-language health literacy (targeting Flesch-Kincaid Grade Level 6–8), structural clarity, and adherence to non-clinical safety boundaries.
 
 ## Purpose & Role
 Patients navigating complex medical conditions or insurance bureaucracy are frequently overwhelmed by dense clinical terminology, impersonal medical jargon, or ambiguous guidance.
-The Clinical Quality Reviewer acts as an automated editorial and health literacy evaluator:
+The Quality Reviewer acts as an automated editorial and health literacy evaluator:
 - **Tone & Empathy**: Validating patient concerns, demonstrating warmth and compassion, and eliminating dismissive or paternalistic language.
 - **Health Literacy & Plain Language**: Deconstructing complex diagnostic or physiological metrics (e.g., ejection fraction, eGFR, HbA1c, biopsy margins) into accessible analogies without compromising clinical accuracy.
 - **Actionable Organization**: Structuring information into clear agendas, bulleted lists, and prioritized questions for patient appointments.

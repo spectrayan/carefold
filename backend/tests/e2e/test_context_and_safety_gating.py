@@ -95,7 +95,7 @@ class ReferenceContextLoader:
         if agents_dir.is_dir():
             for ad in sorted(agents_dir.glob("*")):
                 if ad.is_dir() and not ad.name.startswith("_system"):
-                    summary_lines.append(f"- {ad.name}: healthcare navigation specialist")
+                    summary_lines.append(f"- {ad.name}: care coordinator")
         updated["catalog_summary"] = "\n".join(summary_lines)
 
         return updated

@@ -45,7 +45,7 @@ SKILLS_DIR = REPO_ROOT / "skills"
 
 MANDATORY_HEADERS: List[str] = [
     "ROLE & EMPATHY:",
-    "CLINICAL SCOPE & FOCUS:",
+    "SCOPE & FOCUS:",
 ]
 
 FORBIDDEN_TOOLS: Set[str] = {

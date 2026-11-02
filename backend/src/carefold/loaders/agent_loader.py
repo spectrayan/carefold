@@ -81,7 +81,7 @@ def load_agent_readme(agent_dir: Union[Path, str]) -> Optional[str]:
 
 
 HEADER_PREFIX_PATTERN = re.compile(
-    r"^(?:#+\s*|\*+\s*)?(?:ROLE(?:\s*&|\s+AND)?\s*EMPATHY|ROLE|CLINICAL SCOPE(?:\s*&|\s+FOCUS)?|MISSION|OVERVIEW|PURPOSE|BACKGROUND|INTENDED BEHAVIOR)[\s:]*$",
+    r"^(?:#+\s*|\*+\s*)?(?:ROLE(?:\s*&|\s+AND)?\s*EMPATHY|ROLE|(?:CLINICAL\s+)?SCOPE(?:\s*&\s*FOCUS|\s+FOCUS)?|MISSION|OVERVIEW|PURPOSE|BACKGROUND|INTENDED BEHAVIOR)[\s:]*$",
     re.IGNORECASE,
 )
 

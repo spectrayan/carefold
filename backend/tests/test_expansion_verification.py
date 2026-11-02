@@ -147,7 +147,7 @@ M4_SYSTEM_AGENTS: Dict[str, Dict[str, Any]] = {
         "hidden": True,
     },
     "quality-reviewer": {
-        "title": "Clinical Quality Reviewer",
+        "title": "Quality Reviewer",
         "domain": AgentDomain.EDUCATION,
         "category": "education.quality",
         "icon": "CheckCheck",
@@ -157,7 +157,7 @@ M4_SYSTEM_AGENTS: Dict[str, Dict[str, Any]] = {
 
 MANDATORY_HEADERS = [
     "ROLE & EMPATHY",
-    "CLINICAL SCOPE & FOCUS",
+    "SCOPE & FOCUS",
     "STRUCTURED INTERACTION PROTOCOL",
     "STRICT NON-CLINICAL BOUNDARIES",
     "EXPLICIT EMERGENCY RED FLAGS",
@@ -238,7 +238,7 @@ class TestExpansionPersonas:
         else:
             words = persona.split()
             assert 40 <= len(words) < 600, f"Agent '{agent_id}' persona has {len(words)} words; must be in [40, 600)"
-            for header in ["ROLE & EMPATHY", "CLINICAL SCOPE & FOCUS"]:
+            for header in ["ROLE & EMPATHY", "SCOPE & FOCUS"]:
                 assert f"{header}:" in persona or header in persona, (
                     f"Agent '{agent_id}' persona missing mandatory header '{header}'"
                 )

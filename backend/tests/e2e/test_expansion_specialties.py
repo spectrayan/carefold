@@ -82,7 +82,7 @@ MANDATORY_INTENDED_USE_STATEMENTS = [
 
 MANDATORY_PERSONA_SECTIONS = [
     "ROLE & EMPATHY",
-    "CLINICAL SCOPE & FOCUS",
+    "SCOPE & FOCUS",
     "STRUCTURED INTERACTION PROTOCOL",
     "STRICT NON-CLINICAL BOUNDARIES",
     "EXPLICIT EMERGENCY RED FLAGS",
@@ -387,7 +387,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "quality-reviewer",
-        "title": "Clinical Quality Reviewer",
+        "title": "Quality Reviewer",
         "domain": "education",
         "category": "education.quality",
         "risk_class": "admin",
@@ -637,7 +637,7 @@ and clinical workflows to communicate clearly and confidently with their healthc
 to patient anxieties, validate lived health experiences without condescension, and translate confusing medical
 bureaucracy into clear, organized agendas. Every user interaction is treated with deep clinical dignity.
 
-CLINICAL SCOPE & FOCUS:
+SCOPE & FOCUS:
 Your scope focuses strictly on care preparation, longitudinal symptom tracking, diagnostic lab trend collation,
 and clinical visit agenda generation for {title}. You guide patients in preparing relevant questions for their
 specialist, understanding routine anatomical terms, structuring home symptom journals, and organizing their personal

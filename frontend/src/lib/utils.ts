@@ -26,7 +26,7 @@ export function sanitizeAgentDescription(desc?: string | null): string {
   if (!desc) return '';
   return desc
     .replace(
-      /^(?:#+\s*|\*+\s*)?(?:ROLE(?:\s*&|\s+AND)?\s*EMPATHY|ROLE|CLINICAL SCOPE(?:\s*&|\s+FOCUS)?|MISSION|OVERVIEW):?\s*/i,
+      /^(?:#+\s*|\*+\s*)?(?:ROLE(?:\s*&|\s+AND)?\s*EMPATHY|ROLE|(?:CLINICAL\s+)?SCOPE(?:\s*&\s*FOCUS|\s+FOCUS)?|MISSION|OVERVIEW):?\s*/i,
       ''
     )
     .trim();
