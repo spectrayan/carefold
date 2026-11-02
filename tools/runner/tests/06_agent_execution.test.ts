@@ -38,7 +38,7 @@ describe('Agent Execution Streaming & Tool Loop', () => {
     mockModel.enqueueResponse({ text: 'Hello! I am your care navigation assistant.' });
 
     const stream = executeAgentRun({
-      agentId: 'visit-steward',
+      agentId: 'appointment-prep-coordinator',
       workspaceDir: ws,
       prompt: 'Hello',
       modelClient: mockModel
@@ -71,7 +71,7 @@ describe('Agent Execution Streaming & Tool Loop', () => {
     });
 
     const stream = executeAgentRun({
-      agentId: 'visit-steward',
+      agentId: 'appointment-prep-coordinator',
       workspaceDir: ws,
       prompt: 'Help me save questions for my visit',
       modelClient: mockModel
@@ -103,7 +103,7 @@ describe('Agent Execution Streaming & Tool Loop', () => {
   });
 
   it('intercepts undeclared tool call, denies execution, and logs audit denial', async () => {
-    // Model attempts to call 'attach-read' which visit-steward has NOT declared
+    // Model attempts to call 'attach-read' which appointment-prep-coordinator has NOT declared
     mockModel.enqueueResponse({
       toolCalls: [
         {
@@ -115,7 +115,7 @@ describe('Agent Execution Streaming & Tool Loop', () => {
     mockModel.enqueueResponse({ text: 'Understood, tool was not allowed.' });
 
     const stream = executeAgentRun({
-      agentId: 'visit-steward',
+      agentId: 'appointment-prep-coordinator',
       workspaceDir: ws,
       prompt: 'Read secret.txt',
       modelClient: mockModel
@@ -146,7 +146,7 @@ describe('Agent Execution Streaming & Tool Loop', () => {
     });
 
     const stream = executeAgentRun({
-      agentId: 'visit-steward',
+      agentId: 'appointment-prep-coordinator',
       workspaceDir: ws,
       prompt: 'Do I have ADHD?',
       modelClient: mockModel

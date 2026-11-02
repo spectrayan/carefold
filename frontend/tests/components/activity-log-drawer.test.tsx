@@ -20,16 +20,16 @@ import { AuditEvent } from '@/types/api';
 const mockAuditEvents: AuditEvent[] = [
   {
     ts: '2026-10-07T12:00:00.000Z',
-    agent_id: 'cardiology-guide',
+    agent_id: 'heart-care-coordinator',
     event: 'tool',
     tool: 'exec',
     allowed: false,
-    reason: "Tool 'exec' execution denied: undeclared tool for agent 'cardiology-guide'.",
+    reason: "Tool 'exec' execution denied: undeclared tool for agent 'heart-care-coordinator'.",
     duration_ms: 14.5
   },
   {
     ts: '2026-10-07T12:05:00.000Z',
-    agent_id: 'visit-steward',
+    agent_id: 'appointment-prep-coordinator',
     event: 'refuse',
     allowed: false,
     reason: 'emergency_red_flag:cardiac',
@@ -37,7 +37,7 @@ const mockAuditEvents: AuditEvent[] = [
   },
   {
     ts: '2026-10-07T12:10:00.000Z',
-    agent_id: 'cardiology-guide',
+    agent_id: 'heart-care-coordinator',
     event: 'tool',
     tool: 'attach-read',
     allowed: true,
@@ -46,7 +46,7 @@ const mockAuditEvents: AuditEvent[] = [
   },
   {
     ts: '2026-10-07T12:15:00.000Z',
-    agent_id: 'visit-steward',
+    agent_id: 'appointment-prep-coordinator',
     event: 'run',
     allowed: true,
     reason: null,
@@ -54,7 +54,7 @@ const mockAuditEvents: AuditEvent[] = [
   },
   {
     ts: '2026-10-07T12:20:00.000Z',
-    agent_id: 'neurology-guide',
+    agent_id: 'brain-nerve-health-coordinator',
     event: 'boundary_warning',
     allowed: true,
     reason: 'clinical_boundary_candidate',
@@ -172,7 +172,7 @@ describe('ActivityLogDrawer Component (apps/web/src/components/chat/ActivityLogD
     });
 
     const agentSelect = screen.getByTestId('audit-agent-filter');
-    fireEvent.change(agentSelect, { target: { value: 'cardiology-guide' } });
+    fireEvent.change(agentSelect, { target: { value: 'heart-care-coordinator' } });
 
     await waitFor(() => {
       const cards = screen.getAllByTestId('audit-event-card');

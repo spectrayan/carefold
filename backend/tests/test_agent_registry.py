@@ -125,7 +125,7 @@ def test_agent_registry_taxonomy_metadata(temp_workspace: Path):
     skills_dir = temp_workspace / "skills"
     registry = AgentRegistry(agents_dir, skills_dir)
 
-    # 1. visit-steward
+    # 1. appointment-prep-coordinator
     vs = registry.get(AGENT_VISIT_STEWARD)
     assert vs is not None
     assert vs.domain == "navigation"
@@ -136,7 +136,7 @@ def test_agent_registry_taxonomy_metadata(temp_workspace: Path):
     assert vs.maturity == "stable"
     assert isinstance(vs.target_audience, list)
 
-    # 2. benefits-guide
+    # 2. benefits-coordinator
     bg = registry.get(AGENT_BENEFITS_GUIDE)
     assert bg is not None
     assert bg.domain == "navigation"
@@ -146,7 +146,7 @@ def test_agent_registry_taxonomy_metadata(temp_workspace: Path):
     assert bg.icon == "FileText"
     assert bg.maturity == "stable"
 
-    # 3. habit-companion
+    # 3. habit-coordinator
     hc = registry.get(AGENT_HABIT_COMPANION)
     assert hc is not None
     assert hc.domain == "wellness"

@@ -74,11 +74,11 @@ except ToolValidationError:
     },
     {
       id: 'F04-T05',
-      name: 'visit-steward resolves exact effective tools union [attach-read, workspace-note, skill-docs]',
+      name: 'appointment-prep-coordinator resolves exact effective tools union [attach-read, workspace-note, skill-docs]',
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent
-agent, tools, skills = load_agent('agents/visit-steward', 'skills')
+agent, tools, skills = load_agent('agents/appointment-prep-coordinator', 'skills')
 assert sorted(tools) == ['attach-read', 'skill-docs', 'workspace-note']
 `;
         const res = runPython(script);

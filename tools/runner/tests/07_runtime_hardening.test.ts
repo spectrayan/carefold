@@ -77,7 +77,7 @@ describe('07: Runtime Hardening & Regression Suite', () => {
         },
         {
           workspaceRoot: ws,
-          agent: { id: 'visit-steward', skills: ['../exfiltrated_dir'] } as any
+          agent: { id: 'appointment-prep-coordinator', skills: ['../exfiltrated_dir'] } as any
         }
       );
 
@@ -94,7 +94,7 @@ describe('07: Runtime Hardening & Regression Suite', () => {
         },
         {
           workspaceRoot: ws,
-          agent: { id: 'visit-steward', skills: ['../../attachments'] } as any
+          agent: { id: 'appointment-prep-coordinator', skills: ['../../attachments'] } as any
         }
       );
 
@@ -110,7 +110,7 @@ describe('07: Runtime Hardening & Regression Suite', () => {
         },
         {
           workspaceRoot: ws,
-          agent: { id: 'visit-steward', skills: ['visit-prep'] } as any
+          agent: { id: 'appointment-prep-coordinator', skills: ['visit-prep'] } as any
         }
       );
 
@@ -127,7 +127,7 @@ describe('07: Runtime Hardening & Regression Suite', () => {
         },
         {
           workspaceRoot: ws,
-          agent: { id: 'visit-steward', skills: ['visit-prep'] } as any
+          agent: { id: 'appointment-prep-coordinator', skills: ['visit-prep'] } as any
         }
       );
 
@@ -144,7 +144,7 @@ describe('07: Runtime Hardening & Regression Suite', () => {
         },
         {
           workspaceRoot: ws,
-          agent: { id: 'visit-steward', skills: ['visit-prep'] } as any
+          agent: { id: 'appointment-prep-coordinator', skills: ['visit-prep'] } as any
         }
       );
 
@@ -274,7 +274,7 @@ describe('07: Runtime Hardening & Regression Suite', () => {
         },
         {
           workspaceRoot: ws,
-          agent: { id: 'visit-steward' } as any
+          agent: { id: 'appointment-prep-coordinator' } as any
         }
       );
 
@@ -293,7 +293,7 @@ describe('07: Runtime Hardening & Regression Suite', () => {
         },
         {
           workspaceRoot: ws,
-          agent: { id: 'visit-steward' } as any
+          agent: { id: 'appointment-prep-coordinator' } as any
         }
       );
 
@@ -428,7 +428,7 @@ describe('07: Runtime Hardening & Regression Suite', () => {
       mockModel.enqueueResponse({ text: 'CONFIDENTIAL_COMPLETION_NOTE_456' });
 
       const stream = executeAgentRun({
-        agentId: 'visit-steward',
+        agentId: 'appointment-prep-coordinator',
         workspaceDir: ws,
         prompt: 'CONFIDENTIAL_PATIENT_SSN_123_PROMPT',
         modelClient: mockModel
@@ -460,7 +460,7 @@ describe('07: Runtime Hardening & Regression Suite', () => {
       mockModel.enqueueResponse({ text: 'SENSITIVE_ASSISTANT_REPLY' });
 
       const stream = executeAgentRun({
-        agentId: 'visit-steward',
+        agentId: 'appointment-prep-coordinator',
         workspaceDir: ws,
         prompt: 'SENSITIVE_USER_QUERY',
         modelClient: mockModel,
@@ -493,7 +493,7 @@ describe('07: Runtime Hardening & Regression Suite', () => {
       mockModel.enqueueResponse({ text: 'EXPLICIT_RETAINED_COMPLETION' });
 
       const stream = executeAgentRun({
-        agentId: 'visit-steward',
+        agentId: 'appointment-prep-coordinator',
         workspaceDir: ws,
         prompt: 'EXPLICIT_RETAINED_PROMPT',
         modelClient: mockModel,
@@ -524,7 +524,7 @@ describe('07: Runtime Hardening & Regression Suite', () => {
       mockModel.enqueueResponse({ text: 'Based on your symptoms you have pneumonia' });
 
       const stream = executeAgentRun({
-        agentId: 'visit-steward',
+        agentId: 'appointment-prep-coordinator',
         workspaceDir: ws,
         prompt: 'PATIENT_CONFIDENTIAL_SYMPTOMS_BEFORE_REFUSAL',
         modelClient: mockModel,

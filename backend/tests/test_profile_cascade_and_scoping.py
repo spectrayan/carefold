@@ -868,7 +868,7 @@ async def test_22_chat_stream_with_null_profile_id_rejected_400(cascade_test_env
         resp = client.post(
             "/api/chat",
             headers=user_a["headers"],
-            json={"agent_id": "cardiology-guide", "prompt": "Hello", "profile_id": None},
+            json={"agent_id": "heart-care-coordinator", "prompt": "Hello", "profile_id": None},
         )
         assert resp.status_code == 400
         assert "profile_id is required" in resp.json()["detail"]
@@ -883,7 +883,7 @@ async def test_23_chat_stream_with_empty_string_profile_id_rejected_400(cascade_
         resp = client.post(
             "/api/chat",
             headers=user_a["headers"],
-            json={"agent_id": "cardiology-guide", "prompt": "Hello", "profile_id": "   "},
+            json={"agent_id": "heart-care-coordinator", "prompt": "Hello", "profile_id": "   "},
         )
         assert resp.status_code == 400
         assert "profile_id is required" in resp.json()["detail"]
@@ -906,7 +906,7 @@ async def test_24_chat_stream_unauthorized_profile_blocked_403(cascade_test_env)
         resp = client.post(
             "/api/chat",
             headers=user_b["headers"],
-            json={"agent_id": "cardiology-guide", "prompt": "Hello", "profile_id": prof_id},
+            json={"agent_id": "heart-care-coordinator", "prompt": "Hello", "profile_id": prof_id},
         )
         assert resp.status_code == 403
 
@@ -932,7 +932,7 @@ async def test_25_cross_profile_chat_thread_history_blocked_403(cascade_test_env
                 id=thread_id,
                 user_id=user_a["user"]["id"],
                 profile_id=prof_id,
-                agent_id="cardiology-guide",
+                agent_id="heart-care-coordinator",
                 title="Cardiac Consultation",
             ))
             await session.commit()
@@ -963,7 +963,7 @@ async def test_26_cross_profile_chat_thread_delete_blocked_403(cascade_test_env)
                 id=thread_id,
                 user_id=user_a["user"]["id"],
                 profile_id=prof_id,
-                agent_id="cardiology-guide",
+                agent_id="heart-care-coordinator",
                 title="Cardiac Consultation",
             ))
             await session.commit()
@@ -994,7 +994,7 @@ async def test_27_db_model_constraints_enforce_not_null(cascade_test_env):
         with pytest.raises((IntegrityError, Exception)):
             session.add(ChatThread(
                 id=f"null-thread-{uuid.uuid4().hex[:8]}",
-                agent_id="cardiology-guide",
+                agent_id="heart-care-coordinator",
                 title="Broken Thread",
                 profile_id=None,  # type: ignore
             ))
@@ -1182,7 +1182,7 @@ def test_34_alembic_0004_legacy_null_backfill():
 
         conn.execute(text("""
             INSERT INTO chat_threads (id, agent_id, title, user_id, profile_id, created_at, updated_at)
-            VALUES ('thread-legacy', 'cardiology-guide', 'Legacy Thread', :uid, NULL, :now, :now)
+            VALUES ('thread-legacy', 'heart-care-coordinator', 'Legacy Thread', :uid, NULL, :now, :now)
         """), {"uid": uid, "now": now_iso})
 
         conn.commit()

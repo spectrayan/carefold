@@ -20,7 +20,7 @@ import type { SkillSummary } from '@/app/helpers/HelpersClient';
 
 const mockAgents: AgentSummary[] = [
   {
-    id: 'visit-steward',
+    id: 'appointment-prep-coordinator',
     title: 'Visit Steward',
     version: '0.4.0',
     risk_class: 'clinical_assist',
@@ -30,7 +30,7 @@ const mockAgents: AgentSummary[] = [
     description: 'Prepares questions and checklists for upcoming clinical visits.'
   },
   {
-    id: 'benefits-guide',
+    id: 'benefits-coordinator',
     title: 'Benefits Guide',
     version: '0.4.0',
     risk_class: 'admin',
@@ -40,7 +40,7 @@ const mockAgents: AgentSummary[] = [
     description: 'Explains health insurance coverage, copays, and deductibles.'
   },
   {
-    id: 'habit-companion',
+    id: 'habit-coordinator',
     title: 'Habit Companion',
     version: '0.4.0',
     risk_class: 'wellness',

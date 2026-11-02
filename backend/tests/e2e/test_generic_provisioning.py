@@ -218,8 +218,8 @@ class TestGenericProvisioningFeatureCoverage:
         # Single mode
         p_single = RealExecutionPlan(
             mode=RealExecutionMode.SINGLE,
-            target_agents=["cardiology-guide"],
-            tasks=[RealAgentTask(agent_id="cardiology-guide", task_description="Review BP trends")],
+            target_agents=["heart-care-coordinator"],
+            tasks=[RealAgentTask(agent_id="heart-care-coordinator", task_description="Review BP trends")],
             reasoning="Focused single-specialty question",
         )
         assert p_single.mode.value == "single"
@@ -228,10 +228,10 @@ class TestGenericProvisioningFeatureCoverage:
         # Parallel mode
         p_parallel = RealExecutionPlan(
             mode=RealExecutionMode.PARALLEL,
-            target_agents=["cardiology-guide", "nephrology-guide"],
+            target_agents=["heart-care-coordinator", "kidney-care-coordinator"],
             tasks=[
-                RealAgentTask(agent_id="cardiology-guide", task_description="Cardiovascular assessment"),
-                RealAgentTask(agent_id="nephrology-guide", task_description="Renal function evaluation"),
+                RealAgentTask(agent_id="heart-care-coordinator", task_description="Cardiovascular assessment"),
+                RealAgentTask(agent_id="kidney-care-coordinator", task_description="Renal function evaluation"),
             ],
             reasoning="Multimorbid cardiorenal presentation",
         )
@@ -241,15 +241,15 @@ class TestGenericProvisioningFeatureCoverage:
         # Pipeline mode
         p_pipeline = RealExecutionPlan(
             mode=RealExecutionMode.PIPELINE,
-            target_agents=["ortho-guide", "prior-auth-navigator"],
+            target_agents=["bone-joint-care-coordinator", "prior-authorization-coordinator"],
             tasks=[
-                RealAgentTask(agent_id="ortho-guide", task_description="Prepare surgical plan"),
-                RealAgentTask(agent_id="prior-auth-navigator", task_description="Check authorization", dependencies=["ortho-guide"]),
+                RealAgentTask(agent_id="bone-joint-care-coordinator", task_description="Prepare surgical plan"),
+                RealAgentTask(agent_id="prior-authorization-coordinator", task_description="Check authorization", dependencies=["bone-joint-care-coordinator"]),
             ],
             reasoning="Surgical consultation with insurance authorization dependency",
         )
         assert p_pipeline.mode.value == "pipeline"
-        assert p_pipeline.tasks[1].dependencies == ["ortho-guide"]
+        assert p_pipeline.tasks[1].dependencies == ["bone-joint-care-coordinator"]
 
     def test_generic_reference_provisioner_manifest_scanning(self, e2e_workspace: Path):
         """Dynamically resolves references by matching user query against SkillManifest.references."""
@@ -365,7 +365,7 @@ class TestGenericProvisioningBoundaries:
         with pytest.raises(ValidationError):
             RealExecutionPlan(
                 mode="unsupported_mode",  # type: ignore
-                target_agents=["cardiology-guide"],
+                target_agents=["heart-care-coordinator"],
                 tasks=[],
                 reasoning="Invalid test",
             )
@@ -374,8 +374,8 @@ class TestGenericProvisioningBoundaries:
         """Validates behavior when target_agents list is provided."""
         plan = RealExecutionPlan(
             mode=RealExecutionMode.SINGLE,
-            target_agents=["cardiology-guide"],
-            tasks=[RealAgentTask(agent_id="cardiology-guide", task_description="checkup")],
+            target_agents=["heart-care-coordinator"],
+            tasks=[RealAgentTask(agent_id="heart-care-coordinator", task_description="checkup")],
             reasoning="Valid single plan",
         )
         assert len(plan.target_agents) == 1
@@ -407,10 +407,10 @@ class TestGenericProvisioningCrossFeature:
         """Parallel execution plan coordinates reference provisioning across multiple specialties."""
         plan = RealExecutionPlan(
             mode=RealExecutionMode.PARALLEL,
-            target_agents=["cardiology-guide", "nephrology-guide"],
+            target_agents=["heart-care-coordinator", "kidney-care-coordinator"],
             tasks=[
-                RealAgentTask(agent_id="cardiology-guide", task_description="Hypertension"),
-                RealAgentTask(agent_id="nephrology-guide", task_description="Fluid tracking"),
+                RealAgentTask(agent_id="heart-care-coordinator", task_description="Hypertension"),
+                RealAgentTask(agent_id="kidney-care-coordinator", task_description="Fluid tracking"),
             ],
             reasoning="Cardiorenal multimorbid review",
         )
@@ -448,10 +448,10 @@ class TestGenericProvisioningRealWorldScenarios:
 
         plan = RealExecutionPlan(
             mode=RealExecutionMode.PARALLEL,
-            target_agents=["cardiology-guide", "nephrology-guide"],
+            target_agents=["heart-care-coordinator", "kidney-care-coordinator"],
             tasks=[
-                RealAgentTask(agent_id="cardiology-guide", task_description="BP and cardiovascular symptoms"),
-                RealAgentTask(agent_id="nephrology-guide", task_description="Renal clearance and fluid limits"),
+                RealAgentTask(agent_id="heart-care-coordinator", task_description="BP and cardiovascular symptoms"),
+                RealAgentTask(agent_id="kidney-care-coordinator", task_description="Renal clearance and fluid limits"),
             ],
             reasoning="Patient requires simultaneous cardiovascular and renal guidance",
         )

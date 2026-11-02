@@ -56,26 +56,26 @@ SKILLS_DIR = REPO_ROOT / "skills"
 PROFILE_PATH = REPO_ROOT / "carefold-profile.yaml"
 
 SPECIALIST_AGENT_IDS = [
-    "cardiology-guide",
-    "pulmonology-guide",
-    "derma-guide",
-    "gastro-guide",
-    "neurology-guide",
-    "nephrology-guide",
-    "endocrinology-guide",
-    "rheuma-guide",
-    "ortho-guide",
-    "urology-guide",
-    "ent-guide",
-    "eye-guide",
-    "oncology-navigator",
-    "visit-steward",
-    "benefits-guide",
-    "claims-appeals-guide",
-    "prior-auth-navigator",
-    "formulary-guide",
+    "heart-care-coordinator",
+    "lung-breathing-coordinator",
+    "skin-care-coordinator",
+    "digestive-health-coordinator",
+    "brain-nerve-health-coordinator",
+    "kidney-care-coordinator",
+    "diabetes-thyroid-coordinator",
+    "autoimmune-care-coordinator",
+    "bone-joint-care-coordinator",
+    "bladder-pelvic-health-coordinator",
+    "ent-care-coordinator",
+    "eye-care-coordinator",
+    "cancer-care-coordinator",
+    "appointment-prep-coordinator",
+    "benefits-coordinator",
+    "claims-appeals-coordinator",
+    "prior-authorization-coordinator",
+    "prescription-cost-coordinator",
     "records-coordinator",
-    "habit-companion",
+    "habit-coordinator",
 ]
 
 
@@ -109,11 +109,11 @@ class TestLoadAgentMetadataResilience:
     def test_load_agent_missing_metadata_yaml_fallback(self, tmp_path: Path):
         """Verifies clean fallback when metadata.yaml is completely absent."""
         # Create an isolated mock agent pack
-        agent_dir = tmp_path / "cardiology-guide"
+        agent_dir = tmp_path / "heart-care-coordinator"
         agent_dir.mkdir(parents=True)
 
         slim_agent_yaml = {
-            "name": "cardiology-guide",
+            "name": "heart-care-coordinator",
             "description": "Custom cardiology test description.",
             "model": "ollama:llama3.2",
             "skills": ["cardiology-prep"],
@@ -128,7 +128,7 @@ class TestLoadAgentMetadataResilience:
 
         manifest, effective_tools, loaded_skills = load_agent(agent_dir, SKILLS_DIR)
 
-        assert manifest.id == "cardiology-guide"
+        assert manifest.id == "heart-care-coordinator"
         # Title must fall back to title-cased ID
         assert manifest.title == "Cardiology Guide"
         # Risk class falls back to primary skill's declared risk class (wellness)
@@ -171,11 +171,11 @@ class TestLoadAgentMetadataResilience:
 
     def test_load_agent_malformed_metadata_yaml(self, tmp_path: Path):
         """Verifies load_agent raises ManifestValidationError on syntactically invalid YAML in metadata.yaml."""
-        agent_dir = tmp_path / "cardiology-guide"
+        agent_dir = tmp_path / "heart-care-coordinator"
         agent_dir.mkdir(parents=True)
 
         slim_agent_yaml = {
-            "name": "cardiology-guide",
+            "name": "heart-care-coordinator",
             "persona": "persona_slim.md",
             "skills": ["cardiology-prep"],
         }
@@ -189,11 +189,11 @@ class TestLoadAgentMetadataResilience:
 
     def test_load_agent_non_dict_metadata_yaml(self, tmp_path: Path):
         """Verifies load_agent ignores non-dict YAML in metadata.yaml and falls back gracefully."""
-        agent_dir = tmp_path / "cardiology-guide"
+        agent_dir = tmp_path / "heart-care-coordinator"
         agent_dir.mkdir(parents=True)
 
         slim_agent_yaml = {
-            "name": "cardiology-guide",
+            "name": "heart-care-coordinator",
             "persona": "persona_slim.md",
             "skills": ["cardiology-prep"],
         }
@@ -203,17 +203,17 @@ class TestLoadAgentMetadataResilience:
         (agent_dir / "metadata.yaml").write_text("- item1\n- item2\n- item3\n", encoding="utf-8")
 
         manifest, _, _ = load_agent(agent_dir, SKILLS_DIR)
-        assert manifest.id == "cardiology-guide"
+        assert manifest.id == "heart-care-coordinator"
         assert manifest.title == "Cardiology Guide"
 
     def test_load_agent_mismatched_id_in_metadata_yaml(self, tmp_path: Path):
         """Verifies load_agent rejects metadata.yaml that alters agent id to mismatch directory name."""
-        agent_dir = tmp_path / "cardiology-guide"
+        agent_dir = tmp_path / "heart-care-coordinator"
         agent_dir.mkdir(parents=True)
 
         # agent.yaml has no explicit 'id' key (standard in decomposed agents)
         slim_agent_yaml = {
-            "name": "cardiology-guide",
+            "name": "heart-care-coordinator",
             "persona": "persona_slim.md",
             "skills": ["cardiology-prep"],
         }
@@ -228,11 +228,11 @@ class TestLoadAgentMetadataResilience:
 
     def test_load_agent_corrupted_field_types_in_metadata(self, tmp_path: Path):
         """Verifies Pydantic schema validation rejects corrupt field types in metadata.yaml."""
-        agent_dir = tmp_path / "cardiology-guide"
+        agent_dir = tmp_path / "heart-care-coordinator"
         agent_dir.mkdir(parents=True)
 
         slim_agent_yaml = {
-            "name": "cardiology-guide",
+            "name": "heart-care-coordinator",
             "persona": "persona_slim.md",
             "skills": ["cardiology-prep"],
         }
@@ -250,11 +250,11 @@ class TestLoadAgentMetadataResilience:
 
     def test_load_agent_missing_persona_slim_rejected(self, tmp_path: Path):
         """Verifies load_agent rejects agent pack when persona_slim.md is missing."""
-        agent_dir = tmp_path / "cardiology-guide"
+        agent_dir = tmp_path / "heart-care-coordinator"
         agent_dir.mkdir(parents=True)
 
         slim_agent_yaml = {
-            "name": "cardiology-guide",
+            "name": "heart-care-coordinator",
             "persona": "persona_slim.md",
             "skills": ["cardiology-prep"],
         }
@@ -314,7 +314,7 @@ class TestAgentRegistryResilience:
         registry = AgentRegistry(AGENTS_DIR, SKILLS_DIR)
         catalog = registry.format_agent_catalog()
         assert len(catalog) > 100
-        for agent_id in ["cardiology-guide", "pulmonology-guide", "visit-steward"]:
+        for agent_id in ["heart-care-coordinator", "lung-breathing-coordinator", "appointment-prep-coordinator"]:
             assert f"**{agent_id}**" in catalog
 
 

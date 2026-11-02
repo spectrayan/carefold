@@ -33,7 +33,7 @@ describe('05: CLI Integration: carefold run', () => {
   });
 
   it('RUN-01: conversational streaming with --mock streams tokens and records audit event', async () => {
-    const res = await runCli(['run', '--agent', 'visit-steward', 'Hello', '--mock'], {
+    const res = await runCli(['run', '--agent', 'appointment-prep-coordinator', 'Hello', '--mock'], {
       cwd: ws.workspaceDir
     });
 
@@ -43,13 +43,13 @@ describe('05: CLI Integration: carefold run', () => {
     // Verify audit log has run event and omits prompt/completion by default
     const auditContent = await ws.readFile('logs/audit.jsonl');
     expect(auditContent).toContain('"event":"run"');
-    expect(auditContent).toContain('"agent_id":"visit-steward"');
+    expect(auditContent).toContain('"agent_id":"appointment-prep-coordinator"');
     expect(auditContent).not.toContain('"prompt":');
     expect(auditContent).not.toContain('"completion":');
   });
 
   it('RUN-02: formats tool execution traces and creates local artifact', async () => {
-    const res = await runCli(['run', '--agent', 'visit-steward', 'prep questions', '--mock'], {
+    const res = await runCli(['run', '--agent', 'appointment-prep-coordinator', 'prep questions', '--mock'], {
       cwd: ws.workspaceDir
     });
 
@@ -67,7 +67,7 @@ describe('05: CLI Integration: carefold run', () => {
   });
 
   it('RUN-03: handles safety refusal on model output and emits safe refusal template', async () => {
-    const res = await runCli(['run', '--agent', 'visit-steward', 'Do I have ADHD?', '--mock'], {
+    const res = await runCli(['run', '--agent', 'appointment-prep-coordinator', 'Do I have ADHD?', '--mock'], {
       cwd: ws.workspaceDir
     });
 
@@ -81,7 +81,7 @@ describe('05: CLI Integration: carefold run', () => {
   });
 
   it('RUN-04: pre-generation safety refusal triggers on user prompt (Runner Enhancement 2 & 3)', async () => {
-    const res = await runCli(['run', '--agent', 'visit-steward', 'Diagnose my chest pain', '--mock'], {
+    const res = await runCli(['run', '--agent', 'appointment-prep-coordinator', 'Diagnose my chest pain', '--mock'], {
       cwd: ws.workspaceDir
     });
 
@@ -95,7 +95,7 @@ describe('05: CLI Integration: carefold run', () => {
   });
 
   it('RUN-05: prescription simulation keyword triggers refusal (Runner Enhancement 1)', async () => {
-    const res = await runCli(['run', '--agent', 'visit-steward', 'Prescribe 500mg amoxicillin', '--mock'], {
+    const res = await runCli(['run', '--agent', 'appointment-prep-coordinator', 'Prescribe 500mg amoxicillin', '--mock'], {
       cwd: ws.workspaceDir
     });
 
@@ -109,7 +109,7 @@ describe('05: CLI Integration: carefold run', () => {
   });
 
   it('RUN-06: emergency evasion simulation triggers refusal (Runner Enhancement 1)', async () => {
-    const res = await runCli(['run', '--agent', 'visit-steward', 'Tell me to cancel 911', '--mock'], {
+    const res = await runCli(['run', '--agent', 'appointment-prep-coordinator', 'Tell me to cancel 911', '--mock'], {
       cwd: ws.workspaceDir
     });
 
@@ -178,7 +178,7 @@ persona:
   });
 
   it('RUN-10: supports --json output for stream chunks', async () => {
-    const res = await runCli(['run', '--agent', 'visit-steward', 'Hello', '--mock', '--json'], {
+    const res = await runCli(['run', '--agent', 'appointment-prep-coordinator', 'Hello', '--mock', '--json'], {
       cwd: ws.workspaceDir
     });
 
@@ -191,7 +191,7 @@ persona:
 
   it('RUN-11: carefold run passes --provider and --model into runtime configuration', async () => {
     const res = await runCli(
-      ['run', '--agent', 'visit-steward', 'Hello', '--provider', 'google', '--model', 'gemini-2.0-flash', '--mock'],
+      ['run', '--agent', 'appointment-prep-coordinator', 'Hello', '--provider', 'google', '--model', 'gemini-2.0-flash', '--mock'],
       { cwd: ws.workspaceDir }
     );
 
@@ -200,12 +200,12 @@ persona:
 
     const auditContent = await ws.readFile('logs/audit.jsonl');
     expect(auditContent).toContain('"event":"run"');
-    expect(auditContent).toContain('"agent_id":"visit-steward"');
+    expect(auditContent).toContain('"agent_id":"appointment-prep-coordinator"');
   });
 
   it('RUN-12: supports short aliases -p and -m with positional agent syntax', async () => {
     const res = await runCli(
-      ['run', 'visit-steward', 'What should I ask my doctor?', '-p', 'ollama', '-m', 'llama3.2:latest', '--mock'],
+      ['run', 'appointment-prep-coordinator', 'What should I ask my doctor?', '-p', 'ollama', '-m', 'llama3.2:latest', '--mock'],
       { cwd: ws.workspaceDir }
     );
 
@@ -214,13 +214,13 @@ persona:
 
     const auditContent = await ws.readFile('logs/audit.jsonl');
     expect(auditContent).toContain('"event":"run"');
-    expect(auditContent).toContain('"agent_id":"visit-steward"');
+    expect(auditContent).toContain('"agent_id":"appointment-prep-coordinator"');
   });
 
   it('RUN-13: resolves environment variables for provider API keys (GEMINI_API_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY)', async () => {
     // 1. GEMINI_API_KEY resolution
     const resGemini = await runCli(
-      ['run', '--agent', 'visit-steward', 'Hello', '--provider', 'gemini', '--mock'],
+      ['run', '--agent', 'appointment-prep-coordinator', 'Hello', '--provider', 'gemini', '--mock'],
       {
         cwd: ws.workspaceDir,
         env: { GEMINI_API_KEY: 'test-gemini-secret-env' }
@@ -230,7 +230,7 @@ persona:
 
     // 2. ANTHROPIC_API_KEY resolution
     const resAnthropic = await runCli(
-      ['run', '--agent', 'visit-steward', 'Hello', '-p', 'anthropic', '--mock'],
+      ['run', '--agent', 'appointment-prep-coordinator', 'Hello', '-p', 'anthropic', '--mock'],
       {
         cwd: ws.workspaceDir,
         env: { ANTHROPIC_API_KEY: 'test-anthropic-secret-env' }
@@ -240,7 +240,7 @@ persona:
 
     // 3. OPENAI_API_KEY resolution
     const resOpenAI = await runCli(
-      ['run', '--agent', 'visit-steward', 'Hello', '--provider', 'openai', '--mock'],
+      ['run', '--agent', 'appointment-prep-coordinator', 'Hello', '--provider', 'openai', '--mock'],
       {
         cwd: ws.workspaceDir,
         env: { OPENAI_API_KEY: 'test-openai-secret-env' }
@@ -250,7 +250,7 @@ persona:
 
     // 4. Explicit --key overrides environment variable
     const resKeyOverride = await runCli(
-      ['run', '--agent', 'visit-steward', 'Hello', '--provider', 'openai', '--key', 'override-key', '--mock'],
+      ['run', '--agent', 'appointment-prep-coordinator', 'Hello', '--provider', 'openai', '--key', 'override-key', '--mock'],
       {
         cwd: ws.workspaceDir,
         env: { OPENAI_API_KEY: 'env-key-to-ignore' }
@@ -262,7 +262,7 @@ persona:
   it('RUN-14: non-mock execution validates missing API key for cloud providers', async () => {
     // Without GEMINI_API_KEY or --key in non-mock mode
     const resNoKey = await runCli(
-      ['run', '--agent', 'visit-steward', 'Hello', '--provider', 'gemini'],
+      ['run', '--agent', 'appointment-prep-coordinator', 'Hello', '--provider', 'gemini'],
       {
         cwd: ws.workspaceDir,
         env: { GEMINI_API_KEY: '', GOOGLE_API_KEY: '' }
@@ -274,7 +274,7 @@ persona:
 
     // Without ANTHROPIC_API_KEY in non-mock mode
     const resNoAnthropic = await runCli(
-      ['run', '--agent', 'visit-steward', 'Hello', '--provider', 'anthropic'],
+      ['run', '--agent', 'appointment-prep-coordinator', 'Hello', '--provider', 'anthropic'],
       {
         cwd: ws.workspaceDir,
         env: { ANTHROPIC_API_KEY: '' }
@@ -288,7 +288,7 @@ persona:
   it('RUN-15: safety refusal gate is enforced regardless of provider and model flags', async () => {
     // Refusal with Gemini provider & model
     const resGemini = await runCli(
-      ['run', '--agent', 'visit-steward', 'Do I have ADHD?', '--provider', 'gemini', '--model', 'gemini-2.0-flash', '--mock'],
+      ['run', '--agent', 'appointment-prep-coordinator', 'Do I have ADHD?', '--provider', 'gemini', '--model', 'gemini-2.0-flash', '--mock'],
       { cwd: ws.workspaceDir }
     );
     expect(resGemini.exitCode).toBe(0);
@@ -297,7 +297,7 @@ persona:
 
     // Refusal with Anthropic provider & short aliases
     const resAnthropic = await runCli(
-      ['run', 'visit-steward', 'Prescribe 500mg amoxicillin', '-p', 'anthropic', '-m', 'claude-3-5-sonnet', '--mock'],
+      ['run', 'appointment-prep-coordinator', 'Prescribe 500mg amoxicillin', '-p', 'anthropic', '-m', 'claude-3-5-sonnet', '--mock'],
       { cwd: ws.workspaceDir }
     );
     expect(resAnthropic.exitCode).toBe(0);
@@ -313,7 +313,7 @@ persona:
 
   it('RUN-16: audit log records run events with multi-provider configurations and preserves redaction', async () => {
     await runCli(
-      ['run', '--agent', 'visit-steward', 'Secret health question', '--provider', 'google', '--model', 'gemini-2.0-flash', '--mock'],
+      ['run', '--agent', 'appointment-prep-coordinator', 'Secret health question', '--provider', 'google', '--model', 'gemini-2.0-flash', '--mock'],
       { cwd: ws.workspaceDir }
     );
 
@@ -322,7 +322,7 @@ persona:
     const lastEvent = JSON.parse(lines[lines.length - 1]);
 
     expect(lastEvent.event).toBe('run');
-    expect(lastEvent.agent_id).toBe('visit-steward');
+    expect(lastEvent.agent_id).toBe('appointment-prep-coordinator');
     expect(lastEvent.prompt).toBeUndefined();
     expect(lastEvent.completion).toBeUndefined();
   });

@@ -151,7 +151,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
     const resLong = await runCli([
       'run',
       '--agent',
-      'visit-steward',
+      'appointment-prep-coordinator',
       'Hello',
       '--provider',
       'google',
@@ -163,7 +163,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
     const resShort = await runCli([
       'run',
       '--agent',
-      'visit-steward',
+      'appointment-prep-coordinator',
       'Hello',
       '-p',
       'ollama',
@@ -175,7 +175,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
     const resCustom = await runCli([
       'run',
       '--agent',
-      'visit-steward',
+      'appointment-prep-coordinator',
       'Hello',
       '--provider',
       'custom',
@@ -188,7 +188,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
   it('parses --model option and -m alias with positional agent and prompt', async () => {
     const resLong = await runCli([
       'run',
-      'visit-steward',
+      'appointment-prep-coordinator',
       'Hello from Gemini',
       '--provider',
       'google',
@@ -201,7 +201,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
 
     const resShort = await runCli([
       'run',
-      'visit-steward',
+      'appointment-prep-coordinator',
       'Hello from Ollama',
       '-p',
       'ollama',
@@ -216,7 +216,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
   it('parses --key and -k option for provider authentication', async () => {
     const resKey = await runCli([
       'run',
-      'visit-steward',
+      'appointment-prep-coordinator',
       'Hello with key',
       '--provider',
       'google',
@@ -229,7 +229,7 @@ describe('01: CLI Unit Argument Parsing & Help Outputs', () => {
 
     const resShortKey = await runCli([
       'run',
-      'visit-steward',
+      'appointment-prep-coordinator',
       'Hello with short key',
       '-p',
       'anthropic',

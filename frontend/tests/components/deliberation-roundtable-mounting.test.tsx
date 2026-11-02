@@ -21,7 +21,7 @@ describe('DeliberationRoundtable Frontend Integration', () => {
   const sampleRoundtableData: DeliberationRoundtableData = {
     panel_id: 'panel-cardio-pharm-1',
     title: 'Cardiology & Pharmacology Deliberation Panel',
-    agents: ['cardiology-guide', 'formulary-guide'],
+    agents: ['heart-care-coordinator', 'prescription-cost-coordinator'],
     shared_constraints: [
       {
         id: 'budget_limit',
@@ -36,8 +36,8 @@ describe('DeliberationRoundtable Frontend Integration', () => {
     skipped_constraints: [],
     proposals: {
       1: {
-        'cardiology-guide': {
-          agent_id: 'cardiology-guide',
+        'heart-care-coordinator': {
+          agent_id: 'heart-care-coordinator',
           round_num: 1,
           scope: 'clinical',
           summary: 'Recommend transitioning to ARB therapy with baseline potassium check.',
@@ -48,7 +48,7 @@ describe('DeliberationRoundtable Frontend Integration', () => {
           staged_actions: [
             {
               id: 'staged-action-1',
-              agent_id: 'cardiology-guide',
+              agent_id: 'heart-care-coordinator',
               tool_name: 'workspace-note',
               tool_args: { path: 'cardiology_recommendation.txt' },
               rationale: 'Save draft consultation prep note for provider visit',
@@ -59,15 +59,15 @@ describe('DeliberationRoundtable Frontend Integration', () => {
           tainted: false,
           confidence: 0.95,
         },
-        'formulary-guide': {
-          agent_id: 'formulary-guide',
+        'prescription-cost-coordinator': {
+          agent_id: 'prescription-cost-coordinator',
           round_num: 1,
           scope: 'navigation',
           summary: 'Tier 1 generic Losartan covered at $10 copay without prior auth.',
           recommendations: ['Select in-network preferred pharmacy'],
           resource_claims: { budget_limit: 10 },
           resource_claim_units: { budget_limit: 'USD' },
-          dependencies: ['cardiology-guide'],
+          dependencies: ['heart-care-coordinator'],
           staged_actions: [],
           tainted: false,
           confidence: 0.99,
@@ -77,8 +77,8 @@ describe('DeliberationRoundtable Frontend Integration', () => {
     critiques: {
       1: [
         {
-          reviewer_agent_id: 'formulary-guide',
-          target_agent_id: 'cardiology-guide',
+          reviewer_agent_id: 'prescription-cost-coordinator',
+          target_agent_id: 'heart-care-coordinator',
           round_num: 1,
           stance: 'endorse',
           issue_type: 'synergy',
@@ -91,7 +91,7 @@ describe('DeliberationRoundtable Frontend Integration', () => {
     staged_actions: [
       {
         id: 'staged-action-1',
-        agent_id: 'cardiology-guide',
+        agent_id: 'heart-care-coordinator',
         tool_name: 'workspace-note',
         tool_args: { path: 'cardiology_recommendation.txt' },
         rationale: 'Save draft consultation prep note for provider visit',
@@ -115,8 +115,8 @@ describe('DeliberationRoundtable Frontend Integration', () => {
 
     // Verify title and panel elements render
     expect(screen.getByText('Cardiology & Pharmacology Deliberation Panel')).toBeInTheDocument();
-    expect(screen.getAllByText('cardiology-guide').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('formulary-guide').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('heart-care-coordinator').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('prescription-cost-coordinator').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/Recommend transitioning to ARB therapy/)).toBeInTheDocument();
   });
 
@@ -143,8 +143,8 @@ describe('DeliberationRoundtable Frontend Integration', () => {
 
     // Verify roundtable contents inside the message bubble
     expect(roundtableContainer).toHaveTextContent('Cardiology & Pharmacology Deliberation Panel');
-    expect(roundtableContainer).toHaveTextContent('cardiology-guide');
-    expect(roundtableContainer).toHaveTextContent('formulary-guide');
+    expect(roundtableContainer).toHaveTextContent('heart-care-coordinator');
+    expect(roundtableContainer).toHaveTextContent('prescription-cost-coordinator');
     expect(roundtableContainer).toHaveTextContent('Generic ARB aligns with Tier 1 preferred formulary');
   });
 

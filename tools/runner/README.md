@@ -29,11 +29,11 @@ pnpm add @spectrayan/carefold-runner
 import { loadAgent, executeAgentRun } from '@spectrayan/carefold-runner';
 
 // Load agent and resolve declared skills
-const { agent, effectiveTools, skills } = await loadAgent('./agents/visit-steward', './skills');
+const { agent, effectiveTools, skills } = await loadAgent('./agents/appointment-prep-coordinator', './skills');
 
 // Execute streaming run
 const stream = executeAgentRun({
-  agentDir: './agents/visit-steward',
+  agentDir: './agents/appointment-prep-coordinator',
   skillsDir: './skills',
   prompt: 'Help me prepare questions for my therapy appointment.'
 });

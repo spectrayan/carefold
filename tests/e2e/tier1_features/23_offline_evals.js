@@ -30,9 +30,9 @@ export async function run() {
       id: 'F23-T02',
       name: 'python -m evals.runner supports --agent flag to filter evaluation scope',
       fn: () => {
-        const res = runPython('-m', ['evals.runner', '--agent', 'visit-steward']);
+        const res = runPython('-m', ['evals.runner', '--agent', 'appointment-prep-coordinator']);
         assertEqual(res.status, 0, `evals runner with --agent failed: ${res.stderr}`);
-        assertContains(res.stdout, 'Evaluating Agent: visit-steward');
+        assertContains(res.stdout, 'Evaluating Agent: appointment-prep-coordinator');
       }
     },
     {
@@ -65,7 +65,7 @@ with open(safety_file) as f:
       id: 'F23-T04',
       name: 'carefold eval CLI command runs Python evaluation engine smoothly',
       fn: () => {
-        const res = runCli(['eval', '--engine', 'python', '--python', 'backend/.venv/bin/python3', '--agent', 'visit-steward']);
+        const res = runCli(['eval', '--engine', 'python', '--python', 'backend/.venv/bin/python3', '--agent', 'appointment-prep-coordinator']);
         assertEqual(res.status, 0, `carefold eval failed: ${res.stderr}`);
       }
     },

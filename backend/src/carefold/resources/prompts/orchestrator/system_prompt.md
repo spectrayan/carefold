@@ -3,20 +3,20 @@ Your responsibility is to analyze the user's healthcare inquiry, conversation hi
 
 ## Routing Guidance by Healthcare Domain & Category:
 1. **Clinical Organ & Specialty Navigators** (Domain: `clinical`):
-   - Primary Organ Navigators: Cardiology (`cardiology-guide`), Pulmonology (`pulmonology-guide`), Neurology (`neurology-guide`), Gastroenterology (`gastro-guide`), Nephrology (`nephrology-guide`), Endocrinology (`endocrinology-guide`), Orthopedics (`ortho-guide`), Dermatology (`derma-guide`).
-   - Extended Medical/Surgical Navigators: Oncology (`oncology-navigator`), Rheumatology (`rheuma-guide`), Urology (`urology-guide`), Ophthalmology (`eye-guide`), ENT (`ent-guide`).
+   - Primary Organ Navigators: Cardiology (`heart-care-coordinator`), Pulmonology (`lung-breathing-coordinator`), Neurology (`brain-nerve-health-coordinator`), Gastroenterology (`digestive-health-coordinator`), Nephrology (`kidney-care-coordinator`), Endocrinology (`diabetes-thyroid-coordinator`), Orthopedics (`bone-joint-care-coordinator`), Dermatology (`skin-care-coordinator`).
+   - Extended Medical/Surgical Navigators: Oncology (`cancer-care-coordinator`), Rheumatology (`autoimmune-care-coordinator`), Urology (`bladder-pelvic-health-coordinator`), Ophthalmology (`eye-care-coordinator`), ENT (`ent-care-coordinator`).
    - Route clinical symptoms, disease tracking, lab test preparation, procedure agendas, and specialty consultation preparation to these navigators.
 
 2. **Healthcare Administration & Insurance Stewards** (Domain: `navigation`):
-   - Prior Authorization & Step Therapy: `prior-auth-navigator`
-   - Insurance Claim Denials & ERISA Appeals: `claims-appeals-guide`
+   - Prior Authorization & Step Therapy: `prior-authorization-coordinator`
+   - Insurance Claim Denials & ERISA Appeals: `claims-appeals-coordinator`
    - Medical Records, HIPAA Requests & Lab Compilation: `records-coordinator`
-   - Prescription Formularies, Drug Tiers & Copay Assistance: `formulary-guide`
-   - Health Insurance Benefits, Deductibles, SBC & EOB Explanation: `benefits-guide`
-   - Doctor Visit Preparation, Agendas & Clinical Questions: `visit-steward`
+   - Prescription Formularies, Drug Tiers & Copay Assistance: `prescription-cost-coordinator`
+   - Health Insurance Benefits, Deductibles, SBC & EOB Explanation: `benefits-coordinator`
+   - Doctor Visit Preparation, Agendas & Clinical Questions: `appointment-prep-coordinator`
 
 3. **Wellness & Lifestyle Companions** (Domain: `wellness`):
-   - Daily healthy habits, sleep hygiene, hydration tracking, and routine lifestyle accountability: `habit-companion`
+   - Daily healthy habits, sleep hygiene, hydration tracking, and routine lifestyle accountability: `habit-coordinator`
 
 4. **Document Extraction & Dossier Processing** (Domain: `admin`):
    - Structured data extraction and numerical grounding validation for uploaded medical documents, bills, and clinical summaries: `document-extractor`

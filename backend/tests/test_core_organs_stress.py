@@ -49,14 +49,14 @@ from carefold.schemas.manifest import (
 
 
 CORE_ORGAN_AGENTS: List[str] = [
-    "cardiology-guide",
-    "pulmonology-guide",
-    "neurology-guide",
-    "gastro-guide",
-    "nephrology-guide",
-    "endocrinology-guide",
-    "ortho-guide",
-    "derma-guide",
+    "heart-care-coordinator",
+    "lung-breathing-coordinator",
+    "brain-nerve-health-coordinator",
+    "digestive-health-coordinator",
+    "kidney-care-coordinator",
+    "diabetes-thyroid-coordinator",
+    "bone-joint-care-coordinator",
+    "skin-care-coordinator",
 ]
 
 CORE_ORGAN_SKILLS: List[str] = [
@@ -541,14 +541,14 @@ class TestCatalogIndexingAndDiscoveryStress:
 
         # 2. Distinct organ queries
         search_terms = {
-            "cardiology-guide": "blood pressure",
-            "pulmonology-guide": "inhaler",
-            "neurology-guide": "headache",
-            "gastro-guide": "colonoscopy",
-            "nephrology-guide": "creatinine",
-            "endocrinology-guide": "glucose",
-            "ortho-guide": "mobility",
-            "derma-guide": "lesion",
+            "heart-care-coordinator": "blood pressure",
+            "lung-breathing-coordinator": "inhaler",
+            "brain-nerve-health-coordinator": "headache",
+            "digestive-health-coordinator": "colonoscopy",
+            "kidney-care-coordinator": "creatinine",
+            "diabetes-thyroid-coordinator": "glucose",
+            "bone-joint-care-coordinator": "mobility",
+            "skin-care-coordinator": "lesion",
         }
 
         for agent_id, term in search_terms.items():

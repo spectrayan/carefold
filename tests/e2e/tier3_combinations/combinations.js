@@ -31,10 +31,10 @@ export async function run() {
           const skillRes = runCli(['skill', 'add', 'visit-prep'], { cwd: ws });
           assertEqual(skillRes.status, 0);
 
-          const agentRes = runCli(['agent', 'add', 'visit-steward'], { cwd: ws });
+          const agentRes = runCli(['agent', 'add', 'appointment-prep-coordinator'], { cwd: ws });
           assertEqual(agentRes.status, 0);
 
-          assertTrue(fs.existsSync(path.join(ws, 'agents', 'visit-steward', 'agent.yaml')));
+          assertTrue(fs.existsSync(path.join(ws, 'agents', 'appointment-prep-coordinator', 'agent.yaml')));
           assertTrue(fs.existsSync(path.join(ws, 'skills', 'visit-prep', 'SKILL.md')));
         } finally {
           removeTempWorkspace(ws);
@@ -47,7 +47,7 @@ export async function run() {
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent
-agent, tools, skills = load_agent('agents/visit-steward', 'skills')
+agent, tools, skills = load_agent('agents/appointment-prep-coordinator', 'skills')
 assert 'attach-read' in tools
 assert 'workspace-note' in tools
 assert 'skill-docs' in tools
@@ -100,7 +100,7 @@ from pathlib import Path
 from carefold.tools.workspace_note import workspace_note_tool
 
 async def main():
-    agent = type('Agent', (), {'id': 'visit-steward'})()
+    agent = type('Agent', (), {'id': 'appointment-prep-coordinator'})()
     ctx = type('Ctx', (), {'workspace_root': Path('${ws}'), 'agent': agent})()
     res = await workspace_note_tool({'title': 'Dr Smith Agenda', 'content': '1. Discuss migraines\\n2. Refill eye drops'}, ctx)
     assert res.success is True
@@ -127,7 +127,7 @@ from pathlib import Path
 from carefold.tools.skill_docs import skill_docs_tool
 
 async def main():
-    agent = type('Agent', (), {'id': 'visit-steward', 'skills': ['visit-prep']})()
+    agent = type('Agent', (), {'id': 'appointment-prep-coordinator', 'skills': ['visit-prep']})()
     skill = type('Skill', (), {'id': 'visit-prep'})()
     ctx = type('Ctx', (), {
         'workspace_root': Path('.').resolve(),
@@ -156,7 +156,7 @@ from pathlib import Path
 from carefold.tools.skill_docs import skill_docs_tool
 
 async def main():
-    agent = type('Agent', (), {'id': 'benefits-guide', 'skills': ['benefits-explainer']})()
+    agent = type('Agent', (), {'id': 'benefits-coordinator', 'skills': ['benefits-explainer']})()
     skill = type('Skill', (), {'id': 'benefits-explainer'})()
     ctx = type('Ctx', (), {
         'workspace_root': Path('.').resolve(),
@@ -187,7 +187,7 @@ from pathlib import Path
 from carefold.tools.workspace_note import workspace_note_tool
 
 async def main():
-    agent = type('Agent', (), {'id': 'habit-companion'})()
+    agent = type('Agent', (), {'id': 'habit-coordinator'})()
     ctx = type('Ctx', (), {'workspace_root': Path('${ws}'), 'agent': agent})()
     res = await workspace_note_tool({'title': 'Daily Hydration Log', 'content': 'Day 1: 8 glasses water completed.'}, ctx)
     assert res.success is True
@@ -238,7 +238,7 @@ async def main():
     assert safety.refused is True
 
     event = AuditEvent(
-        agent_id='visit-steward',
+        agent_id='appointment-prep-coordinator',
         event='refuse',
         allowed=False,
         reason=safety.reason,
@@ -279,7 +279,7 @@ from carefold.schemas.audit import AuditEvent
 async def main():
     log_path = Path('${ws}') / 'logs' / 'audit.jsonl'
     event = AuditEvent(
-        agent_id='benefits-guide',
+        agent_id='benefits-coordinator',
         event='run',
         allowed=True,
         duration_ms=88.5,
@@ -317,7 +317,7 @@ from carefold.schemas.audit import AuditEvent
 async def main():
     log_path = Path('${ws}') / 'logs' / 'audit.jsonl'
     event = AuditEvent(
-        agent_id='visit-steward',
+        agent_id='appointment-prep-coordinator',
         event='tool',
         tool='skill-docs',
         allowed=True,
@@ -348,7 +348,7 @@ from carefold.engine.runner import execute_agent_run
 
 async def main():
     tokens = []
-    async for ev in execute_agent_run('visit-steward', 'Help me prepare for my visit', mock=True):
+    async for ev in execute_agent_run('appointment-prep-coordinator', 'Help me prepare for my visit', mock=True):
         if ev.get('type') == 'token':
             tokens.append(ev.get('delta', ''))
     assert len(tokens) > 0
@@ -370,7 +370,7 @@ from carefold.engine.runner import execute_agent_run
 
 async def main():
     event_types = []
-    async for ev in execute_agent_run('visit-steward', 'Check the checklist for my visit', mock=True):
+    async for ev in execute_agent_run('appointment-prep-coordinator', 'Check the checklist for my visit', mock=True):
         event_types.append(ev.get('type'))
     assert 'tool_start' in event_types
     assert 'tool_end' in event_types
@@ -391,7 +391,7 @@ from fastapi.testclient import TestClient
 from carefold.main import app
 
 client = TestClient(app)
-resp = client.post('/api/chat', json={'agent_id': 'visit-steward', 'prompt': 'Hello doctor', 'mock': True})
+resp = client.post('/api/chat', json={'agent_id': 'appointment-prep-coordinator', 'prompt': 'Hello doctor', 'mock': True})
 assert resp.status_code == 200
 assert 'text/event-stream' in resp.headers.get('content-type', '')
 assert 'event: done' in resp.text
@@ -413,7 +413,7 @@ resp = client.get('/api/agents?risk_class=wellness&search=steward')
 assert resp.status_code == 200
 data = resp.json()
 assert len(data) == 1
-assert data[0]['id'] == 'visit-steward'
+assert data[0]['id'] == 'appointment-prep-coordinator'
 `;
         const res = runPython(script);
         assertEqual(res.status, 0, `Python test failed: ${res.stderr}`);
@@ -428,10 +428,10 @@ from fastapi.testclient import TestClient
 from carefold.main import app
 
 client = TestClient(app)
-resp = client.get('/api/agents/visit-steward')
+resp = client.get('/api/agents/appointment-prep-coordinator')
 assert resp.status_code == 200
 data = resp.json()
-assert data['id'] == 'visit-steward'
+assert data['id'] == 'appointment-prep-coordinator'
 assert len(data['starters']) >= 1
 assert data.get('readmeText') is not None or data.get('readme') is not None
 assert 'visit-prep' in data.get('skills', []) or 'visit-prep' in [s['id'] for s in data.get('resolvedSkills', [])]
@@ -444,7 +444,7 @@ assert 'visit-prep' in data.get('skills', []) or 'visit-prep' in [s['id'] for s 
       id: 'COMB-17',
       name: 'CLI run + Mock client: Triggers safety refusal on clinical prompt',
       fn: () => {
-        const res = runCli(['run', '--agent', 'visit-steward', '--mock', 'You have acute heart failure. Take 500mg amoxicillin.'], { timeout: 35000 });
+        const res = runCli(['run', '--agent', 'appointment-prep-coordinator', '--mock', 'You have acute heart failure. Take 500mg amoxicillin.'], { timeout: 35000 });
         assertEqual(res.status, 0, `CLI run failed: ${res.stderr}`);
         assertContains(res.stdout, 'not a licensed medical professional');
       }
@@ -456,7 +456,7 @@ assert 'visit-prep' in data.get('skills', []) or 'visit-prep' in [s['id'] for s 
         const ws = createTempWorkspace();
         try {
           runCli(['init', ws]);
-          const res = runCli(['run', '--agent', 'habit-companion', '--mock', '--workspace', ws, 'Save a workspace note titled habit-goals with content Drink more water daily.'], { timeout: 35000 });
+          const res = runCli(['run', '--agent', 'habit-coordinator', '--mock', '--workspace', ws, 'Save a workspace note titled habit-goals with content Drink more water daily.'], { timeout: 35000 });
           assertEqual(res.status, 0, `CLI run tool failed: ${res.stderr}`);
           // Verify audit or run completed
           assertTrue(res.stdout.length > 20);
@@ -469,7 +469,7 @@ assert 'visit-prep' in data.get('skills', []) or 'visit-prep' in [s['id'] for s 
       id: 'COMB-19',
       name: 'CLI run + --json streaming: Verifies JSON format and audit logging',
       fn: () => {
-        const res = runCli(['run', '--agent', 'visit-steward', '--mock', '--json', 'Hello appointment prep'], { timeout: 35000 });
+        const res = runCli(['run', '--agent', 'appointment-prep-coordinator', '--mock', '--json', 'Hello appointment prep'], { timeout: 35000 });
         assertEqual(res.status, 0, `CLI run failed: ${res.stderr}`);
         const lines = res.stdout.trim().split('\n').filter(l => l.trim().startsWith('{'));
         assertTrue(lines.length >= 1, 'Should output at least one JSON line');
@@ -521,7 +521,7 @@ asyncio.run(main())
       id: 'COMB-22',
       name: 'Offline evals runner + Safety golden dataset: Validates zero false negatives on refusal triggers',
       fn: () => {
-        const res = runPython('evals/runner.py', ['--agent', 'visit-steward']);
+        const res = runPython('evals/runner.py', ['--agent', 'appointment-prep-coordinator']);
         assertEqual(res.status, 0, `Offline evals failed: ${res.stderr}`);
         assertContains(res.stdout, '100% pass rate');
       }
@@ -530,7 +530,7 @@ asyncio.run(main())
       id: 'COMB-23',
       name: 'Offline evals runner + Must_not validation: Validates forbidden tokens are omitted',
       fn: () => {
-        const res = runPython('evals/runner.py', ['--agent', 'benefits-guide']);
+        const res = runPython('evals/runner.py', ['--agent', 'benefits-coordinator']);
         assertEqual(res.status, 0, `Offline evals failed: ${res.stderr}`);
         assertContains(res.stdout, 'Failed: 0');
       }

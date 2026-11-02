@@ -20,8 +20,8 @@ Target Endpoints:
 Scope of Tests:
 1. Route Shadowing & Path Routing:
    - GET /api/agents/categories returns category tree with 200 OK (not shadowed by /{agent_id}).
-   - GET /api/agents/benefits-guide returns 200 OK detail.
-   - GET /api/agents/visit-steward and habit-companion return 200 OK detail.
+   - GET /api/agents/benefits-coordinator returns 200 OK detail.
+   - GET /api/agents/appointment-prep-coordinator and habit-coordinator return 200 OK detail.
    - GET /api/agents/categories_test returns 404 Not Found (nonexistent agent).
    - GET /api/agents/categories-fake returns 404 Not Found.
    - Sub-paths under categories (GET /api/agents/categories/sub) return 404 Not Found.
@@ -42,16 +42,16 @@ Scope of Tests:
    - Domain filtering on /api/skills: domain="WELLNESS", domain="wellness", domain="nonexistent".
 4. Category Prefix Filtering:
    - Prefix match: category="navigation" matches both navigation.insurance and navigation.appointments.
-   - Exact category: category="navigation.insurance" matches only benefits-guide.
-   - Exact category: category="navigation.appointments" matches only visit-steward.
+   - Exact category: category="navigation.insurance" matches only benefits-coordinator.
+   - Exact category: category="navigation.appointments" matches only appointment-prep-coordinator.
    - Dot-segment boundary check: category="nav" does NOT match navigation.insurance (boundary safe).
    - Case insensitivity: category="NAVIGATION".
 5. Combined Filters & Boundary Inputs:
    - Combined query: domain=navigation&risk_class=administrative&page=1&per_page=10
      Verifies that because valid risk_class is "admin" (not "administrative"), returns 200 OK with [].
-   - Combined query: domain=navigation&risk_class=admin&page=1&per_page=10 -> returns benefits-guide.
-   - Combined query: domain=navigation&risk_class=wellness&page=1&per_page=10 -> returns visit-steward.
-   - Combined query with search: domain=navigation&search=benefits&page=1&per_page=5 -> returns benefits-guide.
+   - Combined query: domain=navigation&risk_class=admin&page=1&per_page=10 -> returns benefits-coordinator.
+   - Combined query: domain=navigation&risk_class=wellness&page=1&per_page=10 -> returns appointment-prep-coordinator.
+   - Combined query with search: domain=navigation&search=benefits&page=1&per_page=5 -> returns benefits-coordinator.
    - Combined with include_hidden=true: domain=wellness&risk_class=admin&include_hidden=true -> returns system agents.
 6. Category Tree Accuracy & Integrity:
    - Root keys and count rollups.
@@ -95,32 +95,32 @@ class TestRouteShadowing:
         assert nav_cats["insurance"]["count"] == 1
         assert nav_cats["appointments"]["count"] == 1
 
-    def test_agent_detail_benefits_guide_returns_200(self, client: TestClient):
-        """GET /api/agents/benefits-guide must resolve to the detail endpoint with 200 OK."""
-        res = client.get("/api/agents/benefits-guide")
+    def test_agent_detail_benefits_coordinator_returns_200(self, client: TestClient):
+        """GET /api/agents/benefits-coordinator must resolve to the detail endpoint with 200 OK."""
+        res = client.get("/api/agents/benefits-coordinator")
         assert res.status_code == 200
         detail = res.json()
-        assert detail["id"] == "benefits-guide"
+        assert detail["id"] == "benefits-coordinator"
         assert detail["domain"] == "navigation"
         assert detail["category"] == "navigation.insurance"
         assert detail["risk_class"] == "admin"
         assert "attach-read" in detail["effectiveTools"]
 
-    def test_agent_detail_visit_steward_returns_200(self, client: TestClient):
-        """GET /api/agents/visit-steward must resolve to detail endpoint with 200 OK."""
-        res = client.get("/api/agents/visit-steward?allow_clinical=true")
+    def test_agent_detail_appointment_prep_coordinator_returns_200(self, client: TestClient):
+        """GET /api/agents/appointment-prep-coordinator must resolve to detail endpoint with 200 OK."""
+        res = client.get("/api/agents/appointment-prep-coordinator?allow_clinical=true")
         assert res.status_code == 200
         detail = res.json()
-        assert detail["id"] == "visit-steward"
+        assert detail["id"] == "appointment-prep-coordinator"
         assert detail["domain"] == "navigation"
         assert detail["category"] == "navigation.appointments"
 
-    def test_agent_detail_habit_companion_returns_200(self, client: TestClient):
-        """GET /api/agents/habit-companion must resolve to detail endpoint with 200 OK."""
-        res = client.get("/api/agents/habit-companion")
+    def test_agent_detail_habit_coordinator_returns_200(self, client: TestClient):
+        """GET /api/agents/habit-coordinator must resolve to detail endpoint with 200 OK."""
+        res = client.get("/api/agents/habit-coordinator")
         assert res.status_code == 200
         detail = res.json()
-        assert detail["id"] == "habit-companion"
+        assert detail["id"] == "habit-coordinator"
         assert detail["domain"] == "wellness"
         assert detail["category"] == "wellness.habits"
 
@@ -252,12 +252,12 @@ class TestDomainFiltering:
         assert len(agents) == 6
         returned_ids = {a["id"] for a in agents}
         assert returned_ids == {
-            "benefits-guide",
-            "visit-steward",
-            "prior-auth-navigator",
-            "claims-appeals-guide",
+            "benefits-coordinator",
+            "appointment-prep-coordinator",
+            "prior-authorization-coordinator",
+            "claims-appeals-coordinator",
             "records-coordinator",
-            "formulary-guide",
+            "prescription-cost-coordinator",
         }
         for a in agents:
             assert a["domain"].lower() == "navigation"
@@ -267,7 +267,7 @@ class TestDomainFiltering:
         assert res.status_code == 200
         agents = res.json()
         assert len(agents) >= 1
-        assert "habit-companion" in {a["id"] for a in agents}
+        assert "habit-coordinator" in {a["id"] for a in agents}
         for a in agents:
             assert a["domain"].lower() == "wellness"
 
@@ -319,12 +319,12 @@ class TestCategoryPrefixFiltering:
         agents = res.json()
         returned_ids = {a["id"] for a in agents}
         assert returned_ids == {
-            "benefits-guide",
-            "visit-steward",
-            "prior-auth-navigator",
-            "claims-appeals-guide",
+            "benefits-coordinator",
+            "appointment-prep-coordinator",
+            "prior-authorization-coordinator",
+            "claims-appeals-coordinator",
             "records-coordinator",
-            "formulary-guide",
+            "prescription-cost-coordinator",
         }
 
     def test_category_prefix_case_insensitive(self, client: TestClient):
@@ -335,29 +335,29 @@ class TestCategoryPrefixFiltering:
             agents = res.json()
             returned_ids = {a["id"] for a in agents}
             assert returned_ids == {
-                "benefits-guide",
-                "visit-steward",
-                "prior-auth-navigator",
-                "claims-appeals-guide",
+                "benefits-coordinator",
+                "appointment-prep-coordinator",
+                "prior-authorization-coordinator",
+                "claims-appeals-coordinator",
                 "records-coordinator",
-                "formulary-guide",
+                "prescription-cost-coordinator",
             }
 
     def test_category_exact_navigation_insurance(self, client: TestClient):
-        """Exact category 'navigation.insurance' should only return benefits-guide."""
+        """Exact category 'navigation.insurance' should only return benefits-coordinator."""
         res = client.get("/api/agents?category=navigation.insurance")
         assert res.status_code == 200
         agents = res.json()
         assert len(agents) == 1
-        assert agents[0]["id"] == "benefits-guide"
+        assert agents[0]["id"] == "benefits-coordinator"
 
     def test_category_exact_navigation_appointments(self, client: TestClient):
-        """Exact category 'navigation.appointments' should only return visit-steward."""
+        """Exact category 'navigation.appointments' should only return appointment-prep-coordinator."""
         res = client.get("/api/agents?category=navigation.appointments")
         assert res.status_code == 200
         agents = res.json()
         assert len(agents) == 1
-        assert agents[0]["id"] == "visit-steward"
+        assert agents[0]["id"] == "appointment-prep-coordinator"
 
     def test_category_segment_boundary_safety(self, client: TestClient):
         """'nav' is a substring of 'navigation', but NOT a category prefix segment.
@@ -399,15 +399,15 @@ class TestCombinedFilters:
         agents = res.json()
         assert len(agents) >= 1
         agent_ids = {a["id"] for a in agents}
-        assert "benefits-guide" in agent_ids
+        assert "benefits-coordinator" in agent_ids
 
     def test_combined_domain_navigation_risk_class_clinical_assist(self, client: TestClient):
-        """When risk_class='clinical_assist' is used with domain='navigation', exactly visit-steward matches."""
+        """When risk_class='clinical_assist' is used with domain='navigation', exactly appointment-prep-coordinator matches."""
         res = client.get("/api/agents?domain=navigation&risk_class=clinical_assist&page=1&per_page=10")
         assert res.status_code == 200
         agents = res.json()
         assert len(agents) == 1
-        assert agents[0]["id"] == "visit-steward"
+        assert agents[0]["id"] == "appointment-prep-coordinator"
 
     def test_combined_filters_with_search_and_pagination(self, client: TestClient):
         """Combined: domain=navigation & search=benefits & page=1 & per_page=5."""
@@ -416,7 +416,7 @@ class TestCombinedFilters:
         agents = res.json()
         assert len(agents) >= 1
         agent_ids = {a["id"] for a in agents}
-        assert "benefits-guide" in agent_ids
+        assert "benefits-coordinator" in agent_ids
 
     def test_combined_filters_conflicting_search_returns_empty(self, client: TestClient):
         """Combined: domain=wellness & search=insurance -> empty list []."""

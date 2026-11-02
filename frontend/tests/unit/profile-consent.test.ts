@@ -39,44 +39,44 @@ describe('Per-Profile Clinical Consent & Teen Handover Suite (#87)', () => {
   describe('Group 1: Per-Profile Clinical Consent Scoping', () => {
     it('isolates consent between household profiles (no consent bleeding)', () => {
       // Initially neither Rosa nor Me have consent
-      expect(hasClinicalConsent('cardiology-guide', 'rosa')).toBe(false);
-      expect(hasClinicalConsent('cardiology-guide', 'me')).toBe(false);
+      expect(hasClinicalConsent('heart-care-coordinator', 'rosa')).toBe(false);
+      expect(hasClinicalConsent('heart-care-coordinator', 'me')).toBe(false);
 
       // Grant consent for Rosa
       const now = new Date('2026-10-09T10:00:00.000Z');
-      grantClinicalConsent('cardiology-guide', now, 'rosa');
+      grantClinicalConsent('heart-care-coordinator', now, 'rosa');
 
       // Rosa now has consent
-      expect(hasClinicalConsent('cardiology-guide', 'rosa')).toBe(true);
+      expect(hasClinicalConsent('heart-care-coordinator', 'rosa')).toBe(true);
 
       // Me strictly DOES NOT inherit Rosa's consent
-      expect(hasClinicalConsent('cardiology-guide', 'me')).toBe(false);
+      expect(hasClinicalConsent('heart-care-coordinator', 'me')).toBe(false);
 
       // Leo strictly DOES NOT inherit Rosa's consent
-      expect(hasClinicalConsent('cardiology-guide', 'leo')).toBe(false);
+      expect(hasClinicalConsent('heart-care-coordinator', 'leo')).toBe(false);
 
       // Verify stored under Rosa's scoped key
       const rosaKey = getProfileConsentKey('rosa');
       expect(rosaKey).toContain('clinical_consent_v1_rosa');
       const rosaStored = JSON.parse(localStorage.getItem(rosaKey) || '{}');
-      expect(rosaStored['cardiology-guide'].grantedAt).toBe('2026-10-09T10:00:00.000Z');
+      expect(rosaStored['heart-care-coordinator'].grantedAt).toBe('2026-10-09T10:00:00.000Z');
     });
 
     it('withdrawing consent for one profile does not affect others', () => {
-      grantClinicalConsent('cardiology-guide', new Date(), 'rosa');
-      grantClinicalConsent('cardiology-guide', new Date(), 'me');
+      grantClinicalConsent('heart-care-coordinator', new Date(), 'rosa');
+      grantClinicalConsent('heart-care-coordinator', new Date(), 'me');
 
-      expect(hasClinicalConsent('cardiology-guide', 'rosa')).toBe(true);
-      expect(hasClinicalConsent('cardiology-guide', 'me')).toBe(true);
+      expect(hasClinicalConsent('heart-care-coordinator', 'rosa')).toBe(true);
+      expect(hasClinicalConsent('heart-care-coordinator', 'me')).toBe(true);
 
       // Withdraw only for Rosa
-      withdrawClinicalConsent('cardiology-guide', 'rosa');
-      expect(hasClinicalConsent('cardiology-guide', 'rosa')).toBe(false);
-      expect(hasClinicalConsent('cardiology-guide', 'me')).toBe(true);
+      withdrawClinicalConsent('heart-care-coordinator', 'rosa');
+      expect(hasClinicalConsent('heart-care-coordinator', 'rosa')).toBe(false);
+      expect(hasClinicalConsent('heart-care-coordinator', 'me')).toBe(true);
 
       // Withdraw all for 'me'
       withdrawAllClinicalConsents('me');
-      expect(hasClinicalConsent('cardiology-guide', 'me')).toBe(false);
+      expect(hasClinicalConsent('heart-care-coordinator', 'me')).toBe(false);
     });
   });
 
@@ -86,17 +86,17 @@ describe('Per-Profile Clinical Consent & Teen Handover Suite (#87)', () => {
       localStorage.setItem(
         CLINICAL_CONSENT_STORAGE_KEY,
         JSON.stringify({
-          'pulmonology-guide': { grantedAt: '2026-09-01T12:00:00.000Z' }
+          'lung-breathing-coordinator': { grantedAt: '2026-09-01T12:00:00.000Z' }
         })
       );
 
       // Loading for 'me' should recover the legacy consent
       const consents = loadClinicalConsents('me');
-      expect(consents['pulmonology-guide']).toBeDefined();
-      expect(hasClinicalConsent('pulmonology-guide', 'me')).toBe(true);
+      expect(consents['lung-breathing-coordinator']).toBeDefined();
+      expect(hasClinicalConsent('lung-breathing-coordinator', 'me')).toBe(true);
 
       // But other profiles should not see legacy consent
-      expect(hasClinicalConsent('pulmonology-guide', 'rosa')).toBe(false);
+      expect(hasClinicalConsent('lung-breathing-coordinator', 'rosa')).toBe(false);
     });
   });
 

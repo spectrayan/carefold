@@ -131,8 +131,8 @@ class TestSqliteCatalogAdapter:
     @pytest.fixture
     def sample_agents(self) -> Dict[str, AgentManifest]:
         return {
-            "benefits-guide": AgentManifest(
-                id="benefits-guide",
+            "benefits-coordinator": AgentManifest(
+                id="benefits-coordinator",
                 title="Benefits Guide",
                 description="Explains healthcare insurance benefits, copays, deductibles, and out-of-pocket maximums.",
                 domain=AgentDomain.NAVIGATION,
@@ -140,8 +140,8 @@ class TestSqliteCatalogAdapter:
                 tags=["insurance", "benefits", "copay", "deductible"],
                 persona="You are a helpful insurance benefits guide.",
             ),
-            "habit-companion": AgentManifest(
-                id="habit-companion",
+            "habit-coordinator": AgentManifest(
+                id="habit-coordinator",
                 title="Habit Companion",
                 description="Daily wellness habit tracker for hydration, sleep hygiene, and routines.",
                 domain=AgentDomain.WELLNESS,
@@ -149,8 +149,8 @@ class TestSqliteCatalogAdapter:
                 tags=["habits", "wellness", "sleep", "hydration"],
                 persona="You are an encouraging habit coaching companion.",
             ),
-            "visit-steward": AgentManifest(
-                id="visit-steward",
+            "appointment-prep-coordinator": AgentManifest(
+                id="appointment-prep-coordinator",
                 title="Visit Steward",
                 description="Clinical visit preparation and doctor appointment navigation.",
                 domain=AgentDomain.NAVIGATION,
@@ -192,8 +192,8 @@ class TestSqliteCatalogAdapter:
         public_agents = await catalog_adapter.search_agents(limit=10)
         assert len(public_agents) == 4
         agent_ids = {a.id for a in public_agents}
-        assert "benefits-guide" in agent_ids
-        assert "habit-companion" in agent_ids
+        assert "benefits-coordinator" in agent_ids
+        assert "habit-coordinator" in agent_ids
         assert "orchestrator" not in agent_ids
 
         # With include_hidden=True, all 5 are returned
@@ -236,22 +236,22 @@ class TestSqliteCatalogAdapter:
         # 1. 'copays' (plural) matches manifest with 'copay' (singular)
         plural_results = await catalog_adapter.search_agents(query="copays")
         assert len(plural_results) >= 1
-        assert any(a.id == "benefits-guide" for a in plural_results)
+        assert any(a.id == "benefits-coordinator" for a in plural_results)
 
         # 2. 'copay' (singular) matches manifest
         singular_results = await catalog_adapter.search_agents(query="copay")
         assert len(singular_results) >= 1
-        assert any(a.id == "benefits-guide" for a in singular_results)
+        assert any(a.id == "benefits-coordinator" for a in singular_results)
 
         # 3. 'habits' matches 'habit'
         habit_results = await catalog_adapter.search_agents(query="habit")
         assert len(habit_results) >= 1
-        assert any(a.id == "habit-companion" for a in habit_results)
+        assert any(a.id == "habit-coordinator" for a in habit_results)
 
         # 4. 'appointments' matches 'appointment'
         appointment_results = await catalog_adapter.search_agents(query="appointments")
         assert len(appointment_results) >= 1
-        assert any(a.id == "visit-steward" for a in appointment_results)
+        assert any(a.id == "appointment-prep-coordinator" for a in appointment_results)
 
     @pytest.mark.asyncio
     async def test_domain_and_category_filtering(
@@ -265,11 +265,11 @@ class TestSqliteCatalogAdapter:
         # Domain filter
         nav_agents = await catalog_adapter.search_agents(domain="navigation")
         assert len(nav_agents) == 2
-        assert {a.id for a in nav_agents} == {"benefits-guide", "visit-steward"}
+        assert {a.id for a in nav_agents} == {"benefits-coordinator", "appointment-prep-coordinator"}
 
         wellness_agents = await catalog_adapter.search_agents(domain="wellness")
         assert len(wellness_agents) == 1
-        assert wellness_agents[0].id == "habit-companion"
+        assert wellness_agents[0].id == "habit-coordinator"
 
         therapy_agents = await catalog_adapter.search_agents(domain="therapy")
         assert len(therapy_agents) == 0
@@ -277,7 +277,7 @@ class TestSqliteCatalogAdapter:
         # Exact category filter
         insurance_agents = await catalog_adapter.search_agents(category="navigation.insurance")
         assert len(insurance_agents) == 1
-        assert insurance_agents[0].id == "benefits-guide"
+        assert insurance_agents[0].id == "benefits-coordinator"
 
         # Category prefix filter
         nav_cat_agents = await catalog_adapter.search_agents(category="navigation")
@@ -286,7 +286,7 @@ class TestSqliteCatalogAdapter:
         # Combined query + domain filter
         matched = await catalog_adapter.search_agents(query="copays", domain="navigation")
         assert len(matched) == 1
-        assert matched[0].id == "benefits-guide"
+        assert matched[0].id == "benefits-coordinator"
 
         # Mismatched query + domain returns empty list
         mismatched = await catalog_adapter.search_agents(query="copays", domain="clinical")
@@ -382,26 +382,26 @@ class TestSqliteCatalogAdapter:
         catalog_adapter: SqliteCatalogAdapter,
         sample_agents: Dict[str, AgentManifest],
     ) -> None:
-        agent = sample_agents["benefits-guide"]
+        agent = sample_agents["benefits-coordinator"]
         await catalog_adapter.index_agent(agent)
 
         # get_agent
-        fetched = await catalog_adapter.get_agent("benefits-guide")
+        fetched = await catalog_adapter.get_agent("benefits-coordinator")
         assert fetched is not None
-        assert fetched.id == "benefits-guide"
+        assert fetched.id == "benefits-coordinator"
         assert fetched.title == "Benefits Guide"
 
         # count_agents
         assert await catalog_adapter.count_agents() == 1
 
         # delete_agent
-        deleted = await catalog_adapter.delete_agent("benefits-guide")
+        deleted = await catalog_adapter.delete_agent("benefits-coordinator")
         assert deleted is True
         assert await catalog_adapter.count_agents() == 0
-        assert await catalog_adapter.get_agent("benefits-guide") is None
+        assert await catalog_adapter.get_agent("benefits-coordinator") is None
 
         # delete non-existent
-        assert await catalog_adapter.delete_agent("benefits-guide") is False
+        assert await catalog_adapter.delete_agent("benefits-coordinator") is False
 
     @pytest.mark.asyncio
     async def test_skill_get_and_delete(self, catalog_adapter: SqliteCatalogAdapter) -> None:
@@ -434,12 +434,12 @@ class TestSqliteCatalogAdapter:
 
         tagged = await catalog_adapter.search_agents(tags=["copay"])
         assert len(tagged) == 1
-        assert tagged[0].id == "benefits-guide"
+        assert tagged[0].id == "benefits-coordinator"
 
         multi_tag = await catalog_adapter.search_agents(tags=["sleep", "anaphylaxis"])
         assert len(multi_tag) == 2
         matched_ids = {a.id for a in multi_tag}
-        assert matched_ids == {"habit-companion", "pediatric-allergy"}
+        assert matched_ids == {"habit-coordinator", "pediatric-allergy"}
 
     @pytest.mark.asyncio
     async def test_pagination(

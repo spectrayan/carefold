@@ -34,7 +34,7 @@ describe('Tool Allowlist Union Engine', () => {
 
   it('computes union from AgentManifest and SkillManifest objects', () => {
     const agent: AgentManifest = {
-      id: 'visit-steward',
+      id: 'appointment-prep-coordinator',
       title: 'Visit Steward',
       version: '0.1.0',
       risk_class: 'wellness',
@@ -58,7 +58,7 @@ describe('Tool Allowlist Union Engine', () => {
 
   it('ignores tools from skills not declared on the agent', () => {
     const agent: AgentManifest = {
-      id: 'visit-steward',
+      id: 'appointment-prep-coordinator',
       title: 'Visit Steward',
       version: '0.1.0',
       risk_class: 'wellness',

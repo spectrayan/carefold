@@ -20,7 +20,7 @@ import { grantClinicalConsent, hasClinicalConsent } from '@/lib/clinicalConsent'
 import type { AgentSummary } from '@/lib/types';
 
 const summary: AgentSummary = {
-  id: 'cardiology-guide',
+  id: 'heart-care-coordinator',
   title: 'Cardiology Guide',
   version: '0.1.0',
   risk_class: 'clinical_assist',
@@ -32,7 +32,7 @@ const summary: AgentSummary = {
 };
 
 const fullDetailPayload = {
-  id: 'cardiology-guide',
+  id: 'heart-care-coordinator',
   title: 'Cardiology Guide',
   version: '0.1.0',
   risk_class: 'clinical_assist',
@@ -73,7 +73,7 @@ describe('AgentDetailClient clinical consent (#87)', () => {
 
     await waitFor(() => expect(screen.queryByTestId('clinical-consent-dialog')).not.toBeInTheDocument());
     expect(screen.getByTestId('agent-consent-required')).toHaveTextContent('You chose not to give consent.');
-    expect(hasClinicalConsent('cardiology-guide')).toBe(false);
+    expect(hasClinicalConsent('heart-care-coordinator')).toBe(false);
   });
 
   it('grant loads the full detail through the proxy with allow_clinical=true', async () => {
@@ -88,13 +88,13 @@ describe('AgentDetailClient clinical consent (#87)', () => {
     fireEvent.click(screen.getByTestId('clinical-consent-accept'));
 
     expect(await screen.findByText('FULL PERSONA INSTRUCTIONS')).toBeInTheDocument();
-    expect(mockFetch).toHaveBeenCalledWith('/api/v1/agents/cardiology-guide?allow_clinical=true');
+    expect(mockFetch).toHaveBeenCalledWith('/api/v1/agents/heart-care-coordinator?allow_clinical=true');
     expect(screen.getByTestId('clinical-consent-chip')).toBeInTheDocument();
     expect(screen.queryByTestId('agent-consent-required')).not.toBeInTheDocument();
   });
 
   it('with previously stored consent, upgrades to full detail automatically', async () => {
-    grantClinicalConsent('cardiology-guide');
+    grantClinicalConsent('heart-care-coordinator');
     const mockFetch = vi.fn().mockResolvedValue(
       new Response(JSON.stringify(fullDetailPayload), { status: 200, headers: { 'Content-Type': 'application/json' } })
     );

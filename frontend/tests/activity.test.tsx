@@ -49,7 +49,7 @@ describe('Activity Timeline & Single-Click Undo Engine (AU-44)', () => {
       profile_id: 'prof-1',
       event: 'tool_executed',
       tool: 'create_appointment',
-      actor: 'cardiology-guide',
+      actor: 'heart-care-coordinator',
       principal: 'agent',
       summary: 'Scheduled follow-up with Dr. Helen Vance',
       description: 'Booked consultation for Oct 25 at Mercy Heart Center',

@@ -26,7 +26,7 @@ import type { AgentSummary } from '@/types/api';
 
 describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
   const mockAgent: AgentSummary = {
-    id: 'cardiology-guide',
+    id: 'heart-care-coordinator',
     title: 'Cardiology Guide',
     version: '0.4.0',
     risk_class: 'clinical_assist',
@@ -72,20 +72,20 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
   describe('generateDossierFilename', () => {
     it('generates markdown filename adhering to carefold-<agent-id>-prep-<YYYY-MM-DD>.md pattern', () => {
       const fixedDate = new Date('2026-10-07T12:00:00Z');
-      const filename = generateDossierFilename('cardiology-guide', 'md', fixedDate);
-      expect(filename).toBe('carefold-cardiology-guide-prep-2026-10-07.md');
+      const filename = generateDossierFilename('heart-care-coordinator', 'md', fixedDate);
+      expect(filename).toBe('carefold-heart-care-coordinator-prep-2026-10-07.md');
     });
 
     it('generates json filename adhering to carefold-<agent-id>-prep-<YYYY-MM-DD>.json pattern', () => {
       const fixedDate = new Date('2026-10-07T12:00:00Z');
-      const filename = generateDossierFilename('claims-appeals-guide', 'json', fixedDate);
-      expect(filename).toBe('carefold-claims-appeals-guide-prep-2026-10-07.json');
+      const filename = generateDossierFilename('claims-appeals-coordinator', 'json', fixedDate);
+      expect(filename).toBe('carefold-claims-appeals-coordinator-prep-2026-10-07.json');
     });
 
     it('sanitizes special characters, whitespace, and uppercase in agent ID', () => {
       const fixedDate = new Date('2026-10-07T12:00:00Z');
       const filename = generateDossierFilename('Cardiology Guide / Specialist!', 'md', fixedDate);
-      expect(filename).toBe('carefold-cardiology-guide-specialist-prep-2026-10-07.md');
+      expect(filename).toBe('carefold-heart-care-coordinator-specialist-prep-2026-10-07.md');
     });
 
     it('falls back to "general" if agentId is missing or empty', () => {
@@ -99,7 +99,7 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
     it('creates valid Markdown with title and prominent non-clinical disclaimer banner blockquote', () => {
       const md = formatDossierMarkdown({
         agent: mockAgent,
-        agentId: 'cardiology-guide',
+        agentId: 'heart-care-coordinator',
         messages: sampleMessages,
         threadId: 'thread-cardiology-123',
         exportedAt: '2026-10-07T04:15:00.000Z',
@@ -113,13 +113,13 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
     it('includes metadata header with Agent ID, Risk Class, Thread ID, and turn counts', () => {
       const md = formatDossierMarkdown({
         agent: mockAgent,
-        agentId: 'cardiology-guide',
+        agentId: 'heart-care-coordinator',
         messages: sampleMessages,
         threadId: 'thread-cardiology-123',
         exportedAt: '2026-10-07T04:15:00.000Z',
       });
 
-      expect(md).toContain('**Agent**: Cardiology Guide (`cardiology-guide`)');
+      expect(md).toContain('**Agent**: Cardiology Guide (`heart-care-coordinator`)');
       expect(md).toContain('**Risk Class**: clinical_assist');
       expect(md).toContain('**Exported**: 2026-10-07T04:15:00.000Z');
       expect(md).toContain('**Thread ID**: `thread-cardiology-123`');
@@ -129,7 +129,7 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
     it('formats conversation turns with patient and agent headers while preserving message body', () => {
       const md = formatDossierMarkdown({
         agent: mockAgent,
-        agentId: 'cardiology-guide',
+        agentId: 'heart-care-coordinator',
         messages: sampleMessages,
       });
 
@@ -142,7 +142,7 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
     it('strictly excludes raw tool traces and attachment binary buffers to protect privacy', () => {
       const md = formatDossierMarkdown({
         agent: mockAgent,
-        agentId: 'cardiology-guide',
+        agentId: 'heart-care-coordinator',
         messages: sampleMessages,
       });
 
@@ -156,7 +156,7 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
     it('handles empty message list and missing agent gracefully', () => {
       const md = formatDossierMarkdown({
         agent: null,
-        agentId: 'visit-steward',
+        agentId: 'appointment-prep-coordinator',
         messages: [],
       });
 
@@ -169,7 +169,7 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
     it('produces valid JSON with schema version 1.0, ISO exportedAt, disclaimer, and session metadata', () => {
       const jsonStr = formatDossierJson({
         agent: mockAgent,
-        agentId: 'cardiology-guide',
+        agentId: 'heart-care-coordinator',
         messages: sampleMessages,
         threadId: 'thread-cardiology-123',
         exportedAt: '2026-10-07T04:15:00.000Z',
@@ -181,7 +181,7 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
       expect(parsed.exportedAt).toBe('2026-10-07T04:15:00.000Z');
       expect(parsed.disclaimer).toBe(NON_CLINICAL_DISCLAIMER_TEXT);
       expect(parsed.session).toEqual({
-        agentId: 'cardiology-guide',
+        agentId: 'heart-care-coordinator',
         agentTitle: 'Cardiology Guide',
         riskClass: 'clinical_assist',
         threadId: 'thread-cardiology-123',
@@ -196,7 +196,7 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
     it('sanitizes message array and excludes tool traces and attachment payloads', () => {
       const jsonStr = formatDossierJson({
         agent: mockAgent,
-        agentId: 'cardiology-guide',
+        agentId: 'heart-care-coordinator',
         messages: sampleMessages,
       });
 
@@ -270,7 +270,7 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
     it('exportDossier exports markdown file end-to-end', () => {
       const options: DossierExportOptions = {
         agent: mockAgent,
-        agentId: 'cardiology-guide',
+        agentId: 'heart-care-coordinator',
         messages: sampleMessages,
         threadId: 'thread-cardiology-123',
       };
@@ -279,14 +279,14 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
 
       expect(createdUrls).toHaveLength(1);
       expect(clickedAnchors).toHaveLength(1);
-      expect(clickedAnchors[0].download).toMatch(/^carefold-cardiology-guide-prep-\d{4}-\d{2}-\d{2}\.md$/);
+      expect(clickedAnchors[0].download).toMatch(/^carefold-heart-care-coordinator-prep-\d{4}-\d{2}-\d{2}\.md$/);
       expect(revokedUrls).toHaveLength(1);
     });
 
     it('exportDossier exports json file end-to-end', () => {
       const options: DossierExportOptions = {
         agent: mockAgent,
-        agentId: 'cardiology-guide',
+        agentId: 'heart-care-coordinator',
         messages: sampleMessages,
         threadId: 'thread-cardiology-123',
       };
@@ -295,7 +295,7 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
 
       expect(createdUrls).toHaveLength(1);
       expect(clickedAnchors).toHaveLength(1);
-      expect(clickedAnchors[0].download).toMatch(/^carefold-cardiology-guide-prep-\d{4}-\d{2}-\d{2}\.json$/);
+      expect(clickedAnchors[0].download).toMatch(/^carefold-heart-care-coordinator-prep-\d{4}-\d{2}-\d{2}\.json$/);
       expect(revokedUrls).toHaveLength(1);
     });
   });

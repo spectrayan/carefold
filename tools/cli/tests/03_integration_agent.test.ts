@@ -35,26 +35,26 @@ describe('03: CLI Integration: carefold agent commands', () => {
 
   it('agent add installs bundled reference agent and companion skills', async () => {
     await runCli(['init', '--no-bundled'], { cwd: ws.workspaceDir });
-    const res = await runCli(['agent', 'add', 'visit-steward'], { cwd: ws.workspaceDir });
+    const res = await runCli(['agent', 'add', 'appointment-prep-coordinator'], { cwd: ws.workspaceDir });
     expect(res.exitCode).toBe(0);
-    expect(res.stdout).toContain('Added reference agent "visit-steward"');
+    expect(res.stdout).toContain('Added reference agent "appointment-prep-coordinator"');
 
-    expect(await ws.exists('agents/visit-steward/agent.yaml')).toBe(true);
-    expect(await ws.exists('agents/visit-steward/starters.json')).toBe(true);
+    expect(await ws.exists('agents/appointment-prep-coordinator/agent.yaml')).toBe(true);
+    expect(await ws.exists('agents/appointment-prep-coordinator/starters.json')).toBe(true);
     // Companion skill auto-installed
     expect(await ws.exists('skills/visit-prep/SKILL.md')).toBe(true);
   });
 
-  it('agent add installs benefits-guide and habit-companion', async () => {
+  it('agent add installs benefits-coordinator and habit-coordinator', async () => {
     await runCli(['init', '--no-bundled'], { cwd: ws.workspaceDir });
-    const bg = await runCli(['agent', 'add', 'benefits-guide'], { cwd: ws.workspaceDir });
+    const bg = await runCli(['agent', 'add', 'benefits-coordinator'], { cwd: ws.workspaceDir });
     expect(bg.exitCode).toBe(0);
-    expect(await ws.exists('agents/benefits-guide/agent.yaml')).toBe(true);
+    expect(await ws.exists('agents/benefits-coordinator/agent.yaml')).toBe(true);
     expect(await ws.exists('skills/benefits-explainer/SKILL.md')).toBe(true);
 
-    const hc = await runCli(['agent', 'add', 'habit-companion'], { cwd: ws.workspaceDir });
+    const hc = await runCli(['agent', 'add', 'habit-coordinator'], { cwd: ws.workspaceDir });
     expect(hc.exitCode).toBe(0);
-    expect(await ws.exists('agents/habit-companion/agent.yaml')).toBe(true);
+    expect(await ws.exists('agents/habit-coordinator/agent.yaml')).toBe(true);
     expect(await ws.exists('skills/habit-checkin/SKILL.md')).toBe(true);
   });
 
@@ -63,16 +63,16 @@ describe('03: CLI Integration: carefold agent commands', () => {
     const res = await runCli(['agent', 'add', 'bogus-agent'], { cwd: ws.workspaceDir });
     expect(res.exitCode).not.toBe(0);
     expect(res.stderr).toContain('Unknown agent "bogus-agent"');
-    expect(res.stderr).toContain('visit-steward');
+    expect(res.stderr).toContain('appointment-prep-coordinator');
   });
 
   it('agent list displays installed agents, versions, and risk classes', async () => {
     await runCli(['init', '--no-bundled'], { cwd: ws.workspaceDir });
-    await runCli(['agent', 'add', 'visit-steward'], { cwd: ws.workspaceDir });
+    await runCli(['agent', 'add', 'appointment-prep-coordinator'], { cwd: ws.workspaceDir });
 
     const res = await runCli(['agent', 'list'], { cwd: ws.workspaceDir });
     expect(res.exitCode).toBe(0);
-    expect(res.stdout).toContain('visit-steward');
+    expect(res.stdout).toContain('appointment-prep-coordinator');
     expect(res.stdout).toContain('Visit Steward');
     expect(res.stdout).toContain('0.1.0');
     expect(res.stdout).toContain('clinical_assist');
@@ -80,24 +80,24 @@ describe('03: CLI Integration: carefold agent commands', () => {
 
   it('agent list --json outputs valid JSON array', async () => {
     await runCli(['init', '--no-bundled'], { cwd: ws.workspaceDir });
-    await runCli(['agent', 'add', 'visit-steward'], { cwd: ws.workspaceDir });
+    await runCli(['agent', 'add', 'appointment-prep-coordinator'], { cwd: ws.workspaceDir });
 
     const res = await runCli(['agent', 'list', '--json'], { cwd: ws.workspaceDir });
     expect(res.exitCode).toBe(0);
     const parsed = JSON.parse(res.stdout);
     expect(Array.isArray(parsed)).toBe(true);
     expect(parsed.length).toBe(1);
-    expect(parsed[0].id).toBe('visit-steward');
+    expect(parsed[0].id).toBe('appointment-prep-coordinator');
     expect(parsed[0].risk_class).toBe('clinical_assist');
   });
 
   it('agent inspect displays detailed manifest metadata and starters', async () => {
     await runCli(['init', '--no-bundled'], { cwd: ws.workspaceDir });
-    await runCli(['agent', 'add', 'visit-steward'], { cwd: ws.workspaceDir });
+    await runCli(['agent', 'add', 'appointment-prep-coordinator'], { cwd: ws.workspaceDir });
 
-    const res = await runCli(['agent', 'inspect', 'visit-steward'], { cwd: ws.workspaceDir });
+    const res = await runCli(['agent', 'inspect', 'appointment-prep-coordinator'], { cwd: ws.workspaceDir });
     expect(res.exitCode).toBe(0);
-    expect(res.stdout).toContain('Agent: Visit Steward (visit-steward)');
+    expect(res.stdout).toContain('Agent: Visit Steward (appointment-prep-coordinator)');
     expect(res.stdout).toContain('Risk Class:      clinical_assist');
     expect(res.stdout).toContain('Declared Skills');
     expect(res.stdout).toContain('visit-prep');
@@ -147,14 +147,14 @@ describe('03: CLI Integration: carefold agent commands', () => {
 
   it('agent inspect renders string starters correctly without undefined placeholders', async () => {
     await runCli(['init', '--no-bundled'], { cwd: ws.workspaceDir });
-    await runCli(['agent', 'add', 'visit-steward'], { cwd: ws.workspaceDir });
+    await runCli(['agent', 'add', 'appointment-prep-coordinator'], { cwd: ws.workspaceDir });
 
-    const res = await runCli(['agent', 'inspect', 'visit-steward'], { cwd: ws.workspaceDir });
+    const res = await runCli(['agent', 'inspect', 'appointment-prep-coordinator'], { cwd: ws.workspaceDir });
     expect(res.exitCode).toBe(0);
     expect(res.stdout).toContain('Starters / Quick Prompts:');
     expect(res.stdout).not.toContain('[undefined]');
     expect(res.stdout).not.toContain('"undefined"');
-    // Assert actual prompt string from visit-steward/starters.json is rendered
+    // Assert actual prompt string from appointment-prep-coordinator/starters.json is rendered
     expect(res.stdout).toContain('Help me prepare a prioritized list of questions for my annual physical next week.');
   });
 

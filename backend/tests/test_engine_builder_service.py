@@ -254,7 +254,7 @@ class TestAgentExecutionService:
         async for ev in service.execute_turn(
             thread_id="test-srv-turn-1",
             prompt="What is my office visit copay?",
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
         ):
             events.append(ev)
 
@@ -278,7 +278,7 @@ class TestAgentExecutionService:
         # Wire format test
         wire_chunks: List[str] = []
         async for chunk in service.execute_chat(
-            ChatRequestBody(agentId="visit-steward", prompt="Hello", threadId="th-wire-1", allow_clinical=True),
+            ChatRequestBody(agentId="appointment-prep-coordinator", prompt="Hello", threadId="th-wire-1", allow_clinical=True),
             raw_events=False,
         ):
             wire_chunks.append(chunk)
@@ -290,7 +290,7 @@ class TestAgentExecutionService:
         mock.queue_response("Second response.")
         raw_events: List[Dict[str, Any]] = []
         async for ev in service.execute_chat(
-            {"agent_id": "visit-steward", "prompt": "Hi again", "thread_id": "th-raw-1", "allow_clinical": True},
+            {"agent_id": "appointment-prep-coordinator", "prompt": "Hi again", "thread_id": "th-raw-1", "allow_clinical": True},
             raw_events=True,
         ):
             raw_events.append(ev)
@@ -310,7 +310,7 @@ class TestAgentExecutionService:
         async for _ in service.execute_turn(
             thread_id=thread_id,
             prompt="Can you check my prescriptions?",
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
         ):
             pass
 
@@ -398,7 +398,7 @@ class TestRunnerFacade:
 
         events: List[Dict[str, Any]] = []
         async for ev in execute_agent_run(
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             prompt="Test facade",
             model_client=mock,
             workspace_root=temp_workspace,

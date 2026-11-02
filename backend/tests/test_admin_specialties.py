@@ -53,7 +53,7 @@ from evals.runner import EvalCase, run_single_eval
 # ============================================================================
 
 ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
-    "prior-auth-navigator": {
+    "prior-authorization-coordinator": {
         "title": "Prior Authorization Navigator",
         "companion_skill": "prior-auth-prep",
         "domain": AgentDomain.NAVIGATION,
@@ -64,7 +64,7 @@ ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "prior-authorization",
         "fts_query": "prior authorization",
     },
-    "claims-appeals-guide": {
+    "claims-appeals-coordinator": {
         "title": "Claims & Appeals Steward",
         "companion_skill": "claims-appeals-prep",
         "domain": AgentDomain.NAVIGATION,
@@ -86,7 +86,7 @@ ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "medical-records",
         "fts_query": "hipaa record request",
     },
-    "formulary-guide": {
+    "prescription-cost-coordinator": {
         "title": "Prescription & Formulary Guide",
         "companion_skill": "formulary-navigation",
         "domain": AgentDomain.NAVIGATION,

@@ -19,7 +19,7 @@ import type { AgentSummary } from '@/lib/types';
 
 describe('ClinicalConsentDialog Component', () => {
   const clinicalAgent: AgentSummary = {
-    id: 'cardiology-guide',
+    id: 'heart-care-coordinator',
     title: 'Cardiology Guide',
     version: '0.1.0',
     risk_class: 'clinical_assist',

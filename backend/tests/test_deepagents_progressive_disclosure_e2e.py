@@ -981,7 +981,7 @@ class TestClinicalScenarios:
         valid, missing = check_mandatory_intended_use(simulated_response)
         assert valid is True
 
-    def test_scenario_benefits_guide_administrative_session(self):
+    def test_scenario_benefits_coordinator_administrative_session(self):
         """End-to-end benefits guide administrative navigation without clinical risk elevation."""
         state = {
             "skills_metadata": [

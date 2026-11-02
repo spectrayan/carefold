@@ -59,8 +59,8 @@ class TestConflictingCardiorenalSynthesis:
 
         state: Dict[str, Any] = {
             "specialist_outputs": {
-                "cardiology-guide": cardio_text,
-                "nephrology-guide": nephro_text,
+                "heart-care-coordinator": cardio_text,
+                "kidney-care-coordinator": nephro_text,
             },
         }
 
@@ -118,23 +118,23 @@ class TestConflictingCardiorenalSynthesis:
     def test_constituent_disclaimers_stripped_and_replaced_by_one_canonical(self):
         """Constituent disclaimers from multiple specialists are completely stripped and replaced by exactly one canonical disclaimer."""
         outputs = {
-            "cardiology-guide": (
+            "heart-care-coordinator": (
                 "Cardiology recommendations.\n\n"
                 "DISCLAIMER: I am not a doctor. Consult your physician."
             ),
-            "nephrology-guide": (
+            "kidney-care-coordinator": (
                 "Nephrology recommendations.\n\n"
                 "NOTE: I am not a licensed physician. Consult your doctor."
             ),
-            "endocrinology-guide": (
+            "diabetes-thyroid-coordinator": (
                 "Endocrinology recommendations.\n\n"
                 "NOTE: I am not a clinician. See your physician."
             ),
-            "pulmonology-guide": (
+            "lung-breathing-coordinator": (
                 "Pulmonology recommendations.\n\n"
                 "Please consult your doctor before modifying any inhaler schedule."
             ),
-            "gastro-guide": (
+            "digestive-health-coordinator": (
                 "Gastroenterology recommendations.\n\n"
                 "Please consult your physician before altering your diet."
             ),
@@ -178,8 +178,8 @@ class TestZeroBodyAuditLogging:
                 "thread_id": "thread-boundary-123",
                 "prompt": f"Patient query containing {sensitive_ssn} and {sensitive_clinical_fact}",
                 "specialist_outputs": {
-                    "cardiology-guide": f"{sensitive_output_1} with fluid management",
-                    "nephrology-guide": f"{sensitive_output_2} with fluid coordination",
+                    "heart-care-coordinator": f"{sensitive_output_1} with fluid management",
+                    "kidney-care-coordinator": f"{sensitive_output_2} with fluid coordination",
                 },
                 "store_bodies": False,
             }
@@ -202,7 +202,7 @@ class TestZeroBodyAuditLogging:
             assert entry.get("event") == "synthesis"
             assert entry.get("allowed") is True
             assert entry.get("thread_id") == "thread-boundary-123"
-            assert entry.get("target_agents") == ["cardiology-guide", "nephrology-guide"]
+            assert entry.get("target_agents") == ["heart-care-coordinator", "kidney-care-coordinator"]
             assert "timestamp" in entry
             assert "ts" in entry
 
@@ -237,8 +237,8 @@ class TestZeroBodyAuditLogging:
                 "thread_id": "thread-enabled-456",
                 "prompt": "Test query for audit retention",
                 "specialist_outputs": {
-                    "cardiology-guide": "Cardio advice with fluid balance",
-                    "nephrology-guide": "Nephro advice with fluid balance",
+                    "heart-care-coordinator": "Cardio advice with fluid balance",
+                    "kidney-care-coordinator": "Nephro advice with fluid balance",
                 },
                 "store_bodies": True,
             }
@@ -262,8 +262,8 @@ class TestPipelineSafetyIntercept:
         """If an upstream specialist tries to prescribe drugs or dosages, OutputGuardrailNode catches it downstream."""
         # Upstream specialist outputs prescriptive dosage
         adversarial_outputs = {
-            "cardiology-guide": "Patient has CHF. Prescribe Furosemide 40 mg PO twice daily. fluid limit 1.5L.",
-            "nephrology-guide": "Liberal fluid intake recommended for renal function.",
+            "heart-care-coordinator": "Patient has CHF. Prescribe Furosemide 40 mg PO twice daily. fluid limit 1.5L.",
+            "kidney-care-coordinator": "Liberal fluid intake recommended for renal function.",
         }
 
         state: Dict[str, Any] = {
@@ -295,7 +295,7 @@ class TestEdgeCasesAndAdversarialVariations:
         """Single agent output has constituent disclaimer stripped and canonical footer added."""
         state = {
             "specialist_outputs": {
-                "cardiology-guide": "Monitor daily resting pulse.\n\nDISCLAIMER: Not a doctor.",
+                "heart-care-coordinator": "Monitor daily resting pulse.\n\nDISCLAIMER: Not a doctor.",
             },
         }
         output = ResponseSynthesizerNode.synthesize_response(state)
@@ -325,8 +325,8 @@ class TestEdgeCasesAndAdversarialVariations:
         """Multi-agent output without cardiorenal fluid conflict omits priority doctor questions."""
         state = {
             "specialist_outputs": {
-                "derma-guide": "Apply sunscreen SPF 30 daily.",
-                "eye-guide": "Schedule annual dilated retinal exam.",
+                "skin-care-coordinator": "Apply sunscreen SPF 30 daily.",
+                "eye-care-coordinator": "Schedule annual dilated retinal exam.",
             },
         }
         output = ResponseSynthesizerNode.synthesize_response(state)

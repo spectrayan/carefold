@@ -25,16 +25,16 @@ export async function run() {
       fn: () => {
         const res = runCli(['agent', 'list']);
         assertEqual(res.status, 0, `agent list failed: ${res.stderr}`);
-        assertContains(res.stdout, 'visit-steward');
-        assertContains(res.stdout, 'benefits-guide');
-        assertContains(res.stdout, 'habit-companion');
+        assertContains(res.stdout, 'appointment-prep-coordinator');
+        assertContains(res.stdout, 'benefits-coordinator');
+        assertContains(res.stdout, 'habit-coordinator');
       }
     },
     {
       id: 'F14-T02',
       name: 'carefold agent inspect displays detailed agent manifest and persona configuration',
       fn: () => {
-        const res = runCli(['agent', 'inspect', 'visit-steward']);
+        const res = runCli(['agent', 'inspect', 'appointment-prep-coordinator']);
         assertEqual(res.status, 0, `agent inspect failed: ${res.stderr}`);
         assertContains(res.stdout, 'Visit Steward');
         assertContains(res.stdout, 'wellness');
@@ -48,9 +48,9 @@ export async function run() {
         const ws = createTempWorkspace();
         try {
           runCli(['init', ws, '--bare']);
-          const res = runCli(['agent', 'add', 'visit-steward'], { cwd: ws });
+          const res = runCli(['agent', 'add', 'appointment-prep-coordinator'], { cwd: ws });
           assertEqual(res.status, 0, `agent add failed: ${res.stderr}`);
-          assertTrue(fs.existsSync(path.join(ws, 'agents', 'visit-steward', 'agent.yaml')));
+          assertTrue(fs.existsSync(path.join(ws, 'agents', 'appointment-prep-coordinator', 'agent.yaml')));
         } finally {
           removeTempWorkspace(ws);
         }

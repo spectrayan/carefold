@@ -34,11 +34,11 @@ describe('Manifest Loader & Validator', () => {
   });
 
   it('successfully loads a valid agent.yaml with persona and declared skills', async () => {
-    const agentDir = path.join(ws, 'agents', 'visit-steward');
+    const agentDir = path.join(ws, 'agents', 'appointment-prep-coordinator');
     const skillsDir = path.join(ws, 'skills');
     const { agent, effectiveTools, skills } = await loadAgent(agentDir, skillsDir);
 
-    expect(agent.id).toBe('visit-steward');
+    expect(agent.id).toBe('appointment-prep-coordinator');
     expect(agent.risk_class).toBe('wellness');
     expect(agent.skills).toContain('visit-prep');
     expect(skills.length).toBe(1);

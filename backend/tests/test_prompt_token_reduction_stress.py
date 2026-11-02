@@ -332,9 +332,9 @@ class TestAgentRegistrySubagentMethods:
 
     def test_get_subagent_valid_specialist(self, agent_registry):
         """get_subagent returns complete SubAgent dict for registered specialist."""
-        sub = agent_registry.get_subagent("cardiology-guide")
+        sub = agent_registry.get_subagent("heart-care-coordinator")
         assert sub is not None
-        assert sub["name"] == "cardiology-guide"
+        assert sub["name"] == "heart-care-coordinator"
         assert "cardiology-prep" in sub["skills"]
         assert "skill-docs" in sub["tools"]
         assert sub["system_prompt"]
@@ -353,10 +353,10 @@ class TestAgentRegistrySubagentMethods:
         subs = agent_registry.list_subagents()
         assert len(subs) >= 20
         sub_names = {s["name"] for s in subs}
-        assert "cardiology-guide" in sub_names
-        assert "pulmonology-guide" in sub_names
-        assert "benefits-guide" in sub_names
-        assert "visit-steward" in sub_names
+        assert "heart-care-coordinator" in sub_names
+        assert "lung-breathing-coordinator" in sub_names
+        assert "benefits-coordinator" in sub_names
+        assert "appointment-prep-coordinator" in sub_names
 
 
 # =============================================================================
@@ -370,7 +370,7 @@ class TestDynamicSkillPromptAssembly:
     async def test_execution_node_injects_dynamic_skills_and_references(self, agent_registry):
         """Verifies that generated_skills are properly formatted into prompt without corrupting Turn-1 base."""
         node = AgentExecutionNode(registry=agent_registry)
-        manifest = agent_registry.get("habit-companion")
+        manifest = agent_registry.get("habit-coordinator")
 
         dyn_skill = {
             "id": "hydration-tracking",
@@ -384,7 +384,7 @@ class TestDynamicSkillPromptAssembly:
         }
 
         state = {
-            "current_agent": "habit-companion",
+            "current_agent": "habit-coordinator",
             "generated_skills": [dyn_skill],
         }
 
@@ -398,7 +398,7 @@ class TestDynamicSkillPromptAssembly:
     def test_execution_node_resolves_dynamic_tools(self, agent_registry):
         """Verifies that tools declared in dynamic skills are resolved into agent execution tools."""
         node = AgentExecutionNode(registry=agent_registry)
-        manifest = agent_registry.get("habit-companion")
+        manifest = agent_registry.get("habit-coordinator")
 
         dyn_skill = {
             "id": "hydration-tracking",
@@ -407,11 +407,11 @@ class TestDynamicSkillPromptAssembly:
         }
 
         state = {
-            "current_agent": "habit-companion",
+            "current_agent": "habit-coordinator",
             "generated_skills": [dyn_skill],
         }
 
-        resolved_tools = node._resolve_tools("habit-companion", manifest, state)
+        resolved_tools = node._resolve_tools("habit-coordinator", manifest, state)
         tool_names = [t.name if hasattr(t, "name") else (t.get("name") if isinstance(t, dict) else str(t)) for t in resolved_tools]
         assert "workspace-note" in tool_names
         assert "attach-read" in tool_names

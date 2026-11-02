@@ -364,11 +364,11 @@ class TestPersonaRealWorldScenarios:
     """Tier 4: Realistic persona validation for key clinical specialties."""
 
     @pytest.mark.parametrize("specialist_id", [
-        "cardiology-guide",
-        "nephrology-guide",
-        "endocrinology-guide",
-        "pulmonology-guide",
-        "ortho-guide",
+        "heart-care-coordinator",
+        "kidney-care-coordinator",
+        "diabetes-thyroid-coordinator",
+        "lung-breathing-coordinator",
+        "bone-joint-care-coordinator",
     ])
     def test_core_specialists_have_clinical_protocols(self, e2e_repo_root: Path, specialist_id: str):
         """Verifies core clinical specialists have robust protocol structure and emergency red flags."""

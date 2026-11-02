@@ -830,9 +830,9 @@ class TestWorkspaceManifestAudit:
         agents = load_all_agents(agents_dir, skills_dir)
         by_id = {a.id: a for a in agents}
 
-        # 1. benefits-guide
-        assert "benefits-guide" in by_id
-        bg = by_id["benefits-guide"]
+        # 1. benefits-coordinator
+        assert "benefits-coordinator" in by_id
+        bg = by_id["benefits-coordinator"]
         assert bg.domain == AgentDomain.NAVIGATION
         assert bg.category == "navigation.insurance"
         assert set(bg.care_stages) == {"post_visit", "daily_living"}
@@ -841,9 +841,9 @@ class TestWorkspaceManifestAudit:
         assert "insurance" in bg.tags
         assert "benefits" in bg.tags
 
-        # 2. habit-companion
-        assert "habit-companion" in by_id
-        hc = by_id["habit-companion"]
+        # 2. habit-coordinator
+        assert "habit-coordinator" in by_id
+        hc = by_id["habit-coordinator"]
         assert hc.domain == AgentDomain.WELLNESS
         assert hc.category == "wellness.habits"
         assert set(hc.care_stages) == {"daily_living"}
@@ -851,9 +851,9 @@ class TestWorkspaceManifestAudit:
         assert hc.maturity == AgentMaturity.STABLE
         assert "habits" in hc.tags
 
-        # 3. visit-steward
-        assert "visit-steward" in by_id
-        vs = by_id["visit-steward"]
+        # 3. appointment-prep-coordinator
+        assert "appointment-prep-coordinator" in by_id
+        vs = by_id["appointment-prep-coordinator"]
         assert vs.domain == AgentDomain.NAVIGATION
         assert vs.category == "navigation.appointments"
         assert set(vs.care_stages) == {"pre_visit", "during_visit"}
@@ -907,10 +907,10 @@ class TestApiTaxonomyEndpoints:
 
     def test_api_agent_detail_taxonomy_serialization(self, client):
         """GET /api/agents/{agent_id} returns all 7 taxonomy fields."""
-        resp = client.get("/api/agents/benefits-guide")
+        resp = client.get("/api/agents/benefits-coordinator")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["id"] == "benefits-guide"
+        assert data["id"] == "benefits-coordinator"
         assert data["domain"] == "navigation"
         assert data["category"] == "navigation.insurance"
         assert data["icon"] == "FileText"

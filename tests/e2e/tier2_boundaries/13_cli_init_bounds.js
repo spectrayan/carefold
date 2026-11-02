@@ -74,7 +74,7 @@ export async function run() {
           const res = runCli(['init', ws]);
           assertEqual(res.status, 0, `Init failed: ${res.stderr}`);
           const agents = fs.readdirSync(path.join(ws, 'agents'));
-          assertTrue(agents.includes('visit-steward'), 'Default agents should include visit-steward');
+          assertTrue(agents.includes('appointment-prep-coordinator'), 'Default agents should include appointment-prep-coordinator');
           const skills = fs.readdirSync(path.join(ws, 'skills'));
           assertTrue(skills.includes('visit-prep'), 'Default skills should include visit-prep');
         } finally {

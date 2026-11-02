@@ -230,8 +230,8 @@ def test_agent_load_bundled_agents(temp_workspace: Path):
     agents_dir = temp_workspace / "agents"
     skills_dir = temp_workspace / "skills"
 
-    agent, effective_tools, loaded_skills = load_agent(agents_dir / "visit-steward", skills_dir)
-    assert agent.id == "visit-steward"
+    agent, effective_tools, loaded_skills = load_agent(agents_dir / "appointment-prep-coordinator", skills_dir)
+    assert agent.id == "appointment-prep-coordinator"
     assert agent.risk_class == RiskClass.CLINICAL_ASSIST
     assert "visit-prep" in agent.skills
 
@@ -356,8 +356,8 @@ def test_agent_load_bundled_agents_taxonomy(temp_workspace: Path):
     agents_dir = temp_workspace / "agents"
     skills_dir = temp_workspace / "skills"
 
-    # 1. visit-steward
-    agent_vs, _, _ = load_agent(agents_dir / "visit-steward", skills_dir)
+    # 1. appointment-prep-coordinator
+    agent_vs, _, _ = load_agent(agents_dir / "appointment-prep-coordinator", skills_dir)
     assert agent_vs.domain == "navigation"
     assert agent_vs.category == "navigation.appointments"
     assert agent_vs.care_stages == ["pre_visit", "during_visit"]
@@ -366,8 +366,8 @@ def test_agent_load_bundled_agents_taxonomy(temp_workspace: Path):
     assert agent_vs.maturity == "stable"
     assert isinstance(agent_vs.target_audience, list)
 
-    # 2. benefits-guide
-    agent_bg, _, _ = load_agent(agents_dir / "benefits-guide", skills_dir)
+    # 2. benefits-coordinator
+    agent_bg, _, _ = load_agent(agents_dir / "benefits-coordinator", skills_dir)
     assert agent_bg.domain == "navigation"
     assert agent_bg.category == "navigation.insurance"
     assert agent_bg.care_stages == ["post_visit", "daily_living"]
@@ -375,8 +375,8 @@ def test_agent_load_bundled_agents_taxonomy(temp_workspace: Path):
     assert agent_bg.icon == "FileText"
     assert agent_bg.maturity == "stable"
 
-    # 3. habit-companion
-    agent_hc, _, _ = load_agent(agents_dir / "habit-companion", skills_dir)
+    # 3. habit-coordinator
+    agent_hc, _, _ = load_agent(agents_dir / "habit-coordinator", skills_dir)
     assert agent_hc.domain == "wellness"
     assert agent_hc.category == "wellness.habits"
     assert agent_hc.care_stages == ["daily_living"]
@@ -446,8 +446,8 @@ def test_load_all_agents_includes_taxonomy(temp_workspace: Path):
     summaries = load_all_agents(agents_dir, skills_dir)
     by_id = {s.id: s for s in summaries}
 
-    assert "visit-steward" in by_id
-    vs = by_id["visit-steward"]
+    assert "appointment-prep-coordinator" in by_id
+    vs = by_id["appointment-prep-coordinator"]
     assert vs.domain == "navigation"
     assert vs.category == "navigation.appointments"
     assert vs.care_stages == ["pre_visit", "during_visit"]
@@ -456,8 +456,8 @@ def test_load_all_agents_includes_taxonomy(temp_workspace: Path):
     assert vs.maturity == "stable"
     assert isinstance(vs.target_audience, list)
 
-    assert "benefits-guide" in by_id
-    bg = by_id["benefits-guide"]
+    assert "benefits-coordinator" in by_id
+    bg = by_id["benefits-coordinator"]
     assert bg.domain == "navigation"
     assert bg.category == "navigation.insurance"
     assert bg.care_stages == ["post_visit", "daily_living"]
@@ -465,8 +465,8 @@ def test_load_all_agents_includes_taxonomy(temp_workspace: Path):
     assert bg.icon == "FileText"
     assert bg.maturity == "stable"
 
-    assert "habit-companion" in by_id
-    hc = by_id["habit-companion"]
+    assert "habit-coordinator" in by_id
+    hc = by_id["habit-coordinator"]
     assert hc.domain == "wellness"
     assert hc.category == "wellness.habits"
     assert hc.care_stages == ["daily_living"]
@@ -607,14 +607,14 @@ def test_load_all_agents_discovers_system_agents(temp_workspace: Path):
     by_id = {s.id: s for s in summaries}
 
     # Verify user-facing agents
-    assert "visit-steward" in by_id
-    assert by_id["visit-steward"].hidden is False
+    assert "appointment-prep-coordinator" in by_id
+    assert by_id["appointment-prep-coordinator"].hidden is False
 
-    assert "benefits-guide" in by_id
-    assert by_id["benefits-guide"].hidden is False
+    assert "benefits-coordinator" in by_id
+    assert by_id["benefits-coordinator"].hidden is False
 
-    assert "habit-companion" in by_id
-    assert by_id["habit-companion"].hidden is False
+    assert "habit-coordinator" in by_id
+    assert by_id["habit-coordinator"].hidden is False
 
     # Verify system agents discovered from _system/
     expected_system_agents = [

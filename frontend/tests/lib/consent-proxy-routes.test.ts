@@ -44,36 +44,36 @@ const chatRequest = (body: Record<string, unknown>, query = '') =>
   new Request(`http://localhost:3000/api/chat${query}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ agentId: 'cardiology-guide', prompt: 'hi', ...body })
+    body: JSON.stringify({ agentId: 'heart-care-coordinator', prompt: 'hi', ...body })
   });
 
 describe('GET /api/agents proxy', () => {
   it('defaults allow_clinical to false for list and single lookups', async () => {
     await listAgents(new Request('http://localhost:3000/api/agents'));
-    await listAgents(new Request('http://localhost:3000/api/agents?id=cardiology-guide'));
+    await listAgents(new Request('http://localhost:3000/api/agents?id=heart-care-coordinator'));
     expect(new URL(backendCalls[0].url).searchParams.get('allow_clinical')).toBe('false');
     expect(new URL(backendCalls[1].url).searchParams.get('allow_clinical')).toBe('false');
   });
 
   it('forwards only an explicit true', async () => {
-    await listAgents(new Request('http://localhost:3000/api/agents?id=cardiology-guide&allow_clinical=true'));
-    await listAgents(new Request('http://localhost:3000/api/agents?id=cardiology-guide&allow_clinical=yes'));
+    await listAgents(new Request('http://localhost:3000/api/agents?id=heart-care-coordinator&allow_clinical=true'));
+    await listAgents(new Request('http://localhost:3000/api/agents?id=heart-care-coordinator&allow_clinical=yes'));
     expect(new URL(backendCalls[0].url).searchParams.get('allow_clinical')).toBe('true');
     expect(new URL(backendCalls[1].url).searchParams.get('allow_clinical')).toBe('false');
   });
 });
 
 describe('GET /api/agents/[id] proxy', () => {
-  const ctx = { params: Promise.resolve({ id: 'cardiology-guide' }) };
+  const ctx = { params: Promise.resolve({ id: 'heart-care-coordinator' }) };
 
   it('defaults allow_clinical to false', async () => {
-    await getAgent(new Request('http://localhost:3000/api/agents/cardiology-guide'), ctx);
+    await getAgent(new Request('http://localhost:3000/api/agents/heart-care-coordinator'), ctx);
     expect(new URL(backendCalls[0].url).searchParams.get('allow_clinical')).toBe('false');
   });
 
   it('forwards an explicit true and normalizes anything else', async () => {
-    await getAgent(new Request('http://localhost:3000/api/agents/cardiology-guide?allow_clinical=true'), ctx);
-    await getAgent(new Request('http://localhost:3000/api/agents/cardiology-guide?allow_clinical=1%26x%3Dy'), ctx);
+    await getAgent(new Request('http://localhost:3000/api/agents/heart-care-coordinator?allow_clinical=true'), ctx);
+    await getAgent(new Request('http://localhost:3000/api/agents/heart-care-coordinator?allow_clinical=1%26x%3Dy'), ctx);
     expect(new URL(backendCalls[0].url).searchParams.get('allow_clinical')).toBe('true');
     expect(new URL(backendCalls[1].url).searchParams.get('allow_clinical')).toBe('false');
     expect(new URL(backendCalls[1].url).searchParams.has('x')).toBe(false);

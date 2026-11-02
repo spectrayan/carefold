@@ -120,9 +120,9 @@ def test_api_agents_list(client: TestClient):
     agents = res.json()
     assert isinstance(agents, list)
     agent_ids = [a["id"] for a in agents]
-    assert "visit-steward" in agent_ids
-    assert "benefits-guide" in agent_ids
-    assert "habit-companion" in agent_ids
+    assert "appointment-prep-coordinator" in agent_ids
+    assert "benefits-coordinator" in agent_ids
+    assert "habit-coordinator" in agent_ids
     # System agents must be excluded by default
     assert "orchestrator" not in agent_ids
     assert "document-extractor" not in agent_ids
@@ -138,17 +138,17 @@ def test_api_agents_list_exposes_forbidden_and_consent_flag(client: TestClient):
     assert res.status_code == 200
     by_id = {a["id"]: a for a in res.json()}
 
-    steward = by_id["visit-steward"]
+    steward = by_id["appointment-prep-coordinator"]
     assert steward["risk_class"] == "clinical_assist"
     assert "diagnose" in steward["forbidden"]
     assert "replace_emergency_care" in steward["forbidden"]
     assert steward["clinical_enabled"] is False
 
     consented = {a["id"]: a for a in client.get("/api/agents?allow_clinical=true").json()}
-    assert consented["visit-steward"]["clinical_enabled"] is True
+    assert consented["appointment-prep-coordinator"]["clinical_enabled"] is True
 
     # Non-clinical agents are never gated
-    assert by_id["habit-companion"]["clinical_enabled"] is True
+    assert by_id["habit-coordinator"]["clinical_enabled"] is True
 
 
 def test_api_agents_list_include_hidden(client: TestClient):
@@ -159,9 +159,9 @@ def test_api_agents_list_include_hidden(client: TestClient):
     agent_ids = [a["id"] for a in agents]
 
     # User-facing agents
-    assert "visit-steward" in agent_ids
-    assert "benefits-guide" in agent_ids
-    assert "habit-companion" in agent_ids
+    assert "appointment-prep-coordinator" in agent_ids
+    assert "benefits-coordinator" in agent_ids
+    assert "habit-coordinator" in agent_ids
 
     # System agents
     assert "orchestrator" in agent_ids
@@ -199,7 +199,7 @@ def test_api_agents_filter_risk_class(client: TestClient):
     agents = res.json()
     assert len(agents) >= 1
     assert all(a["risk_class"] == "admin" for a in agents)
-    assert any(a["id"] == "benefits-guide" for a in agents)
+    assert any(a["id"] == "benefits-coordinator" for a in agents)
 
 
 def test_api_agents_categories(client: TestClient):
@@ -224,8 +224,8 @@ def test_api_agents_filter_domain(client: TestClient):
     assert len(agents) >= 1
     assert all(a.get("domain", "").lower() == "navigation" for a in agents)
     agent_ids = [a["id"] for a in agents]
-    assert "visit-steward" in agent_ids or "benefits-guide" in agent_ids
-    assert "habit-companion" not in agent_ids
+    assert "appointment-prep-coordinator" in agent_ids or "benefits-coordinator" in agent_ids
+    assert "habit-coordinator" not in agent_ids
 
 
 def test_api_agents_pagination(client: TestClient):
@@ -260,10 +260,10 @@ def test_api_skills_filter_domain_and_pagination(client: TestClient):
 
 
 def test_api_agents_detail(client: TestClient):
-    res = client.get("/api/agents/visit-steward?allow_clinical=true")
+    res = client.get("/api/agents/appointment-prep-coordinator?allow_clinical=true")
     assert res.status_code == 200
     data = res.json()
-    assert data["id"] == "visit-steward"
+    assert data["id"] == "appointment-prep-coordinator"
     assert data["title"] == "Visit Steward"
     assert "effectiveTools" in data
     assert set(data["effectiveTools"]) == {"attach-read", "workspace-note", "skill-docs"}
@@ -324,7 +324,7 @@ def test_api_audit_list(client: TestClient):
 
 def test_api_chat_validation_errors(client: TestClient):
     # Empty prompt
-    res1 = client.post("/api/chat", json={"agentId": "visit-steward", "prompt": ""})
+    res1 = client.post("/api/chat", json={"agentId": "appointment-prep-coordinator", "prompt": ""})
     assert res1.status_code == 400
 
     # Missing agent
@@ -374,7 +374,7 @@ def test_profile(client: TestClient) -> str:
 def test_api_chat_stream_mock_success(client: TestClient, test_profile: str):
     """Verifies baseline SSE streaming with token chunks, audit event ID, and suggestions."""
     payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Hello! Can you help me prepare for a doctor visit?",
         "mock": True,
         "allow_clinical": True,
@@ -402,7 +402,7 @@ def test_api_chat_stream_mock_success(client: TestClient, test_profile: str):
 def test_api_chat_stream_safety_refusal(client: TestClient, test_profile: str):
     """Verifies pre-generation clinical refusal emits refusal and done events over SSE."""
     payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Please diagnose if my rash is shingles.",
         "mock": True,
         "allow_clinical": True,
@@ -431,7 +431,7 @@ def test_api_chat_stream_multi_turn_with_thread_id(client: TestClient, test_prof
 
     # Turn 1
     t1_payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "I am scheduling an eye exam for next Friday.",
         "threadId": thread_id,
         "mock": True,
@@ -447,7 +447,7 @@ def test_api_chat_stream_multi_turn_with_thread_id(client: TestClient, test_prof
 
     # Turn 2 with same threadId
     t2_payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Can you draft questions for that exam?",
         "threadId": thread_id,
         "mock": True,
@@ -466,7 +466,7 @@ def test_api_chat_stream_multi_turn_with_thread_id(client: TestClient, test_prof
 def test_api_chat_stream_with_model_provider_selection(client: TestClient, test_profile: str):
     """Verifies that provider and model fields are accepted in request payload."""
     payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Hello there!",
         "provider": "mock",
         "model": "carefold-mock",
@@ -517,7 +517,7 @@ def test_api_chat_stream_server_restart_simulation(temp_workspace: Path):
     profile_id = prof_res.json()["id"]
 
     t1_payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "My preferred pharmacy is Walgreens on 5th Ave.",
         "threadId": thread_id,
         "mock": True,
@@ -534,7 +534,7 @@ def test_api_chat_stream_server_restart_simulation(temp_workspace: Path):
     # Instance 2 (restart: fresh client instance)
     client2 = TestClient(app)
     t2_payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "What pharmacy did I choose?",
         "threadId": thread_id,
         "mock": True,
@@ -558,7 +558,7 @@ def test_api_chat_stream_tool_execution_events(client: TestClient, temp_workspac
     (scoped_dir / "blood_work.txt").write_text("WBC: 6.5, RBC: 4.8", encoding="utf-8")
 
     payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Review my attached blood_work.txt report please.",
         "mock": True,
         "allow_clinical": True,
@@ -584,7 +584,7 @@ def test_api_chat_get_thread_history(client: TestClient, temp_workspace: Path, t
 
     # Seed conversation via SSE
     payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Hello from session thread test.",
         "threadId": thread_id,
         "mock": True,
@@ -614,9 +614,9 @@ def test_api_agents_list_taxonomy_fields(client: TestClient):
     assert isinstance(agents, list)
     by_id = {a["id"]: a for a in agents}
 
-    # Verify visit-steward
-    assert "visit-steward" in by_id
-    vs = by_id["visit-steward"]
+    # Verify appointment-prep-coordinator
+    assert "appointment-prep-coordinator" in by_id
+    vs = by_id["appointment-prep-coordinator"]
     assert vs["domain"] == "navigation"
     assert vs["category"] == "navigation.appointments"
     assert vs["care_stages"] == ["pre_visit", "during_visit"]
@@ -625,9 +625,9 @@ def test_api_agents_list_taxonomy_fields(client: TestClient):
     assert vs["maturity"] == "stable"
     assert isinstance(vs["target_audience"], list)
 
-    # Verify benefits-guide
-    assert "benefits-guide" in by_id
-    bg = by_id["benefits-guide"]
+    # Verify benefits-coordinator
+    assert "benefits-coordinator" in by_id
+    bg = by_id["benefits-coordinator"]
     assert bg["domain"] == "navigation"
     assert bg["category"] == "navigation.insurance"
     assert bg["care_stages"] == ["post_visit", "daily_living"]
@@ -635,9 +635,9 @@ def test_api_agents_list_taxonomy_fields(client: TestClient):
     assert bg["icon"] == "FileText"
     assert bg["maturity"] == "stable"
 
-    # Verify habit-companion
-    assert "habit-companion" in by_id
-    hc = by_id["habit-companion"]
+    # Verify habit-coordinator
+    assert "habit-coordinator" in by_id
+    hc = by_id["habit-coordinator"]
     assert hc["domain"] == "wellness"
     assert hc["category"] == "wellness.habits"
     assert hc["care_stages"] == ["daily_living"]
@@ -648,8 +648,8 @@ def test_api_agents_list_taxonomy_fields(client: TestClient):
 
 def test_api_agents_detail_taxonomy_fields(client: TestClient):
     """Verify that GET /api/agents/{agent_id} returns all 7 taxonomy fields on AgentDetailResponse."""
-    # 1. visit-steward
-    res_vs = client.get("/api/agents/visit-steward?allow_clinical=true")
+    # 1. appointment-prep-coordinator
+    res_vs = client.get("/api/agents/appointment-prep-coordinator?allow_clinical=true")
     assert res_vs.status_code == 200
     data_vs = res_vs.json()
     assert data_vs["domain"] == "navigation"
@@ -660,8 +660,8 @@ def test_api_agents_detail_taxonomy_fields(client: TestClient):
     assert data_vs["maturity"] == "stable"
     assert isinstance(data_vs["target_audience"], list)
 
-    # 2. benefits-guide
-    res_bg = client.get("/api/agents/benefits-guide")
+    # 2. benefits-coordinator
+    res_bg = client.get("/api/agents/benefits-coordinator")
     assert res_bg.status_code == 200
     data_bg = res_bg.json()
     assert data_bg["domain"] == "navigation"
@@ -671,8 +671,8 @@ def test_api_agents_detail_taxonomy_fields(client: TestClient):
     assert data_bg["icon"] == "FileText"
     assert data_bg["maturity"] == "stable"
 
-    # 3. habit-companion
-    res_hc = client.get("/api/agents/habit-companion")
+    # 3. habit-coordinator
+    res_hc = client.get("/api/agents/habit-coordinator")
     assert res_hc.status_code == 200
     data_hc = res_hc.json()
     assert data_hc["domain"] == "wellness"
@@ -721,7 +721,7 @@ def test_api_skills_detail_taxonomy_fields(client: TestClient):
 
 def test_api_agents_detail_resolved_skills_titles(client: TestClient):
     """Verify that GET /api/agents/{id} returns resolvedSkills with human-readable titles."""
-    res = client.get("/api/agents/cardiology-guide?allow_clinical=true")
+    res = client.get("/api/agents/heart-care-coordinator?allow_clinical=true")
     assert res.status_code == 200
     data = res.json()
     assert "resolvedSkills" in data

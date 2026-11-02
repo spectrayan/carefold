@@ -35,7 +35,7 @@ describe('Audit Logger & Privacy Redaction', () => {
   it('appends structured JSONL events with required schema fields', async () => {
     await recordAudit(
       {
-        agent_id: 'visit-steward',
+        agent_id: 'appointment-prep-coordinator',
         event: 'run',
         allowed: true,
         duration_ms: 120
@@ -49,7 +49,7 @@ describe('Audit Logger & Privacy Redaction', () => {
     expect(lines.length).toBe(1);
 
     const record = JSON.parse(lines[0]);
-    expect(record.agent_id).toBe('visit-steward');
+    expect(record.agent_id).toBe('appointment-prep-coordinator');
     expect(record.event).toBe('run');
     expect(record.allowed).toBe(true);
     expect(record.ts).toBeDefined();
@@ -59,7 +59,7 @@ describe('Audit Logger & Privacy Redaction', () => {
   it('strictly redacts prompt and completion bodies when storeBodies is false by default', async () => {
     await recordAudit(
       {
-        agent_id: 'visit-steward',
+        agent_id: 'appointment-prep-coordinator',
         event: 'run',
         allowed: true,
         prompt: 'Confidential patient question',
@@ -81,7 +81,7 @@ describe('Audit Logger & Privacy Redaction', () => {
   it('retains prompt and completion only when storeBodies is explicitly true', async () => {
     await recordAudit(
       {
-        agent_id: 'visit-steward',
+        agent_id: 'appointment-prep-coordinator',
         event: 'run',
         allowed: true,
         prompt: 'Operator test prompt',
@@ -100,7 +100,7 @@ describe('Audit Logger & Privacy Redaction', () => {
   it('records refused events when safety classifier triggers', async () => {
     await recordAudit(
       {
-        agent_id: 'visit-steward',
+        agent_id: 'appointment-prep-coordinator',
         event: 'refuse',
         allowed: false,
         reason: 'forbidden_intent:diagnose'
@@ -119,7 +119,7 @@ describe('Audit Logger & Privacy Redaction', () => {
   it('records tool authorization and denial events accurately', async () => {
     await recordAudit(
       {
-        agent_id: 'visit-steward',
+        agent_id: 'appointment-prep-coordinator',
         event: 'tool',
         tool: 'bash',
         allowed: false,
@@ -139,7 +139,7 @@ describe('Audit Logger & Privacy Redaction', () => {
     const writes = Array.from({ length: 25 }, (_, i) =>
       recordAudit(
         {
-          agent_id: 'visit-steward',
+          agent_id: 'appointment-prep-coordinator',
           event: 'run',
           allowed: true,
           duration_ms: i
@@ -154,7 +154,7 @@ describe('Audit Logger & Privacy Redaction', () => {
     const events = await readAuditEvents(auditFile);
     expect(events.length).toBe(25);
     for (const evt of events) {
-      expect(evt.agent_id).toBe('visit-steward');
+      expect(evt.agent_id).toBe('appointment-prep-coordinator');
       expect(evt.ts).toBeDefined();
     }
   });

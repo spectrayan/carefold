@@ -24,7 +24,7 @@ export async function createTestWorkspace(): Promise<string> {
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'carefold-test-'));
 
   // Scaffold workspace folders
-  await fs.mkdir(path.join(tmpDir, 'agents', 'visit-steward'), { recursive: true });
+  await fs.mkdir(path.join(tmpDir, 'agents', 'appointment-prep-coordinator'), { recursive: true });
   await fs.mkdir(path.join(tmpDir, 'skills', 'visit-prep', 'references'), { recursive: true });
   await fs.mkdir(path.join(tmpDir, 'skills', 'unverified-skill'), { recursive: true });
   await fs.mkdir(path.join(tmpDir, 'attachments'), { recursive: true });
@@ -32,9 +32,9 @@ export async function createTestWorkspace(): Promise<string> {
   await fs.mkdir(path.join(tmpDir, 'notes'), { recursive: true });
   await fs.mkdir(path.join(tmpDir, 'logs'), { recursive: true });
 
-  // 1. Valid visit-steward agent.yaml
+  // 1. Valid appointment-prep-coordinator agent.yaml
   const agentYaml = `
-id: visit-steward
+id: appointment-prep-coordinator
 title: Visit Steward
 version: 0.1.0
 risk_class: wellness
@@ -47,7 +47,7 @@ persona:
   tone: supportive
   instructions: You help someone prepare for a visit. You do not diagnose or dose.
 `;
-  await fs.writeFile(path.join(tmpDir, 'agents', 'visit-steward', 'agent.yaml'), agentYaml.trim());
+  await fs.writeFile(path.join(tmpDir, 'agents', 'appointment-prep-coordinator', 'agent.yaml'), agentYaml.trim());
 
   // 2. Valid visit-prep SKILL.md
   const skillMd = `---

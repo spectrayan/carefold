@@ -50,9 +50,9 @@ export interface HelpersClientProps {
 }
 
 function resolveAgentIcon(id?: string): React.ComponentType<{ className?: string }> {
-  if (id === 'visit-steward') return Stethoscope;
-  if (id === 'benefits-guide' || id === 'claims-appeals-guide') return FileText;
-  if (id === 'habit-companion') return HeartPulse;
+  if (id === 'appointment-prep-coordinator') return Stethoscope;
+  if (id === 'benefits-coordinator' || id === 'claims-appeals-coordinator') return FileText;
+  if (id === 'habit-coordinator') return HeartPulse;
   if (id?.includes('cardio')) return HeartPulse;
   return Shield;
 }

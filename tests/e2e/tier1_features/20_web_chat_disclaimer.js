@@ -41,7 +41,7 @@ from carefold.engine.runner import execute_agent_run
 
 async def main():
     tokens = []
-    async for event in execute_agent_run('visit-steward', 'Hello', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'Hello', mock=True):
         if event.get('type') == 'token':
             tokens.append(event.get('delta', ''))
     assert len(tokens) > 0
@@ -58,7 +58,7 @@ asyncio.run(main())
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent_starters
-starters = load_agent_starters('agents/visit-steward')
+starters = load_agent_starters('agents/appointment-prep-coordinator')
 assert len(starters) >= 1
 assert all(len(s) > 5 for s in starters)
 `;
@@ -77,7 +77,7 @@ from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
 
 async def main():
     refusal_msg = None
-    async for event in execute_agent_run('visit-steward', 'Do I have type 2 diabetes?', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'Do I have type 2 diabetes?', mock=True):
         if event.get('type') == 'refusal':
             refusal_msg = event.get('message')
     assert refusal_msg == SAFE_REFUSAL_TEMPLATE
@@ -98,7 +98,7 @@ from carefold.engine.runner import execute_agent_run
 
 async def main():
     done_event = None
-    async for event in execute_agent_run('visit-steward', 'Hello', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'Hello', mock=True):
         if event.get('type') == 'done':
             done_event = event
     assert done_event is not None

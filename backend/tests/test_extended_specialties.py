@@ -53,7 +53,7 @@ from evals.runner import EvalCase, run_single_eval
 # ============================================================================
 
 EXTENDED_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
-    "oncology-navigator": {
+    "cancer-care-coordinator": {
         "title": "Oncology Care Steward",
         "alt_title": "Oncology Navigator",
         "companion_skill": "oncology-prep",
@@ -62,7 +62,7 @@ EXTENDED_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "oncology",
         "fts_query": "cancer",
     },
-    "rheuma-guide": {
+    "autoimmune-care-coordinator": {
         "title": "Rheumatology Navigator",
         "companion_skill": "rheuma-prep",
         "category": "clinical.rheumatology",
@@ -70,7 +70,7 @@ EXTENDED_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "rheumatology",
         "fts_query": "lupus",
     },
-    "urology-guide": {
+    "bladder-pelvic-health-coordinator": {
         "title": "Urology Navigator",
         "companion_skill": "urology-prep",
         "category": "clinical.urology",
@@ -78,7 +78,7 @@ EXTENDED_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "urology",
         "fts_query": "prostate",
     },
-    "eye-guide": {
+    "eye-care-coordinator": {
         "title": "Ophthalmology Navigator",
         "alt_title": "Eye Care Navigator",
         "companion_skill": "vision-prep",
@@ -87,7 +87,7 @@ EXTENDED_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "ophthalmology",
         "fts_query": "glaucoma",
     },
-    "ent-guide": {
+    "ent-care-coordinator": {
         "title": "ENT Navigator",
         "alt_title": "ENT / Otolaryngology Navigator",
         "companion_skill": "ent-prep",

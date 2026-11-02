@@ -44,7 +44,7 @@ describe('ChatStudioShell Component (/p/[profileId]/chat)', () => {
     }
     saveSession({
       id: 'thread-rosa-1',
-      agentId: 'visit-steward',
+      agentId: 'appointment-prep-coordinator',
       agentTitle: 'Visit Steward',
       title: 'Cardiology prep for Oct 13',
       createdAt: new Date().toISOString(),

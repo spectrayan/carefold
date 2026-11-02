@@ -29,7 +29,7 @@ The Carefold roadmap outlines the architectural and community milestones driving
 ## Phase 1: Clinical Expansion & Hexagonal Architecture (Completed — v0.3.0)
 
 - [x] **Agent & Skill Scalability**:
-  - Expanded specialist catalog to 23 clinical organ navigators and administrative guides (including `hematology-guide`).
+  - Expanded specialist catalog to 23 clinical organ navigators and administrative guides (including `blood-health-coordinator`).
   - Authored verified clinical and navigation skill packs with evidence-based references.
 - [x] **Hexagonal Ports-and-Adapters Architecture**:
   - `MemoryPort` defining 4 cognitive tiers (`WORKING`, `EPISODIC`, `SEMANTIC`, `PROCEDURAL`).

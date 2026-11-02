@@ -111,7 +111,7 @@ async def memory_catalog() -> SqliteCatalogAdapter:
     catalog = SqliteCatalogAdapter(db_path=":memory:")
     base_agents = [
         make_synthetic_agent(
-            agent_id="benefits-guide",
+            agent_id="benefits-coordinator",
             title="Benefits Guide",
             domain="navigation",
             category="navigation.insurance",
@@ -119,7 +119,7 @@ async def memory_catalog() -> SqliteCatalogAdapter:
             tags=["insurance", "benefits", "eob", "deductible", "copay"],
         ),
         make_synthetic_agent(
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             title="Visit Steward",
             domain="navigation",
             category="navigation.appointments",
@@ -127,7 +127,7 @@ async def memory_catalog() -> SqliteCatalogAdapter:
             tags=["appointment", "doctor", "visit-prep", "checklist"],
         ),
         make_synthetic_agent(
-            agent_id="habit-companion",
+            agent_id="habit-coordinator",
             title="Habit Companion",
             domain="wellness",
             category="wellness.habits",
@@ -191,9 +191,9 @@ class TestTokenBoundsAndPromptInvariants:
 
         # Strict isolation: Zero agent IDs or agent catalog listings
         forbidden_agent_names = [
-            "benefits-guide",
-            "visit-steward",
-            "habit-companion",
+            "benefits-coordinator",
+            "appointment-prep-coordinator",
+            "habit-coordinator",
             "document-extractor",
             "orchestrator",
             "Available Specialist Agents",
@@ -350,36 +350,36 @@ class TestBackwardCompatibilityCatalogNone:
 
         # 1. Standard explicit current_agent
         r1 = await node.execute({
-            "current_agent": "benefits-guide",
+            "current_agent": "benefits-coordinator",
             "messages": [HumanMessage(content="Random prompt")],
         })
-        assert r1["current_agent"] == "benefits-guide"
+        assert r1["current_agent"] == "benefits-coordinator"
         assert "Explicitly requested" in r1["orchestrator_reasoning"]
 
         # 2. Normalization: underscore to hyphen
         r2 = await node.execute({
-            "current_agent": "visit_steward",
+            "current_agent": "appointment_prep_coordinator",
             "messages": [HumanMessage(content="Random prompt")],
         })
-        assert r2["current_agent"] == "visit-steward"
+        assert r2["current_agent"] == "appointment-prep-coordinator"
 
         # 3. Normalization: uppercase
         r3 = await node.execute({
             "current_agent": "HABIT-COMPANION",
             "messages": [HumanMessage(content="Random prompt")],
         })
-        assert r3["current_agent"] == "habit-companion"
+        assert r3["current_agent"] == "habit-coordinator"
 
         # 4. Routed subgraph takes precedence
         r4 = await node.execute({
-            "routed_subgraph": "habit-companion",
+            "routed_subgraph": "habit-coordinator",
             "messages": [HumanMessage(content="Random prompt")],
         })
-        assert r4["current_agent"] == "habit-companion"
+        assert r4["current_agent"] == "habit-coordinator"
 
         # 5. Self-routing (orchestrator / supervisor) does NOT bypass
         fake_model = FakeListChatModel(responses=[
-            json.dumps({"agent_id": "benefits-guide", "reasoning": "Model decision", "instructions": ""})
+            json.dumps({"agent_id": "benefits-coordinator", "reasoning": "Model decision", "instructions": ""})
         ])
         node_with_model = OrchestratorNode(model=fake_model, registry=registry, catalog=None)
 
@@ -387,7 +387,7 @@ class TestBackwardCompatibilityCatalogNone:
             "current_agent": "orchestrator",
             "messages": [HumanMessage(content="What is my copay?")],
         })
-        assert r5["current_agent"] == "benefits-guide"
+        assert r5["current_agent"] == "benefits-coordinator"
         assert r5["orchestrator_reasoning"] == "Model decision"
 
     @pytest.mark.asyncio
@@ -423,26 +423,26 @@ class TestBackwardCompatibilityCatalogNone:
         # 1. Missing skill in state during explicit bypass
         node = OrchestratorNode(model=None, registry=registry, catalog=None)
         res1 = await node.execute({
-            "current_agent": "visit-steward",
+            "current_agent": "appointment-prep-coordinator",
             "missing_skill": "chemotherapy-checklist",
             "missing_skill_description": "Checklist for chemo appointment",
             "messages": [HumanMessage(content="Chemo prep")],
         })
-        assert res1["current_agent"] == "visit-steward"
+        assert res1["current_agent"] == "appointment-prep-coordinator"
         assert "generated_skill" in res1
         assert res1["generated_skill"]["id"] == "chemotherapy-checklist"
         assert len(res1["generated_skills"]) == 1
 
         # 2. Missing skill requested by LLM decision
         model_resp = json.dumps({
-            "agent_id": "benefits-guide",
+            "agent_id": "benefits-coordinator",
             "reasoning": "Needs insurance review.",
             "instructions": "Review coverage.",
-            "missing_skill": "prior-auth-navigator",
+            "missing_skill": "prior-authorization-coordinator",
             "missing_skill_description": "Steps for prior authorization appeals",
         })
         skill_resp = json.dumps({
-            "id": "prior-auth-navigator",
+            "id": "prior-authorization-coordinator",
             "name": "Prior Auth Navigator",
             "description": "Steps for prior authorization appeals",
             "instructions": "Step by step prior authorization appeal guidance.",
@@ -453,9 +453,9 @@ class TestBackwardCompatibilityCatalogNone:
         node_with_model = OrchestratorNode(model=fake_model, registry=registry, catalog=None)
 
         res2 = await node_with_model.execute({"messages": [HumanMessage(content="How do I appeal prior auth?")]})
-        assert res2["current_agent"] == "benefits-guide"
+        assert res2["current_agent"] == "benefits-coordinator"
         assert "generated_skill" in res2
-        assert res2["generated_skill"]["id"] == "prior-auth-navigator"
+        assert res2["generated_skill"]["id"] == "prior-authorization-coordinator"
 
 
 # ============================================================================
@@ -481,12 +481,12 @@ class TestSupervisorNodeBackwardCompatibility:
         sup = SupervisorNode()
 
         test_matrix = [
-            ("What is my insurance copay?", "benefits-guide"),
-            ("Explain my deductible and out of pocket max", "benefits-guide"),
-            ("How much water should I drink for hydration?", "habit-companion"),
-            ("Track my sleep habits and bedtime routine", "habit-companion"),
-            ("Questions to ask my doctor during appointment", "visit-steward"),
-            ("Upcoming clinical clinic visit prep", "visit-steward"),
+            ("What is my insurance copay?", "benefits-coordinator"),
+            ("Explain my deductible and out of pocket max", "benefits-coordinator"),
+            ("How much water should I drink for hydration?", "habit-coordinator"),
+            ("Track my sleep habits and bedtime routine", "habit-coordinator"),
+            ("Questions to ask my doctor during appointment", "appointment-prep-coordinator"),
+            ("Upcoming clinical clinic visit prep", "appointment-prep-coordinator"),
             ("Completely novel query with no keywords", DEFAULT_ROUTING_FALLBACK_AGENT),
         ]
 
@@ -511,18 +511,18 @@ class TestSupervisorNodeBackwardCompatibility:
 
         # Explicit bypass
         res_byp = await sup.execute({
-            "current_agent": "habit-companion",
+            "current_agent": "habit-coordinator",
             "messages": [HumanMessage(content="Hello")],
         })
-        assert res_byp["current_agent"] == "habit-companion"
-        assert res_byp["routed_subgraph"] == "habit-companion"
+        assert res_byp["current_agent"] == "habit-coordinator"
+        assert res_byp["routed_subgraph"] == "habit-coordinator"
 
     @pytest.mark.asyncio
     async def test_supervisor_node_with_model_structured_output(self, temp_workspace: Path):
         """Verifies SupervisorNode initialized with a chat model executes dynamic routing."""
         registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
         model_resp = json.dumps({
-            "agent_id": "benefits-guide",
+            "agent_id": "benefits-coordinator",
             "reasoning": "Insurance benefits question.",
             "instructions": "Clarify copay.",
         })
@@ -530,8 +530,8 @@ class TestSupervisorNodeBackwardCompatibility:
         sup = SupervisorNode(model=fake_model, registry=registry)
 
         res = await sup.execute({"messages": [HumanMessage(content="What is my copay?")]})
-        assert res["current_agent"] == "benefits-guide"
-        assert res["routed_subgraph"] == "benefits-guide"
+        assert res["current_agent"] == "benefits-coordinator"
+        assert res["routed_subgraph"] == "benefits-coordinator"
         assert res["orchestrator_instructions"] == "Clarify copay."
 
     @pytest.mark.asyncio
@@ -547,8 +547,8 @@ class TestSupervisorNodeBackwardCompatibility:
             "reasoning": "Habit and hydration query.",
         })
         tier2_resp = json.dumps({
-            "agent_id": "habit-companion",
-            "reasoning": "Selected habit-companion from candidate set.",
+            "agent_id": "habit-coordinator",
+            "reasoning": "Selected habit-coordinator from candidate set.",
             "instructions": "Set a goal of 64 ounces of water daily.",
         })
 
@@ -558,8 +558,8 @@ class TestSupervisorNodeBackwardCompatibility:
         sup.catalog = memory_catalog
 
         res = await sup.execute({"messages": [HumanMessage(content="Water intake routine")]})
-        assert res["current_agent"] == "habit-companion"
-        assert res["routed_subgraph"] == "habit-companion"
+        assert res["current_agent"] == "habit-coordinator"
+        assert res["routed_subgraph"] == "habit-coordinator"
         assert res["orchestrator_instructions"] == "Set a goal of 64 ounces of water daily."
 
 
@@ -581,7 +581,7 @@ class TestAdversarialEdgeCasesAndResilience:
             # Markdown block with invalid JSON
             "```json\n{ not valid json ...\n```",
             # Plain non-JSON string
-            "I recommend delegating to benefits-guide because of coverage rules.",
+            "I recommend delegating to benefits-coordinator because of coverage rules.",
             # Valid JSON but wrong types
             json.dumps({"agent_id": 12345, "reasoning": None, "instructions": []}),
             # Empty string
@@ -596,7 +596,7 @@ class TestAdversarialEdgeCasesAndResilience:
             res = await node.execute({"messages": [HumanMessage(content="What is my in-network copay?")]})
 
             assert res["current_agent"] in registry.list_agent_ids()
-            assert res["current_agent"] == "benefits-guide"
+            assert res["current_agent"] == "benefits-coordinator"
 
     @pytest.mark.asyncio
     async def test_empty_catalog_fallback(self, temp_workspace: Path):
@@ -615,8 +615,8 @@ class TestAdversarialEdgeCasesAndResilience:
         # Prompt has benefits keyword 'copay'
         res = await node.execute({"messages": [HumanMessage(content="Explain my insurance copay")]})
 
-        # All 3 catalog queries return 0 candidates -> step 4 triggers pattern fallback to benefits-guide
-        assert res["current_agent"] == "benefits-guide"
+        # All 3 catalog queries return 0 candidates -> step 4 triggers pattern fallback to benefits-coordinator
+        assert res["current_agent"] == "benefits-coordinator"
         assert "pattern fallback" in res["orchestrator_reasoning"].lower()
 
         await empty_catalog.close()
@@ -630,7 +630,7 @@ class TestAdversarialEdgeCasesAndResilience:
 
         async def run_one(idx: int) -> Dict[str, Any]:
             is_even = (idx % 2 == 0)
-            agent = "benefits-guide" if is_even else "habit-companion"
+            agent = "benefits-coordinator" if is_even else "habit-coordinator"
             domain = "navigation" if is_even else "wellness"
             category = "navigation.insurance" if is_even else "wellness.habits"
             prompt = "What is my copay?" if is_even else "How much water to drink?"
@@ -646,6 +646,6 @@ class TestAdversarialEdgeCasesAndResilience:
 
         assert len(results) == 20
         for i, res in enumerate(results):
-            expected = "benefits-guide" if i % 2 == 0 else "habit-companion"
+            expected = "benefits-coordinator" if i % 2 == 0 else "habit-coordinator"
             assert res["current_agent"] == expected
             assert res["routed_subgraph"] == expected

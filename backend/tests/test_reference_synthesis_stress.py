@@ -53,7 +53,7 @@ async def test_synthesize_reference_doc_when_disk_raises_permission_error():
                 skill_id="cardiology-prep",
                 doc_name="hypertension_log_template.md",
                 user_query="My BP is 150/95 and I have headaches",
-                target_agent="cardiology-guide",
+                target_agent="heart-care-coordinator",
                 state=state,
             )
 
@@ -85,7 +85,7 @@ async def test_synthesize_reference_doc_actual_chmod_readonly_directory():
                 skill_id="pulmonology-prep",
                 doc_name="dyspnea_symptom_tracker.md",
                 user_query="I have shortness of breath on exertion",
-                target_agent="pulmonology-guide",
+                target_agent="lung-breathing-coordinator",
                 state=state,
             )
 
@@ -121,7 +121,7 @@ async def test_synthesize_reference_doc_when_missing_on_disk():
             skill_id="visit-prep",
             doc_name="pre_visit_checklist.md",
             user_query="Annual wellness check questions",
-            target_agent="visit-steward",
+            target_agent="appointment-prep-coordinator",
             state=state,
         )
 
@@ -161,7 +161,7 @@ async def test_synthesize_reference_doc_rejects_conversational_refusal_from_mode
             skill_id="cardiology-prep",
             doc_name="hypertension_log_template.md",
             user_query="BP is high",
-            target_agent="cardiology-guide",
+            target_agent="heart-care-coordinator",
             state=state,
         )
 
@@ -192,7 +192,7 @@ async def test_orchestrator_dynamic_provisioning_under_readonly_disk():
             "provisioned_references": {},
         }
         gen_skills, gen_skill, prov_docs = await orchestrator._preflight_prepare_skills_and_docs(
-            target_agent="cardiology-guide",
+            target_agent="heart-care-coordinator",
             missing_skill=None,
             missing_skill_description="",
             required_docs=[non_existent_doc],
@@ -250,7 +250,7 @@ async def test_synthesize_reference_doc_when_resolve_skills_dir_raises():
             skill_id="endocrinology-prep",
             doc_name="glucose_log_template.md",
             user_query="CGM monitoring data",
-            target_agent="endocrinology-guide",
+            target_agent="diabetes-thyroid-coordinator",
             state=None,  # test state=None as well
         )
 
@@ -271,7 +271,7 @@ async def test_synthesize_reference_doc_with_extreme_query_and_none_state(tmp_pa
         skill_id="gastro-prep",
         doc_name="ibd_food_tracker.md",
         user_query=huge_query,
-        target_agent="gastro-guide",
+        target_agent="digestive-health-coordinator",
         state=None,
     )
 
@@ -284,74 +284,74 @@ async def test_synthesize_reference_doc_with_extreme_query_and_none_state(tmp_pa
 def test_execution_plan_validation_and_field_sync():
     """Verify ExecutionPlan and AgentTask schema validation, serialization, and alias synchronization."""
     # Test AgentTask field sync: task_description -> instructions
-    task1 = AgentTask(agent_id="cardiology-guide", task_description="Review ECG")
+    task1 = AgentTask(agent_id="heart-care-coordinator", task_description="Review ECG")
     assert task1.instructions == "Review ECG"
     assert task1.task_description == "Review ECG"
 
     # Test AgentTask field sync: instructions -> task_description
-    task2 = AgentTask(agent_id="nephrology-guide", instructions="Check eGFR")
+    task2 = AgentTask(agent_id="kidney-care-coordinator", instructions="Check eGFR")
     assert task2.instructions == "Check eGFR"
     assert task2.task_description == "Check eGFR"
 
     # Test dependencies <-> depends_on sync
-    task3 = AgentTask(agent_id="prior-auth-navigator", dependencies=["cardiology-guide"])
-    assert task3.depends_on == ["cardiology-guide"]
+    task3 = AgentTask(agent_id="prior-authorization-coordinator", dependencies=["heart-care-coordinator"])
+    assert task3.depends_on == ["heart-care-coordinator"]
 
     # Test ExecutionPlan schema
     plan = ExecutionPlan(
         mode=ExecutionMode.PARALLEL,
-        target_agents=["cardiology-guide", "nephrology-guide"],
+        target_agents=["heart-care-coordinator", "kidney-care-coordinator"],
         tasks=[task1, task2],
         reasoning="Cardiorenal multimorbid evaluation",
     )
     d = plan.to_dict()
     assert d["mode"] == "parallel"
     assert len(d["tasks"]) == 2
-    assert d["target_agents"] == ["cardiology-guide", "nephrology-guide"]
+    assert d["target_agents"] == ["heart-care-coordinator", "kidney-care-coordinator"]
     rebuilt = ExecutionPlan.model_validate(d)
     assert rebuilt.mode == ExecutionMode.PARALLEL
 
 
 @pytest.mark.asyncio
-async def test_reproduce_defect_prior_auth_hijacked_by_visit_steward():
+async def test_reproduce_defect_prior_auth_hijacked_by_appointment_prep_coordinator():
     """SYSTEMATIC VERIFICATION REPRODUCTION:
 
     Demonstrates that OrchestratorNode._route over-eagerly hijacks prior-auth queries
-    containing generic words like 'medication' and routes them to 'visit-steward' as
-    effective_agent / current_agent, overriding the classifier's selection of 'prior-auth-navigator'.
+    containing generic words like 'medication' and routes them to 'appointment-prep-coordinator' as
+    effective_agent / current_agent, overriding the classifier's selection of 'prior-authorization-coordinator'.
     """
     from langchain_core.messages import HumanMessage
     from carefold.memory.adapters.sqlite.catalog_adapter import SqliteCatalogAdapter
     from carefold.agents.registry import AgentRegistry
     from carefold.config import settings
 
-    # Setup orchestrator with minimal mock returning prior-auth-navigator
+    # Setup orchestrator with minimal mock returning prior-authorization-coordinator
     node = OrchestratorNode()
 
     # User asking an administrative prior authorization question for medication
     query = "Insurance denied my medication requiring prior authorization and step therapy fail first"
     state = {
         "messages": [HumanMessage(content=query)],
-        "routed_subgraph": "prior-auth-navigator",
-        "current_agent": "prior-auth-navigator",
+        "routed_subgraph": "prior-authorization-coordinator",
+        "current_agent": "prior-authorization-coordinator",
     }
 
     # When explicit routed_subgraph is given, execute respects it:
     res1 = await node.execute(state)
-    assert res1["current_agent"] == "prior-auth-navigator"
+    assert res1["current_agent"] == "prior-authorization-coordinator"
 
-    # But when determined via LLM / 2-tier classifier decision (target_agent="prior-auth-navigator"):
+    # But when determined via LLM / 2-tier classifier decision (target_agent="prior-authorization-coordinator"):
     # In _route:
     plan = node._route(
-        target_agent="prior-auth-navigator",
+        target_agent="prior-authorization-coordinator",
         prompt_text=query,
         state={},
     )
     # DEFECT: Because 'medication' is in specialty_keywords, _route treats this as cross-functional
-    # and defaults primary_agent to 'visit-steward' instead of keeping prior-auth-navigator!
+    # and defaults primary_agent to 'appointment-prep-coordinator' instead of keeping prior-authorization-coordinator!
     print("Computed plan mode:", plan.mode)
     print("Computed target agents:", plan.target_agents)
     assert plan.mode == ExecutionMode.SINGLE
-    assert plan.target_agents == ["prior-auth-navigator"]
-    assert plan.target_agents[0] == "prior-auth-navigator"
+    assert plan.target_agents == ["prior-authorization-coordinator"]
+    assert plan.target_agents[0] == "prior-authorization-coordinator"
 

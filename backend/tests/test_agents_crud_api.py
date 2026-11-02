@@ -45,8 +45,8 @@ def test_list_agents(client: TestClient):
     assert resp.status_code == 200
     agents = resp.json()
     assert len(agents) > 0
-    # cardiology-guide should exist
-    cardio = next((a for a in agents if a["id"] == "cardiology-guide"), None)
+    # heart-care-coordinator should exist
+    cardio = next((a for a in agents if a["id"] == "heart-care-coordinator"), None)
     assert cardio is not None
     assert cardio["is_bundled"] is True
     assert cardio["type"] in ("bundled", "system")
@@ -88,10 +88,10 @@ def test_create_custom_agent(client: TestClient):
 
 def test_get_agent_detail(client: TestClient):
     """Verifies getting agent detail with resolved skills and tool definitions."""
-    resp = client.get("/api/agents/cardiology-guide?allow_clinical=true")
+    resp = client.get("/api/agents/heart-care-coordinator?allow_clinical=true")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["id"] == "cardiology-guide"
+    assert data["id"] == "heart-care-coordinator"
     assert len(data["skills"]) > 0
     assert len(data["effectiveTools"]) > 0
 
@@ -138,7 +138,7 @@ def test_delete_agent(client: TestClient):
 
 def test_prevent_delete_bundled_agent(client: TestClient):
     """Verifies that bundled agents cannot be deleted by non-admin users."""
-    del_resp = client.delete("/api/agents/cardiology-guide")
+    del_resp = client.delete("/api/agents/heart-care-coordinator")
     assert del_resp.status_code in (403, 404)
 
 

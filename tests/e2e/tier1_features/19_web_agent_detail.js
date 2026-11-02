@@ -23,8 +23,8 @@ export async function run() {
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent
-agent, tools, skills = load_agent('agents/visit-steward', 'skills')
-assert agent.id == 'visit-steward'
+agent, tools, skills = load_agent('agents/appointment-prep-coordinator', 'skills')
+assert agent.id == 'appointment-prep-coordinator'
 assert agent.title == 'Visit Steward'
 assert len(skills) == 1
 assert skills[0].id == 'visit-prep'
@@ -39,7 +39,7 @@ assert skills[0].id == 'visit-prep'
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent
-agent, tools, skills = load_agent('agents/visit-steward', 'skills')
+agent, tools, skills = load_agent('agents/appointment-prep-coordinator', 'skills')
 if hasattr(agent.persona, 'role'):
     assert agent.persona.role is not None
 else:
@@ -56,7 +56,7 @@ else:
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent_starters
-starters = load_agent_starters('agents/visit-steward')
+starters = load_agent_starters('agents/appointment-prep-coordinator')
 assert len(starters) >= 1
 assert all(isinstance(s, str) for s in starters)
 `;
@@ -70,7 +70,7 @@ assert all(isinstance(s, str) for s in starters)
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent_readme
-readme = load_agent_readme('agents/visit-steward')
+readme = load_agent_readme('agents/appointment-prep-coordinator')
 assert readme is not None
 assert 'Visit Steward' in readme
 `;
@@ -84,7 +84,7 @@ assert 'Visit Steward' in readme
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent
-for aid in ['visit-steward', 'benefits-guide', 'habit-companion']:
+for aid in ['appointment-prep-coordinator', 'benefits-coordinator', 'habit-coordinator']:
     agent, _, _ = load_agent(f'agents/{aid}', 'skills')
     chat_url = f'/chat?agent={agent.id}'
     assert chat_url == f'/chat?agent={aid}'

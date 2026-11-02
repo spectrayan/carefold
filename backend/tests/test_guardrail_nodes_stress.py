@@ -384,7 +384,7 @@ class TestAdversarialSuggestionNode:
         # Case A: is_refusal=True
         res_a = await node.execute({
             "is_refusal": True,
-            "current_agent": "visit-steward",
+            "current_agent": "appointment-prep-coordinator",
             "output": "Standard refusal disclaimer",
         })
         assert res_a["follow_up_suggestions"] == []
@@ -393,7 +393,7 @@ class TestAdversarialSuggestionNode:
         # Case B: refused=True
         res_b = await node.execute({
             "refused": True,
-            "current_agent": "benefits-guide",
+            "current_agent": "benefits-coordinator",
             "output": "Standard refusal disclaimer",
         })
         assert res_b["follow_up_suggestions"] == []
@@ -402,7 +402,7 @@ class TestAdversarialSuggestionNode:
     @pytest.mark.asyncio
     async def test_suggestion_chip_count_never_exceeds_four(self):
         node = SuggestionNode()
-        agents = ["benefits-guide", "visit-steward", "habit-companion", "generalist"]
+        agents = ["benefits-coordinator", "appointment-prep-coordinator", "habit-coordinator", "generalist"]
         for agent in agents:
             res = await node.execute({
                 "is_refusal": False,

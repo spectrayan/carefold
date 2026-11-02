@@ -246,7 +246,7 @@ class TestClinicalSafetyMiddlewareRiskAndDisclaimers:
         mw = ClinicalSafetyMiddleware()
         state = {
             "skills_metadata": [
-                {"name": "habit-companion", "metadata": {"risk_class": "wellness"}},
+                {"name": "habit-coordinator", "metadata": {"risk_class": "wellness"}},
                 {"name": "template-guide", "metadata": {"risk_class": "education"}},
             ]
         }

@@ -27,7 +27,7 @@ from carefold.engine.runner import execute_agent_run
 
 async def main():
     tokens = []
-    async for event in execute_agent_run('visit-steward', 'Help me prepare questions for my appointment', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'Help me prepare questions for my appointment', mock=True):
         if event.get('type') == 'token':
             tokens.append(event.get('delta', ''))
     assert len(tokens) > 0
@@ -51,7 +51,7 @@ from carefold.engine.runner import execute_agent_run
 async def main():
     tool_starts = []
     tool_ends = []
-    async for event in execute_agent_run('visit-steward', 'Please check the questions checklist for my visit', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'Please check the questions checklist for my visit', mock=True):
         if event.get('type') == 'tool_start':
             tool_starts.append(event)
         elif event.get('type') == 'tool_end':
@@ -77,7 +77,7 @@ from carefold.engine.runner import execute_agent_run
 
 async def main():
     done_event = None
-    async for event in execute_agent_run('visit-steward', 'Give me three tips for my doctor appointment', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'Give me three tips for my doctor appointment', mock=True):
         if event.get('type') == 'done':
             done_event = event
     assert done_event is not None
@@ -101,7 +101,7 @@ from carefold.engine.runner import execute_agent_run
 
 async def main():
     events = []
-    async for event in execute_agent_run('visit-steward', 'You have acute asthma. Stop taking insulin.', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'You have acute asthma. Stop taking insulin.', mock=True):
         events.append(event)
     types = [e.get('type') for e in events]
     assert 'refusal' in types
@@ -127,10 +127,10 @@ from carefold.engine.runner import execute_agent_run
 async def main():
     run_audit_id = None
     refuse_audit_id = None
-    async for event in execute_agent_run('visit-steward', 'Hello', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'Hello', mock=True):
         if event.get('type') == 'done':
             run_audit_id = event.get('auditEventId')
-    async for event in execute_agent_run('visit-steward', 'Take 500mg amoxicillin', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'Take 500mg amoxicillin', mock=True):
         if event.get('type') == 'done':
             refuse_audit_id = event.get('auditEventId')
     assert run_audit_id is not None

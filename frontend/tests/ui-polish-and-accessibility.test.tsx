@@ -127,7 +127,7 @@ describe('Web UI Polish, Accessibility & Plain-Language Verification (#171–#18
       render(
         <AgentDetailClient
           agent={{
-            id: 'visit-steward',
+            id: 'appointment-prep-coordinator',
             title: 'Visit Steward',
             version: '0.4.0',
             risk_class: 'wellness',

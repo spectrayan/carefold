@@ -42,8 +42,8 @@ for a in agents:
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent
-vs, _, _ = load_agent('agents/visit-steward', 'skills')
-bg, _, _ = load_agent('agents/benefits-guide', 'skills')
+vs, _, _ = load_agent('agents/appointment-prep-coordinator', 'skills')
+bg, _, _ = load_agent('agents/benefits-coordinator', 'skills')
 assert vs.risk_class.value == 'wellness'
 assert bg.risk_class.value == 'admin'
 `;
@@ -75,7 +75,7 @@ for a in agents:
         const script = `
 from carefold.loaders.agent_loader import load_all_agents
 agents = load_all_agents('agents', 'skills')
-vs = next(a for a in agents if a.id == 'visit-steward')
+vs = next(a for a in agents if a.id == 'appointment-prep-coordinator')
 assert 'visit-prep' in vs.skills
 assert 'attach-read' in vs.effectiveTools
 assert 'workspace-note' in vs.effectiveTools

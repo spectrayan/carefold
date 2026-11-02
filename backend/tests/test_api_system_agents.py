@@ -13,7 +13,7 @@
 
 Validates:
 1. GET /api/agents behavior:
-   - Default request excludes system agents (only benefits-guide, habit-companion, visit-steward returned).
+   - Default request excludes system agents (only benefits-coordinator, habit-coordinator, appointment-prep-coordinator returned).
    - include_hidden=true includes orchestrator, document-extractor, skill-generator, suggestion-generator.
    - _template is never returned in either case.
 2. GET /api/agents/{agent_id}:
@@ -33,29 +33,29 @@ import pytest
 from fastapi.testclient import TestClient
 
 EXPECTED_PUBLIC_AGENT_IDS: Set[str] = {
-    "benefits-guide",
-    "habit-companion",
-    "visit-steward",
+    "benefits-coordinator",
+    "habit-coordinator",
+    "appointment-prep-coordinator",
     # Core Organ Navigators
-    "cardiology-guide",
-    "pulmonology-guide",
-    "neurology-guide",
-    "gastro-guide",
-    "nephrology-guide",
-    "endocrinology-guide",
-    "ortho-guide",
-    "derma-guide",
+    "heart-care-coordinator",
+    "lung-breathing-coordinator",
+    "brain-nerve-health-coordinator",
+    "digestive-health-coordinator",
+    "kidney-care-coordinator",
+    "diabetes-thyroid-coordinator",
+    "bone-joint-care-coordinator",
+    "skin-care-coordinator",
     # Extended Specialty Navigators
-    "oncology-navigator",
-    "rheuma-guide",
-    "urology-guide",
-    "eye-guide",
-    "ent-guide",
+    "cancer-care-coordinator",
+    "autoimmune-care-coordinator",
+    "bladder-pelvic-health-coordinator",
+    "eye-care-coordinator",
+    "ent-care-coordinator",
     # Healthcare Administration Stewards
-    "prior-auth-navigator",
-    "claims-appeals-guide",
+    "prior-authorization-coordinator",
+    "claims-appeals-coordinator",
     "records-coordinator",
-    "formulary-guide",
+    "prescription-cost-coordinator",
 }
 
 EXPECTED_SYSTEM_AGENT_IDS: Set[str] = {

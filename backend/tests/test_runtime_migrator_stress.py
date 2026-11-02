@@ -271,9 +271,9 @@ def test_power_cut_simulated_leftover_tmp_files_cleaned_and_overwritten(tmp_path
         ),
         (
             # Binary-like unicode noise in body and frontmatter
-            "---\ntitle: 'Unicode 🏥 🩺'\nagent_id: 'cardiology-guide'\n---\n# Header 💉\nContent \x00\x01\x02 \U0001F600",
+            "---\ntitle: 'Unicode 🏥 🩺'\nagent_id: 'heart-care-coordinator'\n---\n# Header 💉\nContent \x00\x01\x02 \U0001F600",
             "Unicode 🏥 🩺",
-            ["cardiology-guide"],
+            ["heart-care-coordinator"],
         ),
     ],
 )
@@ -563,7 +563,7 @@ def test_notes_table_plural_schema_variation(tmp_path: Path) -> None:
     notes_dir = tmp_path / "notes"
     notes_dir.mkdir()
     (notes_dir / "profile-note.md").write_text(
-        "---\ntitle: 'Profile Scoped Note'\nprofile_id: 'prof-999'\nagent: 'derma-guide'\n---\n# Derm note\nSkin rash check.",
+        "---\ntitle: 'Profile Scoped Note'\nprofile_id: 'prof-999'\nagent: 'skin-care-coordinator'\n---\n# Derm note\nSkin rash check.",
         encoding="utf-8",
     )
 
@@ -578,7 +578,7 @@ def test_notes_table_plural_schema_variation(tmp_path: Path) -> None:
         assert row[1] == "prof-999"  # resolved profile_id from frontmatter
         assert row[2] == "profile-note"
         assert row[3] == "Profile Scoped Note"
-        assert "derma-guide" in row[5]
+        assert "skin-care-coordinator" in row[5]
 
 
 # ==============================================================================

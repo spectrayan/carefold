@@ -18,7 +18,7 @@
 
 ## Context & Problem Statement
 
-Carefold's current skill-context pipeline suffers from **prompt bloat** and **eager over-provisioning**. When a specialist agent (e.g., `cardiology-guide`) is invoked, the system concatenates:
+Carefold's current skill-context pipeline suffers from **prompt bloat** and **eager over-provisioning**. When a specialist agent (e.g., `heart-care-coordinator`) is invoked, the system concatenates:
 
 1. The full safety preamble (~200 tokens).
 2. The complete agent persona (`persona.md`, 500–1500 tokens).
@@ -458,7 +458,7 @@ Every Carefold `persona.md` follows a **rigid 5-section anatomy**:
 Similarly, `agent.yaml` carries operational metadata:
 
 ```yaml
-id: cardiology-guide
+id: heart-care-coordinator
 title: Cardiology Navigator
 model: llama3.2
 risk_class: wellness
@@ -633,14 +633,14 @@ Under progressive disclosure, this **only loads when the agent activates `cardio
 
 **Before (current):**
 ```
-agents/cardiology-guide/
+agents/heart-care-coordinator/
 ├── agent.yaml          # 45 lines — mixes runtime, safety, marketplace, persona ref
 └── persona.md          # 19 lines — mixes identity, protocol, safety, emergencies
 ```
 
 **After (canonical layout — single persona.md):**
 ```
-agents/cardiology-guide/
+agents/heart-care-coordinator/
 ├── agent.yaml          # SLIM: only SubAgent-mappable fields (name, description, model, skills, tools)
 ├── persona.md          # SLIM identity: ROLE & EMPATHY + CLINICAL SCOPE only (~400 tokens)
 └── metadata.yaml       # UI/catalog fields (title, icon, tags, care_stages, etc.)
@@ -689,8 +689,8 @@ for model_key in ["ollama:llama3.2", "google_genai:gemini-3.6-flash", "anthropic
 The per-agent `agent.yaml` shrinks to only the fields the runtime needs — everything else moves to `metadata.yaml` (web UI) or `SKILL.md metadata` (clinical safety):
 
 ```yaml
-# agents/cardiology-guide/agent.yaml (SLIM — runtime only)
-name: cardiology-guide
+# agents/heart-care-coordinator/agent.yaml (SLIM — runtime only)
+name: heart-care-coordinator
 description: >-
   Cardiovascular care navigator assisting patients with hypertension tracking,
   arrhythmia consultation prep, heart health lifestyle agendas, and vital sign logs.

@@ -26,7 +26,7 @@ from fastapi.testclient import TestClient
 from carefold.main import app
 
 client = TestClient(app)
-resp = client.post("/api/chat", json={"agent_id": "visit-steward", "prompt": "   "})
+resp = client.post("/api/chat", json={"agent_id": "appointment-prep-coordinator", "prompt": "   "})
 assert resp.status_code == 400
 assert "prompt" in resp.json().get("detail", "").lower()
 `;
@@ -62,7 +62,7 @@ from carefold.engine.runner import execute_agent_run
 async def main():
     count = 0
     # Simulate client disconnect after 2 events
-    async for event in execute_agent_run('visit-steward', 'Hello doctor', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'Hello doctor', mock=True):
         count += 1
         if count >= 2:
             break
@@ -84,7 +84,7 @@ from fastapi.testclient import TestClient
 from carefold.main import app
 
 client = TestClient(app)
-resp = client.post("/api/chat", json={"agent_id": "visit-steward", "prompt": "Short test", "mock": True})
+resp = client.post("/api/chat", json={"agent_id": "appointment-prep-coordinator", "prompt": "Short test", "mock": True})
 assert resp.status_code == 200
 assert "text/event-stream" in resp.headers.get("content-type", "")
 
@@ -117,12 +117,12 @@ from carefold.engine.runner import execute_agent_run
 
 async def main():
     res1_tokens = []
-    async for event in execute_agent_run('visit-steward', 'First session inquiry', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'First session inquiry', mock=True):
         if event.get('type') == 'token':
             res1_tokens.append(event['delta'])
 
     res2_tokens = []
-    async for event in execute_agent_run('habit-companion', 'Second session inquiry', mock=True):
+    async for event in execute_agent_run('habit-coordinator', 'Second session inquiry', mock=True):
         if event.get('type') == 'token':
             res2_tokens.append(event['delta'])
 

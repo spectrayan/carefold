@@ -17,9 +17,9 @@ orchestrator:
 
 # Canonical agent manifests in agents/*/agent.yaml
 agents:
-  visit_steward: "agents/visit-steward/agent.yaml"
-  benefits_guide: "agents/benefits-guide/agent.yaml"
-  habit_companion: "agents/habit-companion/agent.yaml"
+  appointment_prep_coordinator: "agents/appointment-prep-coordinator/agent.yaml"
+  benefits_coordinator: "agents/benefits-coordinator/agent.yaml"
+  habit_coordinator: "agents/habit-coordinator/agent.yaml"
   orchestrator: "agents/_system/orchestrator/agent.yaml"
   document_extractor: "agents/_system/document-extractor/agent.yaml"
   suggestion_generator: "agents/_system/suggestion-generator/agent.yaml"

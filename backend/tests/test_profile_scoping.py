@@ -492,7 +492,7 @@ async def test_chat_thread_and_audit_profile_scoping(profile_test_env):
         # 1. Record an audit event for Mom
         await record_audit(
             {
-                "agent_id": "cardiology-guide",
+                "agent_id": "heart-care-coordinator",
                 "event": "run",
                 "profile_id": mom_id,
             },
@@ -502,7 +502,7 @@ async def test_chat_thread_and_audit_profile_scoping(profile_test_env):
         # Record another event without profile_id
         await record_audit(
             {
-                "agent_id": "benefits-guide",
+                "agent_id": "benefits-coordinator",
                 "event": "run",
             },
             workspace_root=ws,
@@ -513,5 +513,5 @@ async def test_chat_thread_and_audit_profile_scoping(profile_test_env):
         assert audit_resp.status_code == 200
         audit_data = audit_resp.json()
         assert audit_data["total"] == 1
-        assert audit_data["events"][0]["agent_id"] == "cardiology-guide"
+        assert audit_data["events"][0]["agent_id"] == "heart-care-coordinator"
         assert audit_data["events"][0]["profile_id"] == mom_id

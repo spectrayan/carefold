@@ -23,7 +23,7 @@ describe('GET /api/agents', () => {
     expect(Array.isArray(agents)).toBe(true);
     expect(agents.length).toBeGreaterThanOrEqual(3);
 
-    const visitSteward = agents.find((a: any) => a.id === 'visit-steward');
+    const visitSteward = agents.find((a: any) => a.id === 'appointment-prep-coordinator');
     expect(visitSteward).toBeDefined();
     expect(visitSteward.title).toBe('Visit Steward');
     expect(visitSteward.risk_class).toBe('clinical_assist');
@@ -34,16 +34,16 @@ describe('GET /api/agents', () => {
   });
 
   it('returns single agent details when query param id is provided with explicit consent', async () => {
-    const res = await GET(new Request('http://localhost:3000/api/agents?id=visit-steward&allow_clinical=true'));
+    const res = await GET(new Request('http://localhost:3000/api/agents?id=appointment-prep-coordinator&allow_clinical=true'));
     expect(res.status).toBe(200);
 
     const agent = await res.json();
-    expect(agent.id).toBe('visit-steward');
+    expect(agent.id).toBe('appointment-prep-coordinator');
     expect(agent.effectiveTools).toEqual(expect.arrayContaining(['attach-read', 'workspace-note', 'skill-docs']));
   });
 
   it('returns 403 for a clinical_assist agent when consent is not given', async () => {
-    const res = await GET(new Request('http://localhost:3000/api/agents?id=visit-steward'));
+    const res = await GET(new Request('http://localhost:3000/api/agents?id=appointment-prep-coordinator'));
     expect(res.status).toBe(403);
   });
 

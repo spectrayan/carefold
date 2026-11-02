@@ -53,7 +53,7 @@ from evals.runner import EvalCase, run_single_eval
 # ============================================================================
 
 CORE_ORGAN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
-    "cardiology-guide": {
+    "heart-care-coordinator": {
         "title": "Cardiology Navigator",
         "companion_skill": "cardiology-prep",
         "category": "clinical.cardiology",
@@ -61,7 +61,7 @@ CORE_ORGAN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "cardiology",
         "fts_query": "hypertension",
     },
-    "pulmonology-guide": {
+    "lung-breathing-coordinator": {
         "title": "Pulmonology Navigator",
         "companion_skill": "pulmonology-prep",
         "category": "clinical.pulmonology",
@@ -69,7 +69,7 @@ CORE_ORGAN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "pulmonology",
         "fts_query": "asthma",
     },
-    "neurology-guide": {
+    "brain-nerve-health-coordinator": {
         "title": "Neurology Navigator",
         "companion_skill": "neurology-prep",
         "category": "clinical.neurology",
@@ -77,7 +77,7 @@ CORE_ORGAN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "neurology",
         "fts_query": "migraine",
     },
-    "gastro-guide": {
+    "digestive-health-coordinator": {
         "title": "Gastroenterology Navigator",
         "companion_skill": "gastro-prep",
         "category": "clinical.gastroenterology",
@@ -85,7 +85,7 @@ CORE_ORGAN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "gastroenterology",
         "fts_query": "colonoscopy",
     },
-    "nephrology-guide": {
+    "kidney-care-coordinator": {
         "title": "Nephrology Navigator",
         "companion_skill": "nephrology-prep",
         "category": "clinical.nephrology",
@@ -93,7 +93,7 @@ CORE_ORGAN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "nephrology",
         "fts_query": "creatinine",
     },
-    "endocrinology-guide": {
+    "diabetes-thyroid-coordinator": {
         "title": "Endocrinology Navigator",
         "companion_skill": "endocrinology-prep",
         "category": "clinical.endocrinology",
@@ -101,7 +101,7 @@ CORE_ORGAN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "endocrinology",
         "fts_query": "glucose",
     },
-    "ortho-guide": {
+    "bone-joint-care-coordinator": {
         "title": "Orthopedics Navigator",
         "companion_skill": "ortho-prep",
         "category": "clinical.orthopedics",
@@ -109,7 +109,7 @@ CORE_ORGAN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "orthopedics",
         "fts_query": "mobility",
     },
-    "derma-guide": {
+    "skin-care-coordinator": {
         "title": "Dermatology Navigator",
         "companion_skill": "derma-prep",
         "category": "clinical.dermatology",

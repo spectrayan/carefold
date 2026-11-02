@@ -111,7 +111,7 @@ export default async function ProfileHomePage({ params }: PageProps) {
           timeStr: dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
           clinician: [upcoming.provider_name, upcoming.specialty].filter(Boolean).join(' · ') || 'Care Provider',
           clinic: upcoming.location || 'Primary Care Clinic',
-          specialistId: upcoming.specialty?.toLowerCase().includes('cardio') ? 'cardiology-guide' : 'visit-steward',
+          specialistId: upcoming.specialty?.toLowerCase().includes('cardio') ? 'heart-care-coordinator' : 'appointment-prep-coordinator',
           specialistTitle: upcoming.specialty?.toLowerCase().includes('cardio') ? 'Cardiology Guide' : 'Visit Steward',
           prepCompletedQuestions: checklist.filter((c: any) => c.isDone).length,
           prepTotalQuestions: checklist.length,

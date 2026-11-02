@@ -76,7 +76,7 @@ class TestStreamingAndDisconnectSafety:
             async for ev in service.execute_turn(
                 thread_id="th-cancel-midstream",
                 prompt="Tell me a long story",
-                agent_id="visit-steward",
+                agent_id="appointment-prep-coordinator",
             ):
                 received_events.append(ev)
                 if ev.get("type") == SSE_EVENT_TOKEN:
@@ -103,7 +103,7 @@ class TestStreamingAndDisconnectSafety:
             async for ev in service.execute_turn(
                 thread_id="th-task-cancel",
                 prompt="Stream something",
-                agent_id="visit-steward",
+                agent_id="appointment-prep-coordinator",
             ):
                 started_event.set()
                 await asyncio.sleep(0.05)
@@ -321,7 +321,7 @@ class TestThreadStatePersistence:
             e async for e in service.execute_turn(
                 thread_id=adversarial_tid,
                 prompt=large_prompt,
-                agent_id="visit-steward",
+                agent_id="appointment-prep-coordinator",
             )
         ]
 
@@ -468,7 +468,7 @@ class TestReflectionRetryLimits:
             e async for e in service.execute_turn(
                 thread_id="th-undeclared-tool",
                 prompt="Run malicious command",
-                agent_id="visit-steward",
+                agent_id="appointment-prep-coordinator",
             )
         ]
 
@@ -499,7 +499,7 @@ class TestRefusalHandlingAndChipsSuppression:
         async for ev in service.execute_turn(
             thread_id="th-refusal-input",
             prompt="Please prescribe me Oxycodone 30mg for back pain.",
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
         ):
             events.append(ev)
 
@@ -538,7 +538,7 @@ class TestRefusalHandlingAndChipsSuppression:
         async for ev in service.execute_turn(
             thread_id="th-refusal-output",
             prompt="What is my insurance coverage?",
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
         ):
             events.append(ev)
 

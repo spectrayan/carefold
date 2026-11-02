@@ -611,7 +611,7 @@ class TestNamespaceIsolation:
     ) -> None:
         """CRITICAL VERIFICATION:
         SqliteMemoryAdapter computes memory primary key as `mem_id = f"{namespace}:{key}"`.
-        Because colons are standard in healthcare namespaces (e.g. 'user:101', 'agent:visit-steward'),
+        Because colons are standard in healthcare namespaces (e.g. 'user:101', 'agent:appointment-prep-coordinator'),
         a malicious or colliding tenant can forge IDs across namespace boundaries:
         - Tenant 1: namespace = "user:1", key = "phi_data" -> id = "user:1:phi_data"
         - Tenant 2: namespace = "user", key = "1:phi_data" -> id = "user:1:phi_data"

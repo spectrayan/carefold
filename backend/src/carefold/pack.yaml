@@ -143,7 +143,7 @@ provides:
   safety_policy: "carefold.safety:CarefoldHealthSafetyPolicy"
   routing:
     description: "Family health, visit preparation, clinical records, and insurance navigation"
-    default_agent: "visit-steward"
+    default_agent: "appointment-prep-coordinator"
     patterns: "resources/routing_patterns.yaml"
   prompts_dir: "resources/prompts/"
   locales_dir: "resources/locales/"

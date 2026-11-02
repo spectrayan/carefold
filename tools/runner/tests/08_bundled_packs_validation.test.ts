@@ -49,7 +49,7 @@ const SKILLS_DIR = path.join(ROOT_DIR, 'skills');
 const AGENTS_DIR = path.join(ROOT_DIR, 'agents');
 
 const EXPECTED_SKILL_IDS = ['visit-prep', 'benefits-explainer', 'habit-checkin', '_template'];
-const EXPECTED_AGENT_IDS = ['visit-steward', 'benefits-guide', 'habit-companion', '_template'];
+const EXPECTED_AGENT_IDS = ['appointment-prep-coordinator', 'benefits-coordinator', 'habit-coordinator', '_template'];
 
 // Golden Eval Schema
 const GoldenEvalRowSchema = z.object({
@@ -269,7 +269,7 @@ describe('08: Milestone 2 Bundled Reference Packs Validation Suite', () => {
           }
 
           // Canonical risk classes per AGENTS.md Table 2.1
-          if (agentId === 'visit-steward') {
+          if (agentId === 'appointment-prep-coordinator') {
             expect(agent.risk_class).toBe('clinical_assist');
           } else {
             expect(['wellness', 'admin', 'education']).toContain(agent.risk_class);
@@ -298,8 +298,8 @@ describe('08: Milestone 2 Bundled Reference Packs Validation Suite', () => {
   // 3. Exact Tool Allowlist Union & Least-Privilege Enforcements
   // =========================================================================
   describe('Tool Allowlist Union & Permission Checks', () => {
-    it('verifies exact effective tools for visit-steward', async () => {
-      const agentDir = path.join(AGENTS_DIR, 'visit-steward');
+    it('verifies exact effective tools for appointment-prep-coordinator', async () => {
+      const agentDir = path.join(AGENTS_DIR, 'appointment-prep-coordinator');
       const { agent, effectiveTools } = await loadAgent(agentDir, SKILLS_DIR);
 
       expect(agent.skills).toContain('visit-prep');
@@ -313,8 +313,8 @@ describe('08: Milestone 2 Bundled Reference Packs Validation Suite', () => {
       expect(isToolPermitted('shell-exec', effectiveTools)).toBe(false);
     });
 
-    it('verifies exact effective tools for benefits-guide', async () => {
-      const agentDir = path.join(AGENTS_DIR, 'benefits-guide');
+    it('verifies exact effective tools for benefits-coordinator', async () => {
+      const agentDir = path.join(AGENTS_DIR, 'benefits-coordinator');
       const { agent, effectiveTools } = await loadAgent(agentDir, SKILLS_DIR);
 
       expect(agent.skills).toContain('benefits-explainer');
@@ -330,8 +330,8 @@ describe('08: Milestone 2 Bundled Reference Packs Validation Suite', () => {
       expect(isToolPermitted('web-search', effectiveTools)).toBe(false);
     });
 
-    it('verifies exact effective tools for habit-companion', async () => {
-      const agentDir = path.join(AGENTS_DIR, 'habit-companion');
+    it('verifies exact effective tools for habit-coordinator', async () => {
+      const agentDir = path.join(AGENTS_DIR, 'habit-coordinator');
       const { agent, effectiveTools } = await loadAgent(agentDir, SKILLS_DIR);
 
       expect(agent.skills).toContain('habit-checkin');
@@ -342,10 +342,10 @@ describe('08: Milestone 2 Bundled Reference Packs Validation Suite', () => {
     });
 
     it('proves that undeclared skills do not leak tools to an agent', async () => {
-      const habitCompanionDir = path.join(AGENTS_DIR, 'habit-companion');
+      const habitCompanionDir = path.join(AGENTS_DIR, 'habit-coordinator');
       const { effectiveTools } = await loadAgent(habitCompanionDir, SKILLS_DIR);
 
-      // habit-companion does not declare visit-prep or benefits-explainer;
+      // habit-coordinator does not declare visit-prep or benefits-explainer;
       // even though attach-read and skill-docs exist in workspace skills, they must not leak
       expect(effectiveTools).not.toContain('attach-read');
       expect(effectiveTools).not.toContain('skill-docs');
@@ -363,7 +363,7 @@ describe('08: Milestone 2 Bundled Reference Packs Validation Suite', () => {
       }
 
       for (const agentId of EXPECTED_AGENT_IDS) {
-        if (agentId === 'visit-steward') continue; // visit-steward is clinical_assist per AGENTS.md Table 2.1
+        if (agentId === 'appointment-prep-coordinator') continue; // appointment-prep-coordinator is clinical_assist per AGENTS.md Table 2.1
         const { agent } = await loadAgent(path.join(AGENTS_DIR, agentId), SKILLS_DIR);
         expect(agent.risk_class).not.toBe('clinical_assist');
       }

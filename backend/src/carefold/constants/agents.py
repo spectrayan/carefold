@@ -25,9 +25,9 @@ from typing import FrozenSet
 
 AGENT_ORCHESTRATOR: str = "orchestrator"
 AGENT_DOCUMENT_EXTRACTOR: str = "document-extractor"
-AGENT_VISIT_STEWARD: str = "visit-steward"
-AGENT_BENEFITS_GUIDE: str = "benefits-guide"
-AGENT_HABIT_COMPANION: str = "habit-companion"
+AGENT_VISIT_STEWARD: str = "appointment-prep-coordinator"
+AGENT_BENEFITS_GUIDE: str = "benefits-coordinator"
+AGENT_HABIT_COMPANION: str = "habit-coordinator"
 AGENT_SUGGESTION_GENERATOR: str = "suggestion-generator"
 AGENT_TEMPLATE: str = "_template"
 

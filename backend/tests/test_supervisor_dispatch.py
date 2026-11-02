@@ -17,10 +17,10 @@ Authoritative stress-testing for:
    - MockChatModel
    - MemorySaver checkpointer persistence
 2. Multi-agent dispatch and state handoff across all 5 canonical specialists:
-   - benefits-guide
-   - visit-steward
+   - benefits-coordinator
+   - appointment-prep-coordinator
    - document-extractor
-   - habit-companion
+   - habit-coordinator
    - generalist
 3. Return transitions and supervisor loopback:
    - Clean termination to END
@@ -73,10 +73,10 @@ class TestSupervisorCompilation:
         graph = create_supervisor_subgraph(model=fake, compile=False)
         assert isinstance(graph, StateGraph)
         assert "supervisor_node" in graph.nodes
-        assert "benefits_guide" in graph.nodes
-        assert "visit_steward" in graph.nodes
+        assert "benefits_coordinator" in graph.nodes
+        assert "appointment_prep_coordinator" in graph.nodes
         assert "document_extractor" in graph.nodes
-        assert "habit_companion" in graph.nodes
+        assert "habit_coordinator" in graph.nodes
         assert "generalist" in graph.nodes
 
     def test_compiled_with_fakelistchatmodel(self):
@@ -107,7 +107,7 @@ class TestSupervisorCompilation:
         fake = FakeListChatModel(responses=["default response"])
         app = build_supervisor_subgraph(
             model=fake,
-            specialists={"benefits-guide": custom_benefits_node},
+            specialists={"benefits-coordinator": custom_benefits_node},
         )
         assert isinstance(app, CompiledStateGraph)
 
@@ -120,7 +120,7 @@ class TestSupervisorMultiAgentDispatch:
     """Verifies intent classification, dispatching, and state handoff across all 5 specialists."""
 
     @pytest.mark.asyncio
-    async def test_dispatch_benefits_guide_inferred(self):
+    async def test_dispatch_benefits_coordinator_inferred(self):
         fake = FakeListChatModel(responses=["Your in-network deductible is $500 with a $20 copay."])
         app = build_supervisor_subgraph(model=fake)
 
@@ -141,7 +141,7 @@ class TestSupervisorMultiAgentDispatch:
         assert "500" in messages[-1].content
 
     @pytest.mark.asyncio
-    async def test_dispatch_visit_steward_inferred(self):
+    async def test_dispatch_appointment_prep_coordinator_inferred(self):
         fake = FakeListChatModel(responses=["Here is your doctor appointment prep checklist."])
         app = build_supervisor_subgraph(model=fake)
 
@@ -214,7 +214,7 @@ class TestSupervisorMultiAgentDispatch:
         assert result["document_dossiers"][0]["copay"] == 20
 
     @pytest.mark.asyncio
-    async def test_dispatch_habit_companion_inferred(self):
+    async def test_dispatch_habit_coordinator_inferred(self):
         fake = FakeListChatModel(responses=["Let's build a consistent daily hydration habit of 64 ounces."])
         app = build_supervisor_subgraph(model=fake)
 
@@ -370,7 +370,7 @@ class TestSupervisorReturnTransitions:
         )
         result = await app.ainvoke(state)
 
-        # Confirm the chain ran through benefits_guide -> supervisor_node -> document_extractor -> END
+        # Confirm the chain ran through benefits_coordinator -> supervisor_node -> document_extractor -> END
         assert hop_counter == 1
         assert result["current_agent"] == SPECIALIST_DOCUMENT_EXTRACTOR
         assert result["routed_subgraph"] == SPECIALIST_DOCUMENT_EXTRACTOR
@@ -437,10 +437,10 @@ class TestSupervisorConcurrency:
         app = build_supervisor_subgraph(model=mock)
 
         prompts = [
-            ("benefits-guide", "What is my copay for specialist visits?"),
-            ("visit-steward", "Doctor appointment question preparation checklist"),
+            ("benefits-coordinator", "What is my copay for specialist visits?"),
+            ("appointment-prep-coordinator", "Doctor appointment question preparation checklist"),
             ("document-extractor", "Extract data from this uploaded document"),
-            ("habit-companion", "Help me build a water intake habit"),
+            ("habit-coordinator", "Help me build a water intake habit"),
         ]
 
         async def run_single(idx: int) -> Dict[str, Any]:
@@ -515,7 +515,7 @@ class TestSupervisorEdgeCases:
 
         state = {"messages": []}
         res = await app.ainvoke(state)
-        # Should not crash; defaults to fallback agent (visit-steward)
+        # Should not crash; defaults to fallback agent (appointment-prep-coordinator)
         assert res["current_agent"] == SPECIALIST_VISIT_STEWARD
         assert res["output"] == "Fallback guidance"
 

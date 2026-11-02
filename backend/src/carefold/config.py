@@ -29,7 +29,7 @@ class BrandConfig(BaseModel):
     db_filename: str = "carefold.db"
     oauth_scheme: str = "carefold"
     cookie_prefix: str = "carefold_"
-    default_agent: str = "visit-steward"
+    default_agent: str = "appointment-prep-coordinator"
 
 from carefold.constants.defaults import DEFAULT_CORS_ORIGINS
 from carefold.constants.models import (

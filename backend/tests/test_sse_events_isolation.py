@@ -161,7 +161,7 @@ async def test_server_restart_multi_turn_persistence(temp_workspace: Path):
     mock1.queue_response("Hello Alice, I have noted your persistent knee stiffness for Dr. Henderson.")
     t1_events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Hi, I am Alice. I have persistent knee stiffness and see Dr. Henderson next week.",
         thread_id=thread_id,
         model_client=mock1,
@@ -181,7 +181,7 @@ async def test_server_restart_multi_turn_persistence(temp_workspace: Path):
     mock2.queue_response("Here are 3 questions for Dr. Henderson regarding your knee stiffness.")
     t2_events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="What questions should I ask him about this?",
         thread_id=thread_id,
         model_client=mock2,
@@ -204,7 +204,7 @@ async def test_server_restart_multi_turn_persistence(temp_workspace: Path):
     mock3.queue_response("I read your vitals: BP is 135/85 and Pulse is 72.")
     t3_events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Please check my vitals.txt attachment.",
         thread_id=thread_id,
         model_client=mock3,
@@ -224,7 +224,7 @@ async def test_server_restart_multi_turn_persistence(temp_workspace: Path):
     mock4.queue_response("Alice, we have your knee questions and BP 135/85 ready for Dr. Henderson.")
     t4_events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Can you summarize our entire preparation plan?",
         thread_id=thread_id,
         model_client=mock4,
@@ -298,7 +298,7 @@ def test_fastapi_server_reboot_simulation(temp_workspace: Path):
     profile_id = prof_res.json()["id"]
 
     t1_payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Remember that I am allergic to Penicillin.",
         "threadId": thread_id,
         "profile_id": profile_id,
@@ -322,7 +322,7 @@ def test_fastapi_server_reboot_simulation(temp_workspace: Path):
 
     # Continue conversation on Server Boot 2
     t2_payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "What allergy did I disclose?",
         "threadId": thread_id,
         "profile_id": profile_id,
@@ -358,7 +358,7 @@ async def test_concurrent_thread_isolation(temp_workspace: Path):
 
         collected_events = []
         async for ev in execute_agent_run(
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             prompt=f"Secret for thread {thread_idx} is {secret}.",
             thread_id=thread_id,
             mock=True,
@@ -424,7 +424,7 @@ async def test_thread_id_special_characters(temp_workspace: Path, special_thread
 
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt=f"Testing thread identifier {special_thread_id}",
         thread_id=special_thread_id,
         model_client=mock,
@@ -446,7 +446,7 @@ def test_sse_event_sequencing_without_tools(client: TestClient, test_profile: st
     Sequence: [token, token, ..., token] -> suggestions -> done
     """
     payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Hello! I am preparing questions for my upcoming annual wellness check.",
         "profile_id": test_profile,
         "mock": True,
@@ -500,7 +500,7 @@ def test_sse_event_sequencing_with_tools(client: TestClient, temp_workspace: Pat
     (attachments_dir / "blood_work.txt").write_text("WBC: 6.5, RBC: 4.8", encoding="utf-8")
 
     payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Review my attached blood_work.txt report please.",
         "profile_id": test_profile,
         "mock": True,
@@ -551,7 +551,7 @@ def test_sse_safety_refusal_sequencing(client: TestClient, test_profile: str):
     Zero tokens, zero tools, zero suggestions.
     """
     payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Can you prescribe me 500mg amoxicillin for this infection?",
         "profile_id": test_profile,
         "mock": True,
@@ -587,7 +587,7 @@ def test_sse_raw_wire_formatting(client: TestClient, test_profile: str):
     - Separated by double newlines '\\n\\n'
     """
     payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Hello world from SSE formatting check.",
         "profile_id": test_profile,
         "mock": True,
@@ -627,15 +627,15 @@ def test_sse_raw_wire_formatting(client: TestClient, test_profile: str):
 @pytest.mark.parametrize(
     "agent_id, prompt, completion, tools_used, expected_keyword",
     [
-        ("visit-steward", "What about my lab tests?", "Here is info.", [], "lab"),
-        ("visit-steward", "What about my medications?", "Here is info.", [], "medication"),
-        ("visit-steward", "General checkup.", "Here is info.", [], "checklist"),
-        ("benefits-guide", "What is my deductible?", "Your deductible is $1000.", [], "deductible"),
-        ("benefits-guide", "Tell me about prior authorization.", "Prior auth is...", [], "prior authorization"),
-        ("habit-companion", "How to drink more water?", "Stay hydrated.", [], "hydration"),
-        ("habit-companion", "I feel tired and lack sleep.", "Rest well.", [], "sleep"),
-        ("visit-steward", "Read note", "Saved.", ["workspace-note"], "visit note"),
-        ("visit-steward", "Read docs", "Docs read.", ["skill-docs"], "checklist"),
+        ("appointment-prep-coordinator", "What about my lab tests?", "Here is info.", [], "lab"),
+        ("appointment-prep-coordinator", "What about my medications?", "Here is info.", [], "medication"),
+        ("appointment-prep-coordinator", "General checkup.", "Here is info.", [], "checklist"),
+        ("benefits-coordinator", "What is my deductible?", "Your deductible is $1000.", [], "deductible"),
+        ("benefits-coordinator", "Tell me about prior authorization.", "Prior auth is...", [], "prior authorization"),
+        ("habit-coordinator", "How to drink more water?", "Stay hydrated.", [], "hydration"),
+        ("habit-coordinator", "I feel tired and lack sleep.", "Rest well.", [], "sleep"),
+        ("appointment-prep-coordinator", "Read note", "Saved.", ["workspace-note"], "visit note"),
+        ("appointment-prep-coordinator", "Read docs", "Docs read.", ["skill-docs"], "checklist"),
     ],
 )
 def test_contextual_suggestions_matrix(
@@ -679,7 +679,7 @@ async def test_tool_loop_bound_limit(temp_workspace: Path):
 
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Keep reading checklist indefinitely.",
         model_client=mock,
         workspace_root=temp_workspace,
@@ -729,7 +729,7 @@ async def test_multi_turn_distinct_tools_pipeline(temp_workspace: Path):
 
     t1_events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Review my labs.txt attachment.",
         thread_id=thread_id,
         model_client=mock1,
@@ -751,7 +751,7 @@ async def test_multi_turn_distinct_tools_pipeline(temp_workspace: Path):
 
     t2_events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Save a note with title my-lab-summary.",
         thread_id=thread_id,
         model_client=mock2,
@@ -774,7 +774,7 @@ async def test_multi_turn_distinct_tools_pipeline(temp_workspace: Path):
 
     t3_events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="What checklist items does visit-prep recommend?",
         thread_id=thread_id,
         model_client=mock3,
@@ -806,7 +806,7 @@ async def test_stream_cancellation_database_integrity(temp_workspace: Path):
 
     # Start stream and consume only the first token before aborting
     gen = execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Tell me a long story about hospital visits.",
         thread_id=thread_id,
         mock=True,
@@ -821,7 +821,7 @@ async def test_stream_cancellation_database_integrity(temp_workspace: Path):
     # Next immediate run on same SQLite DB and same thread should succeed cleanly without database locked error
     events_after = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Are you still there?",
         thread_id=thread_id,
         mock=True,
@@ -876,7 +876,7 @@ async def test_stream_never_leaks_internal_suggestion_or_orchestrator_tokens(tem
     done_payload: Dict[str, Any] = {}
 
     async for raw_ev in svc.execute_chat(
-        {"agent_id": "benefits-guide", "prompt": "Explain my deductible", "thread_id": "test-leakage-prevention"},
+        {"agent_id": "benefits-coordinator", "prompt": "Explain my deductible", "thread_id": "test-leakage-prevention"},
         raw_events=True,
     ):
         ev_type = raw_ev.get("type")

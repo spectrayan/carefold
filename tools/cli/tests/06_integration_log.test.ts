@@ -36,7 +36,7 @@ describe('06: CLI Integration: carefold log', () => {
   it('LOG-02: displays events in tabular format and enforces privacy (zero bodies)', async () => {
     const event1 = {
       ts: '2026-09-29T10:00:00.000Z',
-      agent_id: 'visit-steward',
+      agent_id: 'appointment-prep-coordinator',
       event: 'run',
       allowed: true,
       duration_ms: 120,
@@ -45,7 +45,7 @@ describe('06: CLI Integration: carefold log', () => {
     };
     const event2 = {
       ts: '2026-09-29T10:01:00.000Z',
-      agent_id: 'visit-steward',
+      agent_id: 'appointment-prep-coordinator',
       event: 'refuse',
       reason: 'forbidden_intent:diagnose',
       allowed: false,
@@ -58,7 +58,7 @@ describe('06: CLI Integration: carefold log', () => {
     expect(res.exitCode).toBe(0);
     expect(res.stdout).toContain('TIMESTAMP');
     expect(res.stdout).toContain('EVENT');
-    expect(res.stdout).toContain('visit-steward');
+    expect(res.stdout).toContain('appointment-prep-coordinator');
     expect(res.stdout).toContain('forbidden_intent:diagnose');
 
     // PRIVACY VERIFICATION: message bodies MUST NEVER be displayed
@@ -91,9 +91,9 @@ describe('06: CLI Integration: carefold log', () => {
 
   it('LOG-04: --event flag filters events by type', async () => {
     const events = [
-      { ts: '2026-09-29T10:00:00.000Z', agent_id: 'visit-steward', event: 'run', allowed: true },
-      { ts: '2026-09-29T10:01:00.000Z', agent_id: 'visit-steward', event: 'refuse', reason: 'diagnose' },
-      { ts: '2026-09-29T10:02:00.000Z', agent_id: 'visit-steward', event: 'tool', tool: 'workspace-note', allowed: true }
+      { ts: '2026-09-29T10:00:00.000Z', agent_id: 'appointment-prep-coordinator', event: 'run', allowed: true },
+      { ts: '2026-09-29T10:01:00.000Z', agent_id: 'appointment-prep-coordinator', event: 'refuse', reason: 'diagnose' },
+      { ts: '2026-09-29T10:02:00.000Z', agent_id: 'appointment-prep-coordinator', event: 'tool', tool: 'workspace-note', allowed: true }
     ];
     await ws.createFile('logs/audit.jsonl', events.map((e) => JSON.stringify(e)).join('\n') + '\n');
 
@@ -112,7 +112,7 @@ describe('06: CLI Integration: carefold log', () => {
   it('LOG-06: --full with audit.store_bodies: false hides bodies and emits privacy notice', async () => {
     const event = {
       ts: '2026-09-29T10:00:00.000Z',
-      agent_id: 'visit-steward',
+      agent_id: 'appointment-prep-coordinator',
       event: 'run',
       allowed: true,
       prompt: 'SECRET PROMPT'
@@ -136,7 +136,7 @@ describe('06: CLI Integration: carefold log', () => {
 
     const event = {
       ts: '2026-09-29T10:00:00.000Z',
-      agent_id: 'visit-steward',
+      agent_id: 'appointment-prep-coordinator',
       event: 'run',
       allowed: true,
       duration_ms: 150,
@@ -154,7 +154,7 @@ describe('06: CLI Integration: carefold log', () => {
   it('LOG-08: --json outputs valid JSON array and redacts bodies unless permitted', async () => {
     const event = {
       ts: '2026-09-29T10:00:00.000Z',
-      agent_id: 'visit-steward',
+      agent_id: 'appointment-prep-coordinator',
       event: 'run',
       allowed: true,
       prompt: 'SENSITIVE BODY'
@@ -165,7 +165,7 @@ describe('06: CLI Integration: carefold log', () => {
     expect(res.exitCode).toBe(0);
     const parsed = JSON.parse(res.stdout);
     expect(Array.isArray(parsed)).toBe(true);
-    expect(parsed[0].agent_id).toBe('visit-steward');
+    expect(parsed[0].agent_id).toBe('appointment-prep-coordinator');
     expect(parsed[0]).not.toHaveProperty('prompt');
   });
 });

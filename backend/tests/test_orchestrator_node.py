@@ -33,19 +33,19 @@ from tests.fixtures.fake_model import FakeListChatModel
 def test_orchestrator_decision_schema():
     """Validates Pydantic serialization and defaults for OrchestratorDecision."""
     decision = OrchestratorDecision(
-        agent_id="benefits-guide",
+        agent_id="benefits-coordinator",
         reasoning="User is asking about copays and deductibles.",
         instructions="Focus on in-network specialist copays.",
     )
-    assert decision.agent_id == "benefits-guide"
+    assert decision.agent_id == "benefits-coordinator"
     assert decision.reasoning == "User is asking about copays and deductibles."
     assert decision.instructions == "Focus on in-network specialist copays."
 
     data = decision.model_dump()
-    assert data["agent_id"] == "benefits-guide"
+    assert data["agent_id"] == "benefits-coordinator"
 
     # Default instructions
-    d2 = OrchestratorDecision(agent_id="visit-steward", reasoning="Appointment prep.")
+    d2 = OrchestratorDecision(agent_id="appointment-prep-coordinator", reasoning="Appointment prep.")
     assert d2.instructions == ""
 
 
@@ -70,14 +70,14 @@ async def test_orchestrator_explicit_routing_bypass(temp_workspace: Path):
     node = OrchestratorNode(registry=registry)
 
     state = {
-        "current_agent": "benefits-guide",
+        "current_agent": "benefits-coordinator",
         "messages": [HumanMessage(content="Hello")],
     }
     result = await node.execute(state)
 
-    assert result["current_agent"] == "benefits-guide"
-    assert result["routed_subgraph"] == "benefits-guide"
-    assert result["next_step"] == "benefits-guide"
+    assert result["current_agent"] == "benefits-coordinator"
+    assert result["routed_subgraph"] == "benefits-coordinator"
+    assert result["next_step"] == "benefits-coordinator"
     assert "Explicitly requested" in result["orchestrator_reasoning"]
 
 
@@ -100,7 +100,7 @@ async def test_orchestrator_structured_invocation(temp_workspace: Path):
     """Verifies structured output routing to specialist agent using JSON model response."""
     registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
     model_response = json.dumps({
-        "agent_id": "benefits-guide",
+        "agent_id": "benefits-coordinator",
         "reasoning": "Inquiry is regarding insurance deductible details.",
         "instructions": "Clarify in-network vs out-of-network rules.",
     })
@@ -110,8 +110,8 @@ async def test_orchestrator_structured_invocation(temp_workspace: Path):
     state = {"messages": [HumanMessage(content="What is my deductible?")]}
     result = await node.execute(state)
 
-    assert result["current_agent"] == "benefits-guide"
-    assert result["routed_subgraph"] == "benefits-guide"
+    assert result["current_agent"] == "benefits-coordinator"
+    assert result["routed_subgraph"] == "benefits-coordinator"
     assert result["orchestrator_instructions"] == "Clarify in-network vs out-of-network rules."
 
 
@@ -143,13 +143,13 @@ async def test_agent_execution_resolves_persona_and_safety(temp_workspace: Path)
     node = AgentExecutionNode(model=fake_model, registry=registry)
 
     state = {
-        "current_agent": "benefits-guide",
+        "current_agent": "benefits-coordinator",
         "messages": [HumanMessage(content="Hello")],
         "orchestrator_instructions": "Check copays carefully.",
     }
     result = await node.execute(state)
 
-    assert result["current_agent"] == "benefits-guide"
+    assert result["current_agent"] == "benefits-coordinator"
     assert result["output"] == "I am ready to help you navigate your benefits."
     assert result["next_step"] == "output_guardrail"
 
@@ -162,7 +162,7 @@ async def test_agent_execution_resolves_tools(temp_workspace: Path):
     node = AgentExecutionNode(model=fake_model, registry=registry)
 
     state = {
-        "current_agent": "visit-steward",
+        "current_agent": "appointment-prep-coordinator",
         "messages": [HumanMessage(content="Read my note")],
     }
     result = await node.execute(state)
@@ -191,7 +191,7 @@ async def test_supervisor_node_fallback_regex(temp_workspace: Path):
 
     # Benefits
     out_b = await node.execute({"messages": [HumanMessage(content="What is my in-network copay?")]})
-    assert out_b["routed_subgraph"] == "benefits-guide"
+    assert out_b["routed_subgraph"] == "benefits-coordinator"
 
     # Extraction
     out_e = await node.execute({"messages": [HumanMessage(content="Please extract my document")]})
@@ -201,7 +201,7 @@ async def test_supervisor_node_fallback_regex(temp_workspace: Path):
 def test_orchestrator_decision_includes_required_docs():
     """Validates that OrchestratorDecision schema supports required_docs."""
     dec = OrchestratorDecision(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         reasoning="Appointment prep",
         required_docs=["symptom_log_template.md", "questions_guide.md"],
     )
@@ -220,17 +220,17 @@ async def test_orchestrator_preflight_proactively_provisions_reference_doc(temp_
     skill_gen = SkillGeneratorNode(skills_dir=temp_workspace / "skills")
     node = OrchestratorNode(registry=registry, skill_generator=skill_gen)
 
-    # User explicitly asking for a symptom log via visit-steward
+    # User explicitly asking for a symptom log via appointment-prep-coordinator
     state = {
-        "current_agent": "visit-steward",
-        "routed_subgraph": "visit-steward",
+        "current_agent": "appointment-prep-coordinator",
+        "routed_subgraph": "appointment-prep-coordinator",
         "messages": [HumanMessage(content="I want to log my symptoms and build a timeline for my doctor appointment.")],
         "required_docs": ["clinical_timeline_tracker.md"],
     }
 
     result = await node.execute(state)
 
-    assert result["current_agent"] == "visit-steward"
+    assert result["current_agent"] == "appointment-prep-coordinator"
     assert "provisioned_docs" in result
     assert any("clinical_timeline_tracker.md" in p for p in result["provisioned_docs"])
 
@@ -282,7 +282,7 @@ async def test_agent_execution_unsupported_tools_fallback(temp_workspace: Path):
     node = AgentExecutionNode(model=raw_model, registry=registry)
 
     state = {
-        "current_agent": "cardiology-guide",
+        "current_agent": "heart-care-coordinator",
         "messages": [HumanMessage(content="What should I ask my cardiologist during my consultation?")],
     }
 
@@ -290,7 +290,7 @@ async def test_agent_execution_unsupported_tools_fallback(temp_workspace: Path):
 
     assert result["next_step"] == "output_guardrail"
     assert "medgemma successfully responding without native tools" in result["output"]
-    assert result["current_agent"] == "cardiology-guide"
+    assert result["current_agent"] == "heart-care-coordinator"
     assert "error" not in result
 
 

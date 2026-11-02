@@ -27,7 +27,7 @@ describe('Edge Middleware Auth Route Guards', () => {
       ['/p/me', '/p/me'],
       ['/p/123/chat', '/p/123/chat'],
       ['/agents', '/agents'],
-      ['/agents/cardiology-guide', '/agents/cardiology-guide'],
+      ['/agents/heart-care-coordinator', '/agents/heart-care-coordinator'],
       ['/family', '/family'],
       ['/settings', '/settings'],
       ['/settings/model', '/settings/model'],

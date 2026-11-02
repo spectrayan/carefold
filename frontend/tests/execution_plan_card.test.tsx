@@ -30,7 +30,7 @@ describe('Inline Chat Cards (ExecutionPlanCard & EmergencyEscalationCard)', () =
       intent: 'visit_prep',
       mode: 'pipeline',
       status: 'in_progress',
-      target_agents: ['visit-steward', 'cardiology-guide'],
+      target_agents: ['appointment-prep-coordinator', 'heart-care-coordinator'],
       reasoning: 'Deterministic 3-step pipeline compiled for cardiology consultation prep.',
       steps: [
         {
@@ -100,8 +100,8 @@ describe('Inline Chat Cards (ExecutionPlanCard & EmergencyEscalationCard)', () =
     it('renders assigned specialists and toggles collapsible reasoning drawer', () => {
       render(<ExecutionPlanCard plan={mockPlan} />);
 
-      expect(screen.getByTestId('target-agent-visit-steward')).toBeInTheDocument();
-      expect(screen.getByTestId('target-agent-cardiology-guide')).toBeInTheDocument();
+      expect(screen.getByTestId('target-agent-appointment-prep-coordinator')).toBeInTheDocument();
+      expect(screen.getByTestId('target-agent-heart-care-coordinator')).toBeInTheDocument();
 
       const toggleBtn = screen.getByTestId('toggle-reasoning-btn');
       expect(screen.queryByTestId('execution-plan-reasoning')).not.toBeInTheDocument();

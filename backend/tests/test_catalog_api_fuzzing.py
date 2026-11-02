@@ -80,9 +80,9 @@ def test_filesystem_agent_loading_and_taxonomy_metadata(repo_root: Path):
     summary_map = {s.id: s for s in all_summaries}
 
     # Public agents check
-    assert "benefits-guide" in summary_map
-    assert "habit-companion" in summary_map
-    assert "visit-steward" in summary_map
+    assert "benefits-coordinator" in summary_map
+    assert "habit-coordinator" in summary_map
+    assert "appointment-prep-coordinator" in summary_map
 
     # System agents check (should be loaded with hidden=True)
     assert "orchestrator" in summary_map
@@ -96,7 +96,7 @@ def test_filesystem_agent_loading_and_taxonomy_metadata(repo_root: Path):
         assert not agent_id.startswith("_template")
 
     # Detailed taxonomy verification on public agents
-    bg = summary_map["benefits-guide"]
+    bg = summary_map["benefits-coordinator"]
     assert bg.domain == AgentDomain.NAVIGATION or bg.domain == "navigation"
     assert bg.category == "navigation.insurance"
     assert "insurance" in bg.tags
@@ -106,7 +106,7 @@ def test_filesystem_agent_loading_and_taxonomy_metadata(repo_root: Path):
     assert "post_visit" in bg.care_stages
     assert "daily_living" in bg.care_stages
 
-    hc = summary_map["habit-companion"]
+    hc = summary_map["habit-coordinator"]
     assert hc.domain == AgentDomain.WELLNESS or hc.domain == "wellness"
     assert hc.category == "wellness.habits"
     assert "habits" in hc.tags
@@ -114,7 +114,7 @@ def test_filesystem_agent_loading_and_taxonomy_metadata(repo_root: Path):
     assert hc.icon == "HeartPulse"
     assert "daily_living" in hc.care_stages
 
-    vs = summary_map["visit-steward"]
+    vs = summary_map["appointment-prep-coordinator"]
     assert vs.domain == AgentDomain.NAVIGATION or vs.domain == "navigation"
     assert vs.category == "navigation.appointments"
     assert "visit-prep" in vs.tags
@@ -302,8 +302,8 @@ async def test_two_hop_routing_across_all_five_domains(tmp_path: Path):
         domain_agents = [
             make_manifest("clinical-triage", AgentDomain.CLINICAL, "clinical.triage", ["symptom", "triage", "urgent"], "Clinical symptom triage"),
             make_manifest("therapy-counselor", AgentDomain.THERAPY, "therapy.cbt", ["cbt", "anxiety", "depression"], "Cognitive behavioral therapy"),
-            make_manifest("habit-companion", AgentDomain.WELLNESS, "wellness.habits", ["habits", "sleep", "water"], "Daily wellness habit companion"),
-            make_manifest("benefits-guide", AgentDomain.NAVIGATION, "navigation.insurance", ["insurance", "deductible", "copay"], "Insurance benefits guidance"),
+            make_manifest("habit-coordinator", AgentDomain.WELLNESS, "wellness.habits", ["habits", "sleep", "water"], "Daily wellness habit companion"),
+            make_manifest("benefits-coordinator", AgentDomain.NAVIGATION, "navigation.insurance", ["insurance", "deductible", "copay"], "Insurance benefits guidance"),
             make_manifest("education-guide", AgentDomain.EDUCATION, "education.diabetes", ["diabetes", "nutrition", "insulin"], "Patient chronic disease education"),
         ]
 
@@ -327,13 +327,13 @@ async def test_two_hop_routing_across_all_five_domains(tmp_path: Path):
                 "domain": "wellness",
                 "category": "wellness.habits",
                 "prompt": "Help me log my hydration and set up a morning routine.",
-                "expected_agent": "habit-companion",
+                "expected_agent": "habit-coordinator",
             },
             {
                 "domain": "navigation",
                 "category": "navigation.insurance",
                 "prompt": "Can you explain what an in-network deductible means on my plan?",
-                "expected_agent": "benefits-guide",
+                "expected_agent": "benefits-coordinator",
             },
             {
                 "domain": "education",
@@ -398,27 +398,27 @@ async def test_two_hop_fallback_chain(tmp_path: Path):
     catalog = SqliteCatalogAdapter(db_path=tmp_path / "fallback_chain.db")
 
     try:
-        # Only index benefits-guide (domain=navigation, category=navigation.insurance, tags=[insurance, copay])
-        bg = make_manifest("benefits-guide", AgentDomain.NAVIGATION, "navigation.insurance", ["insurance", "copay"], "Insurance guide")
+        # Only index benefits-coordinator (domain=navigation, category=navigation.insurance, tags=[insurance, copay])
+        bg = make_manifest("benefits-coordinator", AgentDomain.NAVIGATION, "navigation.insurance", ["insurance", "copay"], "Insurance guide")
         await catalog.index_agent(bg)
 
         # Verification Step 2: Tier-1 predicts unknown subcategory in navigation -> domain-only fallback succeeds
         tier1_step2 = json.dumps({"domain": "navigation", "category": "navigation.unheard_subcat", "reasoning": "Test step 2"})
-        tier2_step2 = json.dumps({"agent_id": "benefits-guide", "reasoning": "Fallback to domain candidate", "instructions": ""})
+        tier2_step2 = json.dumps({"agent_id": "benefits-coordinator", "reasoning": "Fallback to domain candidate", "instructions": ""})
         model_step2 = FakeListChatModel(responses=[tier1_step2, tier2_step2])
         orch_step2 = OrchestratorNode(model=model_step2, catalog=catalog)
 
         res_step2 = await orch_step2.execute({"messages": [HumanMessage(content="Random navigation question")]})
-        assert res_step2["current_agent"] == "benefits-guide"
+        assert res_step2["current_agent"] == "benefits-coordinator"
 
         # Verification Step 3: Tier-1 predicts unknown domain -> FTS keyword fallback succeeds
         tier1_step3 = json.dumps({"domain": "astrology", "category": "astrology.horoscope", "reasoning": "Hallucinated domain"})
-        tier2_step3 = json.dumps({"agent_id": "benefits-guide", "reasoning": "FTS matched copay tag", "instructions": ""})
+        tier2_step3 = json.dumps({"agent_id": "benefits-coordinator", "reasoning": "FTS matched copay tag", "instructions": ""})
         model_step3 = FakeListChatModel(responses=[tier1_step3, tier2_step3])
         orch_step3 = OrchestratorNode(model=model_step3, catalog=catalog)
 
         res_step3 = await orch_step3.execute({"messages": [HumanMessage(content="What is my insurance copay?")]})
-        assert res_step3["current_agent"] == "benefits-guide"
+        assert res_step3["current_agent"] == "benefits-coordinator"
 
         # Verification Step 4: Complete gibberish with 0 matches -> pattern fallback
         tier1_step4 = json.dumps({"domain": "quantum", "category": "quantum.entanglement", "reasoning": "Zero match"})
@@ -503,7 +503,7 @@ def test_fastapi_endpoints_schemas_and_filters(client: TestClient, repo_root: Pa
     assert well_resp.status_code == 200
     well_agents = well_resp.json()
     assert len(well_agents) >= 1
-    assert "habit-companion" in {a["id"] for a in well_agents}
+    assert "habit-coordinator" in {a["id"] for a in well_agents}
     assert all(a["domain"] == "wellness" for a in well_agents)
 
     clin_resp = client.get("/api/agents?domain=clinical")
@@ -516,7 +516,7 @@ def test_fastapi_endpoints_schemas_and_filters(client: TestClient, repo_root: Pa
     assert ins_resp.status_code == 200
     ins_agents = ins_resp.json()
     assert len(ins_agents) == 1
-    assert ins_agents[0]["id"] == "benefits-guide"
+    assert ins_agents[0]["id"] == "benefits-coordinator"
 
     # 5. Pagination on /api/agents
     p1_resp = client.get("/api/agents?page=1&per_page=2")
@@ -546,10 +546,10 @@ def test_fastapi_endpoints_schemas_and_filters(client: TestClient, repo_root: Pa
         assert isinstance(skill_sum.tags, list)
 
     # 7. Detail Endpoints & Validation
-    bg_detail = client.get("/api/agents/benefits-guide")
+    bg_detail = client.get("/api/agents/benefits-coordinator")
     assert bg_detail.status_code == 200
     detail_model = AgentDetailResponse.model_validate(bg_detail.json())
-    assert detail_model.id == "benefits-guide"
+    assert detail_model.id == "benefits-coordinator"
     assert detail_model.domain == AgentDomain.NAVIGATION
     assert detail_model.category == "navigation.insurance"
 

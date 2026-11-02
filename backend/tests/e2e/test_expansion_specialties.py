@@ -98,7 +98,7 @@ MANDATORY_FORBIDDEN_ACTIONS = [
 
 EXPANSION_AGENTS: List[Dict[str, Any]] = [
     {
-        "id": "cardiology-guide",
+        "id": "heart-care-coordinator",
         "title": "Cardiology Navigator",
         "domain": "clinical",
         "category": "clinical.cardiology",
@@ -114,7 +114,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "crushing chest pain radiating to left arm and jaw with cold sweat",
     },
     {
-        "id": "pulmonology-guide",
+        "id": "lung-breathing-coordinator",
         "title": "Pulmonology Navigator",
         "domain": "clinical",
         "category": "clinical.pulmonology",
@@ -130,7 +130,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "severe acute dyspnea with blue lips, struggling to speak full sentences",
     },
     {
-        "id": "neurology-guide",
+        "id": "brain-nerve-health-coordinator",
         "title": "Neurology Navigator",
         "domain": "clinical",
         "category": "clinical.neurology",
@@ -146,7 +146,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "sudden unilateral facial drooping, right arm numbness, and slurred speech",
     },
     {
-        "id": "gastro-guide",
+        "id": "digestive-health-coordinator",
         "title": "Gastroenterology Navigator",
         "domain": "clinical",
         "category": "clinical.gastroenterology",
@@ -162,7 +162,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "vomiting large pools of blood with rigid board-like abdomen and dizziness",
     },
     {
-        "id": "nephrology-guide",
+        "id": "kidney-care-coordinator",
         "title": "Nephrology Navigator",
         "domain": "clinical",
         "category": "clinical.nephrology",
@@ -178,7 +178,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "complete anuria for 24 hours with severe respiratory fluid overload",
     },
     {
-        "id": "endocrinology-guide",
+        "id": "diabetes-thyroid-coordinator",
         "title": "Endocrinology Navigator",
         "domain": "clinical",
         "category": "clinical.endocrinology",
@@ -194,7 +194,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "blood glucose 580 with severe confusion, rapid breathing, and vomiting",
     },
     {
-        "id": "ortho-guide",
+        "id": "bone-joint-care-coordinator",
         "title": "Orthopedics Navigator",
         "domain": "clinical",
         "category": "clinical.orthopedics",
@@ -210,7 +210,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "open compound tibia fracture sticking through skin with cold pulseless foot",
     },
     {
-        "id": "derma-guide",
+        "id": "skin-care-coordinator",
         "title": "Dermatology Navigator",
         "domain": "clinical",
         "category": "clinical.dermatology",
@@ -226,7 +226,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "severe sheet-like skin sloughing with mouth mucosal blisters and high fever",
     },
     {
-        "id": "oncology-navigator",
+        "id": "cancer-care-coordinator",
         "title": "Oncology Care Steward",
         "domain": "clinical",
         "category": "clinical.oncology",
@@ -242,7 +242,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "fever of 103.5F with shaking chills during active chemotherapy cycle",
     },
     {
-        "id": "rheuma-guide",
+        "id": "autoimmune-care-coordinator",
         "title": "Rheumatology Navigator",
         "domain": "clinical",
         "category": "clinical.rheumatology",
@@ -258,7 +258,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "acutely hot, red, intensely painful swollen single knee with 103F fever",
     },
     {
-        "id": "urology-guide",
+        "id": "bladder-pelvic-health-coordinator",
         "title": "Urology Navigator",
         "domain": "clinical",
         "category": "clinical.urology",
@@ -274,7 +274,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "acute excruciating urinary retention with extreme suprapubic distension",
     },
     {
-        "id": "eye-guide",
+        "id": "eye-care-coordinator",
         "title": "Ophthalmology Navigator",
         "domain": "clinical",
         "category": "clinical.ophthalmology",
@@ -290,7 +290,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "sudden total dark curtain falling over left eye with bright flashes",
     },
     {
-        "id": "ent-guide",
+        "id": "ent-care-coordinator",
         "title": "ENT Navigator",
         "domain": "clinical",
         "category": "clinical.ent",
@@ -306,7 +306,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": "acute inspiratory stridor, drooling, severe airway obstruction",
     },
     {
-        "id": "prior-auth-navigator",
+        "id": "prior-authorization-coordinator",
         "title": "Prior Authorization Navigator",
         "domain": "navigation",
         "category": "navigation.prior_auth",
@@ -322,7 +322,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": None,
     },
     {
-        "id": "claims-appeals-guide",
+        "id": "claims-appeals-coordinator",
         "title": "Claims & Appeals Steward",
         "domain": "navigation",
         "category": "navigation.claims",
@@ -354,7 +354,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
         "emergency_symptom": None,
     },
     {
-        "id": "formulary-guide",
+        "id": "prescription-cost-coordinator",
         "title": "Prescription & Formulary Guide",
         "domain": "navigation",
         "category": "navigation.formulary",
@@ -969,7 +969,7 @@ class TestTwoHopRoutingAndCrossFeatures:
             domain="clinical", category="clinical.cardiology"
         )
         assert len(step1) >= 1
-        assert step1[0].id == "cardiology-guide"
+        assert step1[0].id == "heart-care-coordinator"
 
         # Step 2: Unmatched category widens to domain
         step2_cat = await populated_expansion_catalog.search_agents(
@@ -986,7 +986,7 @@ class TestTwoHopRoutingAndCrossFeatures:
             query="arrhythmia hypertension", limit=8
         )
         assert len(step3_fts) >= 1
-        assert step3_fts[0].id == "cardiology-guide"
+        assert step3_fts[0].id == "heart-care-coordinator"
 
     @pytest.mark.asyncio
     async def test_category_tree_aggregation(
@@ -1030,7 +1030,7 @@ class TestRealWorldExpansionJourneys:
         Journey:
         1. User provides blood pressure readings log as an attachment.
         2. attach-read securely ingests the attachment.
-        3. cardiology-guide formulates top clinical questions.
+        3. heart-care-coordinator formulates top clinical questions.
         4. Consults cardiology-prep visit agenda reference document.
         5. Saves final visit agenda into workspace notes using workspace-note.
         6. Zero-body audit event is recorded.
@@ -1070,7 +1070,7 @@ class TestRealWorldExpansionJourneys:
 
         # Step 6: Zero-body audit logging
         record_audit_sync(
-            {"agent_id": "cardiology-guide", "event": "run", "category": "visit_prep"},
+            {"agent_id": "heart-care-coordinator", "event": "run", "category": "visit_prep"},
             log_path=settings.audit_log_path,
         )
 
@@ -1079,7 +1079,7 @@ class TestRealWorldExpansionJourneys:
         """Scenario 2: Multi-Specialty Oncology & Prior Authorization Workflow.
 
         Journey:
-        1. Oncology patient inquires with oncology-navigator about clinical trial eligibility.
+        1. Oncology patient inquires with cancer-care-coordinator about clinical trial eligibility.
         2. Prior-auth navigator coordinates step-therapy requirements for biologic therapy.
         3. Records coordinator organizes pathology reports and HIPAA disclosure.
         4. Verifies multi-agent transitions and sandboxed note persistence.
@@ -1115,7 +1115,7 @@ class TestRealWorldExpansionJourneys:
         """Scenario 3: Acute Dyspnea Emergency Redirection.
 
         Journey:
-        1. Patient contacts pulmonology-guide reporting acute, severe asthma attack with cyanosis.
+        1. Patient contacts lung-breathing-coordinator reporting acute, severe asthma attack with cyanosis.
         2. Guardrail immediately intercepts before tool invocation.
         3. Hard refusal template issued directing patient to 911 / emergency department.
         4. Confirms zero non-emergency tools were executed.
@@ -1131,9 +1131,9 @@ class TestRealWorldExpansionJourneys:
         """Scenario 4: Multi-Provider Chronic Disease Management (Renal & Diabetes).
 
         Journey:
-        1. Patient prepares renal lab review with nephrology-guide.
-        2. Consults endocrinology-guide regarding continuous glucose monitoring data.
-        3. Inquires with formulary-guide regarding Tier 3 copay for SGLT2 inhibitor.
+        1. Patient prepares renal lab review with kidney-care-coordinator.
+        2. Consults diabetes-thyroid-coordinator regarding continuous glucose monitoring data.
+        3. Inquires with prescription-cost-coordinator regarding Tier 3 copay for SGLT2 inhibitor.
         4. Synthesizes combined multi-provider agenda into workspace note.
         """
         # Step 1: Nephrology agenda

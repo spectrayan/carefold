@@ -55,7 +55,7 @@ class TestRealWorldScenarios:
         2. Ingestion loads attachment and PII sanitizer masks identifiers.
         3. ClinicalVisitDossier extracts structured fields.
         4. Grounding validator confirms figures match source.
-        5. Supervisor routes to visit-steward specialist.
+        5. Supervisor routes to appointment-prep-coordinator specialist.
         6. Safe response emitted with clinical disclaimer.
         7. Zero-body audit log written.
         """
@@ -95,7 +95,7 @@ class TestRealWorldScenarios:
         assert safety.refused is False
 
         # Step 6: Zero-body audit verification
-        record_audit_sync({"event": "scenario_complete", "scenario": "visit_prep", "agent": "visit-steward"})
+        record_audit_sync({"event": "scenario_complete", "scenario": "visit_prep", "agent": "appointment-prep-coordinator"})
         assert settings.audit_log_path.exists()
 
     def test_scenario_2_health_insurance_benefits_exploration_journey(
@@ -167,21 +167,21 @@ class TestRealWorldScenarios:
         """Scenario 4: Multi-Turn Navigation Journey Across Specialist Domains.
 
         Journey:
-        1. Turn 1: User engages visit-steward for appointment prep.
+        1. Turn 1: User engages appointment-prep-coordinator for appointment prep.
         2. Turn 2: User pivots to billing and deductible questions.
         3. Supervisor coordinates specialist re-routing.
         4. State persistence preserves thread continuity across turns.
         """
         # Turn 1: Visit Steward
         res1 = e2e_client.post("/api/chat", json={
-            "agent_id": "visit-steward",
+            "agent_id": "appointment-prep-coordinator",
             "message": "I have an appointment next Tuesday. What should I prepare?"
         })
         assert res1.status_code in (200, 400, 422)
 
         # Turn 2: Billing / Insurance
         res2 = e2e_client.post("/api/chat", json={
-            "agent_id": "benefits-guide",
+            "agent_id": "benefits-coordinator",
             "message": "Will my in-network copay apply to the lab tests during this visit?"
         })
         assert res2.status_code in (200, 400, 422)

@@ -39,9 +39,9 @@ class AgentState(TypedDict, total=False):
         messages: Chat history with automatic LangGraph message reducer (add_messages).
         thread_id: Conversation session identifier for persistence & checkpointing.
         user_id: User identifier for access control and multi-tenant partitioning.
-        current_agent: Active agent identifier (e.g. 'supervisor', 'visit-steward', 'benefits-guide').
+        current_agent: Active agent identifier (e.g. 'supervisor', 'appointment-prep-coordinator', 'benefits-coordinator').
         next_step: Target next step / router destination (e.g. 'agent', 'tools', 'refusal', 'reflection', 'done').
-        routed_subgraph: Active specialist subgraph if routed (e.g. 'visit-steward', 'benefits-guide', 'extraction').
+        routed_subgraph: Active specialist subgraph if routed (e.g. 'appointment-prep-coordinator', 'benefits-coordinator', 'extraction').
         document_dossiers: Structured Pydantic extraction dossiers (Insurance, Clinical, Generic).
         tool_traces: Recorded tool invocations, inputs, and sanitization/execution outputs.
         reflection_count: Current self-correction reflection loop iteration count.

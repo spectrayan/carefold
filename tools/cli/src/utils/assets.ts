@@ -23,7 +23,7 @@ export interface BundledAssets {
   evalsDir?: string;
 }
 
-export const BUNDLED_AGENTS = ['visit-steward', 'benefits-guide', 'habit-companion', '_template'] as const;
+export const BUNDLED_AGENTS = ['appointment-prep-coordinator', 'benefits-coordinator', 'habit-coordinator', '_template'] as const;
 export const BUNDLED_SKILLS = ['visit-prep', 'benefits-explainer', 'habit-checkin', '_template'] as const;
 
 export function resolveBundledAssets(): BundledAssets {
@@ -47,7 +47,7 @@ export function resolveBundledAssets(): BundledAssets {
     if (
       fsSync.existsSync(candidateAgents) &&
       fsSync.existsSync(candidateSkills) &&
-      fsSync.existsSync(path.join(candidateAgents, 'visit-steward'))
+      fsSync.existsSync(path.join(candidateAgents, 'appointment-prep-coordinator'))
     ) {
       return {
         agentsDir: candidateAgents,
@@ -66,7 +66,7 @@ export function resolveBundledAssets(): BundledAssets {
   if (
     fsSync.existsSync(cwdAgents) &&
     fsSync.existsSync(cwdSkills) &&
-    fsSync.existsSync(path.join(cwdAgents, 'visit-steward'))
+    fsSync.existsSync(path.join(cwdAgents, 'appointment-prep-coordinator'))
   ) {
     return {
       agentsDir: cwdAgents,

@@ -23,7 +23,7 @@ from carefold.schemas.audit import AuditEvent
 
 def test_zero_body_redaction_policy():
     event = AuditEvent(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         event="run",
         allowed=True,
         prompt="Sensitive user symptom: chest pain and anxiety",
@@ -34,7 +34,7 @@ def test_zero_body_redaction_policy():
     redacted = redact_audit_event(event, store_bodies=False)
     assert "prompt" not in redacted
     assert "completion" not in redacted
-    assert redacted["agent_id"] == "visit-steward"
+    assert redacted["agent_id"] == "appointment-prep-coordinator"
     assert redacted["event"] == "run"
 
     # Explicit override: store_bodies=True
@@ -48,14 +48,14 @@ async def test_record_audit_writes_valid_jsonl(temp_workspace: Path):
     log_file = temp_workspace / "logs" / "test_audit.jsonl"
 
     ev1 = AuditEvent(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         event="run",
         allowed=True,
         duration_ms=45.2,
         prompt="My secret query",
     )
     ev2 = AuditEvent(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         event="refuse",
         allowed=False,
         reason="forbidden_intent:diagnose",
@@ -72,11 +72,11 @@ async def test_record_audit_writes_valid_jsonl(temp_workspace: Path):
     entry1 = json.loads(lines[0])
     entry2 = json.loads(lines[1])
 
-    assert entry1["agent_id"] == "visit-steward"
+    assert entry1["agent_id"] == "appointment-prep-coordinator"
     assert entry1["event"] == "run"
     assert "prompt" not in entry1  # Redacted!
 
-    assert entry2["agent_id"] == "visit-steward"
+    assert entry2["agent_id"] == "appointment-prep-coordinator"
     assert entry2["event"] == "refuse"
     assert entry2["reason"] == "forbidden_intent:diagnose"
 

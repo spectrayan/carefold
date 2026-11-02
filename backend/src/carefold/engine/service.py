@@ -465,15 +465,15 @@ class AgentExecutionService:
         suggestions, and terminal completion records.
         """
         start_time = time.time()
-        raw_agent_id = str(agent_id or "visit-steward").strip()
-        effective_agent_id = raw_agent_id if SLUG_REGEX.match(raw_agent_id) and not raw_agent_id.startswith(".") else "visit-steward"
+        raw_agent_id = str(agent_id or "appointment-prep-coordinator").strip()
+        effective_agent_id = raw_agent_id if SLUG_REGEX.match(raw_agent_id) and not raw_agent_id.startswith(".") else "appointment-prep-coordinator"
         ws_root = self.workspace_root.resolve()
         agents_dir = (ws_root / AGENTS_DIR).resolve()
         skills_dir = (ws_root / SKILLS_DIR).resolve()
         agent_dir = (
             find_agent_dir(agents_dir, effective_agent_id)
-            or find_agent_dir(agents_dir, "visit-steward")
-            or (agents_dir / "visit-steward").resolve()
+            or find_agent_dir(agents_dir, "appointment-prep-coordinator")
+            or (agents_dir / "appointment-prep-coordinator").resolve()
         )
 
         effective_store_bodies = store_bodies if store_bodies is not None else self.store_bodies
@@ -1050,7 +1050,7 @@ class AgentExecutionService:
             api_key = None
             base_url = None
         else:
-            agent_id = request.get("agent_id") or request.get("agentId") or "visit-steward"
+            agent_id = request.get("agent_id") or request.get("agentId") or "appointment-prep-coordinator"
             prompt = request.get("prompt", "")
             messages = request.get("messages", [])
             attachments = request.get("attachments", [])

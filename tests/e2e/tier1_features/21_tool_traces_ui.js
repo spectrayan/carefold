@@ -28,7 +28,7 @@ from carefold.engine.runner import execute_agent_run
 async def main():
     starts = []
     ends = []
-    async for event in execute_agent_run('visit-steward', 'Check the questions guide document for appointment prep', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'Check the questions guide document for appointment prep', mock=True):
         if event.get('type') == 'tool_start':
             starts.append(event)
         elif event.get('type') == 'tool_end':
@@ -56,7 +56,7 @@ from carefold.engine.runner import execute_agent_run
 
 async def main():
     end_event = None
-    async for event in execute_agent_run('visit-steward', 'Save our visit agenda to a workspace note', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'Save our visit agenda to a workspace note', mock=True):
         if event.get('type') == 'tool_end':
             end_event = event
             break
@@ -93,7 +93,7 @@ import asyncio
 from carefold.engine.runner import execute_agent_run
 
 async def main():
-    async for event in execute_agent_run('visit-steward', 'Check the questions guide', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'Check the questions guide', mock=True):
         if event.get('type') == 'tool_end':
             assert isinstance(event.get('duration_ms'), (int, float))
             assert event.get('duration_ms') >= 0
@@ -114,7 +114,7 @@ from carefold.engine.runner import execute_agent_run
 
 async def main():
     full_text = None
-    async for event in execute_agent_run('visit-steward', 'Check the questions guide document for appointment prep', mock=True):
+    async for event in execute_agent_run('appointment-prep-coordinator', 'Check the questions guide document for appointment prep', mock=True):
         if event.get('type') == 'done':
             full_text = event.get('fullText')
     assert full_text is not None

@@ -525,7 +525,7 @@ class TestProbeChatThreadsCrossTenant:
                 id=alice_thread_id,
                 user_id=auth_users["user_a"]["id"],
                 profile_id=auth_users["profile_a_id"],
-                agent_id="cardiology-guide",
+                agent_id="heart-care-coordinator",
                 title="Alice Cardiology Consultation",
             )
             session.add(thread)
@@ -543,7 +543,7 @@ class TestProbeChatThreadsCrossTenant:
         stream_b = client.post(
             "/api/chat",
             json={
-                "agent_id": "cardiology-guide",
+                "agent_id": "heart-care-coordinator",
                 "thread_id": alice_thread_id,
                 "profile_id": auth_users["profile_b_id"],
                 "prompt": "Tell me what we talked about earlier",

@@ -12,7 +12,7 @@
 #
 # Precedence Ordering Rationale:
 # Specific admin stewards and clinical specialists MUST precede broad generalists
-# (benefits-guide and visit-steward) so queries like "cardiologist doctor visit" or
+# (benefits-coordinator and appointment-prep-coordinator) so queries like "cardiologist doctor visit" or
 # "insurance claim denial appeal" or "generic drug copay assistance" are properly
 # routed to their dedicated specialists rather than swallowed by generalists.
 # ============================================================================
@@ -20,16 +20,16 @@
 # ============================================================================
 # 1. Healthcare Administration Stewards (R3) - High Specificity
 # ============================================================================
-prior-auth-navigator:
+prior-authorization-coordinator:
   - '\b(prior\s*auth|prior\s*authorization|pre-?auth|pre-?authorization|pre-?cert|pre-?certification|service\s*authorization|prior\s*approval)\b'
   - '\b(step\s*therapy|fail\s*first|peer-?to-?peer(?:\s*review)?|letter\s*of\s*medical\s*necessity|medical\s*necessity\s*(?:review|criteria|denial)|coverage\s*approval\s*request|authorization\s*denial)\b'
 
-claims-appeals-guide:
+claims-appeals-coordinator:
   - '\b(claim\s*denials?|denied\s*claims?|rejected\s*claims?|claim\s*rejections?|insurance\s*appeals?|claim\s*appeals?|appeal\s*(?:a\s*)?claim|appeal\s*letters?)\b'
   - '\b(erisa|erisa\s*appeals?|external\s*(?:medical\s*)?reviews?|independent\s*review\s*organization|iro\s*appeals?)\b'
   - '\b(billing\s*disputes?|disputed\s*bills?|surprise\s*bills?|no\s*surprises\s*act|balance\s*billing|denial\s*codes?|explanation\s*of\s*benefits\s*dispute|claims?\s*(?:dispute|processing|submission))\b'
 
-formulary-guide:
+prescription-cost-coordinator:
   - '\b(formulary|drug\s*formulary|drug\s*tiers?|tier\s*[1-5]|specialty\s*tier|preferred\s*drugs?|non-?preferred\s*drugs?|off-?formulary|formulary\s*exceptions?)\b'
   - '\b(copay\s*cards?|copay\s*assistance|copay\s*coupons?|patient\s*assistance\s*programs?|pap\s*program|generic\s*substitutions?|generic\s*alternatives?|therapeutic\s*alternatives?)\b'
   - '\b(pharmacy\s*benefits?|pbm|mail\s*order\s*pharmacy|prescription\s*drug\s*(?:coverage|tier|costs?)|quantity\s*limits?)\b'
@@ -42,27 +42,27 @@ records-coordinator:
 # ============================================================================
 # 2. Extended Medical & Surgical Specialists (R2)
 # ============================================================================
-oncology-navigator:
+cancer-care-coordinator:
   - '\b(oncology|oncologist|cancer|cancers|tumor|tumors|tumour|tumours|carcinoma|sarcoma|lymphoma|leukemia|myeloma|malignant|malignancy|neoplasm|metastasis|metastatic)\b'
   - '\b(chemotherapy|chemo|radiation\s*therapy|radiotherapy|immunotherapy|targeted\s*therapy|chemo\s*infusion|port-?a-?cath|bone\s*marrow\s*transplant|car-t)\b'
   - '\b(tumor\s*board|clinical\s*trials?|cancer\s*staging|stage\s*[1-4iv]+\s*cancer|neutropenia|chemo\s*side\s*effects?|oncotype|remission)\b'
 
-rheuma-guide:
+autoimmune-care-coordinator:
   - '\b(rheuma|rheumatology|rheumatologist|autoimmune|lupus|sle|rheumatoid|rheumatoid\s*arthritis|ankylosing\s*spondylitis|spondylitis|psoriatic\s*arthritis|sjogrens?|scleroderma|polymyalgia|pmr|vasculitis|gout)\b'
   - '\b(morning\s*stiffness|autoimmune\s*flare|lupus\s*flare|arthritis\s*flare|joint\s*flare|malar\s*rash|raynauds?|joint\s*inflammation)\b'
   - '\b(biologics?|dmard|dmards|methotrexate|humira|enbrel|infliximab|anti-?ccp|rheumatoid\s*factor|antinuclear\s*antibody|ana\s*titer|sed\s*rate|esr|crp\s*inflammation)\b'
 
-urology-guide:
+bladder-pelvic-health-coordinator:
   - '\b(urology|urologist|urological|bladder|urinary|prostate|bph|enlarged\s*prostate|prostatitis|urethra|ureteral|pelvic\s*floor)\b'
   - '\b(voiding|voiding\s*diary|nocturia|urinary\s*frequency|urinary\s*urgency|incontinence|urinary\s*incontinence|weak\s*stream|urinary\s*retention|hematuria|blood\s*in\s*urine|dysuria|uti|urinary\s*tract\s*infection)\b'
   - '\b(kidney\s*stones?|nephrolithiasis|lithotripsy|cystoscopy|psa|prostate\s*specific\s*antigen|vasectomy|urodynamics|prostate\s*biopsy)\b'
 
-eye-guide:
+eye-care-coordinator:
   - '\b(ophthalmology|ophthalmologist|optometry|optometrist|eye|eyes|ocular|vision|visual|retina|cornea|macula|optic\s*nerve)\b'
   - '\b(glaucoma|macular\s*degeneration|amd|cataract|cataracts|diabetic\s*retinopathy|retinal\s*detachment|dry\s*eye|blepharitis|conjunctivitis|astigmatism)\b'
   - '\b(amsler|amsler\s*grid|intraocular\s*pressure|iop|visual\s*field|visual\s*acuity|slit\s*lamp|cataract\s*surgery|floaters|flashes\s*of\s*light|blurry\s*vision|double\s*vision|eye\s*drops)\b'
 
-ent-guide:
+ent-care-coordinator:
   - '\b(ent|otolaryngology|otolaryngologist|ear\s*nose\s*throat|ears?|throat|sinus|sinuses|nasal|tonsils?|vocal\s*cords?|eardrum)\b'
   - '\b(sinusitis|chronic\s*sinusitis|rhinitis|deviated\s*septum|nasal\s*polyps?|tonsillitis|pharyngitis|strep\s*throat|sore\s*throat|laryngitis|hoarseness|dysphonia|tinnitus|vertigo|bppv|menieres?|otitis)\b'
   - '\b(hearing\s*loss|hearing\s*test|audiogram|audiology|hearing\s*aid|ringing\s*in\s*(?:the\s*)?ears?|sinus\s*pressure|post-?nasal\s*drip|earache|tympanometry|ear\s*tubes|septoplasty)\b'
@@ -70,42 +70,42 @@ ent-guide:
 # ============================================================================
 # 3. Core Organ Navigators (R1)
 # ============================================================================
-cardiology-guide:
+heart-care-coordinator:
   - '\b(cardio|cardiology|cardiologist|heart|cardiac|cardiovascular|myocardial|coronary|hypertension|high\s*blood\s*pressure|arrhythmia|dysrhythmia|tachycardia|bradycardia|atrial\s*fibrillation|afib|angina|heart\s*failure|chf|atherosclerosis|valve\s*disease)\b'
   - '\b(blood\s*pressure|systolic|diastolic|palpitations?|irregular\s*heartbeat|irregular\s*pulse|rapid\s*pulse|chest\s*pain|chest\s*tightness|chest\s*pressure|pulse\s*rate)\b'
   - '\b(echocardiogram|echo|ecg|ekg|holter(?:\s*monitor)?|cardiac\s*mri|stress\s*test|lipid\s*panel|cholesterol|troponin|ejection\s*fraction|cardiac\s*cath|angioplasty|stent)\b'
 
-pulmonology-guide:
+lung-breathing-coordinator:
   - '\b(pulmonology|pulmonologist|pulmonary|lung|lungs|respiratory|bronchial|asthma|copd|emphysema|bronchitis|pneumonia|pulmonary\s*fibrosis|sleep\s*apnea|pleurisy)\b'
   - '\b(shortness\s*of\s*breath|dyspnea|wheezing?|chronic\s*cough|sputum|phlegm|chest\s*congestion|hypoxemia|stridor)\b'
   - '\b(inhaler|albuterol|nebulizer|spirometry|pft|pulmonary\s*function|peak\s*flow|oxygen\s*saturation|spo2|bronchoscopy|cpap|bipap)\b'
 
-neurology-guide:
+brain-nerve-health-coordinator:
   - '\b(neurology|neurologist|neurological|neuro|brain|migraine|migraines|headache|headaches|neuropathy|peripheral\s*neuropathy|seizure|seizures|epilepsy|convulsions?|dementia|alzheimers?|concussion|parkinsons?|multiple\s*sclerosis|neuralgia)\b'
   - '\b(numbness|tingling|paresthesia|brain\s*fog|cognitive\s*(?:decline|impairment|symptom|symptoms)|memory\s*loss|tremors?|ataxia|facial\s*droop|slurred\s*speech)\b'
   - '\b(eeg|electroencephalogram|emg|electromyography|nerve\s*conduction|brain\s*mri|lumbar\s*puncture|neurological\s*exam)\b'
 
-gastro-guide:
+digestive-health-coordinator:
   - '\b(gastro|gastroenterology|gastroenterologist|digestive|stomach|bowel|bowels|colon|intestinal|intestines|ibs|ibd|crohns?|colitis|ulcerative\s*colitis|gerd|acid\s*reflux|heartburn|celiac|gastritis|peptic\s*ulcer|diverticulitis|pancreatitis)\b'
   - '\b(abdominal\s*pain|stomach\s*cramps?|bloating|constipation|diarrhea|chronic\s*nausea|acid\s*indigestion|food\s*triggers?)\b'
   - '\b(endoscopy|colonoscopy|egd|bowel\s*prep|fecal\s*calprotectin|stool\s*test|colon\s*polyps?|liver\s*enzymes?)\b'
 
-nephrology-guide:
+kidney-care-coordinator:
   - '\b(nephrology|nephrologist|kidney|kidneys|renal|glomerular|glomerulonephritis|ckd|chronic\s*kidney\s*disease|renal\s*failure|proteinuria|albuminuria|microalbuminuria|nephrotic|azotemia|uremia)\b'
   - '\b(egfr|creatinine|bun|blood\s*urea\s*nitrogen|hyperkalemia|electrolyte\s*balance|renal\s*clearance|crcl)\b'
   - '\b(dialysis|hemodialysis|peritoneal\s*dialysis|renal\s*diet|kidney\s*biopsy|renal\s*ultrasound|fluid\s*and\s*sodium\s*tracking|fluid\s*restriction)\b'
 
-endocrinology-guide:
+diabetes-thyroid-coordinator:
   - '\b(endocrinology|endocrinologist|endocrine|diabetes|diabetic|prediabetes|type\s*[12]\s*diabetes|t1d|t2d|hypothyroid|hypothyroidism|hyperthyroid|hyperthyroidism|hashimotos?|graves\s*disease|goiter|cushings?|addisons?|pcos|polycystic\s*ovary|metabolic\s*syndrome)\b'
   - '\b(insulin|blood\s*sugar|blood\s*glucose|hyperglycemia|hypoglycemia|cgm|continuous\s*glucose|dexcom|freestyle\s*libre|a1c|hba1c|glycated\s*hemoglobin|glucose\s*log)\b'
   - '\b(tsh|thyroid|free\s*t[34]|thyroxine|hormone\s*balance|hormonal\s*imbalance|cortisol|adrenal|pituitary)\b'
 
-ortho-guide:
+bone-joint-care-coordinator:
   - '\b(ortho|orthopedic|orthopedics|orthopedist|musculoskeletal|joint|joints|bone|bones|skeletal|cartilage|ligament|ligaments|tendon|tendons)\b'
   - '\b(fracture|fractures|broken\s*bone|osteoarthritis|meniscus|torn\s*meniscus|rotator\s*cuff|acl|mcl|pcl|tendonitis|tendinitis|bursitis|carpal\s*tunnel|sciatica|herniated\s*disc|spinal\s*stenosis|sprain|strain)\b'
   - '\b(joint\s*pain|joint\s*mobility|joint\s*stiffness|back\s*pain|knee\s*pain|hip\s*pain|shoulder\s*pain|physical\s*therapy|pt\s*exercises?|arthroscopy|joint\s*replacement|knee\s*replacement|hip\s*replacement)\b'
 
-derma-guide:
+skin-care-coordinator:
   - '\b(derma|dermatology|dermatologist|skin|cutaneous|epidermal|scalp)\b'
   - '\b(rash|rashes|eczema|atopic\s*dermatitis|psoriasis|dermatitis|contact\s*dermatitis|acne|rosacea|hives|urticaria|lesion|lesions|mole|moles|melanoma|skin\s*cancer|basal\s*cell|squamous\s*cell|alopecia|shingles)\b'
   - '\b(abcde|skin\s*biopsy|punch\s*biopsy|topical\s*(?:treatment|cream|steroid|ointment)|dermoscopy|cryotherapy|patch\s*test|pruritus|itching\s*skin)\b'
@@ -119,13 +119,13 @@ document-extractor:
 # ============================================================================
 # 5. Base Generalists
 # ============================================================================
-habit-companion:
+habit-coordinator:
   - '\b(habit|habits|water\s*intake|drink\s*water|drinking\s*water|hydration|sleep\s*routine|sleep\s*schedule|bedtime\s*routine|daily\s*steps|walking\s*steps|wellness\s*journal|lifestyle\s*habit)\b'
 
-benefits-guide:
+benefits-coordinator:
   - '\b(insurance|benefits?|deductible|copay|co-pay|coinsurance|coverage|out-of-pocket|hmo|ppo|epo|pos\s*plan|policy\s*coverage|health\s*plan)\b'
 
-visit-steward:
+appointment-prep-coordinator:
   - '\b(doctor|appointment|visit|physician|questions\s*for|clinic|prepare|prep|checkup|medical\s*instruction|instructions)\b'
 
 # ============================================================================

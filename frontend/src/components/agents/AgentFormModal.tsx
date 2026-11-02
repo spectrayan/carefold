@@ -192,7 +192,7 @@ export function AgentFormModal({
                     const slug = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
                     setId(slug);
                   }}
-                  placeholder="e.g. endocrinology-guide"
+                  placeholder="e.g. diabetes-thyroid-coordinator"
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 font-mono focus:border-emerald-700 dark:focus:border-emerald-400"
                 />
               </div>

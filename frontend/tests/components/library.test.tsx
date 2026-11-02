@@ -49,14 +49,14 @@ const sampleNotes: WorkspaceNoteSummary[] = [
   {
     slug: 'visit-agenda',
     title: 'Cardiovascular Consultation Agenda',
-    agent: 'cardiology-guide',
+    agent: 'heart-care-coordinator',
     created_at: '2026-10-07T16:00:00Z',
     size_bytes: 512
   },
   {
     slug: 'sarahs-diabetes-notes',
     title: 'Sarahs Diabetes Management Notes',
-    agent: 'visit-steward',
+    agent: 'appointment-prep-coordinator',
     created_at: '2026-10-05T11:00:00Z',
     size_bytes: 1024
   }
@@ -173,13 +173,13 @@ describe('LibraryClient Component (Issue #95)', () => {
       expect(screen.getByTestId('note-title-visit-agenda')).toHaveTextContent(
         'Cardiovascular Consultation Agenda'
       );
-      expect(screen.getByText('@cardiology-guide')).toBeInTheDocument();
+      expect(screen.getByText('@heart-care-coordinator')).toBeInTheDocument();
       expect(screen.getByText(/visit-agenda\.md/)).toBeInTheDocument();
 
       expect(screen.getByTestId('note-title-sarahs-diabetes-notes')).toHaveTextContent(
         'Sarahs Diabetes Management Notes'
       );
-      expect(screen.getByText('@visit-steward')).toBeInTheDocument();
+      expect(screen.getByText('@appointment-prep-coordinator')).toBeInTheDocument();
       expect(screen.getByText(/sarahs-diabetes-notes\.md/)).toBeInTheDocument();
     });
 
@@ -206,7 +206,7 @@ describe('LibraryClient Component (Issue #95)', () => {
       const mockNoteDetail = {
         slug: 'visit-agenda',
         title: 'Cardiovascular Consultation Agenda',
-        agent: 'cardiology-guide',
+        agent: 'heart-care-coordinator',
         created_at: '2026-10-07T16:00:00Z',
         size_bytes: 512,
         content: '# Agenda\n\n1. Review blood pressure log\n2. Discuss medication timing',

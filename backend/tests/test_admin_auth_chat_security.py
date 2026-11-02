@@ -489,7 +489,7 @@ async def test_settings_secrets_masked_in_put_settings_response(client: TestClie
 def test_api_chat_unauthenticated_returns_401_immediately(client: TestClient, m3_auth_test_env):
     """Boundary Probe 4A: POST /api/chat without token returns 401 immediately prior to streaming."""
     chat_payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Hello! Can you help me prepare for my visit?",
         "mock": True,
         "allow_clinical": True,
@@ -506,7 +506,7 @@ def test_api_chat_unauthenticated_returns_401_immediately(client: TestClient, m3
 def test_api_chat_invalid_token_returns_401_immediately(client: TestClient, m3_auth_test_env):
     """Boundary Probe 4B: POST /api/chat with invalid token returns 401 immediately."""
     chat_payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Hello! Can you help me prepare for my visit?",
         "mock": True,
         "allow_clinical": True,
@@ -537,7 +537,7 @@ def test_api_chat_disabled_user_returns_403_immediately(client: TestClient, m3_a
     """Boundary Probe 4C: POST /api/chat with disabled user returns 403 Forbidden immediately."""
     disabled_token = m3_auth_test_env["disabled1_token"]
     chat_payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Hello! Can you help me prepare for my visit?",
         "mock": True,
         "allow_clinical": True,
@@ -568,7 +568,7 @@ def test_api_chat_authenticated_streams_unbuffered_sse(client: TestClient, m3_au
     profile_id = prof_res.json()["id"]
 
     chat_payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "Can you help me prepare for a general health checkup?",
         "profile_id": profile_id,
         "mock": True,
@@ -621,7 +621,7 @@ def test_api_chat_authenticated_via_bearer_header(client: TestClient, m3_auth_te
     profile_id = prof_res.json()["id"]
 
     chat_payload = {
-        "agentId": "visit-steward",
+        "agentId": "appointment-prep-coordinator",
         "prompt": "What documents should I bring to an appointment?",
         "profile_id": profile_id,
         "mock": True,

@@ -396,7 +396,7 @@ export function HomeDashboardClient({
               </h2>
             </div>
             <Link
-              href={profilePath(profile.id, 'chat?agent=visit-steward')}
+              href={profilePath(profile.id, 'chat?agent=appointment-prep-coordinator')}
               className="text-xs font-semibold text-[var(--cf-primary-hover)] hover:underline"
             >
               {t('home.all_visits')}
@@ -511,7 +511,7 @@ export function HomeDashboardClient({
                     variant="primary"
                     size="sm"
                     leftIcon={<MessageSquare className="w-4 h-4" />}
-                    onClick={() => router.push(profilePath(profile.id, `chat?agent=${encodeURIComponent(appointment.specialistId || 'visit-steward')}`))}
+                    onClick={() => router.push(profilePath(profile.id, `chat?agent=${encodeURIComponent(appointment.specialistId || 'appointment-prep-coordinator')}`))}
                   >
                     {t('home.continue_prep')}
                   </Button>
@@ -539,7 +539,7 @@ export function HomeDashboardClient({
               description={t('home.no_upcoming_visits_desc')}
               action={{
                 label: t('home.prepare_with_steward'),
-                onClick: () => router.push(profilePath(profile.id, 'chat?agent=visit-steward'))
+                onClick: () => router.push(profilePath(profile.id, 'chat?agent=appointment-prep-coordinator'))
               }}
             />
           )}
@@ -703,7 +703,7 @@ export function HomeDashboardClient({
                 </h2>
               </div>
               <Link
-                href={profilePath(profile.id, 'chat?agent=habit-companion')}
+                href={profilePath(profile.id, 'chat?agent=habit-coordinator')}
                 className="text-xs font-semibold text-[var(--cf-primary-hover)] hover:underline"
               >
                 {t('home.log')}
@@ -750,7 +750,7 @@ export function HomeDashboardClient({
                 description={t('home.no_routines_desc')}
                 action={{
                   label: t('home.setup_routines'),
-                  onClick: () => router.push(profilePath(profile.id, 'chat?agent=habit-companion'))
+                  onClick: () => router.push(profilePath(profile.id, 'chat?agent=habit-coordinator'))
                 }}
               />
             )}

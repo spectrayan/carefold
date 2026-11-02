@@ -27,7 +27,7 @@ from pathlib import Path
 from carefold.tools.skill_docs import skill_docs_tool
 
 async def main():
-    agent = type('Agent', (), {'id': 'visit-steward', 'skills': ['visit-prep']})()
+    agent = type('Agent', (), {'id': 'appointment-prep-coordinator', 'skills': ['visit-prep']})()
     skill = type('Skill', (), {'id': 'visit-prep'})()
     ctx = type('Ctx', (), {
         'workspace_root': Path('.').resolve(),
@@ -56,7 +56,7 @@ from pathlib import Path
 from carefold.tools.skill_docs import skill_docs_tool
 
 async def main():
-    agent = type('Agent', (), {'id': 'benefits-guide', 'skills': ['benefits-explainer']})()
+    agent = type('Agent', (), {'id': 'benefits-coordinator', 'skills': ['benefits-explainer']})()
     skill = type('Skill', (), {'id': 'benefits-explainer'})()
     ctx = type('Ctx', (), {
         'workspace_root': Path('.').resolve(),
@@ -87,7 +87,7 @@ from pathlib import Path
 from carefold.tools.skill_docs import skill_docs_tool
 
 async def main():
-    agent = type('Agent', (), {'id': 'visit-steward', 'skills': ['visit-prep']})()
+    agent = type('Agent', (), {'id': 'appointment-prep-coordinator', 'skills': ['visit-prep']})()
     skill = type('Skill', (), {'id': 'visit-prep'})()
     ctx = type('Ctx', (), {
         'workspace_root': Path('.').resolve(),
@@ -96,7 +96,7 @@ async def main():
         'effective_tools': ['skill-docs'],
         'skills': [skill]
     })()
-    # benefits-explainer is undeclared on visit-steward
+    # benefits-explainer is undeclared on appointment-prep-coordinator
     res = await skill_docs_tool({'skill_id': 'benefits-explainer', 'doc': 'glossary.md'}, ctx)
     assert res.success is False
     assert 'undeclared' in res.error.lower() or 'not declared' in res.error.lower()
@@ -117,7 +117,7 @@ from pathlib import Path
 from carefold.tools.skill_docs import skill_docs_tool
 
 async def main():
-    agent = type('Agent', (), {'id': 'visit-steward', 'skills': ['visit-prep']})()
+    agent = type('Agent', (), {'id': 'appointment-prep-coordinator', 'skills': ['visit-prep']})()
     skill = type('Skill', (), {'id': 'visit-prep'})()
     ctx = type('Ctx', (), {
         'workspace_root': Path('.').resolve(),

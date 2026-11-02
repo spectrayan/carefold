@@ -19,12 +19,12 @@ export async function run() {
   const tests = [
     {
       id: 'F12-T01',
-      name: 'Reference agent visit-steward adheres to contract (risk=wellness, skills=[visit-prep])',
+      name: 'Reference agent appointment-prep-coordinator adheres to contract (risk=wellness, skills=[visit-prep])',
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent
-agent, tools, skills = load_agent('agents/visit-steward', 'skills')
-assert agent.id == 'visit-steward'
+agent, tools, skills = load_agent('agents/appointment-prep-coordinator', 'skills')
+assert agent.id == 'appointment-prep-coordinator'
 assert agent.risk_class.value == 'wellness'
 assert agent.skills == ['visit-prep']
 assert 'attach-read' in tools
@@ -37,12 +37,12 @@ assert 'skill-docs' in tools
     },
     {
       id: 'F12-T02',
-      name: 'Reference agent benefits-guide adheres to contract (risk=admin, skills=[benefits-explainer])',
+      name: 'Reference agent benefits-coordinator adheres to contract (risk=admin, skills=[benefits-explainer])',
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent
-agent, tools, skills = load_agent('agents/benefits-guide', 'skills')
-assert agent.id == 'benefits-guide'
+agent, tools, skills = load_agent('agents/benefits-coordinator', 'skills')
+assert agent.id == 'benefits-coordinator'
 assert agent.risk_class.value == 'admin'
 assert agent.skills == ['benefits-explainer']
 assert 'skill-docs' in tools
@@ -53,12 +53,12 @@ assert 'skill-docs' in tools
     },
     {
       id: 'F12-T03',
-      name: 'Reference agent habit-companion adheres to contract (risk=wellness, skills=[habit-checkin])',
+      name: 'Reference agent habit-coordinator adheres to contract (risk=wellness, skills=[habit-checkin])',
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent
-agent, tools, skills = load_agent('agents/habit-companion', 'skills')
-assert agent.id == 'habit-companion'
+agent, tools, skills = load_agent('agents/habit-coordinator', 'skills')
+assert agent.id == 'habit-coordinator'
 assert agent.risk_class.value == 'wellness'
 assert agent.skills == ['habit-checkin']
 assert 'workspace-note' in tools
@@ -88,7 +88,7 @@ assert agent.skills == ['_template']
       fn: () => {
         const script = `
 from pathlib import Path
-for a in ['visit-steward', 'benefits-guide', 'habit-companion', '_template']:
+for a in ['appointment-prep-coordinator', 'benefits-coordinator', 'habit-coordinator', '_template']:
     readme = Path('agents') / a / 'README.md'
     assert readme.is_file(), f'{a} missing README.md'
     content = readme.read_text(encoding='utf-8')

@@ -242,7 +242,7 @@ def test_api_domain_filtering_case_insensitivity_and_isolation(client: TestClien
         assert r.status_code == 200
         data = r.json()
         assert len(data) >= 1
-        assert "habit-companion" in {a["id"] for a in data}
+        assert "habit-coordinator" in {a["id"] for a in data}
         for a in data:
             assert a["domain"] == "wellness"
 

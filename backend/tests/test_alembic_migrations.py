@@ -605,7 +605,7 @@ def test_downgrade_to_0003_household_profiles_and_audit():
         conn.execute(
             text("""
                 INSERT INTO chat_threads (id, profile_id, agent_id, title, created_at, updated_at)
-                VALUES ('thread-msg_one-test', 'prof-msg_one-test', 'visit-steward', 'Consultation', :now, :now)
+                VALUES ('thread-msg_one-test', 'prof-msg_one-test', 'appointment-prep-coordinator', 'Consultation', :now, :now)
             """),
             {"now": now},
         )

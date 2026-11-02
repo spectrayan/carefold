@@ -259,14 +259,14 @@ async def test_privacy_redaction_concurrency_stress(temp_workspace: Path):
             # Trigger refusal
             prompt = f"Please diagnose my acute condition: {canary}"
         elif idx % 3 == 1:
-            # Trigger normal visit-steward prompt
+            # Trigger normal appointment-prep-coordinator prompt
             prompt = f"Help me prepare questions for my annual physical. My secret canary is {canary}"
         else:
             prompt = f"What insurance documents do I need? Confidential ID {canary}"
 
         events = []
         async for ev in execute_agent_run(
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             prompt=prompt,
             mock=True,
             workspace_root=temp_workspace,
