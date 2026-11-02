@@ -70,6 +70,21 @@ CORE_ORGAN_SKILLS: List[str] = [
     "derma-prep",
 ]
 
+AGENT_TO_CATEGORY: Dict[str, str] = dict(
+    zip(
+        CORE_ORGAN_AGENTS,
+        [
+            "cardiology",
+            "pulmonology",
+            "neurology",
+            "gastroenterology",
+            "nephrology",
+            "endocrinology",
+            "orthopedics",
+            "dermatology",
+        ],
+    )
+)
 AGENT_TO_SKILL: Dict[str, str] = dict(zip(CORE_ORGAN_AGENTS, CORE_ORGAN_SKILLS))
 
 MANDATORY_HEADINGS: List[str] = [
@@ -562,7 +577,7 @@ class TestCatalogIndexingAndDiscoveryStress:
         assert tree["domains"]["clinical"]["count"] == 8
         categories = tree["domains"]["clinical"]["categories"]
         for agent_id in CORE_ORGAN_AGENTS:
-            cat_name = agent_id.replace("-guide", "")
+            cat_name = AGENT_TO_CATEGORY[agent_id]
             # Mapping check
             found = any(cat_name in k for k in categories.keys())
             assert found, f"Category for '{agent_id}' missing from category tree: {categories}"

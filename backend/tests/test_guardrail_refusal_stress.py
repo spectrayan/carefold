@@ -250,7 +250,7 @@ class TestOrchestratorExplicitRoutingNoHijack:
                 "Oncology consultation to discuss tumor response, but I also have high blood pressure and diabetes.",
                 ["heart-care-coordinator", "diabetes-thyroid-coordinator"],
             ),
-            # Cardiology Guide: incidental kidney disease, shortness of breath, diabetes
+            # Heart Care Coordinator: incidental kidney disease, shortness of breath, diabetes
             (
                 "heart-care-coordinator",
                 "I have heart failure and hypertension. My kidney doctor mentioned chronic kidney disease and mild fluid retention.",
@@ -266,7 +266,7 @@ class TestOrchestratorExplicitRoutingNoHijack:
                 "Cardiac follow-up for congestive heart failure with knee joint mobility issues and skin rash.",
                 ["bone-joint-care-coordinator", "skin-care-coordinator"],
             ),
-            # Nephrology Guide: incidental hypertension, acid reflux, neuropathy
+            # Kidney Care Coordinator: incidental hypertension, acid reflux, neuropathy
             (
                 "kidney-care-coordinator",
                 "Nephrology guidance on chronic kidney disease (CKD) lab results, with incidental gastro stomach acid and neuropathy.",
@@ -277,7 +277,7 @@ class TestOrchestratorExplicitRoutingNoHijack:
                 "Fluid restriction tracking for kidney failure; also dealing with high blood pressure and diabetes.",
                 ["heart-care-coordinator", "diabetes-thyroid-coordinator"],
             ),
-            # Endocrinology Guide: incidental migraines, asthma, chronic kidney disease
+            # Diabetes Thyroid Coordinator: incidental migraines, asthma, chronic kidney disease
             (
                 "diabetes-thyroid-coordinator",
                 "Managing my diabetes, glucose numbers, and insulin pump; also have migraines and shortness of breath.",
@@ -312,13 +312,13 @@ class TestOrchestratorExplicitRoutingNoHijack:
                 "Rheumatology follow-up for lupus and joint pain, while tracking blood sugar for diabetes.",
                 ["diabetes-thyroid-coordinator"],
             ),
-            # Derma Guide: incidental joint mobility, asthma
+            # Skin Care Coordinator: incidental joint mobility, asthma
             (
                 "skin-care-coordinator",
                 "Dermatology evaluation for psoriasis skin lesions, noting occasional asthma symptoms.",
                 ["lung-breathing-coordinator"],
             ),
-            # Ortho Guide: incidental hypertension, kidney failure
+            # Bone Joint Care Coordinator: incidental hypertension, kidney failure
             (
                 "bone-joint-care-coordinator",
                 "Orthopedic follow-up for knee fracture mobility, while taking medication for high blood pressure.",

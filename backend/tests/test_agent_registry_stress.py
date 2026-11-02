@@ -36,11 +36,11 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from carefold.agents.registry import AgentRegistry
 from carefold.constants.agents import (
-    AGENT_BENEFITS_GUIDE,
+    AGENT_BENEFITS_COORDINATOR,
     AGENT_DOCUMENT_EXTRACTOR,
-    AGENT_HABIT_COMPANION,
+    AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_VISIT_STEWARD,
+    AGENT_APPOINTMENT_PREP_COORDINATOR,
     TOOL_ATTACH_READ,
     TOOL_DELEGATE_TO_AGENT,
     TOOL_LIST_AGENTS,
@@ -274,9 +274,9 @@ async def test_orchestrator_dynamic_prompt_incorporates_registry_catalog(temp_wo
     prompt = node._build_system_prompt({})
 
     # Must contain delegatable agents and exclude orchestrator
-    assert AGENT_BENEFITS_GUIDE in prompt
-    assert AGENT_VISIT_STEWARD in prompt
-    assert AGENT_HABIT_COMPANION in prompt
+    assert AGENT_BENEFITS_COORDINATOR in prompt
+    assert AGENT_APPOINTMENT_PREP_COORDINATOR in prompt
+    assert AGENT_HABIT_COORDINATOR in prompt
     assert AGENT_DOCUMENT_EXTRACTOR in prompt
     assert f"- **{AGENT_ORCHESTRATOR}**" not in prompt
 
@@ -380,9 +380,9 @@ def test_agent_registry_effective_tools_map(temp_workspace: Path):
     tools_map = registry.effective_tools_map
 
     assert isinstance(tools_map, dict)
-    assert AGENT_BENEFITS_GUIDE in tools_map
-    assert AGENT_VISIT_STEWARD in tools_map
-    assert AGENT_HABIT_COMPANION in tools_map
+    assert AGENT_BENEFITS_COORDINATOR in tools_map
+    assert AGENT_APPOINTMENT_PREP_COORDINATOR in tools_map
+    assert AGENT_HABIT_COORDINATOR in tools_map
     assert AGENT_DOCUMENT_EXTRACTOR in tools_map
 
     # Document extractor must have extraction tools

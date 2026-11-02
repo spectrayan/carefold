@@ -248,7 +248,7 @@ class TestMultiAgentExecutionFeatureCoverage:
             )
             engine = TemplateEngine()
             ctx = {
-                "manifest": {"title": "Cardiology Guide"},
+                "manifest": {"title": "Heart Care Coordinator"},
                 "persona": "Pure clinical persona.",
                 "provisioned_references": {
                     "hypertension_log_template.md": {
@@ -264,7 +264,7 @@ class TestMultiAgentExecutionFeatureCoverage:
         else:
             engine = TemplateEngine()
             ctx = {
-                "manifest": {"title": "Cardiology Guide"},
+                "manifest": {"title": "Heart Care Coordinator"},
                 "persona": "Pure clinical persona.",
                 "provisioned_references": {
                     "hypertension_log_template.md": {

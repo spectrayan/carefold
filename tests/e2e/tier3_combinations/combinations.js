@@ -60,7 +60,7 @@ assert skills[0].id == 'visit-prep'
     },
     {
       id: 'COMB-03',
-      name: 'Visit-Steward + Visit-Prep: Reads clinical summary via attach-read tool',
+      name: 'Appointment-Prep-Coordinator + Visit-Prep: Reads clinical summary via attach-read tool',
       fn: () => {
         const ws = createTempWorkspace();
         try {
@@ -90,7 +90,7 @@ asyncio.run(main())
     },
     {
       id: 'COMB-04',
-      name: 'Visit-Steward + Visit-Prep: Persists appointment agenda via workspace-note tool',
+      name: 'Appointment-Prep-Coordinator + Visit-Prep: Persists appointment agenda via workspace-note tool',
       fn: () => {
         const ws = createTempWorkspace();
         try {
@@ -119,7 +119,7 @@ asyncio.run(main())
     },
     {
       id: 'COMB-05',
-      name: 'Visit-Steward + Visit-Prep: Accesses question bank via skill-docs tool',
+      name: 'Appointment-Prep-Coordinator + Visit-Prep: Accesses question bank via skill-docs tool',
       fn: () => {
         const script = `
 import asyncio
@@ -148,7 +148,7 @@ asyncio.run(main())
     },
     {
       id: 'COMB-06',
-      name: 'Benefits-Guide + Benefits-Explainer: Consults glossary via skill-docs tool',
+      name: 'Benefits-Coordinator + Benefits-Explainer: Consults glossary via skill-docs tool',
       fn: () => {
         const script = `
 import asyncio
@@ -177,7 +177,7 @@ asyncio.run(main())
     },
     {
       id: 'COMB-07',
-      name: 'Habit-Companion + Habit-Checkin: Records habit check-in via workspace-note tool',
+      name: 'Habit-Coordinator + Habit-Checkin: Records habit check-in via workspace-note tool',
       fn: () => {
         const ws = createTempWorkspace();
         try {

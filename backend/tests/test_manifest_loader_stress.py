@@ -130,7 +130,7 @@ class TestLoadAgentMetadataResilience:
 
         assert manifest.id == "heart-care-coordinator"
         # Title must fall back to title-cased ID
-        assert manifest.title == "Cardiology Guide"
+        assert manifest.title == "Heart Care Coordinator"
         # Risk class falls back to primary skill's declared risk class (wellness)
         assert manifest.risk_class == RiskClass.WELLNESS
         # Domain and category must fall back to primary skill
@@ -204,7 +204,7 @@ class TestLoadAgentMetadataResilience:
 
         manifest, _, _ = load_agent(agent_dir, SKILLS_DIR)
         assert manifest.id == "heart-care-coordinator"
-        assert manifest.title == "Cardiology Guide"
+        assert manifest.title == "Heart Care Coordinator"
 
     def test_load_agent_mismatched_id_in_metadata_yaml(self, tmp_path: Path):
         """Verifies load_agent rejects metadata.yaml that alters agent id to mismatch directory name."""

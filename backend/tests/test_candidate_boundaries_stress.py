@@ -24,11 +24,11 @@ from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage, HumanMessage
 
 from carefold.constants.agents import (
-    AGENT_BENEFITS_GUIDE,
+    AGENT_BENEFITS_COORDINATOR,
     AGENT_DOCUMENT_EXTRACTOR,
-    AGENT_HABIT_COMPANION,
+    AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_VISIT_STEWARD,
+    AGENT_APPOINTMENT_PREP_COORDINATOR,
     DEFAULT_ROUTING_FALLBACK_AGENT,
 )
 from carefold.loaders.agent_loader import load_agent, load_all_agents

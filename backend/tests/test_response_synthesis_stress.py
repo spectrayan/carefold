@@ -352,8 +352,8 @@ class TestGraphBuilderIntegration:
         assert "output" in result
         out_text = result["output"]
         assert "# Patient Consultation Master Agenda" in out_text
-        assert "Cardiology Guide Guidance" in out_text
-        assert "Endocrinology Guide Guidance" in out_text
+        assert "Heart Care Coordinator Guidance" in out_text
+        assert "Diabetes Thyroid Coordinator Guidance" in out_text
         assert CANONICAL_DISCLAIMER in out_text
         # Disclaimers deduplicated
         assert out_text.count("DISCLAIMER:") == 1

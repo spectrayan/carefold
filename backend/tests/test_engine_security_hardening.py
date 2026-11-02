@@ -45,9 +45,9 @@ from langgraph.graph.state import CompiledStateGraph
 from carefold.agents.registry import AgentRegistry, get_agent_registry
 from carefold.config import settings
 from carefold.constants.agents import (
-    AGENT_BENEFITS_GUIDE,
+    AGENT_BENEFITS_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_VISIT_STEWARD,
+    AGENT_APPOINTMENT_PREP_COORDINATOR,
     DEFAULT_ROUTING_FALLBACK_AGENT,
 )
 from carefold.engine.builder import GraphBuilder, create_agent_graph
@@ -103,7 +103,7 @@ class InfiniteToolLoopChatModel(BaseChatModel):
     """Test double that perpetually emits tool calls to stress-test circuit breakers."""
 
     call_count: int = 0
-    target_agents: List[str] = [AGENT_BENEFITS_GUIDE, AGENT_VISIT_STEWARD]
+    target_agents: List[str] = [AGENT_BENEFITS_COORDINATOR, AGENT_APPOINTMENT_PREP_COORDINATOR]
 
     @property
     def _llm_type(self) -> str:
@@ -385,7 +385,7 @@ class TestCyclicDelegationAndCircuitBreaking:
 
         initial_state = {
             "messages": [HumanMessage(content="Start ping-pong delegation loop")],
-            "current_agent": AGENT_VISIT_STEWARD,
+            "current_agent": AGENT_APPOINTMENT_PREP_COORDINATOR,
             "effective_tools": ["delegate_to_agent"],
         }
 
@@ -412,7 +412,7 @@ class TestCyclicDelegationAndCircuitBreaking:
 
         initial_state = {
             "messages": [HumanMessage(content="Attempt tool execution with zero budget")],
-            "current_agent": AGENT_VISIT_STEWARD,
+            "current_agent": AGENT_APPOINTMENT_PREP_COORDINATOR,
             "effective_tools": ["delegate_to_agent"],
         }
 
@@ -530,7 +530,7 @@ class TestReentrancyAndCheckpointerHardening:
         # Input is safe so it passes InputGuardrail; model output violates safety to trigger output reflection
         state = {
             "messages": [HumanMessage(content="How should I prepare for my routine physical checkup?")],
-            "current_agent": AGENT_VISIT_STEWARD,
+            "current_agent": AGENT_APPOINTMENT_PREP_COORDINATOR,
         }
 
         res = await graph.ainvoke(state)
@@ -557,7 +557,7 @@ class TestReentrancyAndCheckpointerHardening:
 
         state = {
             "messages": [HumanMessage(content="What questions can I prepare for my wellness consultation?")],
-            "current_agent": AGENT_VISIT_STEWARD,
+            "current_agent": AGENT_APPOINTMENT_PREP_COORDINATOR,
         }
 
         res = await graph.ainvoke(state)

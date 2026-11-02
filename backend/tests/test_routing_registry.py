@@ -30,11 +30,11 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from carefold.agents.registry import AgentRegistry, get_agent_registry
 from carefold.constants.agents import (
-    AGENT_BENEFITS_GUIDE,
+    AGENT_BENEFITS_COORDINATOR,
     AGENT_DOCUMENT_EXTRACTOR,
-    AGENT_HABIT_COMPANION,
+    AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_VISIT_STEWARD,
+    AGENT_APPOINTMENT_PREP_COORDINATOR,
     TOOL_ATTACH_READ,
     TOOL_DELEGATE_TO_AGENT,
     TOOL_LIST_AGENTS,
@@ -61,17 +61,17 @@ async def test_orchestrator_multi_domain_query_routing(temp_workspace: Path):
     queries_and_decisions = [
         (
             "I got a $500 bill from my doctor visit last Tuesday, but my insurance was supposed to cover it.",
-            AGENT_BENEFITS_GUIDE,
+            AGENT_BENEFITS_COORDINATOR,
             "Billing and insurance coverage inquiry takes priority.",
         ),
         (
             "I have an upcoming appointment with my oncologist and need to know what questions to ask.",
-            AGENT_VISIT_STEWARD,
+            AGENT_APPOINTMENT_PREP_COORDINATOR,
             "Clinical appointment preparation.",
         ),
         (
             "I want to track my water intake and make sure I drink 8 glasses a day.",
-            AGENT_HABIT_COMPANION,
+            AGENT_HABIT_COORDINATOR,
             "Hydration and lifestyle habit tracking.",
         ),
         (
@@ -155,7 +155,7 @@ async def test_orchestrator_explicit_bypass_variants(temp_workspace: Path):
 
     # 3. Via uppercase name
     res3 = await node.execute({
-        "current_agent": "BENEFITS-GUIDE",
+        "current_agent": "BENEFITS-COORDINATOR",
         "messages": [HumanMessage(content="Random text")],
     })
     assert res3["current_agent"] == "benefits-coordinator"
@@ -268,9 +268,9 @@ def test_registry_get_delegatable_agents_strictly_excludes_can_delegate(temp_wor
         assert agent.id != AGENT_ORCHESTRATOR
 
     # Ensure all registered non-orchestrator specialists are present
-    assert AGENT_BENEFITS_GUIDE in delegatable_ids
-    assert AGENT_VISIT_STEWARD in delegatable_ids
-    assert AGENT_HABIT_COMPANION in delegatable_ids
+    assert AGENT_BENEFITS_COORDINATOR in delegatable_ids
+    assert AGENT_APPOINTMENT_PREP_COORDINATOR in delegatable_ids
+    assert AGENT_HABIT_COORDINATOR in delegatable_ids
     assert AGENT_DOCUMENT_EXTRACTOR in delegatable_ids
 
 
@@ -280,9 +280,9 @@ def test_registry_format_agent_catalog_excludes_orchestrator(temp_workspace: Pat
     catalog = registry.format_agent_catalog()
 
     assert AGENT_ORCHESTRATOR not in catalog
-    assert AGENT_BENEFITS_GUIDE in catalog
-    assert AGENT_VISIT_STEWARD in catalog
-    assert AGENT_HABIT_COMPANION in catalog
+    assert AGENT_BENEFITS_COORDINATOR in catalog
+    assert AGENT_APPOINTMENT_PREP_COORDINATOR in catalog
+    assert AGENT_HABIT_COORDINATOR in catalog
     assert AGENT_DOCUMENT_EXTRACTOR in catalog
 
 

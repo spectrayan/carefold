@@ -163,9 +163,9 @@ class TestResponseSynthesisFeatureCoverage:
         output = synth.synthesize_response(state)
 
         assert "# Patient Consultation Master Agenda" in output
-        assert "## Cardiology Guide Guidance" in output
+        assert "## Heart Care Coordinator Guidance" in output
         assert "Track daily pulse and blood pressure." in output
-        assert "## Endocrinology Guide Guidance" in output
+        assert "## Diabetes Thyroid Coordinator Guidance" in output
         assert "Review 14-day continuous glucose monitor report." in output
 
     def test_cardiorenal_tradeoff_collaborative_doctor_questions(self):
@@ -305,8 +305,8 @@ class TestResponseSynthesisCrossFeature:
         }
 
         full_output = synth.synthesize_response(state)
-        assert "Ortho Guide Guidance" in full_output
-        assert "Prior Auth Navigator Guidance" in full_output
+        assert "Bone Joint Care Coordinator Guidance" in full_output
+        assert "Prior Authorization Coordinator Guidance" in full_output
         assert state["output"] == full_output
 
 
@@ -347,8 +347,8 @@ class TestResponseSynthesisRealWorldScenarios:
         assert "Priority Doctor-Discussion Questions" in output
         assert "fluid restriction and sodium intake" in output
         # 3. Specialty Guidance
-        assert "Cardiology Guide Guidance" in output
-        assert "Nephrology Guide Guidance" in output
+        assert "Heart Care Coordinator Guidance" in output
+        assert "Kidney Care Coordinator Guidance" in output
         # 4. Canonical Disclaimer Footer
         assert CANONICAL_DISCLAIMER in output
         assert output.count("DISCLAIMER:") == 1

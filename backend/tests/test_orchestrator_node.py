@@ -18,11 +18,11 @@ from langchain_core.messages import AIMessage, HumanMessage
 
 from carefold.agents.registry import AgentRegistry
 from carefold.constants.agents import (
-    AGENT_BENEFITS_GUIDE,
+    AGENT_BENEFITS_COORDINATOR,
     AGENT_DOCUMENT_EXTRACTOR,
-    AGENT_HABIT_COMPANION,
+    AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_VISIT_STEWARD,
+    AGENT_APPOINTMENT_PREP_COORDINATOR,
 )
 from carefold.workflows.nodes.agent_execution_node import AgentExecutionNode
 from carefold.workflows.nodes.orchestrator_node import OrchestratorDecision, OrchestratorNode
@@ -56,9 +56,9 @@ def test_orchestrator_dynamic_prompt(temp_workspace: Path):
 
     prompt = node._build_system_prompt({})
     assert "Available Specialist Agents:" in prompt
-    assert AGENT_BENEFITS_GUIDE in prompt
-    assert AGENT_VISIT_STEWARD in prompt
-    assert AGENT_HABIT_COMPANION in prompt
+    assert AGENT_BENEFITS_COORDINATOR in prompt
+    assert AGENT_APPOINTMENT_PREP_COORDINATOR in prompt
+    assert AGENT_HABIT_COORDINATOR in prompt
     assert AGENT_DOCUMENT_EXTRACTOR in prompt
     assert AGENT_ORCHESTRATOR not in prompt.split("Available Specialist Agents:")[1]
 

@@ -68,8 +68,8 @@ class TestConflictingCardiorenalSynthesis:
 
         # 1. Master Agenda Structure
         assert "# Patient Consultation Master Agenda" in output
-        assert "## Cardiology Guide Guidance" in output
-        assert "## Nephrology Guide Guidance" in output
+        assert "## Heart Care Coordinator Guidance" in output
+        assert "## Kidney Care Coordinator Guidance" in output
 
         # 2. Collaborative Doctor-Discussion Questions (Cardiorenal Coordination)
         assert "## Priority Doctor-Discussion Questions (Cardiorenal Coordination)" in output
@@ -332,6 +332,6 @@ class TestEdgeCasesAndAdversarialVariations:
         output = ResponseSynthesizerNode.synthesize_response(state)
         assert "# Patient Consultation Master Agenda" in output
         assert "Priority Doctor-Discussion Questions" not in output
-        assert "## Derma Guide Guidance" in output
-        assert "## Eye Guide Guidance" in output
+        assert "## Skin Care Coordinator Guidance" in output
+        assert "## Eye Care Coordinator Guidance" in output
         assert CANONICAL_DISCLAIMER in output

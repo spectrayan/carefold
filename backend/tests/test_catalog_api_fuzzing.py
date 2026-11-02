@@ -31,11 +31,11 @@ from langchain_core.messages import AIMessage, HumanMessage
 from carefold.agents.registry import AgentRegistry
 from carefold.config import settings
 from carefold.constants.agents import (
-    AGENT_BENEFITS_GUIDE,
+    AGENT_BENEFITS_COORDINATOR,
     AGENT_DOCUMENT_EXTRACTOR,
-    AGENT_HABIT_COMPANION,
+    AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_VISIT_STEWARD,
+    AGENT_APPOINTMENT_PREP_COORDINATOR,
     DEFAULT_ROUTING_FALLBACK_AGENT,
 )
 from carefold.loaders.agent_loader import load_agent, load_all_agents
@@ -427,7 +427,7 @@ async def test_two_hop_fallback_chain(tmp_path: Path):
 
         res_step4 = await orch_step4.execute({"messages": [HumanMessage(content="xyzqwerty 99999999999")]})
         # Pattern fallback routes to default agent without exception
-        assert res_step4["current_agent"] in (AGENT_VISIT_STEWARD, AGENT_BENEFITS_GUIDE, DEFAULT_ROUTING_FALLBACK_AGENT)
+        assert res_step4["current_agent"] in (AGENT_APPOINTMENT_PREP_COORDINATOR, AGENT_BENEFITS_COORDINATOR, DEFAULT_ROUTING_FALLBACK_AGENT)
     finally:
         await catalog.close()
 

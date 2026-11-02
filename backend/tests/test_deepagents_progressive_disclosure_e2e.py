@@ -540,10 +540,10 @@ You explain standard cardiology intake terminology in plain English and support 
 
     def test_profile_suffix_appends_after_caller_system_prompt(self):
         """Verifies system_prompt_suffix merges after the agent's base system prompt."""
-        base_prompt = "You are Cardiology Guide."
+        base_prompt = "You are Heart Care Coordinator."
         suffix = "\n\n# UNIVERSAL SAFETY\nNever diagnose."
         combined = f"{base_prompt}{suffix}"
-        assert combined.startswith("You are Cardiology Guide.")
+        assert combined.startswith("You are Heart Care Coordinator.")
         assert combined.endswith("Never diagnose.")
 
     # -------------------------------------------------------------------------
@@ -873,7 +873,7 @@ class TestCrossFeatureCombinations:
         (refs_dir / "bp-log-template.md").write_text("# BP Log Template", encoding="utf-8")
 
         # In Tier 1, reference document is NOT in system prompt
-        system_prompt = "You are Cardiology Guide. Available skills: - cardiology-prep: Cardiac prep."
+        system_prompt = "You are Heart Care Coordinator. Available skills: - cardiology-prep: Cardiac prep."
         assert "bp-log-template.md" not in system_prompt
 
         # Retrieved on-demand
