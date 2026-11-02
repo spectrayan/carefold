@@ -134,8 +134,8 @@ class ResponseSynthesizerNode(BaseNode):
         sections: List[str] = ["# Patient Consultation Master Agenda\n"]
 
         # Check for cardiorenal fluid/sodium tradeoff
-        has_cardio = any("cardio" in str(k).lower() for k in specialist_outputs.keys())
-        has_nephro = any("nephro" in str(k).lower() for k in specialist_outputs.keys())
+        has_cardio = any(("cardio" in str(k).lower() or "heart" in str(k).lower()) for k in specialist_outputs.keys())
+        has_nephro = any(("nephro" in str(k).lower() or "kidney" in str(k).lower()) for k in specialist_outputs.keys())
         combined_text = " ".join(str(v) for v in specialist_outputs.values()).lower()
         has_fluid_conflict = ("fluid" in combined_text or "sodium" in combined_text) and (has_cardio and has_nephro)
 
@@ -220,8 +220,8 @@ class ResponseSynthesizerNode(BaseNode):
         follow_ups = list(state.get("follow_up_suggestions") or [])
         if not follow_ups:
             combined_text = " ".join(str(v) for v in state.get("specialist_outputs", {}).values()).lower()
-            has_cardio = any("cardio" in k.lower() for k in state.get("specialist_outputs", {}))
-            has_nephro = any("nephro" in k.lower() for k in state.get("specialist_outputs", {}))
+            has_cardio = any(("cardio" in k.lower() or "heart" in k.lower()) for k in state.get("specialist_outputs", {}))
+            has_nephro = any(("nephro" in k.lower() or "kidney" in k.lower()) for k in state.get("specialist_outputs", {}))
             if ("fluid" in combined_text or "sodium" in combined_text) and (has_cardio and has_nephro):
                 follow_ups = [
                     "Ask doctor about daily fluid and sodium balance",

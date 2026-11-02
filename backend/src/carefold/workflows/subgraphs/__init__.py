@@ -20,11 +20,11 @@ from __future__ import annotations
 
 from carefold.workflows.subgraphs.supervisor import (
     DEFAULT_SPECIALISTS,
-    SPECIALIST_BENEFITS_GUIDE,
+    SPECIALIST_BENEFITS_COORDINATOR,
     SPECIALIST_DOCUMENT_EXTRACTOR,
     SPECIALIST_GENERALIST,
-    SPECIALIST_HABIT_COMPANION,
-    SPECIALIST_VISIT_STEWARD,
+    SPECIALIST_HABIT_COORDINATOR,
+    SPECIALIST_APPOINTMENT_PREP_COORDINATOR,
     build_supervisor_subgraph,
     create_supervisor_router_node,
     create_supervisor_subgraph,
@@ -34,11 +34,11 @@ from carefold.workflows.subgraphs.supervisor import (
 
 __all__ = [
     "DEFAULT_SPECIALISTS",
-    "SPECIALIST_BENEFITS_GUIDE",
+    "SPECIALIST_BENEFITS_COORDINATOR",
     "SPECIALIST_DOCUMENT_EXTRACTOR",
     "SPECIALIST_GENERALIST",
-    "SPECIALIST_HABIT_COMPANION",
-    "SPECIALIST_VISIT_STEWARD",
+    "SPECIALIST_HABIT_COORDINATOR",
+    "SPECIALIST_APPOINTMENT_PREP_COORDINATOR",
     "build_supervisor_subgraph",
     "create_supervisor_router_node",
     "create_supervisor_subgraph",
