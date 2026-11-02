@@ -84,7 +84,7 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
 
     it('sanitizes special characters, whitespace, and uppercase in agent ID', () => {
       const fixedDate = new Date('2026-10-07T12:00:00Z');
-      const filename = generateDossierFilename('Cardiology Guide / Specialist!', 'md', fixedDate);
+      const filename = generateDossierFilename('Heart Care Coordinator / Specialist!', 'md', fixedDate);
       expect(filename).toBe('carefold-heart-care-coordinator-specialist-prep-2026-10-07.md');
     });
 

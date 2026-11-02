@@ -87,7 +87,7 @@ describe('ChatStudioShell Component (/p/[profileId]/chat)', () => {
   it('intercepts ambiguous family member prompt with client-side ambiguity hold card', async () => {
     render(<ChatStudioShell profileId="rosa" />);
 
-    const textarea = screen.getByPlaceholderText(/ask visit steward about rosa rivera/i);
+    const textarea = screen.getByPlaceholderText(/ask appointment prep coordinator about rosa rivera/i);
     fireEvent.change(textarea, { target: { value: 'Did Leo get his flu vaccine?' } });
 
     const sendBtn = screen.getByRole('button', { name: /send message/i });
@@ -107,7 +107,7 @@ describe('ChatStudioShell Component (/p/[profileId]/chat)', () => {
   it('resolves ambiguity by clicking "Keep it in Rosa\'s chat"', async () => {
     render(<ChatStudioShell profileId="rosa" />);
 
-    const textarea = screen.getByPlaceholderText(/ask visit steward about rosa rivera/i);
+    const textarea = screen.getByPlaceholderText(/ask appointment prep coordinator about rosa rivera/i);
     fireEvent.change(textarea, { target: { value: 'Did Leo get his flu vaccine?' } });
 
     const sendBtn = screen.getByRole('button', { name: /send message/i });
@@ -129,7 +129,7 @@ describe('ChatStudioShell Component (/p/[profileId]/chat)', () => {
   it('sends normal message directly and adds to message stream', async () => {
     render(<ChatStudioShell profileId="rosa" />);
 
-    const textarea = screen.getByPlaceholderText(/ask visit steward about rosa rivera/i);
+    const textarea = screen.getByPlaceholderText(/ask appointment prep coordinator about rosa rivera/i);
     fireEvent.change(textarea, { target: { value: 'What questions should I ask Dr. Whitfield about blood pressure?' } });
 
     const sendBtn = screen.getByRole('button', { name: /send message/i });

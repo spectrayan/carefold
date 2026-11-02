@@ -218,7 +218,7 @@ describe('Ambiguity Detection, ProfileSwitcher & Teen Handover Suite', () => {
     it('holds message and routes to target profile on "Start a chat for [Person]"', async () => {
       render(<ChatStudioShell profileId="me" />);
 
-      const textarea = screen.getByRole('textbox', { name: /message visit steward/i });
+      const textarea = screen.getByRole('textbox', { name: /message appointment prep coordinator/i });
       fireEvent.change(textarea, { target: { value: "How is Rosa feeling today?" } });
 
       const sendBtn = screen.getByRole('button', { name: /send message/i });
@@ -245,7 +245,7 @@ describe('Ambiguity Detection, ProfileSwitcher & Teen Handover Suite', () => {
     it('dismisses held message on "Discard" button click without sending', async () => {
       render(<ChatStudioShell profileId="me" />);
 
-      const textarea = screen.getByRole('textbox', { name: /message visit steward/i });
+      const textarea = screen.getByRole('textbox', { name: /message appointment prep coordinator/i });
       fireEvent.change(textarea, { target: { value: "Did Leo take his allergy medicine?" } });
 
       const sendBtn = screen.getByRole('button', { name: /send message/i });
