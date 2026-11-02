@@ -117,7 +117,7 @@ describe('Safety Refusal Gate & Output Classifier', () => {
   it('builds system safety preamble with forbidden intents and mandatory disclosures', () => {
     const agent: AgentManifest = {
       id: 'appointment-prep-coordinator',
-      title: 'Visit Steward',
+      title: 'Appointment Prep Coordinator',
       version: '0.1.0',
       risk_class: 'wellness',
       skills: ['visit-prep'],

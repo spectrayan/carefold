@@ -14,7 +14,7 @@
 # limitations under the License.
 
 id: cancer-care-coordinator
-title: Oncology Care Steward
+title: Cancer Care Coordinator
 version: 0.1.0
 license: Apache-2.0
 care_stages:

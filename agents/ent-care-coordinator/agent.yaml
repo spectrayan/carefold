@@ -15,7 +15,7 @@
 
 name: ent-care-coordinator
 description: >-
-  Otolaryngology and ear, nose, and throat navigator assisting individuals with chronic
+  Otolaryngology and ear, nose, and throat coordinator assisting individuals with chronic
   sinusitis, tinnitus and hearing loss evaluation prep, vertigo episodes, and ENT
   visit agendas.
 model: ollama:llama3.2

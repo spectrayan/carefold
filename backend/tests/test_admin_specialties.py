@@ -54,7 +54,7 @@ from evals.runner import EvalCase, run_single_eval
 
 ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
     "prior-authorization-coordinator": {
-        "title": "Prior Authorization Navigator",
+        "title": "Prior Authorization Coordinator",
         "companion_skill": "prior-auth-prep",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.prior_auth",
@@ -65,7 +65,7 @@ ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "fts_query": "prior authorization",
     },
     "claims-appeals-coordinator": {
-        "title": "Claims & Appeals Steward",
+        "title": "Claims & Appeals Coordinator",
         "companion_skill": "claims-appeals-prep",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.claims",
@@ -76,7 +76,7 @@ ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "fts_query": "denial appeal",
     },
     "records-coordinator": {
-        "title": "Medical Records Coordinator",
+        "title": "Records Coordinator",
         "companion_skill": "records-management",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.records",
@@ -87,7 +87,7 @@ ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "fts_query": "hipaa record request",
     },
     "prescription-cost-coordinator": {
-        "title": "Prescription & Formulary Guide",
+        "title": "Prescription Cost Coordinator",
         "companion_skill": "formulary-navigation",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.formulary",

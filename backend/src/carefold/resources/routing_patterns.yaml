@@ -7,7 +7,7 @@
 # - 5 Extended Medical & Surgical Specialists (R2)
 # - 8 Core Organ Navigators (R1)
 # - 1 Document Extractor
-# - 3 Base Generalists (Habit Companion, Benefits Guide, Visit Steward)
+# - 3 Base Generalists (Habit Coordinator, Benefits Coordinator, Appointment Prep Coordinator)
 # - Dossier Extraction Classifiers
 #
 # Precedence Ordering Rationale:

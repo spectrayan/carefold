@@ -172,7 +172,7 @@ class TestRealWorldScenarios:
         3. Supervisor coordinates specialist re-routing.
         4. State persistence preserves thread continuity across turns.
         """
-        # Turn 1: Visit Steward
+        # Turn 1: Appointment Prep Coordinator
         res1 = e2e_client.post("/api/chat", json={
             "agent_id": "appointment-prep-coordinator",
             "message": "I have an appointment next Tuesday. What should I prepare?"

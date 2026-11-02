@@ -122,7 +122,7 @@ Carefold features a modular catalog of 23 specialist clinical and administrative
 
 - **Clinical Organ & Specialty Navigators (`clinical_assist`)**: Dedicated navigators for Cardiology, Pulmonology, Gastroenterology, Oncology, Neurology, Nephrology, Dermatology, Endocrinology, Orthopedics, Rheumatology, Urology, ENT, Vision, Hematology, Podiatry, Vascular Medicine, Oral Health, and General Visit Preparation. Each specialist helps you organize symptoms, review lab trends and vital signs, and prepare clear, prioritized questions to discuss with your clinician.
 - **Administrative & Insurance Stewards (`admin`)**: Stewards for Health Insurance Benefits & Coverage explanation, Prior Authorization preparation, Claims & Denials Appeals, Prescription Drug Formularies, and Multi-Provider Medical Records coordination.
-- **Wellness & Habit Companions (`wellness`)**: Daily companions for chronic care routines, hydration tracking, sleep hygiene, and lifestyle check-ins.
+- **Wellness & Habit Coordinators (`wellness`)**: Daily companions for chronic care routines, hydration tracking, sleep hygiene, and lifestyle check-ins.
 
 ### Exploring Available Agents
 

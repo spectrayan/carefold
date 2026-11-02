@@ -355,13 +355,13 @@ def create_supervisor_subgraph(
     # 2. Add specialist nodes
     specs = specialists or {}
 
-    # Benefits Guide
+    # Benefits Coordinator
     bg_node = specs.get(SPECIALIST_BENEFITS_GUIDE) or specs.get("benefits_coordinator")
     if bg_node is None:
         bg_node = _create_specialist_node(SPECIALIST_BENEFITS_GUIDE, model, tools=tools)
     builder.add_node("benefits_coordinator", bg_node)
 
-    # Visit Steward
+    # Appointment Prep Coordinator
     vs_node = specs.get(SPECIALIST_VISIT_STEWARD) or specs.get("appointment_prep_coordinator")
     if vs_node is None:
         vs_node = _create_specialist_node(SPECIALIST_VISIT_STEWARD, model, tools=tools)
@@ -373,7 +373,7 @@ def create_supervisor_subgraph(
         de_node = _create_specialist_node(SPECIALIST_DOCUMENT_EXTRACTOR, model, tools=tools)
     builder.add_node("document_extractor", de_node)
 
-    # Habit Companion
+    # Habit Coordinator
     hc_node = specs.get(SPECIALIST_HABIT_COMPANION) or specs.get("habit_coordinator")
     if hc_node is None:
         hc_node = _create_specialist_node(SPECIALIST_HABIT_COMPANION, model, tools=tools)

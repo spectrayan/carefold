@@ -54,7 +54,7 @@ def test_agent_registry_get_and_indexing(temp_workspace: Path):
     manifest = registry.get(AGENT_VISIT_STEWARD)
     assert manifest is not None
     assert manifest.id == AGENT_VISIT_STEWARD
-    assert manifest.title == "Visit Steward"
+    assert manifest.title == "Appointment Prep Coordinator"
 
     assert registry[AGENT_VISIT_STEWARD].id == AGENT_VISIT_STEWARD
 

@@ -58,7 +58,7 @@ describe('ChatStudioShell ApprovalCard Wiring (Step U0)', () => {
     saveSession({
       id: 'thread-rosa-approval',
       agentId: 'appointment-prep-coordinator',
-      agentTitle: 'Visit Steward',
+      agentTitle: 'Appointment Prep Coordinator',
       title: 'Cardiology Visit Prep',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

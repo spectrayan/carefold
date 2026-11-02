@@ -133,7 +133,7 @@ class TestSqliteCatalogAdapter:
         return {
             "benefits-coordinator": AgentManifest(
                 id="benefits-coordinator",
-                title="Benefits Guide",
+                title="Benefits Coordinator",
                 description="Explains healthcare insurance benefits, copays, deductibles, and out-of-pocket maximums.",
                 domain=AgentDomain.NAVIGATION,
                 category="navigation.insurance",
@@ -142,7 +142,7 @@ class TestSqliteCatalogAdapter:
             ),
             "habit-coordinator": AgentManifest(
                 id="habit-coordinator",
-                title="Habit Companion",
+                title="Habit Coordinator",
                 description="Daily wellness habit tracker for hydration, sleep hygiene, and routines.",
                 domain=AgentDomain.WELLNESS,
                 category="wellness.habits",
@@ -151,7 +151,7 @@ class TestSqliteCatalogAdapter:
             ),
             "appointment-prep-coordinator": AgentManifest(
                 id="appointment-prep-coordinator",
-                title="Visit Steward",
+                title="Appointment Prep Coordinator",
                 description="Clinical visit preparation and doctor appointment navigation.",
                 domain=AgentDomain.NAVIGATION,
                 category="navigation.appointments",
@@ -389,7 +389,7 @@ class TestSqliteCatalogAdapter:
         fetched = await catalog_adapter.get_agent("benefits-coordinator")
         assert fetched is not None
         assert fetched.id == "benefits-coordinator"
-        assert fetched.title == "Benefits Guide"
+        assert fetched.title == "Benefits Coordinator"
 
         # count_agents
         assert await catalog_adapter.count_agents() == 1

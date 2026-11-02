@@ -15,7 +15,7 @@
 
 name: brain-nerve-health-coordinator
 description: >-
-  Neurological care navigator assisting patients with migraine diaries, neuropathy
+  Neurological care coordinator assisting patients with migraine diaries, neuropathy
   tracking, cognitive symptom timelines, and neurology consultation agendas.
 model: ollama:llama3.2
 skills:

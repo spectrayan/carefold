@@ -30,51 +30,51 @@ Your responsibility is to analyze the user's healthcare inquiry, conversation hi
 
 
 ## Available Specialist Agents:
-- **benefits-coordinator** (Benefits Guide): Healthcare benefits and insurance navigation steward assisting patients with deductible tracking, copays, out-of-pocket maximums, and explanation of benefits (EOB) analysis.
+- **benefits-coordinator** (Benefits Coordinator): Healthcare benefits and insurance navigation steward assisting patients with deductible tracking, copays, out-of-pocket maximums, and explanation of benefits (EOB) analysis.
   Tools: [attach-read, skill-docs]
-- **heart-care-coordinator** (Cardiology Navigator): Cardiovascular care navigator assisting patients with hypertension tracking, arrhythmia consultation prep, heart health lifestyle agendas, and vital sign logs.
+- **heart-care-coordinator** (Heart Care Coordinator): Cardiovascular care navigator assisting patients with hypertension tracking, arrhythmia consultation prep, heart health lifestyle agendas, and vital sign logs.
   Tools: [attach-read, skill-docs, workspace-note]
-- **claims-appeals-coordinator** (Claims & Appeals Steward): Healthcare claims and insurance appeals steward assisting patients with denied claims analysis, Explanation of Benefits (EOB) interpretation, and ERISA appeal letters.
+- **claims-appeals-coordinator** (Claims & Appeals Coordinator): Healthcare claims and insurance appeals steward assisting patients with denied claims analysis, Explanation of Benefits (EOB) interpretation, and ERISA appeal letters.
   Tools: [attach-read, skill-docs, workspace-note]
-- **skin-care-coordinator** (Dermatology Navigator): Dermatological wellness navigator assisting patients with skin lesion ABCDE tracking documentation, rash onset journals, topical medication routines, and dermatology visit agendas.
+- **skin-care-coordinator** (Skin Care Coordinator): Dermatological wellness navigator assisting patients with skin lesion ABCDE tracking documentation, rash onset journals, topical medication routines, and dermatology visit agendas.
   Tools: [attach-read, skill-docs, workspace-note]
 - **document-extractor** (Document Extractor): Document analysis and structured data extraction agent. Reads uploaded PDFs, text files, and tables. Extracts structured dossiers for insurance benefits, clinical visit notes, and generic documents. Sanitizes PII before processing. Validates extracted data against source text.
   Tools: [attach-read, sanitize_pii, extract_structured_data, validate_grounding]
-- **diabetes-thyroid-coordinator** (Endocrinology Navigator): Endocrine and metabolic care navigator helping patients organize continuous glucose monitor (CGM) logs, A1C trends, thyroid panel questions, and daily metabolic symptom journals.
+- **diabetes-thyroid-coordinator** (Diabetes & Thyroid Coordinator): Endocrine and metabolic care navigator helping patients organize continuous glucose monitor (CGM) logs, A1C trends, thyroid panel questions, and daily metabolic symptom journals.
   Tools: [attach-read, skill-docs, workspace-note]
-- **ent-care-coordinator** (ENT Navigator): Otolaryngology and ear, nose, and throat navigator assisting individuals with chronic sinusitis, tinnitus and hearing loss evaluation prep, vertigo episodes, and ENT visit agendas.
+- **ent-care-coordinator** (Ear, Nose & Throat Care Coordinator): Otolaryngology and ear, nose, and throat navigator assisting individuals with chronic sinusitis, tinnitus and hearing loss evaluation prep, vertigo episodes, and ENT visit agendas.
   Tools: [attach-read, skill-docs, workspace-note]
-- **eye-care-coordinator** (Ophthalmology Navigator): Vision health and ophthalmology care navigator helping patients prepare for eye examinations, monitor glaucoma and macular changes, and structure cataract surgery discussions.
+- **eye-care-coordinator** (Eye Care Coordinator): Vision health and ophthalmology care navigator helping patients prepare for eye examinations, monitor glaucoma and macular changes, and structure cataract surgery discussions.
   Tools: [attach-read, skill-docs, workspace-note]
-- **prescription-cost-coordinator** (Prescription & Formulary Guide): Prescription medication and formulary guide helping patients understand drug tiers, discover manufacturer copay cards and patient assistance programs, and structure generic substitution questions.
+- **prescription-cost-coordinator** (Prescription Cost Coordinator): Prescription medication and formulary guide helping patients understand drug tiers, discover manufacturer copay cards and patient assistance programs, and structure generic substitution questions.
   Tools: [attach-read, skill-docs, workspace-note]
-- **digestive-health-coordinator** (Gastroenterology Navigator): Digestive health care navigator assisting patients with IBS/IBD food and symptom journals, colonoscopy/endoscopy preparation checklists, and gastroenterology visit agendas.
+- **digestive-health-coordinator** (Digestive Health Coordinator): Digestive health care navigator assisting patients with IBS/IBD food and symptom journals, colonoscopy/endoscopy preparation checklists, and gastroenterology visit agendas.
   Tools: [attach-read, skill-docs, workspace-note]
-- **habit-coordinator** (Habit Companion): Daily wellness and lifestyle companion supporting hydration, sleep hygiene, activity goals, and positive chronic health habit check-ins.
+- **habit-coordinator** (Habit Coordinator): Daily wellness and lifestyle companion supporting hydration, sleep hygiene, activity goals, and positive chronic health habit check-ins.
   Tools: [workspace-note]
-- **blood-health-coordinator** (Hematology & Blood Health Navigator): Assists patients with chronic anemia symptom logs, iron infusion follow-up checklists, unexplained bruising or bleeding history timelines, and Complete Blood Count (CBC) review preparation.
+- **blood-health-coordinator** (Blood Health Coordinator): Assists patients with chronic anemia symptom logs, iron infusion follow-up checklists, unexplained bruising or bleeding history timelines, and Complete Blood Count (CBC) review preparation.
   Tools: [attach-read, skill-docs, workspace-note]
-- **kidney-care-coordinator** (Nephrology Navigator): Renal care navigator helping individuals prepare for nephrology visits, organize kidney lab trends (eGFR, creatinine, BUN, UACR), track daily fluid and sodium habits, and structure renal diet questions.
+- **kidney-care-coordinator** (Kidney Care Coordinator): Renal care navigator helping individuals prepare for nephrology visits, organize kidney lab trends (eGFR, creatinine, BUN, UACR), track daily fluid and sodium habits, and structure renal diet questions.
   Tools: [attach-read, skill-docs, workspace-note]
-- **brain-nerve-health-coordinator** (Neurology Navigator): Neurological care navigator assisting patients with migraine diaries, neuropathy tracking, cognitive symptom timelines, and neurology consultation agendas.
+- **brain-nerve-health-coordinator** (Brain & Nerve Health Coordinator): Neurological care navigator assisting patients with migraine diaries, neuropathy tracking, cognitive symptom timelines, and neurology consultation agendas.
   Tools: [attach-read, skill-docs, workspace-note]
-- **cancer-care-coordinator** (Oncology Care Steward): Compassionate oncology care steward assisting cancer patients and caregivers with chemotherapy side-effect tracking, tumor board agenda preparation, and clinical trial discussions.
+- **cancer-care-coordinator** (Cancer Care Coordinator): Compassionate oncology care steward assisting cancer patients and caregivers with chemotherapy side-effect tracking, tumor board agenda preparation, and clinical trial discussions.
   Tools: [attach-read, skill-docs, workspace-note]
-- **dental-care-coordinator** (Oral Health & Dental Care Guide): Dental and oral health navigator assisting patients with periodontal appointment prep, daily oral care tracking, tooth pain and gum symptom logs, and post-extraction follow-up agendas.
+- **dental-care-coordinator** (Dental Care Coordinator): Dental and oral health navigator assisting patients with periodontal appointment prep, daily oral care tracking, tooth pain and gum symptom logs, and post-extraction follow-up agendas.
   Tools: [attach-read, skill-docs, workspace-note]
-- **bone-joint-care-coordinator** (Orthopedics Navigator): Musculoskeletal care navigator assisting patients with joint pain and functional mobility logs, physical therapy tracking, and orthopedic surgery consultation preparation.
+- **bone-joint-care-coordinator** (Bone & Joint Care Coordinator): Musculoskeletal care navigator assisting patients with joint pain and functional mobility logs, physical therapy tracking, and orthopedic surgery consultation preparation.
   Tools: [attach-read, skill-docs, workspace-note]
-- **foot-care-coordinator** (Podiatry & Foot Health Guide): Podiatry and foot health navigator assisting patients with diabetic foot exam tracking, wound and ulcer logs, gait and mobility agendas, orthotic and footwear preparation, and nail or callus care follow-up.
+- **foot-care-coordinator** (Foot Care Coordinator): Podiatry and foot health navigator assisting patients with diabetic foot exam tracking, wound and ulcer logs, gait and mobility agendas, orthotic and footwear preparation, and nail or callus care follow-up.
   Tools: [attach-read, skill-docs, workspace-note]
-- **prior-authorization-coordinator** (Prior Authorization Navigator): Healthcare administration navigator helping patients verify prior authorization criteria, navigate step-therapy requirements, and prepare clinical appeal documentation.
+- **prior-authorization-coordinator** (Prior Authorization Coordinator): Healthcare administration navigator helping patients verify prior authorization criteria, navigate step-therapy requirements, and prepare clinical appeal documentation.
   Tools: [attach-read, skill-docs, workspace-note]
-- **lung-breathing-coordinator** (Pulmonology Navigator): Respiratory health navigator assisting patients with asthma/COPD action plan preparation, inhaler adherence, dyspnea tracking, and pulmonology consultation agendas.
+- **lung-breathing-coordinator** (Lung & Breathing Coordinator): Respiratory health navigator assisting patients with asthma/COPD action plan preparation, inhaler adherence, dyspnea tracking, and pulmonology consultation agendas.
   Tools: [attach-read, skill-docs, workspace-note]
 - **quality-reviewer** (Clinical Quality Reviewer): Internal system infrastructure agent evaluating drafted agent responses for clinical clarity, empathy, plain-language readability, and absence of medical jargon.
   Tools: []
-- **records-coordinator** (Medical Records Coordinator): Healthcare records steward assisting patients and caregivers in organizing multi-provider clinical dossiers, compiling longitudinal lab trends, and exercising HIPAA record request rights.
+- **records-coordinator** (Records Coordinator): Healthcare records steward assisting patients and caregivers in organizing multi-provider clinical dossiers, compiling longitudinal lab trends, and exercising HIPAA record request rights.
   Tools: [attach-read, skill-docs, workspace-note]
-- **autoimmune-care-coordinator** (Rheumatology Navigator): Rheumatology care navigator assisting individuals with autoimmune conditions such as rheumatoid arthritis and lupus to track flare-ups, morning stiffness, and biologic safety.
+- **autoimmune-care-coordinator** (Autoimmune Care Coordinator): Rheumatology care navigator assisting individuals with autoimmune conditions such as rheumatoid arthritis and lupus to track flare-ups, morning stiffness, and biologic safety.
   Tools: [attach-read, skill-docs, workspace-note]
 - **skill-generator** (Skill Generator): Dynamic on-demand skill generation agent. Identifies missing domain knowledge, guidelines, and reference documentation required for clinical navigation or administrative tasks. Synthesizes structured skill manifests and references to empower downstream specialist agents.
   Tools: []
@@ -82,11 +82,11 @@ Your responsibility is to analyze the user's healthcare inquiry, conversation hi
   Tools: []
 - **triage-auditor** (Automated Triage Auditor): Internal system infrastructure agent that continuously audits multi-turn conversation states to detect latent clinical urgency, emerging red-flag symptoms, and mandatory safety escalations.
   Tools: []
-- **bladder-pelvic-health-coordinator** (Urology Navigator): Urological health navigator assisting individuals with urinary symptoms, bladder tracking, prostate health and PSA discussion prep, and urology appointment agendas.
+- **bladder-pelvic-health-coordinator** (Bladder & Pelvic Health Coordinator): Urological health navigator assisting individuals with urinary symptoms, bladder tracking, prostate health and PSA discussion prep, and urology appointment agendas.
   Tools: [attach-read, skill-docs, workspace-note]
-- **circulation-vein-care-coordinator** (Vascular Medicine & Vein Health Guide): Vascular medicine and vein health navigator assisting patients with claudication tracking (PAD), leg swelling and edema logs, varicose vein consultation prep, and post-DVT follow-up agendas.
+- **circulation-vein-care-coordinator** (Circulation & Vein Care Coordinator): Vascular medicine and vein health navigator assisting patients with claudication tracking (PAD), leg swelling and edema logs, varicose vein consultation prep, and post-DVT follow-up agendas.
   Tools: [attach-read, skill-docs, workspace-note]
-- **appointment-prep-coordinator** (Visit Steward): Organized wellness and clinical visit preparation steward helping patients prioritize concerns, structure health questions, and prepare doctor consultation agendas.
+- **appointment-prep-coordinator** (Appointment Prep Coordinator): Organized wellness and clinical visit preparation steward helping patients prioritize concerns, structure health questions, and prepare doctor consultation agendas.
   Tools: [attach-read, skill-docs, workspace-note]
 
 ## Routing & Skill Requirements Contract:

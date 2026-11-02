@@ -210,7 +210,7 @@ class TestChallengeStep2DomainOnlyFallback:
         agents = [
             make_agent(
                 "habit-coordinator",
-                "Habit Companion",
+                "Habit Coordinator",
                 domain="wellness",
                 category="wellness.habits",
                 description="Assists with hydration and daily routines.",
@@ -301,7 +301,7 @@ class TestChallengeStep3FTSFallback:
         agents = [
             make_agent(
                 "habit-coordinator",
-                "Habit Companion",
+                "Habit Coordinator",
                 domain="wellness",
                 category="wellness.habits",
                 description="Assists with hydration, daily routines, and sleep hygiene tracking.",
@@ -309,7 +309,7 @@ class TestChallengeStep3FTSFallback:
             ),
             make_agent(
                 "appointment-prep-coordinator",
-                "Visit Steward",
+                "Appointment Prep Coordinator",
                 domain="navigation",
                 category="navigation.appointments",
                 description="Doctor visit preparation and questions checklist.",
@@ -375,7 +375,7 @@ class TestChallengeStep3FTSFallback:
         agents = [
             make_agent(
                 "benefits-coordinator",
-                "Benefits Guide",
+                "Benefits Coordinator",
                 domain="navigation",
                 category="navigation.insurance",
                 description="Specializes in deductible, copay, and coinsurance benefits.",
@@ -430,7 +430,7 @@ class TestChallengeStep4PatternFallback:
         # Database has one agent that cannot match this gibberish
         await catalog.index_agent(make_agent(
             "benefits-coordinator",
-            "Benefits Guide",
+            "Benefits Coordinator",
             domain="navigation",
             category="navigation.insurance",
             description="Insurance guide",
@@ -801,7 +801,7 @@ class TestAdversarialHostileEdgeCases:
 
         await catalog.index_agent(make_agent(
             "benefits-coordinator",
-            "Benefits Guide",
+            "Benefits Coordinator",
             domain="navigation",
             category="navigation.insurance",
             description="Insurance guide",
@@ -838,7 +838,7 @@ class TestAdversarialHostileEdgeCases:
 
         await catalog.index_agent(make_agent(
             "appointment-prep-coordinator",
-            "Visit Steward",
+            "Appointment Prep Coordinator",
             domain="navigation",
             category="navigation.appointments",
             description="Doctor appointment checklists and doctor visit preparation.",
@@ -877,7 +877,7 @@ class TestAdversarialHostileEdgeCases:
 
         await catalog.index_agent(make_agent(
             "habit-coordinator",
-            "Habit Companion",
+            "Habit Coordinator",
             domain="wellness",
             category="wellness.habits",
             description="Habit tracking.",
@@ -923,7 +923,7 @@ class TestAdversarialHostileEdgeCases:
 
         await catalog.index_agent(make_agent(
             "benefits-coordinator",
-            "Benefits Guide",
+            "Benefits Coordinator",
             domain="navigation",
             category="navigation.insurance",
             description="Insurance guide.",

@@ -15,7 +15,7 @@
 
 name: claims-appeals-coordinator
 description: >-
-  Healthcare claims and insurance appeals steward assisting patients with denied claims
+  Healthcare claims and insurance appeals coordinator assisting patients with denied claims
   analysis, Explanation of Benefits (EOB) interpretation, and ERISA appeal letters.
 model: ollama:llama3.2
 skills:

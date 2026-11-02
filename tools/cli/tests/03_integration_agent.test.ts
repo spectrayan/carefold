@@ -73,7 +73,7 @@ describe('03: CLI Integration: carefold agent commands', () => {
     const res = await runCli(['agent', 'list'], { cwd: ws.workspaceDir });
     expect(res.exitCode).toBe(0);
     expect(res.stdout).toContain('appointment-prep-coordinator');
-    expect(res.stdout).toContain('Visit Steward');
+    expect(res.stdout).toContain('Appointment Prep Coordinator');
     expect(res.stdout).toContain('0.1.0');
     expect(res.stdout).toContain('clinical_assist');
   });
@@ -97,7 +97,7 @@ describe('03: CLI Integration: carefold agent commands', () => {
 
     const res = await runCli(['agent', 'inspect', 'appointment-prep-coordinator'], { cwd: ws.workspaceDir });
     expect(res.exitCode).toBe(0);
-    expect(res.stdout).toContain('Agent: Visit Steward (appointment-prep-coordinator)');
+    expect(res.stdout).toContain('Agent: Appointment Prep Coordinator (appointment-prep-coordinator)');
     expect(res.stdout).toContain('Risk Class:      clinical_assist');
     expect(res.stdout).toContain('Declared Skills');
     expect(res.stdout).toContain('visit-prep');

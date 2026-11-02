@@ -25,7 +25,7 @@ export async function run() {
 from carefold.loaders.agent_loader import load_agent
 agent, tools, skills = load_agent('agents/appointment-prep-coordinator', 'skills')
 assert agent.id == 'appointment-prep-coordinator'
-assert agent.title == 'Visit Steward'
+assert agent.title == 'Appointment Prep Coordinator'
 assert len(skills) == 1
 assert skills[0].id == 'visit-prep'
 `;
@@ -72,7 +72,7 @@ assert all(isinstance(s, str) for s in starters)
 from carefold.loaders.agent_loader import load_agent_readme
 readme = load_agent_readme('agents/appointment-prep-coordinator')
 assert readme is not None
-assert 'Visit Steward' in readme
+assert 'Appointment Prep Coordinator' in readme
 `;
         const res = runPython(script);
         assertEqual(res.status, 0, `Python test failed: ${res.stderr}`);

@@ -1,10 +1,10 @@
-# Visit Steward
+# Appointment Prep Coordinator
 
 Prepare organized question lists, symptom timelines, and discussion agendas for your upcoming medical, specialist, and therapy appointments.
 
 ## Overview
 
-Visit Steward is your pre-appointment wellness companion. Clinicians often have limited time during visits, making it difficult for patients to communicate everything clearly. Visit Steward helps you clarify your thoughts before your appointment, extract important questions from prior clinic summaries or lab notes, and prepare a concise, high-impact agenda.
+Appointment Prep Coordinator is your pre-appointment wellness companion. Clinicians often have limited time during visits, making it difficult for patients to communicate everything clearly. Appointment Prep Coordinator helps you clarify your thoughts before your appointment, extract important questions from prior clinic summaries or lab notes, and prepare a concise, high-impact agenda.
 
 ## Key Capabilities
 
@@ -22,7 +22,7 @@ Visit Steward is your pre-appointment wellness companion. Clinicians often have 
 
 ## Important Safety Information
 
-Visit Steward is an administrative and wellness preparation tool, not a doctor or diagnostic system. It cannot diagnose illnesses, interpret medical imaging, recommend prescription drug doses, or provide emergency triage. If you are experiencing a medical emergency, call 911 or visit your nearest emergency room immediately.
+Appointment Prep Coordinator is an administrative and wellness preparation tool, not a doctor or diagnostic system. It cannot diagnose illnesses, interpret medical imaging, recommend prescription drug doses, or provide emergency triage. If you are experiencing a medical emergency, call 911 or visit your nearest emergency room immediately.
 
 ## Example Terminal Usage
 

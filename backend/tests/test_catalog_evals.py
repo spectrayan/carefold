@@ -45,49 +45,49 @@ from evals.runner import EvalCase, run_single_eval
 
 CORE_8_SPECIALISTS: Dict[str, Dict[str, Any]] = {
     "heart-care-coordinator": {
-        "title": "Cardiology Navigator",
+        "title": "Heart Care Coordinator",
         "companion_skill": "cardiology-prep",
         "category": "clinical.cardiology",
         "query": "hypertension",
     },
     "lung-breathing-coordinator": {
-        "title": "Pulmonology Navigator",
+        "title": "Lung & Breathing Coordinator",
         "companion_skill": "pulmonology-prep",
         "category": "clinical.pulmonology",
         "query": "asthma",
     },
     "brain-nerve-health-coordinator": {
-        "title": "Neurology Navigator",
+        "title": "Brain & Nerve Health Coordinator",
         "companion_skill": "neurology-prep",
         "category": "clinical.neurology",
         "query": "migraine",
     },
     "digestive-health-coordinator": {
-        "title": "Gastroenterology Navigator",
+        "title": "Digestive Health Coordinator",
         "companion_skill": "gastro-prep",
         "category": "clinical.gastroenterology",
         "query": "colonoscopy",
     },
     "kidney-care-coordinator": {
-        "title": "Nephrology Navigator",
+        "title": "Kidney Care Coordinator",
         "companion_skill": "nephrology-prep",
         "category": "clinical.nephrology",
         "query": "eGFR",
     },
     "diabetes-thyroid-coordinator": {
-        "title": "Endocrinology Navigator",
+        "title": "Diabetes & Thyroid Coordinator",
         "companion_skill": "endocrinology-prep",
         "category": "clinical.endocrinology",
         "query": "diabetes CGM",
     },
     "bone-joint-care-coordinator": {
-        "title": "Orthopedics Navigator",
+        "title": "Bone & Joint Care Coordinator",
         "companion_skill": "ortho-prep",
         "category": "clinical.orthopedics",
         "query": "joint pain",
     },
     "skin-care-coordinator": {
-        "title": "Dermatology Navigator",
+        "title": "Skin Care Coordinator",
         "companion_skill": "derma-prep",
         "category": "clinical.dermatology",
         "query": "rash lesion",

@@ -50,7 +50,7 @@ describe('sessionHistory Storage Index Library', () => {
       const s1: ChatSessionMeta = {
         id: 't-1',
         agentId: 'appointment-prep-coordinator',
-        agentTitle: 'Visit Steward',
+        agentTitle: 'Appointment Prep Coordinator',
         title: 'Older Session',
         createdAt: '2026-10-01T10:00:00.000Z',
         updatedAt: '2026-10-01T10:00:00.000Z',
@@ -152,8 +152,8 @@ describe('sessionHistory Storage Index Library', () => {
         { id: '1', role: 'assistant', content: 'Hello! How can I help you today?' }
       ];
 
-      const meta = upsertSessionFromMessages('thread-no-user', 'appointment-prep-coordinator', messages, 'Visit Steward');
-      expect(meta.title).toMatch(/Visit Steward Session|New Consultation/);
+      const meta = upsertSessionFromMessages('thread-no-user', 'appointment-prep-coordinator', messages, 'Appointment Prep Coordinator');
+      expect(meta.title).toMatch(/Appointment Prep Coordinator Session|New Consultation/);
     });
 
     it('preserves user custom title across subsequent message upserts', () => {

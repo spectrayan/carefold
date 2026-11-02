@@ -19,24 +19,24 @@ These agents specialize in organ systems and medical subspecialties. They help p
 
 | Agent ID | Title | Domain / Category | Declared Skills | Permitted Tools | Risk Class |
 |---|---|---|---|---|---|
-| `heart-care-coordinator` | Cardiology Navigator | `clinical.cardiology` | `cardiology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
-| `skin-care-coordinator` | Dermatology Navigator | `clinical.dermatology` | `derma-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
-| `diabetes-thyroid-coordinator` | Endocrinology Navigator | `clinical.endocrinology` | `endocrinology-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
-| `ent-care-coordinator` | ENT Navigator | `clinical.ent` | `ent-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
-| `eye-care-coordinator` | Ophthalmology Navigator | `clinical.ophthalmology` | `vision-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
-| `digestive-health-coordinator` | Gastroenterology Navigator | `clinical.gastroenterology` | `gastro-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `heart-care-coordinator` | Heart Care Coordinator | `clinical.cardiology` | `cardiology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `skin-care-coordinator` | Skin Care Coordinator | `clinical.dermatology` | `derma-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `diabetes-thyroid-coordinator` | Diabetes & Thyroid Coordinator | `clinical.endocrinology` | `endocrinology-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `ent-care-coordinator` | Ear, Nose & Throat Care Coordinator | `clinical.ent` | `ent-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `eye-care-coordinator` | Eye Care Coordinator | `clinical.ophthalmology` | `vision-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `digestive-health-coordinator` | Digestive Health Coordinator | `clinical.gastroenterology` | `gastro-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
 | `blood-health-coordinator` | Hematology Navigator | `clinical.hematology` | `hematology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
-| `kidney-care-coordinator` | Nephrology Navigator | `clinical.nephrology` | `nephrology-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
-| `brain-nerve-health-coordinator` | Neurology Navigator | `clinical.neurology` | `neurology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
-| `cancer-care-coordinator` | Oncology Care Steward | `clinical.oncology` | `oncology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `kidney-care-coordinator` | Kidney Care Coordinator | `clinical.nephrology` | `nephrology-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `brain-nerve-health-coordinator` | Brain & Nerve Health Coordinator | `clinical.neurology` | `neurology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `cancer-care-coordinator` | Cancer Care Coordinator | `clinical.oncology` | `oncology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
 | `dental-care-coordinator` | Oral Health & Dental Guide | `clinical.dentistry` | `oral-health-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
-| `bone-joint-care-coordinator` | Orthopedics Navigator | `clinical.orthopedics` | `ortho-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `bone-joint-care-coordinator` | Bone & Joint Care Coordinator | `clinical.orthopedics` | `ortho-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
 | `foot-care-coordinator` | Podiatry & Foot Care Guide | `clinical.podiatry` | `podiatry-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
-| `lung-breathing-coordinator` | Pulmonology Navigator | `clinical.pulmonology` | `pulmonology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
-| `autoimmune-care-coordinator` | Rheumatology Navigator | `clinical.rheumatology` | `rheuma-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
-| `bladder-pelvic-health-coordinator` | Urology Navigator | `clinical.urology` | `urology-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `lung-breathing-coordinator` | Lung & Breathing Coordinator | `clinical.pulmonology` | `pulmonology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `autoimmune-care-coordinator` | Autoimmune Care Coordinator | `clinical.rheumatology` | `rheuma-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `bladder-pelvic-health-coordinator` | Bladder & Pelvic Health Coordinator | `clinical.urology` | `urology-prep`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
 | `circulation-vein-care-coordinator` | Vascular Medicine Guide | `clinical.vascular` | `vascular-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
-| `appointment-prep-coordinator` | Visit Steward | `clinical.general` | `visit-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
+| `appointment-prep-coordinator` | Appointment Prep Coordinator | `clinical.general` | `visit-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `clinical_assist` |
 
 ---
 
@@ -46,11 +46,11 @@ Administrative stewards assist patients and families in navigating health insura
 
 | Agent ID | Title | Domain / Category | Declared Skills | Permitted Tools | Risk Class |
 |---|---|---|---|---|---|
-| `benefits-coordinator` | Benefits Guide | `navigation.insurance` | `benefits-explainer`, `records-management` | `attach-read`, `skill-docs` | `admin` |
-| `claims-appeals-coordinator` | Claims & Appeals Steward | `navigation.appeals` | `claims-appeals-prep`, `benefits-explainer` | `attach-read`, `skill-docs`, `workspace-note` | `admin` |
-| `prescription-cost-coordinator` | Prescription & Formulary Guide | `navigation.pharmacy` | `formulary-navigation`, `benefits-explainer` | `attach-read`, `skill-docs`, `workspace-note` | `admin` |
-| `prior-authorization-coordinator` | Prior Authorization Navigator | `navigation.authorizations` | `prior-auth-prep`, `records-management` | `attach-read`, `skill-docs`, `workspace-note` | `admin` |
-| `records-coordinator` | Medical Records Coordinator | `navigation.records` | `records-management` | `attach-read`, `skill-docs`, `workspace-note` | `admin` |
+| `benefits-coordinator` | Benefits Coordinator | `navigation.insurance` | `benefits-explainer`, `records-management` | `attach-read`, `skill-docs` | `admin` |
+| `claims-appeals-coordinator` | Claims & Appeals Coordinator | `navigation.appeals` | `claims-appeals-prep`, `benefits-explainer` | `attach-read`, `skill-docs`, `workspace-note` | `admin` |
+| `prescription-cost-coordinator` | Prescription Cost Coordinator | `navigation.pharmacy` | `formulary-navigation`, `benefits-explainer` | `attach-read`, `skill-docs`, `workspace-note` | `admin` |
+| `prior-authorization-coordinator` | Prior Authorization Coordinator | `navigation.authorizations` | `prior-auth-prep`, `records-management` | `attach-read`, `skill-docs`, `workspace-note` | `admin` |
+| `records-coordinator` | Records Coordinator | `navigation.records` | `records-management` | `attach-read`, `skill-docs`, `workspace-note` | `admin` |
 
 ---
 
@@ -60,7 +60,7 @@ Wellness companions support sustainable daily health habits, hydration, sleep ro
 
 | Agent ID | Title | Domain / Category | Declared Skills | Permitted Tools | Risk Class |
 |---|---|---|---|---|---|
-| `habit-coordinator` | Habit Companion | `wellness.habits` | `habit-checkin` | `workspace-note` | `wellness` |
+| `habit-coordinator` | Habit Coordinator | `wellness.habits` | `habit-checkin` | `workspace-note` | `wellness` |
 | `nutrition-coordinator` | Nutrition & Dietitian Guide | `wellness.nutrition` | `nutrition-prep`, `emergency-red-flags`, `clinical-safety-boundaries` | `attach-read`, `skill-docs`, `workspace-note` | `wellness` |
 
 ---

@@ -15,7 +15,7 @@
 
 name: cancer-care-coordinator
 description: >-
-  Compassionate oncology care steward assisting cancer patients and caregivers with
+  Compassionate oncology care coordinator assisting cancer patients and caregivers with
   chemotherapy side-effect tracking, tumor board agenda preparation, and clinical
   trial discussions.
 model: ollama:llama3.2

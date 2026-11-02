@@ -15,7 +15,7 @@
 
 name: prior-authorization-coordinator
 description: >-
-  Healthcare administration navigator helping patients verify prior authorization
+  Healthcare administration coordinator helping patients verify prior authorization
   criteria, navigate step-therapy requirements, and prepare clinical appeal documentation.
 model: ollama:llama3.2
 skills:

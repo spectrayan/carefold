@@ -63,7 +63,7 @@ Navigate to **Agents** (`/agents`) in the left navigation rail to explore all **
 
 ![Carefold Specialist Agent Marketplace](../assets/screenshots/agents-marketplace.png)
 
-Click on **Cardiology Navigator** (`heart-care-coordinator`) to review its clinical capabilities, declared skills (`cardiology-prep`), permitted tools, and plain-language non-clinical safety boundaries.
+Click on **Heart Care Coordinator** (`heart-care-coordinator`) to review its clinical capabilities, declared skills (`cardiology-prep`), permitted tools, and plain-language non-clinical safety boundaries.
 
 ---
 

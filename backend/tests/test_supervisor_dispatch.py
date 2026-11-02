@@ -334,7 +334,7 @@ class TestSupervisorReturnTransitions:
     async def test_multi_hop_delegation_loop(self):
         """Simulates a specialist delegating back to supervisor, which routes to another specialist.
         
-        Step 1: Benefits Guide identifies need for document extraction and sets:
+        Step 1: Benefits Coordinator identifies need for document extraction and sets:
                 requires_supervisor=True, routed_subgraph='document-extractor'
         Step 2: Supervisor re-routes to Document Extractor.
         Step 3: Document Extractor finishes with next_step='done' -> END.

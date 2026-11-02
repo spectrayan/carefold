@@ -15,7 +15,7 @@
 
 name: skin-care-coordinator
 description: >-
-  Dermatological wellness navigator assisting patients with skin lesion ABCDE tracking
+  Dermatological wellness coordinator assisting patients with skin lesion ABCDE tracking
   documentation, rash onset journals, topical medication routines, and dermatology
   visit agendas.
 model: ollama:llama3.2

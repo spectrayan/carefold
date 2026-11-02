@@ -437,7 +437,7 @@ export function SetupChecklist({
               <StepBadge badge="[READY]" />
             </div>
             <p className="text-xs text-slate-600 dark:text-zinc-300 mt-1">
-              Visit Steward is ready with pre-configured appointment preparation questions.
+              Appointment Prep Coordinator is ready with pre-configured appointment preparation questions.
             </p>
           </div>
         </div>

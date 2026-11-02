@@ -14,7 +14,7 @@
 # limitations under the License.
 
 id: blood-health-coordinator
-title: Hematology & Blood Health Navigator
+title: Blood Health Coordinator
 version: 0.1.0
 license: Apache-2.0
 care_stages:

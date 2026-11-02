@@ -43,7 +43,7 @@ const mockRosaAppointment = {
   clinic: 'Lakeside Heart Clinic',
   linkedDocTitle: 'Discharge summary, Sep 2',
   specialistId: 'appointment-prep-coordinator',
-  specialistTitle: 'Visit Steward',
+  specialistTitle: 'Appointment Prep Coordinator',
   prepCompletedQuestions: 4,
   prepTotalQuestions: 6,
   checklist: [

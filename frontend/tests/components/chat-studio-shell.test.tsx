@@ -45,7 +45,7 @@ describe('ChatStudioShell Component (/p/[profileId]/chat)', () => {
     saveSession({
       id: 'thread-rosa-1',
       agentId: 'appointment-prep-coordinator',
-      agentTitle: 'Visit Steward',
+      agentTitle: 'Appointment Prep Coordinator',
       title: 'Cardiology prep for Oct 13',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -75,7 +75,7 @@ describe('ChatStudioShell Component (/p/[profileId]/chat)', () => {
     expect(screen.getByRole('complementary', { name: /rosa rivera's consultation sessions/i })).toBeInTheDocument();
     expect(screen.getByText('Cardiology prep for Oct 13')).toBeInTheDocument();
     expect(screen.getByText('About Rosa')).toBeInTheDocument();
-    expect(screen.getAllByText('Visit Steward').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Appointment Prep Coordinator').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders persistent quiet safety footer disclaimer', () => {

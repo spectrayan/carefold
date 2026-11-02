@@ -196,7 +196,7 @@ async def test_heart_care_coordinator_skill_alias_resolution(tmp_path):
 
     agent = AgentManifest(
         id="heart-care-coordinator",
-        title="Cardiology Navigator",
+        title="Heart Care Coordinator",
         skills=["cardiology-prep"],
         persona="Role",
     )
@@ -229,7 +229,7 @@ async def test_skill_docs_dynamic_synthesis_on_missing_reference(tmp_path):
 
     agent = AgentManifest(
         id="heart-care-coordinator",
-        title="Cardiology Navigator",
+        title="Heart Care Coordinator",
         skills=["cardiology-prep"],
         persona="Role",
     )

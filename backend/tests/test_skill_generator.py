@@ -48,12 +48,12 @@ def test_eob_explanation_doc_present_and_readable():
 
     agent = AgentManifest(
         id="benefits-coordinator",
-        title="Benefits Guide",
+        title="Benefits Coordinator",
         version="0.1.0",
         risk_class="admin",
         skills=["benefits-explainer"],
         tools=["skill-docs"],
-        persona="You are Benefits Guide",
+        persona="You are Benefits Coordinator",
     )
     ctx = MockContext(agent)
 
@@ -185,12 +185,12 @@ async def test_skill_docs_resolves_references_from_generated_skill():
 
     agent = AgentManifest(
         id="benefits-coordinator",
-        title="Benefits Guide",
+        title="Benefits Coordinator",
         version="0.1.0",
         risk_class="admin",
         skills=["benefits-explainer"],
         tools=["skill-docs"],
-        persona="You are Benefits Guide",
+        persona="You are Benefits Coordinator",
     )
 
     ctx = MockContext(agent, state={"generated_skills": [generated_skill]})
@@ -215,9 +215,9 @@ async def test_symptom_log_template_present_and_readable():
 
     agent = AgentManifest(
         id="appointment-prep-coordinator",
-        title="Visit Steward",
+        title="Appointment Prep Coordinator",
         skills=["visit-prep"],
-        persona="You are Visit Steward",
+        persona="You are Appointment Prep Coordinator",
     )
     ctx = MockContext(agent, workspace_root=ws, skills_dir=ws / "skills")
 

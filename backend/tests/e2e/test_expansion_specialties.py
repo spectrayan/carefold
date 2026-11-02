@@ -99,7 +99,7 @@ MANDATORY_FORBIDDEN_ACTIONS = [
 EXPANSION_AGENTS: List[Dict[str, Any]] = [
     {
         "id": "heart-care-coordinator",
-        "title": "Cardiology Navigator",
+        "title": "Heart Care Coordinator",
         "domain": "clinical",
         "category": "clinical.cardiology",
         "risk_class": "clinical_assist",
@@ -115,7 +115,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "lung-breathing-coordinator",
-        "title": "Pulmonology Navigator",
+        "title": "Lung & Breathing Coordinator",
         "domain": "clinical",
         "category": "clinical.pulmonology",
         "risk_class": "clinical_assist",
@@ -131,7 +131,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "brain-nerve-health-coordinator",
-        "title": "Neurology Navigator",
+        "title": "Brain & Nerve Health Coordinator",
         "domain": "clinical",
         "category": "clinical.neurology",
         "risk_class": "clinical_assist",
@@ -147,7 +147,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "digestive-health-coordinator",
-        "title": "Gastroenterology Navigator",
+        "title": "Digestive Health Coordinator",
         "domain": "clinical",
         "category": "clinical.gastroenterology",
         "risk_class": "clinical_assist",
@@ -163,7 +163,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "kidney-care-coordinator",
-        "title": "Nephrology Navigator",
+        "title": "Kidney Care Coordinator",
         "domain": "clinical",
         "category": "clinical.nephrology",
         "risk_class": "clinical_assist",
@@ -179,7 +179,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "diabetes-thyroid-coordinator",
-        "title": "Endocrinology Navigator",
+        "title": "Diabetes & Thyroid Coordinator",
         "domain": "clinical",
         "category": "clinical.endocrinology",
         "risk_class": "clinical_assist",
@@ -195,7 +195,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "bone-joint-care-coordinator",
-        "title": "Orthopedics Navigator",
+        "title": "Bone & Joint Care Coordinator",
         "domain": "clinical",
         "category": "clinical.orthopedics",
         "risk_class": "clinical_assist",
@@ -211,7 +211,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "skin-care-coordinator",
-        "title": "Dermatology Navigator",
+        "title": "Skin Care Coordinator",
         "domain": "clinical",
         "category": "clinical.dermatology",
         "risk_class": "clinical_assist",
@@ -227,7 +227,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "cancer-care-coordinator",
-        "title": "Oncology Care Steward",
+        "title": "Cancer Care Coordinator",
         "domain": "clinical",
         "category": "clinical.oncology",
         "risk_class": "clinical_assist",
@@ -243,7 +243,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "autoimmune-care-coordinator",
-        "title": "Rheumatology Navigator",
+        "title": "Autoimmune Care Coordinator",
         "domain": "clinical",
         "category": "clinical.rheumatology",
         "risk_class": "clinical_assist",
@@ -259,7 +259,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "bladder-pelvic-health-coordinator",
-        "title": "Urology Navigator",
+        "title": "Bladder & Pelvic Health Coordinator",
         "domain": "clinical",
         "category": "clinical.urology",
         "risk_class": "clinical_assist",
@@ -275,7 +275,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "eye-care-coordinator",
-        "title": "Ophthalmology Navigator",
+        "title": "Eye Care Coordinator",
         "domain": "clinical",
         "category": "clinical.ophthalmology",
         "risk_class": "clinical_assist",
@@ -291,7 +291,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "ent-care-coordinator",
-        "title": "ENT Navigator",
+        "title": "Ear, Nose & Throat Care Coordinator",
         "domain": "clinical",
         "category": "clinical.ent",
         "risk_class": "clinical_assist",
@@ -307,7 +307,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "prior-authorization-coordinator",
-        "title": "Prior Authorization Navigator",
+        "title": "Prior Authorization Coordinator",
         "domain": "navigation",
         "category": "navigation.prior_auth",
         "risk_class": "admin",
@@ -323,7 +323,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "claims-appeals-coordinator",
-        "title": "Claims & Appeals Steward",
+        "title": "Claims & Appeals Coordinator",
         "domain": "navigation",
         "category": "navigation.claims",
         "risk_class": "admin",
@@ -339,7 +339,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "records-coordinator",
-        "title": "Medical Records Coordinator",
+        "title": "Records Coordinator",
         "domain": "navigation",
         "category": "navigation.records",
         "risk_class": "admin",
@@ -355,7 +355,7 @@ EXPANSION_AGENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "prescription-cost-coordinator",
-        "title": "Prescription & Formulary Guide",
+        "title": "Prescription Cost Coordinator",
         "domain": "navigation",
         "category": "navigation.formulary",
         "risk_class": "admin",
@@ -1165,7 +1165,7 @@ class TestRealWorldExpansionJourneys:
 
     @pytest.mark.asyncio
     async def test_scenario_records_coordinator_hipaa_dossier(self, e2e_workspace: Path):
-        """Scenario 5: Medical Records Coordinator HIPAA Dossier Compilation.
+        """Scenario 5: Records Coordinator HIPAA Dossier Compilation.
 
         Journey:
         1. Patient organizes cross-hospital records using records-coordinator.

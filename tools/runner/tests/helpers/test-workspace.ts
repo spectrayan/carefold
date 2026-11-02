@@ -35,7 +35,7 @@ export async function createTestWorkspace(): Promise<string> {
   // 1. Valid appointment-prep-coordinator agent.yaml
   const agentYaml = `
 id: appointment-prep-coordinator
-title: Visit Steward
+title: Appointment Prep Coordinator
 version: 0.1.0
 risk_class: wellness
 skills:
@@ -43,7 +43,7 @@ skills:
 tools:
   - workspace-note
 persona:
-  role: Visit Steward
+  role: Appointment Prep Coordinator
   tone: supportive
   instructions: You help someone prepare for a visit. You do not diagnose or dose.
 `;

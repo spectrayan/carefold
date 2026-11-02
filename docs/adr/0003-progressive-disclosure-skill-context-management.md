@@ -459,7 +459,7 @@ Similarly, `agent.yaml` carries operational metadata:
 
 ```yaml
 id: heart-care-coordinator
-title: Cardiology Navigator
+title: Heart Care Coordinator
 model: llama3.2
 risk_class: wellness
 domain: clinical

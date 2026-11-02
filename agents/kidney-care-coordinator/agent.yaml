@@ -15,7 +15,7 @@
 
 name: kidney-care-coordinator
 description: >-
-  Renal care navigator helping individuals prepare for nephrology visits, organize
+  Renal care coordinator helping individuals prepare for nephrology visits, organize
   kidney lab trends (eGFR, creatinine, BUN, UACR), track daily fluid and sodium habits,
   and structure renal diet questions.
 model: ollama:llama3.2

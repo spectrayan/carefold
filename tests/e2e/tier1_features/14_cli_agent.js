@@ -36,7 +36,7 @@ export async function run() {
       fn: () => {
         const res = runCli(['agent', 'inspect', 'appointment-prep-coordinator']);
         assertEqual(res.status, 0, `agent inspect failed: ${res.stderr}`);
-        assertContains(res.stdout, 'Visit Steward');
+        assertContains(res.stdout, 'Appointment Prep Coordinator');
         assertContains(res.stdout, 'wellness');
         assertContains(res.stdout, 'visit-prep');
       }

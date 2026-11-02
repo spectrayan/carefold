@@ -119,7 +119,7 @@ const EMPTY_AGENTS: AgentSummary[] = [];
 const DEFAULT_FALLBACK_AGENTS: AgentSummary[] = [
   {
     id: 'appointment-prep-coordinator',
-    title: 'Visit Steward',
+    title: 'Appointment Prep Coordinator',
     version: '0.4.0',
     risk_class: 'clinical_assist',
     skills: ['visit-prep'],
@@ -129,7 +129,7 @@ const DEFAULT_FALLBACK_AGENTS: AgentSummary[] = [
   },
   {
     id: 'benefits-coordinator',
-    title: 'Benefits Guide',
+    title: 'Benefits Coordinator',
     version: '0.4.0',
     risk_class: 'admin',
     skills: ['benefits-explainer'],
@@ -139,7 +139,7 @@ const DEFAULT_FALLBACK_AGENTS: AgentSummary[] = [
   },
   {
     id: 'habit-coordinator',
-    title: 'Habit Companion',
+    title: 'Habit Coordinator',
     version: '0.4.0',
     risk_class: 'wellness',
     skills: ['habit-checkin'],
@@ -378,7 +378,7 @@ export function ChatStudioShell({
           id: s.id,
           title: s.title,
           agentId: s.agentId,
-          agentTitle: s.agentTitle || 'Visit Steward',
+          agentTitle: s.agentTitle || 'Appointment Prep Coordinator',
           timeStr,
           group
         };

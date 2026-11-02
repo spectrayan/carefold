@@ -323,7 +323,7 @@ async def test_attach_read_csv_corrupt_utf8_falls_back_to_raw_text(temp_workspac
 
 @pytest.mark.asyncio
 async def test_workspace_note_success(temp_workspace: Path):
-    ctx = MockContext(temp_workspace, AgentManifest(id="appointment-prep-coordinator", title="Visit Steward", persona="Role"))
+    ctx = MockContext(temp_workspace, AgentManifest(id="appointment-prep-coordinator", title="Appointment Prep Coordinator", persona="Role"))
     result = await execute_workspace_note(
         {"title": "Appointment Goals", "content": "1. Ask about lab tests\n2. Discuss knee pain"},
         ctx,
@@ -427,7 +427,7 @@ async def test_workspace_note_symlink_dangling_rejection(temp_workspace: Path):
 async def test_skill_docs_success(temp_workspace: Path):
     ctx = MockContext(
         temp_workspace,
-        AgentManifest(id="appointment-prep-coordinator", title="Visit Steward", skills=["visit-prep"], persona="Role"),
+        AgentManifest(id="appointment-prep-coordinator", title="Appointment Prep Coordinator", skills=["visit-prep"], persona="Role"),
     )
 
     result = await execute_skill_docs(
@@ -446,7 +446,7 @@ async def test_skill_docs_fail_closed_unauthorized_skill(temp_workspace: Path):
     # Agent only declares habit-checkin, not visit-prep
     ctx = MockContext(
         temp_workspace,
-        AgentManifest(id="habit-coordinator", title="Habit Companion", skills=["habit-checkin"], persona="Role"),
+        AgentManifest(id="habit-coordinator", title="Habit Coordinator", skills=["habit-checkin"], persona="Role"),
     )
 
     result = await execute_skill_docs(
@@ -463,7 +463,7 @@ async def test_skill_docs_fail_closed_unauthorized_skill(temp_workspace: Path):
 async def test_skill_docs_traversal(temp_workspace: Path):
     ctx = MockContext(
         temp_workspace,
-        AgentManifest(id="appointment-prep-coordinator", title="Visit Steward", skills=["visit-prep"], persona="Role"),
+        AgentManifest(id="appointment-prep-coordinator", title="Appointment Prep Coordinator", skills=["visit-prep"], persona="Role"),
     )
 
     # Path traversal in doc name

@@ -15,7 +15,7 @@
 
 name: autoimmune-care-coordinator
 description: >-
-  Rheumatology care navigator assisting individuals with autoimmune conditions such
+  Rheumatology care coordinator assisting individuals with autoimmune conditions such
   as rheumatoid arthritis and lupus to track flare-ups, morning stiffness, and biologic
   safety.
 model: ollama:llama3.2

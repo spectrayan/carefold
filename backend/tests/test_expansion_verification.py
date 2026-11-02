@@ -62,7 +62,7 @@ from evals.runner import EvalCase, run_single_eval
 
 M2_SPECIALTY_AGENTS: Dict[str, Dict[str, Any]] = {
     "cancer-care-coordinator": {
-        "title": "Oncology Care Steward",
+        "title": "Cancer Care Coordinator",
         "companion_skill": "oncology-prep",
         "domain": AgentDomain.CLINICAL,
         "category": "clinical.oncology",
@@ -70,7 +70,7 @@ M2_SPECIALTY_AGENTS: Dict[str, Dict[str, Any]] = {
         "fts_query": "chemotherapy",
     },
     "autoimmune-care-coordinator": {
-        "title": "Rheumatology Navigator",
+        "title": "Autoimmune Care Coordinator",
         "companion_skill": "rheuma-prep",
         "domain": AgentDomain.CLINICAL,
         "category": "clinical.rheumatology",
@@ -78,7 +78,7 @@ M2_SPECIALTY_AGENTS: Dict[str, Dict[str, Any]] = {
         "fts_query": "autoimmune",
     },
     "bladder-pelvic-health-coordinator": {
-        "title": "Urology Navigator",
+        "title": "Bladder & Pelvic Health Coordinator",
         "companion_skill": "urology-prep",
         "domain": AgentDomain.CLINICAL,
         "category": "clinical.urology",
@@ -86,7 +86,7 @@ M2_SPECIALTY_AGENTS: Dict[str, Dict[str, Any]] = {
         "fts_query": "voiding",
     },
     "eye-care-coordinator": {
-        "title": "Ophthalmology Navigator",
+        "title": "Eye Care Coordinator",
         "companion_skill": "vision-prep",
         "domain": AgentDomain.CLINICAL,
         "category": "clinical.ophthalmology",
@@ -94,7 +94,7 @@ M2_SPECIALTY_AGENTS: Dict[str, Dict[str, Any]] = {
         "fts_query": "glaucoma",
     },
     "ent-care-coordinator": {
-        "title": "ENT Navigator",
+        "title": "Ear, Nose & Throat Care Coordinator",
         "companion_skill": "ent-prep",
         "domain": AgentDomain.CLINICAL,
         "category": "clinical.ent",
@@ -105,7 +105,7 @@ M2_SPECIALTY_AGENTS: Dict[str, Dict[str, Any]] = {
 
 M3_ADMIN_AGENTS: Dict[str, Dict[str, Any]] = {
     "prior-authorization-coordinator": {
-        "title": "Prior Authorization Navigator",
+        "title": "Prior Authorization Coordinator",
         "companion_skill": "prior-auth-prep",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.prior_auth",
@@ -113,7 +113,7 @@ M3_ADMIN_AGENTS: Dict[str, Dict[str, Any]] = {
         "fts_query": "prior authorization",
     },
     "claims-appeals-coordinator": {
-        "title": "Claims & Appeals Steward",
+        "title": "Claims & Appeals Coordinator",
         "companion_skill": "claims-appeals-prep",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.claims",
@@ -121,7 +121,7 @@ M3_ADMIN_AGENTS: Dict[str, Dict[str, Any]] = {
         "fts_query": "claims appeal",
     },
     "records-coordinator": {
-        "title": "Medical Records Coordinator",
+        "title": "Records Coordinator",
         "companion_skill": "records-management",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.records",
@@ -129,7 +129,7 @@ M3_ADMIN_AGENTS: Dict[str, Dict[str, Any]] = {
         "fts_query": "medical records",
     },
     "prescription-cost-coordinator": {
-        "title": "Prescription & Formulary Guide",
+        "title": "Prescription Cost Coordinator",
         "companion_skill": "formulary-navigation",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.formulary",

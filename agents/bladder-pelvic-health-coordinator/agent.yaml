@@ -15,7 +15,7 @@
 
 name: bladder-pelvic-health-coordinator
 description: >-
-  Urological health navigator assisting individuals with urinary symptoms, bladder
+  Urological health coordinator assisting individuals with urinary symptoms, bladder
   tracking, prostate health and PSA discussion prep, and urology appointment agendas.
 model: ollama:llama3.2
 skills:

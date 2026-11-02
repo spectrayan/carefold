@@ -1,10 +1,10 @@
-# Habit Companion
+# Habit Coordinator
 
 Supportive, non-judgmental wellness check-ins to help you maintain hydration, restful sleep routines, gentle movement, and mindful habits.
 
 ## Overview
 
-Building consistent wellness habits is easier with a supportive partner. Habit Companion helps you take a few minutes each day to reflect on your physical and mental well-being. By focusing on sustainable daily choices rather than rigid metrics, Habit Companion helps you build long-term routines that support your overall health.
+Building consistent wellness habits is easier with a supportive partner. Habit Coordinator helps you take a few minutes each day to reflect on your physical and mental well-being. By focusing on sustainable daily choices rather than rigid metrics, Habit Coordinator helps you build long-term routines that support your overall health.
 
 ## Key Capabilities
 
@@ -21,7 +21,7 @@ Building consistent wellness habits is easier with a supportive partner. Habit C
 
 ## Important Safety Information
 
-Habit Companion is a personal lifestyle and wellness reflection aid. It does not provide clinical mental health therapy, diagnostic assessments, psychiatric screening (e.g., PHQ-9 or GAD-7 scoring), or medical advice. If you are experiencing a mental health crisis, please reach out to the Suicide & Crisis Lifeline by calling or texting 988 (in the US and Canada) or contact emergency services immediately.
+Habit Coordinator is a personal lifestyle and wellness reflection aid. It does not provide clinical mental health therapy, diagnostic assessments, psychiatric screening (e.g., PHQ-9 or GAD-7 scoring), or medical advice. If you are experiencing a mental health crisis, please reach out to the Suicide & Crisis Lifeline by calling or texting 988 (in the US and Canada) or contact emergency services immediately.
 
 ## Example Terminal Usage
 

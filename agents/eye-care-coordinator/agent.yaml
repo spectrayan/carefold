@@ -15,7 +15,7 @@
 
 name: eye-care-coordinator
 description: >-
-  Vision health and ophthalmology care navigator helping patients prepare for eye
+  Vision health and ophthalmology care coordinator helping patients prepare for eye
   examinations, monitor glaucoma and macular changes, and structure cataract surgery
   discussions.
 model: ollama:llama3.2

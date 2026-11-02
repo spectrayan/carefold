@@ -15,7 +15,7 @@
 
 name: prescription-cost-coordinator
 description: >-
-  Prescription medication and formulary guide helping patients understand drug tiers,
+  Prescription medication and formulary coordinator helping patients understand drug tiers,
   discover manufacturer copay cards and patient assistance programs, and structure
   generic substitution questions.
 model: ollama:llama3.2

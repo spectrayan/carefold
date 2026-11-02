@@ -14,7 +14,7 @@
 # limitations under the License.
 
 id: habit-coordinator
-title: Habit Companion
+title: Habit Coordinator
 version: 0.1.0
 license: Apache-2.0
 care_stages:

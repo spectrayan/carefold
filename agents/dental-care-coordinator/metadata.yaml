@@ -14,7 +14,7 @@
 # limitations under the License.
 
 id: dental-care-coordinator
-title: Oral Health & Dental Care Guide
+title: Dental Care Coordinator
 version: 0.1.0
 license: Apache-2.0
 care_stages:

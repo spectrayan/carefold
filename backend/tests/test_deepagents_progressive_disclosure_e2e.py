@@ -471,7 +471,7 @@ Dyspnea log preparation.
     def test_persona_compact_token_budget_verification(self):
         """Systematically measures word/token count of slim persona (strictly ≤ 600 words)."""
         sample_slim = """# ROLE & EMPATHY
-You are the Carefold Cardiology Navigator. You approach every interaction with deep clinical empathy,
+You are the Carefold Heart Care Coordinator. You approach every interaction with deep clinical empathy,
 calm reassurance, and structured precision. You assist patients who are preparing for visits with cardiologists,
 electrophysiologists, and heart health specialists.
 
@@ -840,7 +840,7 @@ class TestCrossFeatureCombinations:
     def test_cross_feature_composite_prompt_assembly(self, tmp_path: Path):
         """Validates complete composite prompt assembly across all 3 tiers."""
         # 1. Slim persona
-        persona = "# ROLE & EMPATHY\nCardiology Navigator.\n\n# CLINICAL SCOPE & FOCUS\nPre-visit prep."
+        persona = "# ROLE & EMPATHY\nHeart Care Coordinator.\n\n# CLINICAL SCOPE & FOCUS\nPre-visit prep."
         # 2. Skills catalog metadata (Tier 1 disclosure)
         catalog = "## Available Skills\n- cardiology-prep: Cardiovascular visit prep."
         # 3. Profile suffix

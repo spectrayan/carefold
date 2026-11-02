@@ -682,12 +682,12 @@ def test_load_all_agents_skips_template_and_hidden_dirs(tmp_path: Path):
 def test_extract_fallback_description():
     """Verify extract_fallback_description ignores markdown headers and section titles."""
     # Classic markdown header
-    p1 = "ROLE & EMPATHY:\nYou are Benefits Guide, a helpful assistant.\nMore text."
-    assert extract_fallback_description(p1) == "You are Benefits Guide, a helpful assistant."
+    p1 = "ROLE & EMPATHY:\nYou are Benefits Coordinator, a helpful assistant.\nMore text."
+    assert extract_fallback_description(p1) == "You are Benefits Coordinator, a helpful assistant."
 
     # Markdown hash heading
-    p2 = "# Role & Empathy\nYou are Visit Steward, an organized assistant."
-    assert extract_fallback_description(p2) == "You are Visit Steward, an organized assistant."
+    p2 = "# Role & Empathy\nYou are Appointment Prep Coordinator, an organized assistant."
+    assert extract_fallback_description(p2) == "You are Appointment Prep Coordinator, an organized assistant."
 
     # Leading whitespace and blank lines
     p3 = "\n\n  ROLE:\n\n  Dedicated oncology care steward."

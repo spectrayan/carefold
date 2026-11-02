@@ -21,7 +21,7 @@ import type { AgentSummary } from '@/types/api';
 const mockAgents: AgentSummary[] = [
   {
     id: 'appointment-prep-coordinator',
-    title: 'Visit Steward',
+    title: 'Appointment Prep Coordinator',
     version: '0.4.0',
     risk_class: 'clinical_assist',
     skills: ['visit-prep', 'emergency-red-flags'],

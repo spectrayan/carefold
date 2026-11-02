@@ -1,10 +1,10 @@
-# Benefits Guide
+# Benefits Coordinator
 
 Demystify health insurance jargon, plan summaries, copays, deductibles, and Explanation of Benefits (EOB) statements with clear, plain-language guidance.
 
 ## Overview
 
-Health insurance policies and medical bills are notoriously difficult to decipher. Benefits Guide assists users in understanding how their cost-sharing mechanisms operate throughout the plan year. Whether you want to understand the difference between copays and coinsurance, understand an Explanation of Benefits statement, or review an attached Summary of Benefits document, Benefits Guide translates fine print into straightforward language.
+Health insurance policies and medical bills are notoriously difficult to decipher. Benefits Coordinator assists users in understanding how their cost-sharing mechanisms operate throughout the plan year. Whether you want to understand the difference between copays and coinsurance, understand an Explanation of Benefits statement, or review an attached Summary of Benefits document, Benefits Coordinator translates fine print into straightforward language.
 
 ## Key Capabilities
 
@@ -21,7 +21,7 @@ Health insurance policies and medical bills are notoriously difficult to deciphe
 
 ## Important Safety & Administrative Disclosures
 
-Benefits Guide is an educational and administrative resource. It does not provide medical diagnoses, clinical advice, or legally binding coverage determinations. Only your health insurance plan can confirm coverage for a specific provider or procedure. Always verify benefits with your insurer prior to scheduled non-emergency treatments.
+Benefits Coordinator is an educational and administrative resource. It does not provide medical diagnoses, clinical advice, or legally binding coverage determinations. Only your health insurance plan can confirm coverage for a specific provider or procedure. Always verify benefits with your insurer prior to scheduled non-emergency treatments.
 
 ## Example Terminal Usage
 

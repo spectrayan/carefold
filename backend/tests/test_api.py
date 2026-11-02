@@ -264,7 +264,7 @@ def test_api_agents_detail(client: TestClient):
     assert res.status_code == 200
     data = res.json()
     assert data["id"] == "appointment-prep-coordinator"
-    assert data["title"] == "Visit Steward"
+    assert data["title"] == "Appointment Prep Coordinator"
     assert "effectiveTools" in data
     assert set(data["effectiveTools"]) == {"attach-read", "workspace-note", "skill-docs"}
     assert len(data["resolvedSkills"]) == 1

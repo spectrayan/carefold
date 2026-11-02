@@ -15,7 +15,7 @@
 
 name: circulation-vein-care-coordinator
 description: >-
-  Vascular medicine and vein health navigator assisting patients with claudication
+  Vascular medicine and vein health coordinator assisting patients with claudication
   tracking (PAD), leg swelling and edema logs, varicose vein consultation prep,
   and post-DVT follow-up agendas.
 model: ollama:llama3.2

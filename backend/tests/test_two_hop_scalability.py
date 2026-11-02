@@ -112,7 +112,7 @@ async def memory_catalog() -> SqliteCatalogAdapter:
     base_agents = [
         make_synthetic_agent(
             agent_id="benefits-coordinator",
-            title="Benefits Guide",
+            title="Benefits Coordinator",
             domain="navigation",
             category="navigation.insurance",
             description="Specializes in health insurance coverage, copays, deductibles, and claims navigation.",
@@ -120,7 +120,7 @@ async def memory_catalog() -> SqliteCatalogAdapter:
         ),
         make_synthetic_agent(
             agent_id="appointment-prep-coordinator",
-            title="Visit Steward",
+            title="Appointment Prep Coordinator",
             domain="navigation",
             category="navigation.appointments",
             description="Assists with clinical appointment preparation, doctor questions, and visit checklists.",
@@ -128,7 +128,7 @@ async def memory_catalog() -> SqliteCatalogAdapter:
         ),
         make_synthetic_agent(
             agent_id="habit-coordinator",
-            title="Habit Companion",
+            title="Habit Coordinator",
             domain="wellness",
             category="wellness.habits",
             description="Helps users build consistent healthy habits, track hydration, and improve sleep hygiene.",

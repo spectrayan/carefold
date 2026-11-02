@@ -572,7 +572,7 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
               <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400 max-w-md mx-auto">
                 {searchQuery
                   ? `No saved notes match "${searchQuery}".`
-                  : 'When Carefold specialist agents (like Visit Steward or Cardiology Guide) prepare visit agendas or checklists, they save them as structured notes in your local workspace.'}
+                  : 'When Carefold specialist agents (like Appointment Prep Coordinator or Cardiology Guide) prepare visit agendas or checklists, they save them as structured notes in your local workspace.'}
               </p>
               {!searchQuery && (
                 <div className="mt-6">
