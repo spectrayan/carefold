@@ -51,7 +51,7 @@ from carefold.workflows.subgraphs.supervisor import (
     SPECIALIST_DOCUMENT_EXTRACTOR,
     SPECIALIST_GENERALIST,
     SPECIALIST_HABIT_COORDINATOR,
-    SPECIALIST_APPOINTMENT_PREP_COORDINATOR,
+    SPECIALIST_VISIT_PREP_COORDINATOR,
     build_supervisor_subgraph,
     create_supervisor_router_node,
     create_supervisor_subgraph,
@@ -152,8 +152,8 @@ class TestSupervisorMultiAgentDispatch:
         )
         result = await app.ainvoke(state)
 
-        assert result["current_agent"] == SPECIALIST_APPOINTMENT_PREP_COORDINATOR
-        assert result["routed_subgraph"] == SPECIALIST_APPOINTMENT_PREP_COORDINATOR
+        assert result["current_agent"] == SPECIALIST_VISIT_PREP_COORDINATOR
+        assert result["routed_subgraph"] == SPECIALIST_VISIT_PREP_COORDINATOR
         assert "doctor" in result["output"].lower() or "checklist" in result["output"].lower()
 
     @pytest.mark.asyncio
@@ -251,7 +251,7 @@ class TestSupervisorMultiAgentDispatch:
         """Ensures every one of the 5 canonical specialists can be reached."""
         specialist_prompts = {
             SPECIALIST_BENEFITS_COORDINATOR: "What is my insurance copay?",
-            SPECIALIST_APPOINTMENT_PREP_COORDINATOR: "Doctor visit checklist prep",
+            SPECIALIST_VISIT_PREP_COORDINATOR: "Doctor visit checklist prep",
             SPECIALIST_DOCUMENT_EXTRACTOR: "Extract document pdf dossier",
             SPECIALIST_HABIT_COORDINATOR: "Track my sleep habit routine",
             SPECIALIST_GENERALIST: "General non-clinical care guidance",
@@ -309,7 +309,7 @@ class TestSupervisorMockChatModelExecution:
         )
         result = await app.ainvoke(state)
 
-        assert result["current_agent"] == SPECIALIST_APPOINTMENT_PREP_COORDINATOR
+        assert result["current_agent"] == SPECIALIST_VISIT_PREP_COORDINATOR
         assert len(result["output"]) > 0
 
 
@@ -516,7 +516,7 @@ class TestSupervisorEdgeCases:
         state = {"messages": []}
         res = await app.ainvoke(state)
         # Should not crash; defaults to fallback agent (appointment-prep-coordinator)
-        assert res["current_agent"] == SPECIALIST_APPOINTMENT_PREP_COORDINATOR
+        assert res["current_agent"] == SPECIALIST_VISIT_PREP_COORDINATOR
         assert res["output"] == "Fallback guidance"
 
     @pytest.mark.asyncio
@@ -528,7 +528,7 @@ class TestSupervisorEdgeCases:
             "messages": [SystemMessage(content="System directive: maintain HIPAA compliance.")],
         }
         res = await app.ainvoke(state)
-        assert res["current_agent"] == SPECIALIST_APPOINTMENT_PREP_COORDINATOR
+        assert res["current_agent"] == SPECIALIST_VISIT_PREP_COORDINATOR
 
     @pytest.mark.asyncio
     async def test_competing_domain_keywords_priority(self):

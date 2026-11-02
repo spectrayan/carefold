@@ -53,7 +53,7 @@ from carefold.constants.agents import (
     AGENT_DOCUMENT_EXTRACTOR,
     AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_APPOINTMENT_PREP_COORDINATOR,
+    AGENT_VISIT_PREP_COORDINATOR,
     DEFAULT_ROUTING_FALLBACK_AGENT,
 )
 from carefold.memory.adapters.sqlite.catalog_adapter import SqliteCatalogAdapter

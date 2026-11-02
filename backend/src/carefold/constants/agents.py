@@ -25,7 +25,7 @@ from typing import FrozenSet
 
 AGENT_ORCHESTRATOR: str = "orchestrator"
 AGENT_DOCUMENT_EXTRACTOR: str = "document-extractor"
-AGENT_APPOINTMENT_PREP_COORDINATOR: str = "appointment-prep-coordinator"
+AGENT_VISIT_PREP_COORDINATOR: str = "appointment-prep-coordinator"
 AGENT_BENEFITS_COORDINATOR: str = "benefits-coordinator"
 AGENT_HABIT_COORDINATOR: str = "habit-coordinator"
 AGENT_SUGGESTION_GENERATOR: str = "suggestion-generator"
@@ -33,7 +33,7 @@ AGENT_TEMPLATE: str = "_template"
 
 BUNDLED_AGENT_IDS: FrozenSet[str] = frozenset({
     AGENT_ORCHESTRATOR,
-    AGENT_APPOINTMENT_PREP_COORDINATOR,
+    AGENT_VISIT_PREP_COORDINATOR,
     AGENT_BENEFITS_COORDINATOR,
     AGENT_HABIT_COORDINATOR,
     AGENT_DOCUMENT_EXTRACTOR,
@@ -42,7 +42,7 @@ BUNDLED_AGENT_IDS: FrozenSet[str] = frozenset({
 ALL_BUNDLED_AGENT_IDS: FrozenSet[str] = BUNDLED_AGENT_IDS
 
 
-DEFAULT_ROUTING_FALLBACK_AGENT: str = AGENT_APPOINTMENT_PREP_COORDINATOR
+DEFAULT_ROUTING_FALLBACK_AGENT: str = AGENT_VISIT_PREP_COORDINATOR
 
 
 # ============================================================================
@@ -117,7 +117,7 @@ __all__ = [
     "AGENT_HABIT_COORDINATOR",
     "AGENT_ORCHESTRATOR",
     "AGENT_TEMPLATE",
-    "AGENT_APPOINTMENT_PREP_COORDINATOR",
+    "AGENT_VISIT_PREP_COORDINATOR",
     "ALL_BUNDLED_AGENT_IDS",
     "BUNDLED_AGENT_IDS",
     "DEFAULT_CAN_DELEGATE",

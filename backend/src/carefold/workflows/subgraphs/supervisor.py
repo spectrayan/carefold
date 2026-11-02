@@ -60,14 +60,14 @@ class SupervisorState(AgentState, total=False):
 
 # Canonical specialist IDs
 SPECIALIST_BENEFITS_COORDINATOR = "benefits-coordinator"
-SPECIALIST_APPOINTMENT_PREP_COORDINATOR = "appointment-prep-coordinator"
+SPECIALIST_VISIT_PREP_COORDINATOR = "appointment-prep-coordinator"
 SPECIALIST_DOCUMENT_EXTRACTOR = "document-extractor"
 SPECIALIST_HABIT_COORDINATOR = "habit-coordinator"
 SPECIALIST_GENERALIST = "generalist"
 
 DEFAULT_SPECIALISTS = [
     SPECIALIST_BENEFITS_COORDINATOR,
-    SPECIALIST_APPOINTMENT_PREP_COORDINATOR,
+    SPECIALIST_VISIT_PREP_COORDINATOR,
     SPECIALIST_DOCUMENT_EXTRACTOR,
     SPECIALIST_HABIT_COORDINATOR,
     SPECIALIST_GENERALIST,
@@ -83,7 +83,7 @@ def _load_yaml_patterns(key: str) -> List[str]:
 
 
 BENEFITS_PATTERNS = _load_yaml_patterns(SPECIALIST_BENEFITS_COORDINATOR)
-VISIT_PATTERNS = _load_yaml_patterns(SPECIALIST_APPOINTMENT_PREP_COORDINATOR)
+VISIT_PATTERNS = _load_yaml_patterns(SPECIALIST_VISIT_PREP_COORDINATOR)
 EXTRACTION_PATTERNS = _load_yaml_patterns(SPECIALIST_DOCUMENT_EXTRACTOR)
 HABIT_PATTERNS = _load_yaml_patterns(SPECIALIST_HABIT_COORDINATOR)
 
@@ -264,7 +264,7 @@ def _create_specialist_node(
 
 def create_supervisor_router_node(
     model: Optional[BaseChatModel] = None,
-    fallback_agent: str = SPECIALIST_APPOINTMENT_PREP_COORDINATOR,
+    fallback_agent: str = SPECIALIST_VISIT_PREP_COORDINATOR,
 ) -> Callable[[SupervisorState], Coroutine[Any, Any, Dict[str, Any]]]:
     """Creates the supervisor routing node delegating to dynamic OrchestratorNode."""
     from carefold.workflows.nodes.orchestrator_node import OrchestratorNode
@@ -292,7 +292,7 @@ def route_supervisor(state: AgentState) -> str:
 
     canonical_map = {
         SPECIALIST_BENEFITS_COORDINATOR: "benefits_coordinator",
-        SPECIALIST_APPOINTMENT_PREP_COORDINATOR: "appointment_prep_coordinator",
+        SPECIALIST_VISIT_PREP_COORDINATOR: "appointment_prep_coordinator",
         SPECIALIST_DOCUMENT_EXTRACTOR: "document_extractor",
         SPECIALIST_HABIT_COORDINATOR: "habit_coordinator",
         SPECIALIST_GENERALIST: "generalist",
@@ -362,9 +362,9 @@ def create_supervisor_subgraph(
     builder.add_node("benefits_coordinator", bg_node)
 
     # Appointment Prep Coordinator
-    vs_node = specs.get(SPECIALIST_APPOINTMENT_PREP_COORDINATOR) or specs.get("appointment_prep_coordinator")
+    vs_node = specs.get(SPECIALIST_VISIT_PREP_COORDINATOR) or specs.get("appointment_prep_coordinator")
     if vs_node is None:
-        vs_node = _create_specialist_node(SPECIALIST_APPOINTMENT_PREP_COORDINATOR, model, tools=tools)
+        vs_node = _create_specialist_node(SPECIALIST_VISIT_PREP_COORDINATOR, model, tools=tools)
     builder.add_node("appointment_prep_coordinator", vs_node)
 
     # Document Extractor
@@ -451,7 +451,7 @@ __all__ = [
     "SPECIALIST_DOCUMENT_EXTRACTOR",
     "SPECIALIST_GENERALIST",
     "SPECIALIST_HABIT_COORDINATOR",
-    "SPECIALIST_APPOINTMENT_PREP_COORDINATOR",
+    "SPECIALIST_VISIT_PREP_COORDINATOR",
     "build_supervisor_subgraph",
     "create_supervisor_router_node",
     "create_supervisor_subgraph",

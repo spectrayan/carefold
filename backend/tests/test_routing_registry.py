@@ -34,7 +34,7 @@ from carefold.constants.agents import (
     AGENT_DOCUMENT_EXTRACTOR,
     AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_APPOINTMENT_PREP_COORDINATOR,
+    AGENT_VISIT_PREP_COORDINATOR,
     TOOL_ATTACH_READ,
     TOOL_DELEGATE_TO_AGENT,
     TOOL_LIST_AGENTS,
@@ -66,7 +66,7 @@ async def test_orchestrator_multi_domain_query_routing(temp_workspace: Path):
         ),
         (
             "I have an upcoming appointment with my oncologist and need to know what questions to ask.",
-            AGENT_APPOINTMENT_PREP_COORDINATOR,
+            AGENT_VISIT_PREP_COORDINATOR,
             "Clinical appointment preparation.",
         ),
         (
@@ -269,7 +269,7 @@ def test_registry_get_delegatable_agents_strictly_excludes_can_delegate(temp_wor
 
     # Ensure all registered non-orchestrator specialists are present
     assert AGENT_BENEFITS_COORDINATOR in delegatable_ids
-    assert AGENT_APPOINTMENT_PREP_COORDINATOR in delegatable_ids
+    assert AGENT_VISIT_PREP_COORDINATOR in delegatable_ids
     assert AGENT_HABIT_COORDINATOR in delegatable_ids
     assert AGENT_DOCUMENT_EXTRACTOR in delegatable_ids
 
@@ -281,7 +281,7 @@ def test_registry_format_agent_catalog_excludes_orchestrator(temp_workspace: Pat
 
     assert AGENT_ORCHESTRATOR not in catalog
     assert AGENT_BENEFITS_COORDINATOR in catalog
-    assert AGENT_APPOINTMENT_PREP_COORDINATOR in catalog
+    assert AGENT_VISIT_PREP_COORDINATOR in catalog
     assert AGENT_HABIT_COORDINATOR in catalog
     assert AGENT_DOCUMENT_EXTRACTOR in catalog
 

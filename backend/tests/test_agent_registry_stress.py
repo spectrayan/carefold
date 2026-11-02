@@ -40,7 +40,7 @@ from carefold.constants.agents import (
     AGENT_DOCUMENT_EXTRACTOR,
     AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_APPOINTMENT_PREP_COORDINATOR,
+    AGENT_VISIT_PREP_COORDINATOR,
     TOOL_ATTACH_READ,
     TOOL_DELEGATE_TO_AGENT,
     TOOL_LIST_AGENTS,
@@ -275,7 +275,7 @@ async def test_orchestrator_dynamic_prompt_incorporates_registry_catalog(temp_wo
 
     # Must contain delegatable agents and exclude orchestrator
     assert AGENT_BENEFITS_COORDINATOR in prompt
-    assert AGENT_APPOINTMENT_PREP_COORDINATOR in prompt
+    assert AGENT_VISIT_PREP_COORDINATOR in prompt
     assert AGENT_HABIT_COORDINATOR in prompt
     assert AGENT_DOCUMENT_EXTRACTOR in prompt
     assert f"- **{AGENT_ORCHESTRATOR}**" not in prompt
@@ -381,7 +381,7 @@ def test_agent_registry_effective_tools_map(temp_workspace: Path):
 
     assert isinstance(tools_map, dict)
     assert AGENT_BENEFITS_COORDINATOR in tools_map
-    assert AGENT_APPOINTMENT_PREP_COORDINATOR in tools_map
+    assert AGENT_VISIT_PREP_COORDINATOR in tools_map
     assert AGENT_HABIT_COORDINATOR in tools_map
     assert AGENT_DOCUMENT_EXTRACTOR in tools_map
 
