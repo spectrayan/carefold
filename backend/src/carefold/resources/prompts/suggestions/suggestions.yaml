@@ -13,7 +13,7 @@ tool_suggestions:
     - "Can you explain these points in simpler terms?"
 
 persona_suggestions:
-  visit_steward:
+  appointment_prep_coordinator:
     tools:
       skill-docs:
         - "Help me walk through the appointment preparation checklist step by step."
@@ -38,7 +38,7 @@ persona_suggestions:
       - "Help me prepare a checklist for my appointment."
       - "Can you help me summarize my symptoms into a clear timeline?"
 
-  benefits_guide:
+  benefits_coordinator:
     cost_keywords: ["deductible", "out-of-pocket", "cost", "pay", "coinsurance", "copay"]
     cost_chips:
       - "How does my annual deductible affect my out-of-pocket costs?"
@@ -59,7 +59,7 @@ persona_suggestions:
       - "Can you explain the difference between in-network and out-of-network care?"
       - "How do I check if a preventive screening is covered at 100%?"
 
-  habit_companion:
+  habit_coordinator:
     water_keywords: ["water", "hydrat"]
     water_chips:
       - "How can I track my daily hydration goal?"
@@ -80,7 +80,7 @@ persona_suggestions:
       - "How can I set realistic daily movement goals?"
       - "Help me record my daily wellness reflections."
 
-  claims_appeals_guide:
+  claims_appeals_coordinator:
     denial_keywords: ["denial", "denied", "reject", "appeal", "erisa", "dispute"]
     denial_chips:
       - "What are the standard timelines for submitting an ERISA appeal?"
@@ -96,7 +96,7 @@ persona_suggestions:
       - "What should I look for in my Explanation of Benefits (EOB)?"
       - "Can you help me outline a draft appeal letter for my insurer?"
 
-  prior_auth_navigator:
+  prior_authorization_coordinator:
     step_therapy_keywords: ["step therapy", "fail first", "exception", "formulary"]
     step_therapy_chips:
       - "How does step therapy differ from standard prior authorization?"
@@ -112,7 +112,7 @@ persona_suggestions:
       - "How long does a prior authorization remain valid once approved?"
       - "What are the next steps if a prior authorization request is denied?"
 
-  cardiology_guide:
+  heart_care_coordinator:
     bp_keywords: ["blood pressure", "hypertension", "systolic", "diastolic", "reading", "cuff"]
     bp_chips:
       - "What is the best way to keep a home blood pressure log?"
@@ -128,7 +128,7 @@ persona_suggestions:
       - "Can you help me organize a summary of my cardiovascular history?"
       - "How should I track my daily symptoms and vitals for my clinician?"
 
-  pulmonology_guide:
+  lung_breathing_coordinator:
     inhaler_keywords: ["inhaler", "spacer", "albuterol", "puff", "dose", "technique"]
     inhaler_chips:
       - "What questions should I ask my pulmonologist about inhaler technique?"
@@ -144,7 +144,7 @@ persona_suggestions:
       - "Can you help me structure a respiratory symptom log?"
       - "How can I prepare a summary of my breathing patterns for my doctor?"
 
-  neurology_guide:
+  brain_nerve_care_coordinator:
     headache_keywords: ["headache", "migraine", "aura", "trigger", "temple"]
     headache_chips:
       - "What details are most helpful to log in a migraine diary?"
@@ -160,7 +160,7 @@ persona_suggestions:
       - "Can you help me assemble a timeline of my neurological symptoms?"
       - "How should I record symptom flare-ups ahead of my appointment?"
 
-  gastro_guide:
+  digestive_care_coordinator:
     diet_keywords: ["food", "diet", "fodmap", "trigger", "dairy", "gluten", "meal"]
     diet_chips:
       - "How can I structure a 14-day digestive food and symptom diary?"
@@ -176,7 +176,7 @@ persona_suggestions:
       - "Help me build a structured journal of my digestive symptoms."
       - "What non-clinical details should I share with my gastroenterologist?"
 
-  nephrology_guide:
+  kidney_care_coordinator:
     lab_keywords: ["egfr", "creatinine", "kidney", "bun", "filtration", "proteinuria"]
     lab_chips:
       - "What questions should I ask my nephrologist about eGFR and creatinine trends?"
@@ -192,7 +192,7 @@ persona_suggestions:
       - "How can I prepare a concise log of my blood pressure and kidney labs?"
       - "What non-clinical topics should I discuss regarding kidney health?"
 
-  endocrinology_guide:
+  diabetes_thyroid_coordinator:
     glucose_keywords: ["glucose", "sugar", "a1c", "cgm", "insulin", "diabetes"]
     glucose_chips:
       - "What questions should I ask my endocrinologist about my A1C trend?"
@@ -208,7 +208,7 @@ persona_suggestions:
       - "Can you help me log my symptoms and lab history for my specialist?"
       - "What questions should I ask about long-term metabolic health goals?"
 
-  ortho_guide:
+  bone_joint_care_coordinator:
     joint_keywords: ["joint", "knee", "hip", "shoulder", "arthritis", "stiffness"]
     joint_chips:
       - "How can I track my joint mobility and pain scores throughout the day?"
@@ -224,7 +224,7 @@ persona_suggestions:
       - "Can you help me prepare a musculoskeletal symptom timeline?"
       - "How can I organize questions regarding conservative treatment options?"
 
-  derma_guide:
+  skin_care_coordinator:
     lesion_keywords: ["mole", "spot", "abcde", "skin", "lesion", "melanoma"]
     lesion_chips:
       - "What details should I note about mole changes using the ABCDE guide?"
@@ -240,7 +240,7 @@ persona_suggestions:
       - "Can you help me summarize my skin care routine for my provider?"
       - "How do I organize questions about prescription topical instructions?"
 
-  oncology_navigator:
+  cancer_care_coordinator:
     side_effect_keywords: ["chemo", "radiation", "nausea", "fatigue", "side effect"]
     side_effect_chips:
       - "What questions should I ask my oncology care team about fatigue?"
@@ -256,7 +256,7 @@ persona_suggestions:
       - "Help me prepare a list of questions for my medical oncologist."
       - "How can I organize my pathology and imaging records in chronological order?"
 
-  rheuma_guide:
+  autoimmune_care_coordinator:
     flare_keywords: ["flare", "stiffness", "lupus", "rheumatoid", "autoimmune", "swelling"]
     flare_chips:
       - "How can I record the duration of morning stiffness for my rheumatologist?"
@@ -267,7 +267,7 @@ persona_suggestions:
       - "How do I document daily functional limitations ahead of my visit?"
       - "Can you help me organize a summary of my autoimmune flare history?"
 
-  urology_guide:
+  bladder_pelvic_care_coordinator:
     urinary_keywords: ["bladder", "urinary", "prostate", "frequency", "incontinence", "flow"]
     urinary_chips:
       - "How can I keep a 3-day bladder diary tracking intake and output?"
@@ -278,7 +278,7 @@ persona_suggestions:
       - "Can you help me structure a frequency-volume urinary chart?"
       - "What non-clinical topics should I discuss regarding pelvic floor health?"
 
-  eye_guide:
+  eye_care_coordinator:
     vision_keywords: ["vision", "glaucoma", "macular", "cataract", "blur", "eye pressure"]
     vision_chips:
       - "What questions should I ask my ophthalmologist about visual field testing?"
@@ -289,7 +289,7 @@ persona_suggestions:
       - "How should I record recent visual symptoms ahead of my appointment?"
       - "What non-clinical questions can I ask about prescription eye drops?"
 
-  ent_guide:
+  ent_care_coordinator:
     sinus_keywords: ["sinus", "tinnitus", "hearing", "ear", "throat", "congestion"]
     sinus_chips:
       - "What questions should I ask my ENT specialist about recurring sinus pressure?"
@@ -311,7 +311,7 @@ persona_suggestions:
       - "Can you help me draft a checklist of medical records to gather?"
       - "How long are healthcare providers required to maintain medical records?"
 
-  formulary_guide:
+  prescription_cost_coordinator:
     tier_keywords: ["tier", "generic", "brand", "formulary", "pharmacy", "copay assistance"]
     tier_chips:
       - "What is the difference between Tier 1 generic and Tier 2 preferred drugs?"

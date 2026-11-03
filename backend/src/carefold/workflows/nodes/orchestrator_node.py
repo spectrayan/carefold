@@ -64,7 +64,7 @@ DEFAULT_HEALTH_ROUTING_HINTS = [
     RoutingHints(
         domain="clinical",
         description="Medical evaluation, symptom assessment, diagnostic triage, treatments, prescriptions, lab results, and physician guidance.",
-        default_agent="visit-steward",
+        default_agent="appointment-prep-coordinator",
         domains_info={
             "example_categories": "clinical.triage, clinical.cardiology, clinical.pulmonology, clinical.neurology, clinical.gastroenterology, clinical.nephrology, clinical.endocrinology, clinical.oncology, clinical.orthopedics, clinical.dermatology",
         },
@@ -72,7 +72,7 @@ DEFAULT_HEALTH_ROUTING_HINTS = [
     RoutingHints(
         domain="therapy",
         description="Mental health support, counseling, emotional well-being, distress tolerance, stress management, and psychological coping.",
-        default_agent="habit-companion",
+        default_agent="habit-coordinator",
         domains_info={
             "example_categories": "therapy.cbt, therapy.anxiety, therapy.depression, therapy.mindfulness",
         },
@@ -80,7 +80,7 @@ DEFAULT_HEALTH_ROUTING_HINTS = [
     RoutingHints(
         domain="wellness",
         description="Preventative lifestyle guidance, daily healthy habits, hydration, sleep improvement, fitness, and nutrition coaching.",
-        default_agent="habit-companion",
+        default_agent="habit-coordinator",
         domains_info={
             "example_categories": "wellness.habits, wellness.nutrition, wellness.sleep, wellness.fitness",
         },
@@ -88,7 +88,7 @@ DEFAULT_HEALTH_ROUTING_HINTS = [
     RoutingHints(
         domain="navigation",
         description="Healthcare logistics, insurance benefits, claims, deductible/copay, prior auth, appointments, and medical paperwork.",
-        default_agent="benefits-guide",
+        default_agent="benefits-coordinator",
         domains_info={
             "example_categories": "navigation.insurance, navigation.prior_auth, navigation.claims, navigation.appointments, navigation.records, navigation.formulary",
         },
@@ -96,7 +96,7 @@ DEFAULT_HEALTH_ROUTING_HINTS = [
     RoutingHints(
         domain="education",
         description="Medical literacy, physiological explanations, disease definitions, procedure overviews, and health education.",
-        default_agent="visit-steward",
+        default_agent="appointment-prep-coordinator",
         domains_info={
             "example_categories": "education.conditions, education.procedures, education.anatomy",
         },
@@ -146,7 +146,7 @@ class OrchestratorDecision(BaseModel):
 
     agent_id: str = Field(
         ...,
-        description="ID of the chosen specialist agent to delegate to (e.g., 'visit-steward', 'benefits-guide', 'habit-companion', 'document-extractor').",
+        description="ID of the chosen specialist agent to delegate to (e.g., 'appointment-prep-coordinator', 'benefits-coordinator', 'habit-coordinator', 'document-extractor').",
     )
     reasoning: str = Field(
         ...,
@@ -696,10 +696,10 @@ class OrchestratorNode(BaseNode):
             "treatment",
         )
         nav_agent_ids = {
-            "prior-auth-navigator",
-            "formulary-guide",
-            "claims-appeals-guide",
-            "benefits-guide",
+            "prior-authorization-coordinator",
+            "prescription-cost-coordinator",
+            "claims-appeals-coordinator",
+            "benefits-coordinator",
         }
 
         has_auth_kw = any(kw in prompt_lower for kw in auth_keywords)
@@ -727,22 +727,22 @@ class OrchestratorNode(BaseNode):
 
         if is_cross_functional:
             if "formulary" in prompt_lower:
-                secondary_agent = "formulary-guide"
+                secondary_agent = "prescription-cost-coordinator"
             elif any(k in prompt_lower for k in ("claim", "appeal", "denial")):
-                secondary_agent = "claims-appeals-guide"
+                secondary_agent = "claims-appeals-coordinator"
             elif any(k in prompt_lower for k in ("copay", "deductible", "benefit")):
-                secondary_agent = "benefits-guide"
+                secondary_agent = "benefits-coordinator"
             else:
-                secondary_agent = "prior-auth-navigator"
+                secondary_agent = "prior-authorization-coordinator"
 
             if target_agent in nav_agent_ids:
                 secondary_agent = target_agent
                 if any(k in prompt_lower for k in ("ortho", "surgery", "knee", "hip", "joint")):
-                    primary_agent = "ortho-guide"
+                    primary_agent = "bone-joint-care-coordinator"
                 elif any(k in prompt_lower for k in ("cardio", "heart", "cardiac", "hypertension")):
-                    primary_agent = "cardiology-guide"
+                    primary_agent = "heart-care-coordinator"
                 elif any(k in prompt_lower for k in ("oncology", "cancer", "tumor", "chemo")):
-                    primary_agent = "oncology-navigator"
+                    primary_agent = "cancer-care-coordinator"
                 else:
                     primary_agent = None
 
@@ -797,16 +797,16 @@ class OrchestratorNode(BaseNode):
         # Preserve explicit single-specialist intent unless the user prompt explicitly requests multi-specialist coordination.
         if not (is_explicit and not explicit_coordination):
             condition_patterns = [
-                (("heart", "cardio", "cardiac", "hypertension", "blood pressure", "chf", "congestive"), "cardiology-guide"),
-                (("kidney", "renal", "ckd", "nephrology", "fluid"), "nephrology-guide"),
-                (("diabetes", "glucose", "cgm", "insulin", "endocrinology", "sugar", "a1c"), "endocrinology-guide"),
-                (("pulmonary", "pulmonology", "lung", "dyspnea", "breathing", "shortness of breath", "asthma", "copd"), "pulmonology-guide"),
-                (("gastro", "gastroenterology", "ibs", "ibd", "bowel", "stomach", "gi tract", "crohn", "colitis"), "gastro-guide"),
-                (("neurology", "migraine", "headache", "cognitive", "dementia", "neuropathy", "seizure"), "neurology-guide"),
-                (("rheumatology", "arthritis", "lupus", "joint pain", "autoimmune"), "rheuma-guide"),
-                (("dermatology", "rash", "skin", "lesion", "eczema", "psoriasis"), "derma-guide"),
-                (("orthopedic", "ortho", "joint mobility", "bone", "fracture"), "ortho-guide"),
-                (("oncology", "cancer", "tumor", "oncologist"), "oncology-navigator"),
+                (("heart", "cardio", "cardiac", "hypertension", "blood pressure", "chf", "congestive"), "heart-care-coordinator"),
+                (("kidney", "renal", "ckd", "nephrology", "fluid"), "kidney-care-coordinator"),
+                (("diabetes", "glucose", "cgm", "insulin", "endocrinology", "sugar", "a1c"), "diabetes-thyroid-coordinator"),
+                (("pulmonary", "pulmonology", "lung", "dyspnea", "breathing", "shortness of breath", "asthma", "copd"), "lung-breathing-coordinator"),
+                (("gastro", "gastroenterology", "ibs", "ibd", "bowel", "stomach", "gi tract", "crohn", "colitis"), "digestive-care-coordinator"),
+                (("neurology", "migraine", "headache", "cognitive", "dementia", "neuropathy", "seizure"), "brain-nerve-care-coordinator"),
+                (("rheumatology", "arthritis", "lupus", "joint pain", "autoimmune"), "autoimmune-care-coordinator"),
+                (("dermatology", "rash", "skin", "lesion", "eczema", "psoriasis"), "skin-care-coordinator"),
+                (("orthopedic", "ortho", "joint mobility", "bone", "fracture"), "bone-joint-care-coordinator"),
+                (("oncology", "cancer", "tumor", "oncologist"), "cancer-care-coordinator"),
             ]
 
             multimorbid_agents: List[str] = []

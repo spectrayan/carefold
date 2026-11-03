@@ -32,7 +32,7 @@ describe('Workspace Notes API Proxy Routes (Issue #95)', () => {
         {
           slug: 'visit-agenda',
           title: 'Visit Agenda',
-          agent: 'visit-steward',
+          agent: 'appointment-prep-coordinator',
           created_at: '2026-10-07T12:00:00Z',
           size_bytes: 512
         }
@@ -98,7 +98,7 @@ describe('Workspace Notes API Proxy Routes (Issue #95)', () => {
       const mockDetail = {
         slug: 'cardiac-notes',
         title: 'Cardiac Notes',
-        agent: 'cardiology-guide',
+        agent: 'heart-care-coordinator',
         created_at: '2026-10-07T12:00:00Z',
         size_bytes: 256,
         content: '# Notes',

@@ -47,13 +47,13 @@ def test_eob_explanation_doc_present_and_readable():
     assert "Explanation of Benefits" in eob_file.read_text(encoding="utf-8")
 
     agent = AgentManifest(
-        id="benefits-guide",
-        title="Benefits Guide",
+        id="benefits-coordinator",
+        title="Benefits Coordinator",
         version="0.1.0",
         risk_class="admin",
         skills=["benefits-explainer"],
         tools=["skill-docs"],
-        persona="You are Benefits Guide",
+        persona="You are Benefits Coordinator",
     )
     ctx = MockContext(agent)
 
@@ -91,7 +91,7 @@ async def test_skill_generator_node_synthesizes_structured_skill(tmp_path):
         skill_id="pediatric-allergy-prep",
         skill_description="Guidelines for preparing a pediatric allergy and immunology appointment",
         user_query="How do I prepare for my 4 year old allergy test?",
-        target_agent="visit-steward",
+        target_agent="appointment-prep-coordinator",
     )
 
     assert generated["id"] == "pediatric-allergy-prep"
@@ -113,13 +113,13 @@ async def test_orchestrator_detects_missing_skill_and_invokes_generator(agent_re
         "messages": [
             {"role": "user", "content": "I need help with my appointment for pediatric allergy testing."}
         ],
-        "current_agent": "visit-steward",
+        "current_agent": "appointment-prep-coordinator",
         "missing_skill": "pediatric-allergy-guide",
         "missing_skill_description": "Specialized steps for preparing pediatric allergy visits",
     }
 
     result = await orchestrator.execute(state)
-    assert result["current_agent"] == "visit-steward"
+    assert result["current_agent"] == "appointment-prep-coordinator"
     assert "generated_skill" in result
     assert result["generated_skill"]["id"] == "pediatric-allergy-guide"
     assert "generated_skills" in result
@@ -143,7 +143,7 @@ async def test_subsequent_agent_execution_incorporates_generated_skill(agent_reg
     }
 
     state = {
-        "current_agent": "habit-companion",
+        "current_agent": "habit-coordinator",
         "messages": [
             {"role": "user", "content": "How should I track my daily knee elevation?"}
         ],
@@ -151,7 +151,7 @@ async def test_subsequent_agent_execution_incorporates_generated_skill(agent_reg
         "generated_skill": generated_skill,
     }
 
-    manifest = agent_registry.get("habit-companion")
+    manifest = agent_registry.get("habit-coordinator")
     system_prompt = execution_node._resolve_system_prompt(manifest, state)
 
     # Prompt must contain the dynamically generated skill instructions and references
@@ -160,7 +160,7 @@ async def test_subsequent_agent_execution_incorporates_generated_skill(agent_reg
     assert "Elevation Guide" in system_prompt
 
     # Tools must include tools from generated skill
-    resolved_tools = execution_node._resolve_tools("habit-companion", manifest, state)
+    resolved_tools = execution_node._resolve_tools("habit-coordinator", manifest, state)
     tool_names = [
         t.get("name") if isinstance(t, dict) else getattr(t, "name", str(t))
         for t in resolved_tools
@@ -184,13 +184,13 @@ async def test_skill_docs_resolves_references_from_generated_skill():
     }
 
     agent = AgentManifest(
-        id="benefits-guide",
-        title="Benefits Guide",
+        id="benefits-coordinator",
+        title="Benefits Coordinator",
         version="0.1.0",
         risk_class="admin",
         skills=["benefits-explainer"],
         tools=["skill-docs"],
-        persona="You are Benefits Guide",
+        persona="You are Benefits Coordinator",
     )
 
     ctx = MockContext(agent, state={"generated_skills": [generated_skill]})
@@ -214,10 +214,10 @@ async def test_symptom_log_template_present_and_readable():
     assert symptom_file.is_file(), "symptom_log_template.md must exist in skills/visit-prep/references/"
 
     agent = AgentManifest(
-        id="visit-steward",
-        title="Visit Steward",
+        id="appointment-prep-coordinator",
+        title="Appointment Prep Coordinator",
         skills=["visit-prep"],
-        persona="You are Visit Steward",
+        persona="You are Appointment Prep Coordinator",
     )
     ctx = MockContext(agent, workspace_root=ws, skills_dir=ws / "skills")
 
@@ -290,7 +290,7 @@ async def test_skill_generator_ensure_reference_doc(tmp_path):
         skill_id="ortho-prep",
         doc_name="joint_mobility_log.md",
         user_query="I need to track my knee joint stiffness before my orthopedic consultation",
-        target_agent="visit-steward",
+        target_agent="appointment-prep-coordinator",
     )
 
     assert doc_path is not None

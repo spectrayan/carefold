@@ -41,40 +41,40 @@ describe('clinicalConsent store', () => {
   });
 
   it('has no consent by default', () => {
-    expect(hasClinicalConsent('cardiology-guide')).toBe(false);
+    expect(hasClinicalConsent('heart-care-coordinator')).toBe(false);
     expect(loadClinicalConsents()).toEqual({});
   });
 
   it('grants consent per agent with a timestamp', () => {
     const now = new Date('2026-10-05T12:00:00.000Z');
-    const record = grantClinicalConsent('cardiology-guide', now);
+    const record = grantClinicalConsent('heart-care-coordinator', now);
 
     expect(record).toEqual({ grantedAt: '2026-10-05T12:00:00.000Z' });
-    expect(hasClinicalConsent('cardiology-guide')).toBe(true);
-    expect(hasClinicalConsent('neurology-guide')).toBe(false);
+    expect(hasClinicalConsent('heart-care-coordinator')).toBe(true);
+    expect(hasClinicalConsent('brain-nerve-care-coordinator')).toBe(false);
 
     const stored = JSON.parse(localStorage.getItem(CLINICAL_CONSENT_STORAGE_KEY) || '{}');
-    expect(stored['cardiology-guide'].grantedAt).toBe('2026-10-05T12:00:00.000Z');
+    expect(stored['heart-care-coordinator'].grantedAt).toBe('2026-10-05T12:00:00.000Z');
   });
 
   it('withdraws consent for a single agent and for all agents', () => {
-    grantClinicalConsent('cardiology-guide');
-    grantClinicalConsent('neurology-guide');
+    grantClinicalConsent('heart-care-coordinator');
+    grantClinicalConsent('brain-nerve-care-coordinator');
 
-    withdrawClinicalConsent('cardiology-guide');
-    expect(hasClinicalConsent('cardiology-guide')).toBe(false);
-    expect(hasClinicalConsent('neurology-guide')).toBe(true);
+    withdrawClinicalConsent('heart-care-coordinator');
+    expect(hasClinicalConsent('heart-care-coordinator')).toBe(false);
+    expect(hasClinicalConsent('brain-nerve-care-coordinator')).toBe(true);
 
     withdrawAllClinicalConsents();
-    expect(hasClinicalConsent('neurology-guide')).toBe(false);
+    expect(hasClinicalConsent('brain-nerve-care-coordinator')).toBe(false);
     expect(localStorage.getItem(CLINICAL_CONSENT_STORAGE_KEY)).toBeNull();
   });
 
   it('dispatches a change event on grant and withdraw', () => {
     const listener = vi.fn();
     window.addEventListener(CLINICAL_CONSENT_CHANGED_EVENT, listener);
-    grantClinicalConsent('cardiology-guide');
-    withdrawClinicalConsent('cardiology-guide');
+    grantClinicalConsent('heart-care-coordinator');
+    withdrawClinicalConsent('heart-care-coordinator');
     window.removeEventListener(CLINICAL_CONSENT_CHANGED_EVENT, listener);
     expect(listener).toHaveBeenCalledTimes(2);
   });
@@ -88,21 +88,21 @@ describe('clinicalConsent store', () => {
 
   it('fails closed on malformed or tampered storage', () => {
     localStorage.setItem(CLINICAL_CONSENT_STORAGE_KEY, 'not-json');
-    expect(hasClinicalConsent('cardiology-guide')).toBe(false);
+    expect(hasClinicalConsent('heart-care-coordinator')).toBe(false);
 
-    localStorage.setItem(CLINICAL_CONSENT_STORAGE_KEY, JSON.stringify(['cardiology-guide']));
-    expect(hasClinicalConsent('cardiology-guide')).toBe(false);
+    localStorage.setItem(CLINICAL_CONSENT_STORAGE_KEY, JSON.stringify(['heart-care-coordinator']));
+    expect(hasClinicalConsent('heart-care-coordinator')).toBe(false);
 
     localStorage.setItem(
       CLINICAL_CONSENT_STORAGE_KEY,
       JSON.stringify({
-        'cardiology-guide': true,
-        'neurology-guide': { grantedAt: 'not-a-date' },
+        'heart-care-coordinator': true,
+        'brain-nerve-care-coordinator': { grantedAt: 'not-a-date' },
         '../bad': { grantedAt: '2026-10-05T12:00:00.000Z' },
-        'derma-guide': { grantedAt: '2026-10-05T12:00:00.000Z' }
+        'skin-care-coordinator': { grantedAt: '2026-10-05T12:00:00.000Z' }
       })
     );
-    expect(Object.keys(loadClinicalConsents())).toEqual(['derma-guide']);
+    expect(Object.keys(loadClinicalConsents())).toEqual(['skin-care-coordinator']);
   });
 
   it('describes forbidden intents in plain language', () => {

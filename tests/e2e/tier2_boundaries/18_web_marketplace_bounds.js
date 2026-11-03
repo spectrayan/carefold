@@ -50,7 +50,7 @@ resp = client.get("/api/agents?search=STEWARD")
 assert resp.status_code == 200
 data = resp.json()
 assert len(data) == 1
-assert data[0]["id"] == "visit-steward"
+assert data[0]["id"] == "appointment-prep-coordinator"
 `;
         const res = runPython(script);
         assertEqual(res.status, 0, `Python test failed: ${res.stderr}`);

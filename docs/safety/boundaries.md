@@ -10,10 +10,10 @@ Every agent manifest declares a `risk_class` (`RiskClass` enum in `backend/src/c
 
 | Risk Class | Permitted Activities | Consent Required? | Example Agents |
 |---|---|---|---|
-| **`wellness`** | Habit tracking, lifestyle support, hydration. | No | `habit-companion` |
-| **`admin`** | Prior auth checklists, insurance appeals, formulary navigation, record indexing. | No | `benefits-guide`, `claims-appeals-guide`, `formulary-guide`, `prior-auth-navigator`, `records-coordinator` |
+| **`wellness`** | Habit tracking, lifestyle support, hydration. | No | `habit-coordinator` |
+| **`admin`** | Prior auth checklists, insurance appeals, formulary navigation, record indexing. | No | `benefits-coordinator`, `claims-appeals-coordinator`, `prescription-cost-coordinator`, `prior-authorization-coordinator`, `records-coordinator` |
 | **`education`** | Explaining medical terms, anatomical concepts, procedure overviews. | No | `_template` (community educational agents) |
-| **`clinical_assist`** | Organ-specific symptom tracking, specialist appointment agendas, question formulation. | **Yes** (`allow_clinical=True`) | `visit-steward`, `cardiology-guide`, `neurology-guide`, and the other specialist navigators |
+| **`clinical_assist`** | Organ-specific symptom tracking, specialist appointment agendas, question formulation. | **Yes** (`allow_clinical=True`) | `appointment-prep-coordinator`, `heart-care-coordinator`, `brain-nerve-care-coordinator`, and the other specialist navigators |
 
 ### Clinical Consent Gate
 When an agent is configured with `risk_class: clinical_assist`, the backend refuses to return its detail (`GET /api/agents/{id}` → `403`) or execute it (`POST /api/chat`) unless the request carries `allow_clinical=true`. Neither the backend nor the Next.js proxy routes ever assume consent: an absent or non-`true` value is treated as `false`.

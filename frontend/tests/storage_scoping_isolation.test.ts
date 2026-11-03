@@ -107,12 +107,12 @@ describe('Storage Scoping Isolation Suite (#166)', () => {
       saveSettings({ keys: { openai: 'sk-secret-alice-key-12345' } }, USER_A);
 
       // User A grants clinical consent
-      grantClinicalConsent('cardiology-guide', new Date(), USER_A);
+      grantClinicalConsent('heart-care-coordinator', new Date(), USER_A);
 
       // User A saves a session
       saveSession({
         id: 'thread-alice-1',
-        agentId: 'cardiology-guide',
+        agentId: 'heart-care-coordinator',
         title: 'Alice Private Cardiology Consult',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -130,7 +130,7 @@ describe('Storage Scoping Isolation Suite (#166)', () => {
       expect(bobSettings.keys.openai).toBe('');
 
       // Assert User B CANNOT see User A's clinical consent
-      const bobHasConsent = hasClinicalConsent('cardiology-guide', USER_B);
+      const bobHasConsent = hasClinicalConsent('heart-care-coordinator', USER_B);
       expect(bobHasConsent).toBe(false);
 
       // Assert User B CANNOT access User A's session in the index
@@ -144,7 +144,7 @@ describe('Storage Scoping Isolation Suite (#166)', () => {
 
       // In ChatClient.tsx / AgentDetailClient.tsx, the UI calls:
       // grantClinicalConsent(agentId) -- without passing userId!
-      grantClinicalConsent('cardiology-guide');
+      grantClinicalConsent('heart-care-coordinator');
 
       // Step 2: User A logs out (auth.tsx calls detachUserSession)
       detachUserSession(USER_A);
@@ -154,7 +154,7 @@ describe('Storage Scoping Isolation Suite (#166)', () => {
 
       // In ChatClient.tsx, the UI checks:
       // hasClinicalConsent(selectedAgentId) -- without passing userId!
-      const bobHasConsent = hasClinicalConsent('cardiology-guide');
+      const bobHasConsent = hasClinicalConsent('heart-care-coordinator');
 
       // FAILURE: Bob inherits Alice's consent because it fell back to guest/un-namespaced storage!
       expect(bobHasConsent).toBe(false);
@@ -168,14 +168,14 @@ describe('Storage Scoping Isolation Suite (#166)', () => {
       setStorageUserId(USER_A);
       const aliceThreadId = 'thread-alice-cardio-999';
       localStorage.setItem(`carefold_msgs_${aliceThreadId}`, JSON.stringify([{ role: 'user', content: 'Alice symptoms' }]));
-      localStorage.setItem('carefold_thread_cardiology-guide', aliceThreadId);
+      localStorage.setItem('carefold_thread_heart-care-coordinator', aliceThreadId);
 
       // User A logs out
       detachUserSession(USER_A);
 
       // VERIFICATION: Are raw carefold_msgs_* or carefold_thread_* keys left behind in localStorage?
       const remainingMsgs = localStorage.getItem(`carefold_msgs_${aliceThreadId}`);
-      const remainingThread = localStorage.getItem('carefold_thread_cardiology-guide');
+      const remainingThread = localStorage.getItem('carefold_thread_heart-care-coordinator');
 
       console.log('Remaining raw msgs after detachUserSession:', remainingMsgs);
       console.log('Remaining raw thread after detachUserSession:', remainingThread);
@@ -226,14 +226,14 @@ describe('Storage Scoping Isolation Suite (#166)', () => {
 
       // Test grantClinicalConsent
       expect(() => {
-        grantClinicalConsent('derma-guide', new Date(), USER_A);
+        grantClinicalConsent('skin-care-coordinator', new Date(), USER_A);
       }).not.toThrow();
 
       // Test saveSession
       expect(() => {
         saveSession({
           id: 'th-overflow',
-          agentId: 'derma-guide',
+          agentId: 'skin-care-coordinator',
           title: 'Derma Consult',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -276,7 +276,7 @@ describe('Storage Scoping Isolation Suite (#166)', () => {
       // Subsystems
       expect(loadSettings(USER_A)).toEqual(DEFAULT_USER_SETTINGS);
       expect(loadClinicalConsents(USER_A)).toEqual({});
-      expect(hasClinicalConsent('cardiology-guide', USER_A)).toBe(false);
+      expect(hasClinicalConsent('heart-care-coordinator', USER_A)).toBe(false);
       expect(listSessions()).toEqual([]);
       expect(loadChecklist('t1', 'msg_one', ['Q1'], USER_A)).toEqual([{ id: 'init-0', text: 'Q1', completed: false }]);
       expect(isSessionMemoryPaused(USER_A)).toBe(false);

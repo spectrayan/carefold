@@ -16,12 +16,12 @@ import pytest
 
 from carefold.agents.registry import AgentRegistry, _extract_first_line
 from carefold.constants.agents import (
-    AGENT_BENEFITS_GUIDE,
+    AGENT_BENEFITS_COORDINATOR,
     AGENT_DOCUMENT_EXTRACTOR,
-    AGENT_HABIT_COMPANION,
+    AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
     AGENT_SUGGESTION_GENERATOR,
-    AGENT_VISIT_STEWARD,
+    AGENT_VISIT_PREP_COORDINATOR,
     BUNDLED_AGENT_IDS,
 )
 from carefold.loaders.agent_loader import load_agent
@@ -36,9 +36,9 @@ def test_agent_registry_discovery(temp_workspace: Path):
     registry = AgentRegistry(agents_dir, skills_dir)
     agent_ids = registry.list_agent_ids()
 
-    assert AGENT_VISIT_STEWARD in agent_ids
-    assert AGENT_BENEFITS_GUIDE in agent_ids
-    assert AGENT_HABIT_COMPANION in agent_ids
+    assert AGENT_VISIT_PREP_COORDINATOR in agent_ids
+    assert AGENT_BENEFITS_COORDINATOR in agent_ids
+    assert AGENT_HABIT_COORDINATOR in agent_ids
     assert AGENT_ORCHESTRATOR in agent_ids
     assert AGENT_DOCUMENT_EXTRACTOR in agent_ids
     assert AGENT_SUGGESTION_GENERATOR in agent_ids
@@ -51,12 +51,12 @@ def test_agent_registry_get_and_indexing(temp_workspace: Path):
     """Verify get() and dict-like indexing behavior."""
     registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
 
-    manifest = registry.get(AGENT_VISIT_STEWARD)
+    manifest = registry.get(AGENT_VISIT_PREP_COORDINATOR)
     assert manifest is not None
-    assert manifest.id == AGENT_VISIT_STEWARD
-    assert manifest.title == "Visit Steward"
+    assert manifest.id == AGENT_VISIT_PREP_COORDINATOR
+    assert manifest.title == "Appointment Prep Coordinator"
 
-    assert registry[AGENT_VISIT_STEWARD].id == AGENT_VISIT_STEWARD
+    assert registry[AGENT_VISIT_PREP_COORDINATOR].id == AGENT_VISIT_PREP_COORDINATOR
 
     assert registry.get("non-existent-agent") is None
     with pytest.raises(KeyError):
@@ -71,9 +71,9 @@ def test_agent_registry_delegatable_agents(temp_workspace: Path):
     delegatable_ids = {a.id for a in delegatable}
 
     assert AGENT_ORCHESTRATOR not in delegatable_ids
-    assert AGENT_VISIT_STEWARD in delegatable_ids
-    assert AGENT_BENEFITS_GUIDE in delegatable_ids
-    assert AGENT_HABIT_COMPANION in delegatable_ids
+    assert AGENT_VISIT_PREP_COORDINATOR in delegatable_ids
+    assert AGENT_BENEFITS_COORDINATOR in delegatable_ids
+    assert AGENT_HABIT_COORDINATOR in delegatable_ids
     assert AGENT_DOCUMENT_EXTRACTOR in delegatable_ids
     for agent in delegatable:
         assert agent.can_delegate is False
@@ -85,9 +85,9 @@ def test_agent_registry_format_agent_catalog(temp_workspace: Path):
     catalog = registry.format_agent_catalog(exclude=AGENT_ORCHESTRATOR)
 
     assert isinstance(catalog, str)
-    assert f"- **{AGENT_BENEFITS_GUIDE}**" in catalog
-    assert f"- **{AGENT_VISIT_STEWARD}**" in catalog
-    assert f"- **{AGENT_HABIT_COMPANION}**" in catalog
+    assert f"- **{AGENT_BENEFITS_COORDINATOR}**" in catalog
+    assert f"- **{AGENT_VISIT_PREP_COORDINATOR}**" in catalog
+    assert f"- **{AGENT_HABIT_COORDINATOR}**" in catalog
     assert f"- **{AGENT_DOCUMENT_EXTRACTOR}**" in catalog
     assert f"- **{AGENT_SUGGESTION_GENERATOR}**" in catalog
     assert f"- **{AGENT_ORCHESTRATOR}**" not in catalog
@@ -97,7 +97,7 @@ def test_agent_registry_format_agent_catalog(temp_workspace: Path):
 def test_agent_registry_effective_tools(temp_workspace: Path):
     """Verify registry exposes effective tools union."""
     registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-    tools = registry.get_effective_tools(AGENT_VISIT_STEWARD)
+    tools = registry.get_effective_tools(AGENT_VISIT_PREP_COORDINATOR)
 
     assert "attach-read" in tools
     assert "workspace-note" in tools
@@ -125,8 +125,8 @@ def test_agent_registry_taxonomy_metadata(temp_workspace: Path):
     skills_dir = temp_workspace / "skills"
     registry = AgentRegistry(agents_dir, skills_dir)
 
-    # 1. visit-steward
-    vs = registry.get(AGENT_VISIT_STEWARD)
+    # 1. appointment-prep-coordinator
+    vs = registry.get(AGENT_VISIT_PREP_COORDINATOR)
     assert vs is not None
     assert vs.domain == "navigation"
     assert vs.category == "navigation.appointments"
@@ -136,8 +136,8 @@ def test_agent_registry_taxonomy_metadata(temp_workspace: Path):
     assert vs.maturity == "stable"
     assert isinstance(vs.target_audience, list)
 
-    # 2. benefits-guide
-    bg = registry.get(AGENT_BENEFITS_GUIDE)
+    # 2. benefits-coordinator
+    bg = registry.get(AGENT_BENEFITS_COORDINATOR)
     assert bg is not None
     assert bg.domain == "navigation"
     assert bg.category == "navigation.insurance"
@@ -146,8 +146,8 @@ def test_agent_registry_taxonomy_metadata(temp_workspace: Path):
     assert bg.icon == "FileText"
     assert bg.maturity == "stable"
 
-    # 3. habit-companion
-    hc = registry.get(AGENT_HABIT_COMPANION)
+    # 3. habit-coordinator
+    hc = registry.get(AGENT_HABIT_COORDINATOR)
     assert hc is not None
     assert hc.domain == "wellness"
     assert hc.category == "wellness.habits"

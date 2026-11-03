@@ -49,11 +49,11 @@ from carefold.schemas.manifest import (
 
 
 M2_SPECIALTY_AGENTS: List[str] = [
-    "oncology-navigator",
-    "rheuma-guide",
-    "urology-guide",
-    "eye-guide",
-    "ent-guide",
+    "cancer-care-coordinator",
+    "autoimmune-care-coordinator",
+    "bladder-pelvic-care-coordinator",
+    "eye-care-coordinator",
+    "ent-care-coordinator",
 ]
 
 M2_SPECIALTY_SKILLS: List[str] = [
@@ -68,7 +68,7 @@ AGENT_TO_SKILL: Dict[str, str] = dict(zip(M2_SPECIALTY_AGENTS, M2_SPECIALTY_SKIL
 
 MANDATORY_HEADINGS: List[str] = [
     "ROLE & EMPATHY",
-    "CLINICAL SCOPE & FOCUS",
+    "SCOPE & FOCUS",
 ]
 
 MANDATORY_INTENDED_USE_STATEMENTS: List[str] = [
@@ -366,11 +366,11 @@ class TestSafetyBoundariesAndEmergencyFlags:
         profile_text = profile_path.read_text(encoding="utf-8") if profile_path.is_file() else ""
 
         specialty_emergency_terms: Dict[str, List[str]] = {
-            "oncology-navigator": ["neutropenic", "fever", "emergency", "911"],
-            "rheuma-guide": ["septic arthritis", "vision", "fever", "emergency", "911"],
-            "urology-guide": ["urinary retention", "hematuria", "emergency", "911"],
-            "eye-guide": ["dark curtain", "flashes", "vision loss", "emergency", "911"],
-            "ent-guide": ["stridor", "drooling", "emergency", "911"],
+            "cancer-care-coordinator": ["neutropenic", "fever", "emergency", "911"],
+            "autoimmune-care-coordinator": ["septic arthritis", "vision", "fever", "emergency", "911"],
+            "bladder-pelvic-care-coordinator": ["urinary retention", "hematuria", "emergency", "911"],
+            "eye-care-coordinator": ["dark curtain", "flashes", "vision loss", "emergency", "911"],
+            "ent-care-coordinator": ["stridor", "drooling", "emergency", "911"],
         }
 
         for agent_id, terms in specialty_emergency_terms.items():
@@ -434,11 +434,11 @@ class TestCatalogIndexingAndTwoHopRouting:
 
         # 3. FTS queries on keywords
         keyword_checks = {
-            "oncology-navigator": "chemotherapy",
-            "rheuma-guide": "autoimmune",
-            "urology-guide": "prostate",
-            "eye-guide": "glaucoma",
-            "ent-guide": "sinusitis",
+            "cancer-care-coordinator": "chemotherapy",
+            "autoimmune-care-coordinator": "autoimmune",
+            "bladder-pelvic-care-coordinator": "prostate",
+            "eye-care-coordinator": "glaucoma",
+            "ent-care-coordinator": "sinusitis",
         }
         for agent_id, kw in keyword_checks.items():
             fts_results = await catalog.search_agents(query=kw)

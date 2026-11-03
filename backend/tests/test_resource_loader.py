@@ -303,9 +303,9 @@ class TestCorruptedAndMissingResources:
             unknown_chips = loader.get_follow_up_suggestions("unknown-agent")
             assert len(unknown_chips) == 3
 
-            # For known agent personas (e.g. visit-steward), when prompts.yaml is empty,
+            # For known agent personas (e.g. appointment-prep-coordinator), when prompts.yaml is empty,
             # it falls back to global default chips as well
-            bundled_chips = loader.get_follow_up_suggestions("visit-steward")
+            bundled_chips = loader.get_follow_up_suggestions("appointment-prep-coordinator")
             assert len(bundled_chips) == 3
             assert bundled_chips == unknown_chips
 

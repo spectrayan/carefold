@@ -280,8 +280,8 @@ export async function runSetupDiagnostics(
     title: 'Consultation Starters',
     status: 'pass',
     badge: '[READY]',
-    message: 'Flagship Visit Steward agent ready with consultation prep starters.',
-    ctaLink: '/chat?agent=visit-steward',
+    message: 'Flagship Appointment Prep Coordinator agent ready with consultation prep starters.',
+    ctaLink: '/chat?agent=appointment-prep-coordinator',
     ctaLabel: 'Try a starter'
   };
 

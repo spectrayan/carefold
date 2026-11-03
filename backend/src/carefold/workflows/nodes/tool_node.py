@@ -121,7 +121,7 @@ class ToolNode(BaseNode):
         agent_obj = None
         skills_list = []
         try:
-            agent_dir = find_agent_dir(ws_root / "agents", str(agent_id)) or (ws_root / "agents" / "visit-steward").resolve()
+            agent_dir = find_agent_dir(ws_root / "agents", str(agent_id)) or (ws_root / "agents" / "appointment-prep-coordinator").resolve()
             agent_obj, _, skills_list = load_agent(agent_dir, skills_dir)
         except Exception:
             agent_obj = type("Agent", (), {"id": agent_id, "skills": []})()

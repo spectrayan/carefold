@@ -471,7 +471,7 @@ Dyspnea log preparation.
     def test_persona_compact_token_budget_verification(self):
         """Systematically measures word/token count of slim persona (strictly ≤ 600 words)."""
         sample_slim = """# ROLE & EMPATHY
-You are the Carefold Cardiology Navigator. You approach every interaction with deep clinical empathy,
+You are the Carefold Heart Care Coordinator. You approach every interaction with deep clinical empathy,
 calm reassurance, and structured precision. You assist patients who are preparing for visits with cardiologists,
 electrophysiologists, and heart health specialists.
 
@@ -540,10 +540,10 @@ You explain standard cardiology intake terminology in plain English and support 
 
     def test_profile_suffix_appends_after_caller_system_prompt(self):
         """Verifies system_prompt_suffix merges after the agent's base system prompt."""
-        base_prompt = "You are Cardiology Guide."
+        base_prompt = "You are Heart Care Coordinator."
         suffix = "\n\n# UNIVERSAL SAFETY\nNever diagnose."
         combined = f"{base_prompt}{suffix}"
-        assert combined.startswith("You are Cardiology Guide.")
+        assert combined.startswith("You are Heart Care Coordinator.")
         assert combined.endswith("Never diagnose.")
 
     # -------------------------------------------------------------------------
@@ -840,7 +840,7 @@ class TestCrossFeatureCombinations:
     def test_cross_feature_composite_prompt_assembly(self, tmp_path: Path):
         """Validates complete composite prompt assembly across all 3 tiers."""
         # 1. Slim persona
-        persona = "# ROLE & EMPATHY\nCardiology Navigator.\n\n# CLINICAL SCOPE & FOCUS\nPre-visit prep."
+        persona = "# ROLE & EMPATHY\nHeart Care Coordinator.\n\n# CLINICAL SCOPE & FOCUS\nPre-visit prep."
         # 2. Skills catalog metadata (Tier 1 disclosure)
         catalog = "## Available Skills\n- cardiology-prep: Cardiovascular visit prep."
         # 3. Profile suffix
@@ -873,7 +873,7 @@ class TestCrossFeatureCombinations:
         (refs_dir / "bp-log-template.md").write_text("# BP Log Template", encoding="utf-8")
 
         # In Tier 1, reference document is NOT in system prompt
-        system_prompt = "You are Cardiology Guide. Available skills: - cardiology-prep: Cardiac prep."
+        system_prompt = "You are Heart Care Coordinator. Available skills: - cardiology-prep: Cardiac prep."
         assert "bp-log-template.md" not in system_prompt
 
         # Retrieved on-demand
@@ -981,7 +981,7 @@ class TestClinicalScenarios:
         valid, missing = check_mandatory_intended_use(simulated_response)
         assert valid is True
 
-    def test_scenario_benefits_guide_administrative_session(self):
+    def test_scenario_benefits_coordinator_administrative_session(self):
         """End-to-end benefits guide administrative navigation without clinical risk elevation."""
         state = {
             "skills_metadata": [

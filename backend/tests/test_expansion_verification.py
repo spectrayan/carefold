@@ -13,16 +13,16 @@
 
 Validates:
 1. Extended Medical & Surgical Navigators 9–13 (Phase2):
-   - oncology-navigator / oncology-prep
-   - rheuma-guide / rheuma-prep
-   - urology-guide / urology-prep
-   - eye-guide / vision-prep
-   - ent-guide / ent-prep
+   - cancer-care-coordinator / oncology-prep
+   - autoimmune-care-coordinator / rheuma-prep
+   - bladder-pelvic-care-coordinator / urology-prep
+   - eye-care-coordinator / vision-prep
+   - ent-care-coordinator / ent-prep
 2. Healthcare Administration Stewards 14–17 (Phase3):
-   - prior-auth-navigator / prior-auth-prep
-   - claims-appeals-guide / claims-appeals-prep
+   - prior-authorization-coordinator / prior-auth-prep
+   - claims-appeals-coordinator / claims-appeals-prep
    - records-coordinator / records-management
-   - formulary-guide / formulary-navigation
+   - prescription-cost-coordinator / formulary-navigation
 3. System Infrastructure Agents 18–19 (Phase4):
    - agents/_system/triage-auditor/
    - agents/_system/quality-reviewer/
@@ -61,40 +61,40 @@ from evals.runner import EvalCase, run_single_eval
 
 
 M2_SPECIALTY_AGENTS: Dict[str, Dict[str, Any]] = {
-    "oncology-navigator": {
-        "title": "Oncology Care Steward",
+    "cancer-care-coordinator": {
+        "title": "Cancer Care Coordinator",
         "companion_skill": "oncology-prep",
         "domain": AgentDomain.CLINICAL,
         "category": "clinical.oncology",
         "icon": "Ribbon",
         "fts_query": "chemotherapy",
     },
-    "rheuma-guide": {
-        "title": "Rheumatology Navigator",
+    "autoimmune-care-coordinator": {
+        "title": "Autoimmune Care Coordinator",
         "companion_skill": "rheuma-prep",
         "domain": AgentDomain.CLINICAL,
         "category": "clinical.rheumatology",
         "icon": "Flame",
         "fts_query": "autoimmune",
     },
-    "urology-guide": {
-        "title": "Urology Navigator",
+    "bladder-pelvic-care-coordinator": {
+        "title": "Bladder & Pelvic Health Coordinator",
         "companion_skill": "urology-prep",
         "domain": AgentDomain.CLINICAL,
         "category": "clinical.urology",
         "icon": "Droplets",
         "fts_query": "voiding",
     },
-    "eye-guide": {
-        "title": "Ophthalmology Navigator",
+    "eye-care-coordinator": {
+        "title": "Eye Care Coordinator",
         "companion_skill": "vision-prep",
         "domain": AgentDomain.CLINICAL,
         "category": "clinical.ophthalmology",
         "icon": "Eye",
         "fts_query": "glaucoma",
     },
-    "ent-guide": {
-        "title": "ENT Navigator",
+    "ent-care-coordinator": {
+        "title": "Ear, Nose & Throat Care Coordinator",
         "companion_skill": "ent-prep",
         "domain": AgentDomain.CLINICAL,
         "category": "clinical.ent",
@@ -104,16 +104,16 @@ M2_SPECIALTY_AGENTS: Dict[str, Dict[str, Any]] = {
 }
 
 M3_ADMIN_AGENTS: Dict[str, Dict[str, Any]] = {
-    "prior-auth-navigator": {
-        "title": "Prior Authorization Navigator",
+    "prior-authorization-coordinator": {
+        "title": "Prior Authorization Coordinator",
         "companion_skill": "prior-auth-prep",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.prior_auth",
         "icon": "FileCheck",
         "fts_query": "prior authorization",
     },
-    "claims-appeals-guide": {
-        "title": "Claims & Appeals Steward",
+    "claims-appeals-coordinator": {
+        "title": "Claims & Appeals Coordinator",
         "companion_skill": "claims-appeals-prep",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.claims",
@@ -121,15 +121,15 @@ M3_ADMIN_AGENTS: Dict[str, Dict[str, Any]] = {
         "fts_query": "claims appeal",
     },
     "records-coordinator": {
-        "title": "Medical Records Coordinator",
+        "title": "Records Coordinator",
         "companion_skill": "records-management",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.records",
         "icon": "FolderArchive",
         "fts_query": "medical records",
     },
-    "formulary-guide": {
-        "title": "Prescription & Formulary Guide",
+    "prescription-cost-coordinator": {
+        "title": "Prescription Cost Coordinator",
         "companion_skill": "formulary-navigation",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.formulary",
@@ -147,7 +147,7 @@ M4_SYSTEM_AGENTS: Dict[str, Dict[str, Any]] = {
         "hidden": True,
     },
     "quality-reviewer": {
-        "title": "Clinical Quality Reviewer",
+        "title": "Quality Reviewer",
         "domain": AgentDomain.EDUCATION,
         "category": "education.quality",
         "icon": "CheckCheck",
@@ -157,7 +157,7 @@ M4_SYSTEM_AGENTS: Dict[str, Dict[str, Any]] = {
 
 MANDATORY_HEADERS = [
     "ROLE & EMPATHY",
-    "CLINICAL SCOPE & FOCUS",
+    "SCOPE & FOCUS",
     "STRUCTURED INTERACTION PROTOCOL",
     "STRICT NON-CLINICAL BOUNDARIES",
     "EXPLICIT EMERGENCY RED FLAGS",
@@ -238,7 +238,7 @@ class TestExpansionPersonas:
         else:
             words = persona.split()
             assert 40 <= len(words) < 600, f"Agent '{agent_id}' persona has {len(words)} words; must be in [40, 600)"
-            for header in ["ROLE & EMPATHY", "CLINICAL SCOPE & FOCUS"]:
+            for header in ["ROLE & EMPATHY", "SCOPE & FOCUS"]:
                 assert f"{header}:" in persona or header in persona, (
                     f"Agent '{agent_id}' persona missing mandatory header '{header}'"
                 )
@@ -318,15 +318,15 @@ class TestExpansionCatalog:
 
         # Verify FTS search for new specialties
         search_terms = {
-            "oncology-navigator": "chemotherapy",
-            "rheuma-guide": "autoimmune",
-            "urology-guide": "voiding",
-            "eye-guide": "glaucoma",
-            "ent-guide": "sinusitis",
-            "prior-auth-navigator": "prior authorization",
-            "claims-appeals-guide": "claims appeal",
+            "cancer-care-coordinator": "chemotherapy",
+            "autoimmune-care-coordinator": "autoimmune",
+            "bladder-pelvic-care-coordinator": "voiding",
+            "eye-care-coordinator": "glaucoma",
+            "ent-care-coordinator": "sinusitis",
+            "prior-authorization-coordinator": "prior authorization",
+            "claims-appeals-coordinator": "claims appeal",
             "records-coordinator": "medical records",
-            "formulary-guide": "formulary",
+            "prescription-cost-coordinator": "formulary",
         }
 
         for agent_id, term in search_terms.items():

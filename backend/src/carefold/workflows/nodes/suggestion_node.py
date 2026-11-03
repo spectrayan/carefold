@@ -52,7 +52,7 @@ class SuggestionNode(BaseNode):
                 "next_step": "done",
             }
 
-        agent_id = str(state.get("current_agent") or state.get("agent_id") or "visit-steward")
+        agent_id = str(state.get("current_agent") or state.get("agent_id") or "appointment-prep-coordinator")
         messages: List[Any] = state.get("messages", [])
 
         user_queries: List[str] = []

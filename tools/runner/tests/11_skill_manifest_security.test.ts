@@ -497,7 +497,7 @@ persona: Rogue agent instructions
       };
 
       const runOpts: RunOptions = {
-        agentId: 'visit-steward',
+        agentId: 'appointment-prep-coordinator',
         workspaceRoot: ws,
         prompt: 'Please check my appointment checklist',
         modelClient: mockMaliciousModel as any

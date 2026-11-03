@@ -32,22 +32,22 @@ export async function run() {
           // 2. Install reference agent and skill
           const skillRes = runCli(['skill', 'add', 'visit-prep'], { cwd: ws });
           assertEqual(skillRes.status, 0);
-          const agentRes = runCli(['agent', 'add', 'visit-steward'], { cwd: ws });
+          const agentRes = runCli(['agent', 'add', 'appointment-prep-coordinator'], { cwd: ws });
           assertEqual(agentRes.status, 0);
 
           // 3. Inspect agent catalog
           const listRes = runCli(['agent', 'list'], { cwd: ws });
           assertEqual(listRes.status, 0);
-          assertContains(listRes.stdout, 'visit-steward');
+          assertContains(listRes.stdout, 'appointment-prep-coordinator');
 
           // 4. Run agent offline with mock
-          const runRes = runCli(['run', '--agent', 'visit-steward', '--mock', '--workspace', ws, 'Hello! Help me prepare for my visit.'], { timeout: 35000 });
+          const runRes = runCli(['run', '--agent', 'appointment-prep-coordinator', '--mock', '--workspace', ws, 'Hello! Help me prepare for my visit.'], { timeout: 35000 });
           assertEqual(runRes.status, 0);
 
           // 5. Inspect audit log
           const logRes = runCli(['log', '--workspace', ws]);
           assertEqual(logRes.status, 0);
-          assertContains(logRes.stdout, 'visit-steward');
+          assertContains(logRes.stdout, 'appointment-prep-coordinator');
         } finally {
           removeTempWorkspace(ws);
         }
@@ -105,7 +105,7 @@ from carefold.engine.runner import execute_agent_run
 
 async def main():
     # Step 1: Tool retrieves benefit terms
-    agent = type('Agent', (), {'id': 'benefits-guide', 'skills': ['benefits-explainer']})()
+    agent = type('Agent', (), {'id': 'benefits-coordinator', 'skills': ['benefits-explainer']})()
     skill = type('Skill', (), {'id': 'benefits-explainer'})()
     ctx = type('Ctx', (), {
         'workspace_root': Path('.').resolve(),
@@ -120,7 +120,7 @@ async def main():
 
     # Step 2: Agent run explains deductible
     tokens = []
-    async for ev in execute_agent_run('benefits-guide', 'What is the deductible under my health plan?', mock=True):
+    async for ev in execute_agent_run('benefits-coordinator', 'What is the deductible under my health plan?', mock=True):
         if ev.get('type') == 'token':
             tokens.append(ev.get('delta', ''))
     output = ''.join(tokens)
@@ -186,7 +186,7 @@ async def main():
 
     # Verify audit recording
     log_path = Path('${ws}') / 'logs' / 'audit.jsonl'
-    ev = AuditEvent(agent_id='visit-steward', event='refuse', allowed=False, reason=res.reason)
+    ev = AuditEvent(agent_id='appointment-prep-coordinator', event='refuse', allowed=False, reason=res.reason)
     await record_audit(ev, log_path=log_path)
     data = json.loads(log_path.read_text(encoding='utf-8').strip())
     assert data['event'] == 'refuse'
@@ -251,7 +251,7 @@ assert res.refused is False, f"Erroneously refused legitimate inquiry: {res.reas
 # 2. Agent run produces appointment prep advice
 async def main():
     tokens = []
-    async for ev in execute_agent_run('visit-steward', prompt, mock=True):
+    async for ev in execute_agent_run('appointment-prep-coordinator', prompt, mock=True):
         if ev.get('type') == 'token':
             tokens.append(ev.get('delta', ''))
     output = ''.join(tokens)
@@ -337,7 +337,7 @@ from carefold.main import app
 
 client = TestClient(app)
 resp = client.post('/api/chat', json={
-    'agent_id': 'visit-steward',
+    'agent_id': 'appointment-prep-coordinator',
     'prompt': 'What should I prepare for my annual checkup?',
     'mock': True
 })

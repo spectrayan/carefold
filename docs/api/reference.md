@@ -85,7 +85,7 @@ Initiates an interactive consultation turn with the multi-agent engine.
   "messages": [
     {"role": "user", "content": "How should I prepare for my cardiology visit?"}
   ],
-  "agent_id": "cardiology-guide",
+  "agent_id": "heart-care-coordinator",
   "thread_id": "session-1234-abcd",
   "allow_clinical": true,
   "attachments": []

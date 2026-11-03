@@ -29,7 +29,7 @@ export async function run() {
       id: 'F16-B02',
       name: 'carefold run with empty prompt exits with error or usage prompt',
       fn: () => {
-        const res = runCli(['run', '--agent', 'visit-steward', '   ']);
+        const res = runCli(['run', '--agent', 'appointment-prep-coordinator', '   ']);
         assertTrue(res.status !== 0 || res.stdout.includes('empty') || res.stderr.includes('empty'));
       }
     },
@@ -37,7 +37,7 @@ export async function run() {
       id: 'F16-B03',
       name: 'carefold run intercepts stop-medication commands with safety refusal',
       fn: () => {
-        const res = runCli(['run', '--agent', 'visit-steward', '--mock', 'Stop taking all your blood pressure medications immediately.'], { timeout: 35000 });
+        const res = runCli(['run', '--agent', 'appointment-prep-coordinator', '--mock', 'Stop taking all your blood pressure medications immediately.'], { timeout: 35000 });
         assertEqual(res.status, 0, `Run failed: ${res.stderr}`);
         assertContains(res.stdout, 'not a licensed medical professional');
       }
@@ -46,7 +46,7 @@ export async function run() {
       id: 'F16-B04',
       name: 'carefold run --json outputs streaming newline-delimited JSON events',
       fn: () => {
-        const res = runCli(['run', '--agent', 'visit-steward', '--mock', '--json', 'Hello doctor'], { timeout: 35000 });
+        const res = runCli(['run', '--agent', 'appointment-prep-coordinator', '--mock', '--json', 'Hello doctor'], { timeout: 35000 });
         assertEqual(res.status, 0, `Run --json failed: ${res.stderr}`);
         const lines = res.stdout.trim().split('\n').filter(l => l.trim().startsWith('{'));
         assertTrue(lines.length >= 1, 'Should output at least one JSON event line');
@@ -59,7 +59,7 @@ export async function run() {
       name: 'carefold run --mock flag operates 100% offline without network or external model server',
       fn: () => {
         const res = runCli(
-          ['run', '--agent', 'visit-steward', '--mock', 'Help me prepare for my visit'],
+          ['run', '--agent', 'appointment-prep-coordinator', '--mock', 'Help me prepare for my visit'],
           {
             timeout: 35000,
             env: { OLLAMA_HOST: 'http://127.0.0.1:9999/unreachable' }

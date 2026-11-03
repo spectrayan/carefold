@@ -182,15 +182,15 @@ async def test_supervisor_node_intent_classification():
 
     # Benefits
     out_b = await node.execute({"messages": [HumanMessage(content="What is my in-network deductible?")]})
-    assert out_b["routed_subgraph"] == "benefits-guide"
+    assert out_b["routed_subgraph"] == "benefits-coordinator"
 
     # Visit
     out_v = await node.execute({"messages": [HumanMessage(content="Help me prepare a checklist for my doctor appointment")]})
-    assert out_v["routed_subgraph"] == "visit-steward"
+    assert out_v["routed_subgraph"] == "appointment-prep-coordinator"
 
     # Habit
     out_h = await node.execute({"messages": [HumanMessage(content="Track my water intake habit")]})
-    assert out_h["routed_subgraph"] == "habit-companion"
+    assert out_h["routed_subgraph"] == "habit-coordinator"
 
     # Extraction
     out_e = await node.execute({"messages": [HumanMessage(content="Extract this uploaded pdf dossier")]})
@@ -204,7 +204,7 @@ async def test_agent_node_execution():
 
     state = {
         "messages": [HumanMessage(content="Hello")],
-        "current_agent": "benefits-guide",
+        "current_agent": "benefits-coordinator",
     }
     out = await node.execute(state)
     assert "messages" in out
@@ -309,7 +309,7 @@ async def test_suggestion_node_suppression_and_generation():
 
     # Generated on safe turn
     active = await node.execute({
-        "current_agent": "visit-steward",
+        "current_agent": "appointment-prep-coordinator",
         "messages": [HumanMessage(content="Questions to ask my doctor")],
         "output": "Here are 3 questions.",
     })
@@ -323,7 +323,7 @@ async def test_audit_node_logs_with_dual_timestamps(tmp_path: Path, monkeypatch)
     monkeypatch.setattr(settings, "audit_log_path", log_file)
 
     node = AuditNode()
-    out = await node.execute({"thread_id": "thread-999", "current_agent": "visit-steward"})
+    out = await node.execute({"thread_id": "thread-999", "current_agent": "appointment-prep-coordinator"})
     assert out["audit_logged"] is True
     assert log_file.exists()
 
@@ -353,10 +353,10 @@ def test_supervisor_subgraph_compilation_and_routing():
     assert subgraph is not None
 
     # Routing helpers
-    assert route_supervisor({"routed_subgraph": "benefits-guide"}) == "benefits_guide"
-    assert route_supervisor({"routed_subgraph": "visit-steward"}) == "visit_steward"
+    assert route_supervisor({"routed_subgraph": "benefits-coordinator"}) == "benefits_coordinator"
+    assert route_supervisor({"routed_subgraph": "appointment-prep-coordinator"}) == "appointment_prep_coordinator"
     assert route_supervisor({"routed_subgraph": "document-extractor"}) == "document_extractor"
-    assert route_supervisor({"routed_subgraph": "habit-companion"}) == "habit_companion"
+    assert route_supervisor({"routed_subgraph": "habit-coordinator"}) == "habit_coordinator"
     assert route_supervisor({"routed_subgraph": "unknown-specialist"}) == "generalist"
 
     # Return transition

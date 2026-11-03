@@ -203,10 +203,10 @@ describe('Resilience Suite: Layout, Toolbars & Code Blocks', () => {
 
     it('supports custom agentTitle in role badge when provided', () => {
       const assistantMsg: ChatMessage = { id: 'a1', role: 'assistant', content: 'Ready.' };
-      render(<ChatMessageItem message={assistantMsg} agentTitle="Visit Steward" />);
+      render(<ChatMessageItem message={assistantMsg} agentTitle="Appointment Prep Coordinator" />);
 
       const assistantRole = screen.getByTestId('message-role-assistant');
-      expect(assistantRole).toHaveTextContent('Visit Steward');
+      expect(assistantRole).toHaveTextContent('Appointment Prep Coordinator');
     });
   });
 

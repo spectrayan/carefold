@@ -127,26 +127,26 @@ class TestAgentRegistrySubagentDiscoveryAndTools:
     """Verifies that AgentRegistry returns exactly 20 specialist subagents and 0 system agents."""
 
     EXPECTED_SPECIALISTS = {
-        "benefits-guide",
-        "cardiology-guide",
-        "claims-appeals-guide",
-        "derma-guide",
-        "endocrinology-guide",
-        "ent-guide",
-        "eye-guide",
-        "formulary-guide",
-        "gastro-guide",
-        "habit-companion",
-        "nephrology-guide",
-        "neurology-guide",
-        "oncology-navigator",
-        "ortho-guide",
-        "prior-auth-navigator",
-        "pulmonology-guide",
+        "benefits-coordinator",
+        "heart-care-coordinator",
+        "claims-appeals-coordinator",
+        "skin-care-coordinator",
+        "diabetes-thyroid-coordinator",
+        "ent-care-coordinator",
+        "eye-care-coordinator",
+        "prescription-cost-coordinator",
+        "digestive-care-coordinator",
+        "habit-coordinator",
+        "kidney-care-coordinator",
+        "brain-nerve-care-coordinator",
+        "cancer-care-coordinator",
+        "bone-joint-care-coordinator",
+        "prior-authorization-coordinator",
+        "lung-breathing-coordinator",
         "records-coordinator",
-        "rheuma-guide",
-        "urology-guide",
-        "visit-steward",
+        "autoimmune-care-coordinator",
+        "bladder-pelvic-care-coordinator",
+        "appointment-prep-coordinator",
     }
 
     DISALLOWED_SYSTEM_AGENTS = {
@@ -207,7 +207,7 @@ class TestAgentRegistrySubagentDiscoveryAndTools:
             "_template",
             ".hidden",
             "../../../etc/passwd",
-            "../agents/cardiology-guide",
+            "../agents/heart-care-coordinator",
             "_system/orchestrator",
             "_system",
             "nonexistent-specialist",
@@ -221,12 +221,12 @@ class TestAgentRegistrySubagentDiscoveryAndTools:
 
     def test_get_subagent_immutability(self, agent_registry: AgentRegistry):
         """Asserts mutating the returned subagent dict does not corrupt registry state."""
-        sub1 = agent_registry.get_subagent("cardiology-guide")
+        sub1 = agent_registry.get_subagent("heart-care-coordinator")
         assert sub1 is not None
         orig_tools_len = len(sub1["tools"])
         sub1["tools"].append("malicious-injected-tool")
 
-        sub2 = agent_registry.get_subagent("cardiology-guide")
+        sub2 = agent_registry.get_subagent("heart-care-coordinator")
         assert sub2 is not None
         assert len(sub2["tools"]) == orig_tools_len
         assert "malicious-injected-tool" not in sub2["tools"]
@@ -279,7 +279,7 @@ class TestCreateCarefoldAgentStress:
         """Verifies create_carefold_agent compiles with exactly 1 subagent."""
         (tmp_path / "agents").mkdir()
         (tmp_path / "skills").mkdir()
-        shutil.copytree(workspace_root / "agents" / "cardiology-guide", tmp_path / "agents" / "cardiology-guide")
+        shutil.copytree(workspace_root / "agents" / "heart-care-coordinator", tmp_path / "agents" / "heart-care-coordinator")
         shutil.copytree(workspace_root / "skills" / "cardiology-prep", tmp_path / "skills" / "cardiology-prep")
 
         agent = create_carefold_agent(workspace_root=tmp_path)
@@ -289,7 +289,7 @@ class TestCreateCarefoldAgentStress:
         """Verifies create_carefold_agent compiles with a subset of 5 subagents."""
         (tmp_path / "agents").mkdir()
         (tmp_path / "skills").mkdir()
-        subset = ["cardiology-guide", "pulmonology-guide", "derma-guide", "gastro-guide", "habit-companion"]
+        subset = ["heart-care-coordinator", "lung-breathing-coordinator", "skin-care-coordinator", "digestive-care-coordinator", "habit-coordinator"]
         for s in subset:
             shutil.copytree(workspace_root / "agents" / s, tmp_path / "agents" / s)
 

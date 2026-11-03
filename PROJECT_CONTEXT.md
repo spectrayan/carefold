@@ -74,7 +74,7 @@ Carefold decouples state persistence and catalog discovery through clean hexagon
 
 The `MemoryPort` manages cognitive agent memory across temporal tiers and namespaces:
 
-- **`remember(key, value, tier, namespace, metadata)`**: Stores or updates an entry within a specified `MemoryTier` and isolation namespace (e.g., `agent:visit-steward`, `user:patient_1`).
+- **`remember(key, value, tier, namespace, metadata)`**: Stores or updates an entry within a specified `MemoryTier` and isolation namespace (e.g., `agent:appointment-prep-coordinator`, `user:patient_1`).
 - **`recall(query, tier, namespace, limit)`**: Executes natural language or keyword retrieval, returning scored memory dictionaries sorted by cognitive salience and relevance.
 - **`forget(key, namespace)`**: Removes a specific memory record.
 - **`reinforce(key, namespace, delta)`**: Dynamically adjusts memory salience scores (boosting frequently accessed memories or applying decay).
@@ -171,8 +171,8 @@ To scale beyond hundreds of specialist agents without context overflow, Carefold
   - The `OrchestratorNode` classifies the intent into high-level domains: `clinical`, `navigation`, `wellness`, `admin`.
 - **Hop 2: Specialist Resolution**:
   - The orchestrator issues an FTS5 search query via `CatalogPort.search_agents(query, domain=domain)` against specialist personas, categories, and skill keywords.
-  - The top-ranking specialist is selected (e.g., `cardiology-guide`).
-  - If no confident match is found, the workflow safely defaults to `visit-steward` or `triage-auditor`.
+  - The top-ranking specialist is selected (e.g., `heart-care-coordinator`).
+  - If no confident match is found, the workflow safely defaults to `appointment-prep-coordinator` or `triage-auditor`.
 - **Dynamic Skill Provisioning**:
   - Only the reference documents and skills declared by the routed specialist are loaded into the prompt context, keeping token utilization minimal and eliminating distraction.
 - **Multi-Agent Deliberation (`ExecutionMode.DELIBERATE`)**:

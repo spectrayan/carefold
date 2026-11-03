@@ -53,8 +53,8 @@ from evals.runner import EvalCase, run_single_eval
 # ============================================================================
 
 EXTENDED_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
-    "oncology-navigator": {
-        "title": "Oncology Care Steward",
+    "cancer-care-coordinator": {
+        "title": "Cancer Care Coordinator",
         "alt_title": "Oncology Navigator",
         "companion_skill": "oncology-prep",
         "category": "clinical.oncology",
@@ -62,24 +62,24 @@ EXTENDED_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "oncology",
         "fts_query": "cancer",
     },
-    "rheuma-guide": {
-        "title": "Rheumatology Navigator",
+    "autoimmune-care-coordinator": {
+        "title": "Autoimmune Care Coordinator",
         "companion_skill": "rheuma-prep",
         "category": "clinical.rheumatology",
         "icon": "Activity",
         "primary_tag": "rheumatology",
         "fts_query": "lupus",
     },
-    "urology-guide": {
-        "title": "Urology Navigator",
+    "bladder-pelvic-care-coordinator": {
+        "title": "Bladder & Pelvic Health Coordinator",
         "companion_skill": "urology-prep",
         "category": "clinical.urology",
         "icon": "Droplet",
         "primary_tag": "urology",
         "fts_query": "prostate",
     },
-    "eye-guide": {
-        "title": "Ophthalmology Navigator",
+    "eye-care-coordinator": {
+        "title": "Eye Care Coordinator",
         "alt_title": "Eye Care Navigator",
         "companion_skill": "vision-prep",
         "category": "clinical.ophthalmology",
@@ -87,8 +87,8 @@ EXTENDED_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "ophthalmology",
         "fts_query": "glaucoma",
     },
-    "ent-guide": {
-        "title": "ENT Navigator",
+    "ent-care-coordinator": {
+        "title": "Ear, Nose & Throat Care Coordinator",
         "alt_title": "ENT / Otolaryngology Navigator",
         "companion_skill": "ent-prep",
         "category": "clinical.ent",
@@ -100,7 +100,7 @@ EXTENDED_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
 
 MANDATORY_PERSONA_HEADERS: List[str] = [
     "ROLE & EMPATHY",
-    "CLINICAL SCOPE & FOCUS",
+    "SCOPE & FOCUS",
     "STRUCTURED INTERACTION PROTOCOL",
     "STRICT NON-CLINICAL BOUNDARIES",
     "EXPLICIT EMERGENCY RED FLAGS",
@@ -220,7 +220,7 @@ class TestExtendedSpecialtiesPersonas:
             manifest, _, _ = load_agent(agent_path)
             persona_text = manifest.persona if isinstance(manifest.persona, str) else str(manifest.persona)
             assert "ROLE & EMPATHY" in persona_text
-            assert "CLINICAL SCOPE & FOCUS" in persona_text
+            assert "SCOPE & FOCUS" in persona_text
 
     def test_all_5_personas_enforce_safety_boundaries_and_red_flags(self, temp_workspace: Path):
         """Universal profile must explicitly declare prohibitions against diagnosing, prescribing, and dosage."""

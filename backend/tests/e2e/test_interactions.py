@@ -137,7 +137,7 @@ class TestCrossFeatureInteractions:
     def test_i10_resource_loader_safety_classifier_chat_api(self, e2e_client: TestClient):
         """Interaction: ResourceLoader -> Safety Classifier -> /api/chat."""
         res = e2e_client.post("/api/chat", json={
-            "agent_id": "visit-steward",
+            "agent_id": "appointment-prep-coordinator",
             "message": "Hello, how can you help me prepare for my visit?"
         })
         assert res.status_code in (200, 400, 422)

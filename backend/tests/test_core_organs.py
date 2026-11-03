@@ -53,64 +53,64 @@ from evals.runner import EvalCase, run_single_eval
 # ============================================================================
 
 CORE_ORGAN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
-    "cardiology-guide": {
-        "title": "Cardiology Navigator",
+    "heart-care-coordinator": {
+        "title": "Heart Care Coordinator",
         "companion_skill": "cardiology-prep",
         "category": "clinical.cardiology",
         "icon": "Heart",
         "primary_tag": "cardiology",
         "fts_query": "hypertension",
     },
-    "pulmonology-guide": {
-        "title": "Pulmonology Navigator",
+    "lung-breathing-coordinator": {
+        "title": "Lung & Breathing Coordinator",
         "companion_skill": "pulmonology-prep",
         "category": "clinical.pulmonology",
         "icon": "Wind",
         "primary_tag": "pulmonology",
         "fts_query": "asthma",
     },
-    "neurology-guide": {
-        "title": "Neurology Navigator",
+    "brain-nerve-care-coordinator": {
+        "title": "Brain & Nerve Health Coordinator",
         "companion_skill": "neurology-prep",
         "category": "clinical.neurology",
         "icon": "Brain",
         "primary_tag": "neurology",
         "fts_query": "migraine",
     },
-    "gastro-guide": {
-        "title": "Gastroenterology Navigator",
+    "digestive-care-coordinator": {
+        "title": "Digestive Health Coordinator",
         "companion_skill": "gastro-prep",
         "category": "clinical.gastroenterology",
         "icon": "Utensils",
         "primary_tag": "gastroenterology",
         "fts_query": "colonoscopy",
     },
-    "nephrology-guide": {
-        "title": "Nephrology Navigator",
+    "kidney-care-coordinator": {
+        "title": "Kidney Care Coordinator",
         "companion_skill": "nephrology-prep",
         "category": "clinical.nephrology",
         "icon": "Droplets",
         "primary_tag": "nephrology",
         "fts_query": "creatinine",
     },
-    "endocrinology-guide": {
-        "title": "Endocrinology Navigator",
+    "diabetes-thyroid-coordinator": {
+        "title": "Diabetes & Thyroid Coordinator",
         "companion_skill": "endocrinology-prep",
         "category": "clinical.endocrinology",
         "icon": "Activity",
         "primary_tag": "endocrinology",
         "fts_query": "glucose",
     },
-    "ortho-guide": {
-        "title": "Orthopedics Navigator",
+    "bone-joint-care-coordinator": {
+        "title": "Bone & Joint Care Coordinator",
         "companion_skill": "ortho-prep",
         "category": "clinical.orthopedics",
         "icon": "Bone",
         "primary_tag": "orthopedics",
         "fts_query": "mobility",
     },
-    "derma-guide": {
-        "title": "Dermatology Navigator",
+    "skin-care-coordinator": {
+        "title": "Skin Care Coordinator",
         "companion_skill": "derma-prep",
         "category": "clinical.dermatology",
         "icon": "Sparkles",
@@ -121,7 +121,7 @@ CORE_ORGAN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
 
 MANDATORY_PERSONA_HEADERS: List[str] = [
     "ROLE & EMPATHY",
-    "CLINICAL SCOPE & FOCUS",
+    "SCOPE & FOCUS",
     "STRUCTURED INTERACTION PROTOCOL",
     "STRICT NON-CLINICAL BOUNDARIES",
     "EXPLICIT EMERGENCY RED FLAGS",
@@ -237,7 +237,7 @@ class TestCoreOrganPersonas:
             manifest, _, _ = load_agent(agent_path)
             persona_text = manifest.persona if isinstance(manifest.persona, str) else str(manifest.persona)
             assert "ROLE & EMPATHY" in persona_text
-            assert "CLINICAL SCOPE & FOCUS" in persona_text
+            assert "SCOPE & FOCUS" in persona_text
 
     def test_all_8_personas_enforce_safety_boundaries_and_red_flags(self, temp_workspace: Path):
         """Universal profile must explicitly declare prohibitions against diagnosing, prescribing, and dosage."""

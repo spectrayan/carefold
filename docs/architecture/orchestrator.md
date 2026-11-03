@@ -127,17 +127,17 @@ sequenceDiagram
 
     Patient->>Orch: User Query (e.g. Cardiorenal Multimorbidity)
     Note over Orch: Analyzes multi-organ condition patterns
-    Orch->>Disp: Dispatch ExecutionPlan(mode=PARALLEL, [cardiology-guide, nephrology-guide])
+    Orch->>Disp: Dispatch ExecutionPlan(mode=PARALLEL, [heart-care-coordinator, kidney-care-coordinator])
     
     par Concurrent Execution
-        Disp->>SpecA: Execute cardiology-guide (with cardiology-prep references)
+        Disp->>SpecA: Execute heart-care-coordinator (with cardiology-prep references)
         SpecA-->>Disp: Cardiology guidance output
     and
-        Disp->>SpecB: Execute nephrology-guide (with nephrology-prep references)
+        Disp->>SpecB: Execute kidney-care-coordinator (with nephrology-prep references)
         SpecB-->>Disp: Nephrology guidance output
     end
     
-    Disp->>Synth: Collect specialist_outputs: {cardiology-guide, nephrology-guide}
+    Disp->>Synth: Collect specialist_outputs: {heart-care-coordinator, kidney-care-coordinator}
     Note over Synth: Identifies fluid restriction vs renal clearance tradeoff
     Synth->>Synth: Formulate Priority Doctor-Discussion Questions
     Synth->>Synth: Deduplicate Disclaimers & Attach Canonical Footer
@@ -147,7 +147,7 @@ sequenceDiagram
 #### Execution Topologies:
 1. **Single Topology**: Direct fast-path execution of a single specialist via `AgentExecutionNode`.
 2. **Parallel Topology**: Concurrent fan-out via `asyncio.gather`. Used when a patient presents symptoms across multiple organ systems (e.g., hypertension + chronic kidney disease).
-3. **Pipeline Topology**: Chained sequential execution using topological sort (`_topological_sort_tasks`). Upstream specialist outputs are formatted and injected into downstream specialist prompts under `# PRIOR SPECIALIST OUTPUTS` (e.g., clinical diagnosis review by `cardiology-guide` forwarded to `prior-auth-navigator`).
+3. **Pipeline Topology**: Chained sequential execution using topological sort (`_topological_sort_tasks`). Upstream specialist outputs are formatted and injected into downstream specialist prompts under `# PRIOR SPECIALIST OUTPUTS` (e.g., clinical diagnosis review by `heart-care-coordinator` forwarded to `prior-authorization-coordinator`).
 
 ### Phase 5: Response Synthesis & Output Guardrail
 - **Implementation**: `backend/src/carefold/workflows/nodes/response_synthesizer_node.py` (`ResponseSynthesizerNode`).

@@ -403,15 +403,15 @@ describe('Activity and Chat Components Suite', () => {
         const plan: ExecutionPlan = {
           id: 'plan-advanced',
           intent: 'visit_prep',
-          target_agents: ['derma-guide', 'oncology-navigator'],
+          target_agents: ['skin-care-coordinator', 'cancer-care-coordinator'],
           reasoning: 'Multi-specialist consultation workflow initialized.',
           steps: [],
         };
 
         render(<ExecutionPlanCard plan={plan} />);
 
-        expect(screen.getByTestId('target-agent-derma-guide')).toBeInTheDocument();
-        expect(screen.getByTestId('target-agent-oncology-navigator')).toBeInTheDocument();
+        expect(screen.getByTestId('target-agent-skin-care-coordinator')).toBeInTheDocument();
+        expect(screen.getByTestId('target-agent-cancer-care-coordinator')).toBeInTheDocument();
 
         const toggleBtn = screen.getByTestId('toggle-reasoning-btn');
         expect(screen.queryByTestId('plan-reasoning-content')).not.toBeInTheDocument();

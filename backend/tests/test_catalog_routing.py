@@ -74,7 +74,7 @@ from tests.fixtures.fake_model import FakeListChatModel
 ALL_17_SPECIALISTS = [
     # 8 Core Organ Navigators (R1)
     {
-        "id": "cardiology-guide",
+        "id": "heart-care-coordinator",
         "skill": "cardiology-prep",
         "domain": "clinical",
         "category": "clinical.cardiology",
@@ -83,7 +83,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "I have hypertension and chest palpitations, what should I prepare for my cardiologist?",
     },
     {
-        "id": "pulmonology-guide",
+        "id": "lung-breathing-coordinator",
         "skill": "pulmonology-prep",
         "domain": "clinical",
         "category": "clinical.pulmonology",
@@ -92,7 +92,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "I am experiencing shortness of breath and wheezing, my asthma inhaler is not helping",
     },
     {
-        "id": "neurology-guide",
+        "id": "brain-nerve-care-coordinator",
         "skill": "neurology-prep",
         "domain": "clinical",
         "category": "clinical.neurology",
@@ -101,7 +101,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "Severe migraine headaches with numbness and peripheral neuropathy tingling",
     },
     {
-        "id": "gastro-guide",
+        "id": "digestive-care-coordinator",
         "skill": "gastro-prep",
         "domain": "clinical",
         "category": "clinical.gastroenterology",
@@ -110,7 +110,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "Stomach cramps, chronic acid reflux heartburn and preparing for a colonoscopy",
     },
     {
-        "id": "nephrology-guide",
+        "id": "kidney-care-coordinator",
         "skill": "nephrology-prep",
         "domain": "clinical",
         "category": "clinical.nephrology",
@@ -119,7 +119,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "My blood tests showed abnormal egfr and high creatinine indicating chronic kidney disease",
     },
     {
-        "id": "endocrinology-guide",
+        "id": "diabetes-thyroid-coordinator",
         "skill": "endocrinology-prep",
         "domain": "clinical",
         "category": "clinical.endocrinology",
@@ -128,7 +128,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "Managing continuous glucose monitor cgm logs and fluctuating thyroid tsh levels",
     },
     {
-        "id": "ortho-guide",
+        "id": "bone-joint-care-coordinator",
         "skill": "ortho-prep",
         "domain": "clinical",
         "category": "clinical.orthopedics",
@@ -137,7 +137,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "Severe knee joint pain from osteoarthritis and physical therapy mobility exercises",
     },
     {
-        "id": "derma-guide",
+        "id": "skin-care-coordinator",
         "skill": "derma-prep",
         "domain": "clinical",
         "category": "clinical.dermatology",
@@ -147,7 +147,7 @@ ALL_17_SPECIALISTS = [
     },
     # 5 Extended Medical & Surgical Navigators (R2)
     {
-        "id": "oncology-navigator",
+        "id": "cancer-care-coordinator",
         "skill": "oncology-prep",
         "domain": "clinical",
         "category": "clinical.oncology",
@@ -156,7 +156,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "Chemotherapy side effects management and preparing questions for the oncology tumor board",
     },
     {
-        "id": "rheuma-guide",
+        "id": "autoimmune-care-coordinator",
         "skill": "rheuma-prep",
         "domain": "clinical",
         "category": "clinical.rheumatology",
@@ -165,7 +165,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "Lupus autoimmune flare-up with joint inflammation and prolonged morning stiffness",
     },
     {
-        "id": "urology-guide",
+        "id": "bladder-pelvic-care-coordinator",
         "skill": "urology-prep",
         "domain": "clinical",
         "category": "clinical.urology",
@@ -174,7 +174,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "Elevated psa levels, prostate bph, and frequent nocturnal urinary urgency",
     },
     {
-        "id": "eye-guide",
+        "id": "eye-care-coordinator",
         "skill": "vision-prep",
         "domain": "clinical",
         "category": "clinical.ophthalmology",
@@ -183,7 +183,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "Glaucoma intraocular pressure tracking and macular degeneration amsler grid distortion",
     },
     {
-        "id": "ent-guide",
+        "id": "ent-care-coordinator",
         "skill": "ent-prep",
         "domain": "clinical",
         "category": "clinical.ent",
@@ -193,7 +193,7 @@ ALL_17_SPECIALISTS = [
     },
     # 4 Healthcare Administration Stewards (R3)
     {
-        "id": "prior-auth-navigator",
+        "id": "prior-authorization-coordinator",
         "skill": "prior-auth-prep",
         "domain": "navigation",
         "category": "navigation.prior_auth",
@@ -202,7 +202,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "Insurance denied my medication requiring prior authorization and step therapy fail first",
     },
     {
-        "id": "claims-appeals-guide",
+        "id": "claims-appeals-coordinator",
         "skill": "claims-appeals-prep",
         "domain": "navigation",
         "category": "navigation.claims",
@@ -220,7 +220,7 @@ ALL_17_SPECIALISTS = [
         "sample_query": "How to file a hipaa medical records request to consolidate multi-provider dossiers",
     },
     {
-        "id": "formulary-guide",
+        "id": "prescription-cost-coordinator",
         "skill": "formulary-navigation",
         "domain": "navigation",
         "category": "navigation.formulary",
@@ -230,7 +230,7 @@ ALL_17_SPECIALISTS = [
     },
 ]
 
-BASE_AGENT_IDS = ["benefits-guide", "habit-companion", "visit-steward"]
+BASE_AGENT_IDS = ["benefits-coordinator", "habit-coordinator", "appointment-prep-coordinator"]
 SYSTEM_AGENT_IDS = [
     "db-operator",
     "document-extractor",
@@ -354,7 +354,7 @@ class TestStep2DomainWideningAndCandidateBounds:
             "reasoning": "Unrecognized clinical subcategory",
         })
         tier2_resp = json.dumps({
-            "agent_id": "cardiology-guide",
+            "agent_id": "heart-care-coordinator",
             "reasoning": "Selected from clinical domain candidates",
             "instructions": "",
         })
@@ -368,7 +368,7 @@ class TestStep2DomainWideningAndCandidateBounds:
         # CRITICAL INVARIANT: Candidate set size MUST be <= 8
         assert len(candidates) <= 8, f"Expected <= 8 candidates, got {len(candidates)}"
         assert len(candidates) > 0, "Expected non-empty candidates from clinical domain"
-        assert decision.agent_id == "cardiology-guide"
+        assert decision.agent_id == "heart-care-coordinator"
 
     @pytest.mark.asyncio
     async def test_step2_domain_widening_navigation_domain(
@@ -383,7 +383,7 @@ class TestStep2DomainWideningAndCandidateBounds:
             "reasoning": "Unrecognized navigation subcategory",
         })
         tier2_resp = json.dumps({
-            "agent_id": "prior-auth-navigator",
+            "agent_id": "prior-authorization-coordinator",
             "reasoning": "Selected from navigation domain candidates",
             "instructions": "",
         })
@@ -396,7 +396,7 @@ class TestStep2DomainWideningAndCandidateBounds:
 
         assert len(candidates) <= 8
         assert len(candidates) == 6  # exactly 6 navigation agents
-        assert decision.agent_id == "prior-auth-navigator"
+        assert decision.agent_id == "prior-authorization-coordinator"
 
 
 # ============================================================================
@@ -410,12 +410,12 @@ class TestStep3FTSFallbackAndCandidateBounds:
     @pytest.mark.parametrize(
         "target_agent,fts_keywords,expected_domain",
         [
-            ("cardiology-guide", "hypertension arrhythmia palpitations", "clinical"),
-            ("pulmonology-guide", "copd asthma inhaler dyspnea", "clinical"),
-            ("nephrology-guide", "kidney egfr creatinine dialysis", "clinical"),
-            ("prior-auth-navigator", "prior authorization step therapy appeal", "navigation"),
-            ("claims-appeals-guide", "denied claim erisa billing dispute", "navigation"),
-            ("habit-companion", "hydration water intake sleep habit", "wellness"),
+            ("heart-care-coordinator", "hypertension arrhythmia palpitations", "clinical"),
+            ("lung-breathing-coordinator", "copd asthma inhaler dyspnea", "clinical"),
+            ("kidney-care-coordinator", "kidney egfr creatinine dialysis", "clinical"),
+            ("prior-authorization-coordinator", "prior authorization step therapy appeal", "navigation"),
+            ("claims-appeals-coordinator", "denied claim erisa billing dispute", "navigation"),
+            ("habit-coordinator", "hydration water intake sleep habit", "wellness"),
         ],
     )
     async def test_step3_fts_fallback_recovers_from_misclassified_domain(
@@ -534,7 +534,7 @@ class TestStep4PatternFallbackAndBounds:
         decision, candidates = await node._execute_two_hop(state, "qwertyuiop asdfghjkl zxcvbnm", list(state["messages"]))
 
         assert decision.agent_id == DEFAULT_ROUTING_FALLBACK_AGENT
-        assert decision.agent_id == "visit-steward"
+        assert decision.agent_id == "appointment-prep-coordinator"
         await empty_catalog.close()
 
 
@@ -550,68 +550,68 @@ class TestPrecedenceCollisionsInRoutingPatterns:
         [
             (
                 "I need to prepare for my doctor visit regarding prior authorization denial and step therapy",
-                "prior-auth-navigator",
-                "visit-steward",
+                "prior-authorization-coordinator",
+                "appointment-prep-coordinator",
             ),
             (
                 "Doctor appointment checklist for my cardiologist heart palpitations and arrhythmia",
-                "cardiology-guide",
-                "visit-steward",
+                "heart-care-coordinator",
+                "appointment-prep-coordinator",
             ),
             (
                 "Health insurance deductible copay assistance and formulary drug tier coverage",
-                "formulary-guide",
-                "benefits-guide",
+                "prescription-cost-coordinator",
+                "benefits-coordinator",
             ),
             (
                 "ERISA insurance claim appeal timeline for denied hospital stay explanation of benefits",
-                "claims-appeals-guide",
-                "benefits-guide",
+                "claims-appeals-coordinator",
+                "benefits-coordinator",
             ),
             (
                 "Organize my medical records and health history for doctor visit",
                 "records-coordinator",
-                "visit-steward",
+                "appointment-prep-coordinator",
             ),
             (
                 "Chemotherapy oncologist doctor appointment questions and tumor board",
-                "oncology-navigator",
-                "visit-steward",
+                "cancer-care-coordinator",
+                "appointment-prep-coordinator",
             ),
             (
                 "Dermatologist clinic visit for skin rash lesion mole abcde review",
-                "derma-guide",
-                "visit-steward",
+                "skin-care-coordinator",
+                "appointment-prep-coordinator",
             ),
             (
                 "Asthma inhaler prescription doctor appointment for shortness of breath",
-                "pulmonology-guide",
-                "visit-steward",
+                "lung-breathing-coordinator",
+                "appointment-prep-coordinator",
             ),
             (
                 "Kidney egfr dialysis doctor appointment questions",
-                "nephrology-guide",
-                "visit-steward",
+                "kidney-care-coordinator",
+                "appointment-prep-coordinator",
             ),
             (
                 "Rheumatoid arthritis morning stiffness doctor visit prep",
-                "rheuma-guide",
-                "visit-steward",
+                "autoimmune-care-coordinator",
+                "appointment-prep-coordinator",
             ),
             (
                 "Urologist doctor visit for prostate bph and urinary frequency",
-                "urology-guide",
-                "visit-steward",
+                "bladder-pelvic-care-coordinator",
+                "appointment-prep-coordinator",
             ),
             (
                 "Ophthalmologist doctor visit for glaucoma eye drops and cataract surgery",
-                "eye-guide",
-                "visit-steward",
+                "eye-care-coordinator",
+                "appointment-prep-coordinator",
             ),
             (
                 "ENT doctor visit for chronic sinusitis pressure and tinnitus hearing test",
-                "ent-guide",
-                "visit-steward",
+                "ent-care-coordinator",
+                "appointment-prep-coordinator",
             ),
         ],
     )
@@ -688,30 +688,30 @@ class TestCatalogIndexingAndCategoryTreeStress:
         """Verifies tag-based filtering via json_each on agents."""
         # Clinical tags
         cardio = await catalog.search_agents(tags=["hypertension"])
-        assert any(a.id == "cardiology-guide" for a in cardio)
+        assert any(a.id == "heart-care-coordinator" for a in cardio)
 
         pulmo = await catalog.search_agents(tags=["asthma"])
-        assert any(a.id == "pulmonology-guide" for a in pulmo)
+        assert any(a.id == "lung-breathing-coordinator" for a in pulmo)
 
         derma = await catalog.search_agents(tags=["lesion"])
-        assert any(a.id == "derma-guide" for a in derma)
+        assert any(a.id == "skin-care-coordinator" for a in derma)
 
         derma_rash = await catalog.search_agents(tags=["rash-documentation"])
-        assert any(a.id == "derma-guide" for a in derma_rash)
+        assert any(a.id == "skin-care-coordinator" for a in derma_rash)
 
         # Admin tags
         pa = await catalog.search_agents(tags=["prior-authorization"])
-        assert any(a.id == "prior-auth-navigator" for a in pa)
+        assert any(a.id == "prior-authorization-coordinator" for a in pa)
 
         pa_step = await catalog.search_agents(tags=["step-therapy"])
-        assert any(a.id == "prior-auth-navigator" for a in pa_step)
+        assert any(a.id == "prior-authorization-coordinator" for a in pa_step)
 
         claims = await catalog.search_agents(tags=["appeals"])
-        assert any(a.id == "claims-appeals-guide" for a in claims)
+        assert any(a.id == "claims-appeals-coordinator" for a in claims)
 
         # Wellness tag
         habits = await catalog.search_agents(tags=["hydration"])
-        assert any(a.id == "habit-companion" for a in habits)
+        assert any(a.id == "habit-coordinator" for a in habits)
 
     @pytest.mark.asyncio
     async def test_fts_keyword_search_across_clinical_and_admin_terms(
@@ -720,23 +720,23 @@ class TestCatalogIndexingAndCategoryTreeStress:
     ):
         """Verifies FTS5 keyword searches match expected agents."""
         test_queries = [
-            ("hypertension arrhythmia palpitations", "cardiology-guide"),
-            ("asthma inhaler dyspnea", "pulmonology-guide"),
-            ("migraine headache neuropathy", "neurology-guide"),
-            ("ibs colonoscopy endoscopy", "gastro-guide"),
-            ("kidney egfr creatinine", "nephrology-guide"),
-            ("diabetes cgm a1c insulin", "endocrinology-guide"),
-            ("osteoarthritis joint mobility physical therapy", "ortho-guide"),
-            ("rash lesion mole abcde", "derma-guide"),
-            ("oncologist chemotherapy radiation tumor", "oncology-navigator"),
-            ("methotrexate biologics rheumatoid lupus", "rheuma-guide"),
-            ("voiding nocturia prostate bph", "urology-guide"),
-            ("amsler grid cataract visual acuity glaucoma", "eye-guide"),
-            ("audiogram tinnitus vertigo sinusitis", "ent-guide"),
-            ("step therapy prior authorization", "prior-auth-navigator"),
-            ("erisa denied claim dispute appeal", "claims-appeals-guide"),
+            ("hypertension arrhythmia palpitations", "heart-care-coordinator"),
+            ("asthma inhaler dyspnea", "lung-breathing-coordinator"),
+            ("migraine headache neuropathy", "brain-nerve-care-coordinator"),
+            ("ibs colonoscopy endoscopy", "digestive-care-coordinator"),
+            ("kidney egfr creatinine", "kidney-care-coordinator"),
+            ("diabetes cgm a1c insulin", "diabetes-thyroid-coordinator"),
+            ("osteoarthritis joint mobility physical therapy", "bone-joint-care-coordinator"),
+            ("rash lesion mole abcde", "skin-care-coordinator"),
+            ("oncologist chemotherapy radiation tumor", "cancer-care-coordinator"),
+            ("methotrexate biologics rheumatoid lupus", "autoimmune-care-coordinator"),
+            ("voiding nocturia prostate bph", "bladder-pelvic-care-coordinator"),
+            ("amsler grid cataract visual acuity glaucoma", "eye-care-coordinator"),
+            ("audiogram tinnitus vertigo sinusitis", "ent-care-coordinator"),
+            ("step therapy prior authorization", "prior-authorization-coordinator"),
+            ("erisa denied claim dispute appeal", "claims-appeals-coordinator"),
             ("hipaa medical records request", "records-coordinator"),
-            ("formulary tier copay assistance generic", "formulary-guide"),
+            ("formulary tier copay assistance generic", "prescription-cost-coordinator"),
         ]
 
         for query, expected_id in test_queries:
@@ -805,7 +805,7 @@ class TestCandidateSetBoundedness:
             "reasoning": "Cardiology test",
         })
         tier2_resp = json.dumps({
-            "agent_id": "cardiology-guide",
+            "agent_id": "heart-care-coordinator",
             "reasoning": "Selected",
             "instructions": "",
         })
@@ -846,7 +846,7 @@ class TestAdversarialParsingAndRecovery:
             "}\n```\nHope this helps!"
         )
         tier2_resp = json.dumps({
-            "agent_id": "pulmonology-guide",
+            "agent_id": "lung-breathing-coordinator",
             "reasoning": "Selected pulmonologist",
             "instructions": "",
         })
@@ -857,7 +857,7 @@ class TestAdversarialParsingAndRecovery:
         state = {"messages": [HumanMessage(content="Shortness of breath with asthma")]}
         result = await node.execute(state)
 
-        assert result["current_agent"] == "pulmonology-guide"
+        assert result["current_agent"] == "lung-breathing-coordinator"
 
     @pytest.mark.asyncio
     async def test_tier1_malformed_json_falls_back_to_fts_and_recovers(
@@ -872,7 +872,7 @@ class TestAdversarialParsingAndRecovery:
         """
         tier1_garbage = "I am an AI and cannot classify this into domain: {corrupted json..."
         tier2_resp = json.dumps({
-            "agent_id": "cardiology-guide",
+            "agent_id": "heart-care-coordinator",
             "reasoning": "Selected via FTS candidates",
             "instructions": "",
         })
@@ -883,7 +883,7 @@ class TestAdversarialParsingAndRecovery:
         state = {"messages": [HumanMessage(content="hypertension palpitations chest pressure")]}
         result = await node.execute(state)
 
-        assert result["current_agent"] == "cardiology-guide"
+        assert result["current_agent"] == "heart-care-coordinator"
 
     @pytest.mark.asyncio
     async def test_tier2_hallucinated_agent_id_falls_back_to_first_candidate(
@@ -912,8 +912,8 @@ class TestAdversarialParsingAndRecovery:
         state = {"messages": [HumanMessage(content="Heart checkup")]}
         result = await node.execute(state)
 
-        # Fallback to candidates[0] (which is cardiology-guide)
-        assert result["current_agent"] == "cardiology-guide"
+        # Fallback to candidates[0] (which is heart-care-coordinator)
+        assert result["current_agent"] == "heart-care-coordinator"
         assert "super-cardiologist-3000" in result["orchestrator_reasoning"]
         assert "not found in registry" in result["orchestrator_reasoning"]
 
@@ -984,7 +984,7 @@ class TestDomainClassifierPromptInvariantsAndTokens:
         for d in ["clinical", "therapy", "wellness", "navigation", "education"]:
             assert f"'{d}'" in TIER1_DOMAIN_CLASSIFIER_PROMPT or f"'{d}':" in TIER1_DOMAIN_CLASSIFIER_PROMPT
 
-        # Tier-1 must never leak specific agent IDs (e.g. 'cardiology-guide', 'visit-steward')
+        # Tier-1 must never leak specific agent IDs (e.g. 'heart-care-coordinator', 'appointment-prep-coordinator')
         # It must only expose domains and categories!
         for spec in ALL_17_SPECIALISTS:
             assert spec["id"] not in TIER1_DOMAIN_CLASSIFIER_PROMPT, (

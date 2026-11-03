@@ -38,11 +38,11 @@ describe('lib/utils', () => {
     });
 
     it('strips ROLE & EMPATHY: headers', () => {
-      expect(sanitizeAgentDescription('ROLE & EMPATHY:\nYou are Benefits Guide.')).toBe(
-        'You are Benefits Guide.'
+      expect(sanitizeAgentDescription('ROLE & EMPATHY:\nYou are Benefits Coordinator.')).toBe(
+        'You are Benefits Coordinator.'
       );
-      expect(sanitizeAgentDescription('ROLE & EMPATHY: You are Visit Steward.')).toBe(
-        'You are Visit Steward.'
+      expect(sanitizeAgentDescription('ROLE & EMPATHY: You are Appointment Prep Coordinator.')).toBe(
+        'You are Appointment Prep Coordinator.'
       );
       expect(sanitizeAgentDescription('role & empathy: test')).toBe('test');
     });

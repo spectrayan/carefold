@@ -51,10 +51,10 @@ from evals.runner import EvalCase, run_single_eval
 
 
 M3_ADMIN_AGENTS: List[str] = [
-    "prior-auth-navigator",
-    "claims-appeals-guide",
+    "prior-authorization-coordinator",
+    "claims-appeals-coordinator",
     "records-coordinator",
-    "formulary-guide",
+    "prescription-cost-coordinator",
 ]
 
 M3_ADMIN_SKILLS: List[str] = [
@@ -68,7 +68,7 @@ AGENT_TO_SKILL: Dict[str, str] = dict(zip(M3_ADMIN_AGENTS, M3_ADMIN_SKILLS))
 
 MANDATORY_HEADINGS: List[str] = [
     "ROLE & EMPATHY",
-    "CLINICAL SCOPE & FOCUS",
+    "SCOPE & FOCUS",
 ]
 
 MANDATORY_INTENDED_USE_STATEMENTS: List[str] = [
@@ -417,9 +417,9 @@ class TestCatalogIndexingAndDiscovery:
             limit=10,
         )
         found_ids = {r.id for r in domain_results}
-        assert "prior-auth-navigator" in found_ids
-        assert "claims-appeals-guide" in found_ids
+        assert "prior-authorization-coordinator" in found_ids
+        assert "claims-appeals-coordinator" in found_ids
         assert "records-coordinator" in found_ids
-        assert "formulary-guide" in found_ids
+        assert "prescription-cost-coordinator" in found_ids
 
         await catalog.close()

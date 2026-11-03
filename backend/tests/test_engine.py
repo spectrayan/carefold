@@ -45,7 +45,7 @@ async def test_engine_prompt_level_safety_refusal(temp_workspace: Path):
     """Verifies pre-generation safety gate blocks clinical diagnosis prompt before LLM invocation."""
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Can you diagnose my sharp abdominal pain?",
         mock=True,
         workspace_root=temp_workspace,
@@ -88,7 +88,7 @@ async def test_engine_pre_generation_refusal_categories(
     """Verifies all safety refusal categories are caught at pre-generation."""
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt=forbidden_prompt,
         mock=True,
         workspace_root=temp_workspace,
@@ -114,7 +114,7 @@ async def test_engine_post_generation_safety_refusal(temp_workspace: Path):
 
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="What should I do about this cough?",
         model_client=mock,
         workspace_root=temp_workspace,
@@ -142,7 +142,7 @@ async def test_engine_safe_history_disclosure_not_refused(temp_workspace: Path):
 
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="I was diagnosed with hypertension last year. What questions should I ask my doctor at my visit?",
         model_client=mock,
         workspace_root=temp_workspace,
@@ -175,7 +175,7 @@ async def test_engine_tool_execution(temp_workspace: Path):
 
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Review my attachment please.",
         model_client=mock,
         workspace_root=temp_workspace,
@@ -207,7 +207,7 @@ async def test_engine_undeclared_tool_interception(temp_workspace: Path):
 
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Do something with an unauthorized tool.",
         model_client=mock,
         workspace_root=temp_workspace,
@@ -233,7 +233,7 @@ async def test_engine_undeclared_tool_interception(temp_workspace: Path):
 async def test_engine_undeclared_phase0_tool_boundary(temp_workspace: Path):
     """Verifies that an agent cannot invoke a Phase 0 tool not in union(agent.tools, skill.tools).
     
-    'benefits-guide' declares skill 'benefits-explainer' (effective tools: ['skill-docs']).
+    'benefits-coordinator' declares skill 'benefits-explainer' (effective tools: ['skill-docs']).
     Calling 'workspace-note' must be denied.
     """
     mock = MockModelClient()
@@ -245,7 +245,7 @@ async def test_engine_undeclared_phase0_tool_boundary(temp_workspace: Path):
 
     events = []
     async for ev in execute_agent_run(
-        agent_id="benefits-guide",
+        agent_id="benefits-coordinator",
         prompt="Save a note for me please.",
         model_client=mock,
         workspace_root=temp_workspace,
@@ -271,7 +271,7 @@ async def test_engine_conversational_streaming(temp_workspace: Path):
     """Verifies streaming token emission and audit logging for conversational runs."""
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Hello, I need help organizing questions for my annual checkup.",
         mock=True,
         workspace_root=temp_workspace,
@@ -299,7 +299,7 @@ async def test_engine_multi_turn_conversation_with_thread_id(temp_workspace: Pat
     # Turn 1: User provides context
     turn1_events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="I am scheduling an appointment with cardiologist Dr. Taylor next Tuesday.",
         thread_id=thread_id,
         mock=True,
@@ -314,7 +314,7 @@ async def test_engine_multi_turn_conversation_with_thread_id(temp_workspace: Pat
     # Turn 2: User asks follow-up referencing prior turn without repeating details
     turn2_events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Can you summarize the agenda for my visit with Dr. Taylor?",
         thread_id=thread_id,
         mock=True,
@@ -352,7 +352,7 @@ async def test_engine_multi_turn_tool_feedback_loop(temp_workspace: Path):
 
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Please read my medications.txt attachment.",
         model_client=mock,
         workspace_root=temp_workspace,
@@ -388,7 +388,7 @@ async def test_engine_sqlite_persistence_across_server_restart(temp_workspace: P
     # Step 1: Server Instance 1 executes Turn 1
     t1_events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="My primary doctor is Dr. Gregory House and my copay is $25.",
         thread_id=thread_id,
         mock=True,
@@ -416,7 +416,7 @@ async def test_engine_sqlite_persistence_across_server_restart(temp_workspace: P
     # Step 3: Simulate Server Restart (fresh execution with zero shared memory references)
     t2_events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="What is my copay and who is my doctor?",
         thread_id=thread_id,
         mock=True,
@@ -434,7 +434,7 @@ async def test_engine_sqlite_thread_isolation(temp_workspace: Path):
     """Verifies that separate thread IDs maintain isolated states without cross-talk."""
     # Thread A
     async for _ in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Secret code is ALPHA-42",
         thread_id="thread-alpha",
         mock=True,
@@ -445,7 +445,7 @@ async def test_engine_sqlite_thread_isolation(temp_workspace: Path):
     # Thread B
     turn_b_events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Hello, who am I?",
         thread_id="thread-beta",
         mock=True,
@@ -468,7 +468,7 @@ async def test_engine_follow_up_suggestions_emitted(temp_workspace: Path):
     """Verifies that successful assistant turns yield 2-3 contextual follow-up question chips."""
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="I have an upcoming appointment for my knees.",
         mock=True,
         workspace_root=temp_workspace,
@@ -487,7 +487,7 @@ async def test_engine_no_suggestions_on_safety_refusal(temp_workspace: Path):
     """Verifies that safety refusals omit follow-up suggestion chips."""
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt="Can you diagnose my skin rash?",
         mock=True,
         workspace_root=temp_workspace,
@@ -514,7 +514,7 @@ async def test_engine_concurrent_sessions_sqlite_safe(temp_workspace: Path):
         t_id = f"engine-concurrent-thread-{idx}"
         collected = []
         async for ev in execute_agent_run(
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             prompt=f"Hello from session {idx}. My key is KEY-{idx * 111}.",
             thread_id=t_id,
             mock=True,
@@ -553,7 +553,7 @@ async def test_engine_stealth_evasion_intercepted_at_pre_generation(
     """Verifies stealth queries are intercepted at pre-generation refusal gate with 0 token emissions."""
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt=stealth_prompt,
         mock=True,
         workspace_root=temp_workspace,
@@ -594,7 +594,7 @@ async def test_engine_wellness_queries_with_modifiers_allowed(
 
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt=benign_disclosure,
         model_client=mock,
         workspace_root=temp_workspace,

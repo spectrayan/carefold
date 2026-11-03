@@ -104,7 +104,7 @@ async def test_zero_body_privacy_large_payload(temp_workspace: Path):
 
     events = []
     async for ev in execute_agent_run(
-        agent_id="visit-steward",
+        agent_id="appointment-prep-coordinator",
         prompt=large_sensitive_text,
         mock=True,
         workspace_root=temp_workspace,

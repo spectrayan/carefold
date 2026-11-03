@@ -252,28 +252,28 @@ export function deleteSession(threadId: string, agentId?: string): boolean {
 }
 
 const KNOWN_AGENTS = [
-  'visit-steward',
-  'cardiology-guide',
-  'pulmonology-guide',
-  'derma-guide',
-  'gastro-guide',
-  'neurology-guide',
-  'nephrology-guide',
-  'endocrinology-guide',
-  'rheuma-guide',
-  'ortho-guide',
-  'podiatry-guide',
-  'urology-guide',
-  'vascular-guide',
-  'ent-guide',
-  'eye-guide',
-  'oncology-navigator',
-  'benefits-guide',
-  'claims-appeals-guide',
-  'prior-auth-navigator',
-  'formulary-guide',
+  'appointment-prep-coordinator',
+  'heart-care-coordinator',
+  'lung-breathing-coordinator',
+  'skin-care-coordinator',
+  'digestive-care-coordinator',
+  'brain-nerve-care-coordinator',
+  'kidney-care-coordinator',
+  'diabetes-thyroid-coordinator',
+  'autoimmune-care-coordinator',
+  'bone-joint-care-coordinator',
+  'foot-care-coordinator',
+  'bladder-pelvic-care-coordinator',
+  'circulation-vein-care-coordinator',
+  'ent-care-coordinator',
+  'eye-care-coordinator',
+  'cancer-care-coordinator',
+  'benefits-coordinator',
+  'claims-appeals-coordinator',
+  'prior-authorization-coordinator',
+  'prescription-cost-coordinator',
   'records-coordinator',
-  'habit-companion'
+  'habit-coordinator'
 ];
 
 /**
@@ -281,7 +281,7 @@ const KNOWN_AGENTS = [
  * Employs crypto.randomUUID() when supported, with cryptographically secure fallback
  * to crypto.getRandomValues(). Prevents CWE-338 insecure randomness security alerts.
  */
-export function generateThreadId(agentId: string = 'visit-steward'): string {
+export function generateThreadId(agentId: string = 'appointment-prep-coordinator'): string {
   const secureRandom =
     typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID().slice(0, 8)
@@ -298,7 +298,7 @@ export function generateThreadId(agentId: string = 'visit-steward'): string {
  * Extracts agent ID from thread ID string.
  */
 export function extractAgentIdFromThread(threadId: string): string {
-  if (!threadId) return 'visit-steward';
+  if (!threadId) return 'appointment-prep-coordinator';
 
   // Check against known agents first
   for (const agentId of KNOWN_AGENTS) {
@@ -317,7 +317,7 @@ export function extractAgentIdFromThread(threadId: string): string {
   if (match && match[1]) {
     return match[1];
   }
-  return 'visit-steward';
+  return 'appointment-prep-coordinator';
 }
 
 /**

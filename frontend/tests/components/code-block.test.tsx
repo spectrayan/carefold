@@ -130,14 +130,14 @@ describe('CodeBlock Component & Markdown Code Rendering', () => {
     const message: ChatMessage = {
       id: 'm-code-1',
       role: 'assistant',
-      content: 'Here are your instructions:\n```bash\ncarefold run visit-steward "prep"\n```\nAll done.'
+      content: 'Here are your instructions:\n```bash\ncarefold run appointment-prep-coordinator "prep"\n```\nAll done.'
     };
 
     render(<ChatMessageItem message={message} />);
 
     expect(screen.getByTestId('code-block-language')).toHaveTextContent(/bash/i);
     expect(screen.getByTestId('copy-code-btn')).toBeInTheDocument();
-    expect(screen.getByText(/carefold run visit-steward/)).toBeInTheDocument();
+    expect(screen.getByText(/carefold run appointment-prep-coordinator/)).toBeInTheDocument();
   });
 
   it('handles unclosed code block during active streaming without crashing', () => {

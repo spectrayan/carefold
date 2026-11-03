@@ -236,93 +236,93 @@ class TestOrchestratorExplicitRoutingNoHijack:
         [
             # Oncology Navigator: incidental neuropathy (neurology), skin rash (derma), joint pain (ortho/rheuma)
             (
-                "oncology-navigator",
+                "cancer-care-coordinator",
                 "Help me prepare an organized agenda of questions for my follow-up oncology appointment regarding chemotherapy side effects and neuropathy.",
-                ["neurology-guide"],
+                ["brain-nerve-care-coordinator"],
             ),
             (
-                "oncology-navigator",
+                "cancer-care-coordinator",
                 "I am an oncology patient experiencing skin rash from immunotherapy, knee joint pain, and nausea.",
-                ["derma-guide", "ortho-guide", "rheuma-guide"],
+                ["skin-care-coordinator", "bone-joint-care-coordinator", "autoimmune-care-coordinator"],
             ),
             (
-                "oncology-navigator",
+                "cancer-care-coordinator",
                 "Oncology consultation to discuss tumor response, but I also have high blood pressure and diabetes.",
-                ["cardiology-guide", "endocrinology-guide"],
+                ["heart-care-coordinator", "diabetes-thyroid-coordinator"],
             ),
-            # Cardiology Guide: incidental kidney disease, shortness of breath, diabetes
+            # Heart Care Coordinator: incidental kidney disease, shortness of breath, diabetes
             (
-                "cardiology-guide",
+                "heart-care-coordinator",
                 "I have heart failure and hypertension. My kidney doctor mentioned chronic kidney disease and mild fluid retention.",
-                ["nephrology-guide"],
+                ["kidney-care-coordinator"],
             ),
             (
-                "cardiology-guide",
+                "heart-care-coordinator",
                 "Cardiology check for palpitations, while managing diabetes with high blood sugar and occasional asthma wheezing.",
-                ["endocrinology-guide", "pulmonology-guide"],
+                ["diabetes-thyroid-coordinator", "lung-breathing-coordinator"],
             ),
             (
-                "cardiology-guide",
+                "heart-care-coordinator",
                 "Cardiac follow-up for congestive heart failure with knee joint mobility issues and skin rash.",
-                ["ortho-guide", "derma-guide"],
+                ["bone-joint-care-coordinator", "skin-care-coordinator"],
             ),
-            # Nephrology Guide: incidental hypertension, acid reflux, neuropathy
+            # Kidney Care Coordinator: incidental hypertension, acid reflux, neuropathy
             (
-                "nephrology-guide",
+                "kidney-care-coordinator",
                 "Nephrology guidance on chronic kidney disease (CKD) lab results, with incidental gastro stomach acid and neuropathy.",
-                ["gastro-guide", "neurology-guide"],
+                ["digestive-care-coordinator", "brain-nerve-care-coordinator"],
             ),
             (
-                "nephrology-guide",
+                "kidney-care-coordinator",
                 "Fluid restriction tracking for kidney failure; also dealing with high blood pressure and diabetes.",
-                ["cardiology-guide", "endocrinology-guide"],
+                ["heart-care-coordinator", "diabetes-thyroid-coordinator"],
             ),
-            # Endocrinology Guide: incidental migraines, asthma, chronic kidney disease
+            # Diabetes Thyroid Coordinator: incidental migraines, asthma, chronic kidney disease
             (
-                "endocrinology-guide",
+                "diabetes-thyroid-coordinator",
                 "Managing my diabetes, glucose numbers, and insulin pump; also have migraines and shortness of breath.",
-                ["neurology-guide", "pulmonology-guide"],
+                ["brain-nerve-care-coordinator", "lung-breathing-coordinator"],
             ),
             (
-                "endocrinology-guide",
+                "diabetes-thyroid-coordinator",
                 "Endocrinology appointment preparation for high a1c sugar levels, despite arthritis joint pain.",
-                ["rheuma-guide"],
+                ["autoimmune-care-coordinator"],
             ),
             # Pulmonology Guide: incidental heart murmur, gastro reflux, skin lesions
             (
-                "pulmonology-guide",
+                "lung-breathing-coordinator",
                 "Pulmonology consultation for chronic cough and asthma, with mild acid reflux and eczema skin lesions.",
-                ["gastro-guide", "derma-guide"],
+                ["digestive-care-coordinator", "skin-care-coordinator"],
             ),
             # Gastro Guide: incidental migraines, arthritis
             (
-                "gastro-guide",
+                "digestive-care-coordinator",
                 "Gastroenterology guidance for irritable bowel syndrome (IBS) flares and joint pain with headaches.",
-                ["rheuma-guide", "neurology-guide"],
+                ["autoimmune-care-coordinator", "brain-nerve-care-coordinator"],
             ),
             # Neurology Guide: incidental heart palpitations, rash
             (
-                "neurology-guide",
+                "brain-nerve-care-coordinator",
                 "Neurology guidance for chronic migraines and peripheral neuropathy, noting occasional heart palpitations.",
-                ["cardiology-guide"],
+                ["heart-care-coordinator"],
             ),
             # Rheuma Guide: incidental kidney lab flags, diabetes
             (
-                "rheuma-guide",
+                "autoimmune-care-coordinator",
                 "Rheumatology follow-up for lupus and joint pain, while tracking blood sugar for diabetes.",
-                ["endocrinology-guide"],
+                ["diabetes-thyroid-coordinator"],
             ),
-            # Derma Guide: incidental joint mobility, asthma
+            # Skin Care Coordinator: incidental joint mobility, asthma
             (
-                "derma-guide",
+                "skin-care-coordinator",
                 "Dermatology evaluation for psoriasis skin lesions, noting occasional asthma symptoms.",
-                ["pulmonology-guide"],
+                ["lung-breathing-coordinator"],
             ),
-            # Ortho Guide: incidental hypertension, kidney failure
+            # Bone Joint Care Coordinator: incidental hypertension, kidney failure
             (
-                "ortho-guide",
+                "bone-joint-care-coordinator",
                 "Orthopedic follow-up for knee fracture mobility, while taking medication for high blood pressure.",
-                ["cardiology-guide"],
+                ["heart-care-coordinator"],
             ),
         ],
     )
@@ -393,45 +393,45 @@ class TestOrchestratorExplicitMultiSpecialistCoordination:
         "target_agent,prompt,expected_agents,coordination_keyword",
         [
             (
-                "oncology-navigator",
+                "cancer-care-coordinator",
                 "Please coordinate with both oncology and neurology regarding chemotherapy-induced neuropathy.",
-                ["oncology-navigator", "neurology-guide"],
+                ["cancer-care-coordinator", "brain-nerve-care-coordinator"],
                 "coordinate",
             ),
             (
-                "cardiology-guide",
+                "heart-care-coordinator",
                 "Consult both cardiology and nephrology on managing my cardiorenal fluid balance and kidney function.",
-                ["cardiology-guide", "nephrology-guide"],
+                ["heart-care-coordinator", "kidney-care-coordinator"],
                 "consult both",
             ),
             (
-                "nephrology-guide",
+                "kidney-care-coordinator",
                 "I want both specialists: nephrology and cardiology to review my fluid retention and hypertension.",
-                ["nephrology-guide", "cardiology-guide"],
+                ["kidney-care-coordinator", "heart-care-coordinator"],
                 "both specialists",
             ),
             (
-                "endocrinology-guide",
+                "diabetes-thyroid-coordinator",
                 "I need a multi-specialist review between endocrinology and nephrology for my diabetic kidney disease.",
-                ["endocrinology-guide", "nephrology-guide"],
+                ["diabetes-thyroid-coordinator", "kidney-care-coordinator"],
                 "multi-specialist",
             ),
             (
-                "cardiology-guide",
+                "heart-care-coordinator",
                 "Please arrange multiple specialists for my heart failure, asthma, and arthritis.",
-                ["cardiology-guide", "pulmonology-guide", "rheuma-guide"],
+                ["heart-care-coordinator", "lung-breathing-coordinator", "autoimmune-care-coordinator"],
                 "multiple specialists",
             ),
             (
-                "gastro-guide",
+                "digestive-care-coordinator",
                 "I request a team of specialists to look at my gastro stomach pain and migraines simultaneously.",
-                ["gastro-guide", "neurology-guide"],
+                ["digestive-care-coordinator", "brain-nerve-care-coordinator"],
                 "team of specialists",
             ),
             (
-                "rheuma-guide",
+                "autoimmune-care-coordinator",
                 "Conduct concurrent consultations with rheumatology and dermatology for lupus skin rash and joint swelling.",
-                ["rheuma-guide", "derma-guide"],
+                ["autoimmune-care-coordinator", "skin-care-coordinator"],
                 "concurrent",
             ),
         ],
@@ -472,7 +472,7 @@ class TestOrchestratorExplicitMultiSpecialistCoordination:
     ):
         """If user asks to 'coordinate' but only one specialty is involved, graceful fallback to SINGLE mode occurs."""
         state: AgentState = {
-            "explicit_agent": "cardiology-guide",
+            "explicit_agent": "heart-care-coordinator",
             "prompt": "Please coordinate my heart failure cardiology follow-up visit.",
             "messages": [],
             "allow_clinical": True,
@@ -482,7 +482,7 @@ class TestOrchestratorExplicitMultiSpecialistCoordination:
         plan = ExecutionPlan.model_validate(res["execution_plan"])
 
         assert plan.mode == ExecutionMode.SINGLE
-        assert plan.target_agents == ["cardiology-guide"]
+        assert plan.target_agents == ["heart-care-coordinator"]
 
     @pytest.mark.asyncio
     async def test_unspecified_agent_multimorbid_prompt_triggers_parallel(
@@ -502,5 +502,5 @@ class TestOrchestratorExplicitMultiSpecialistCoordination:
         plan = ExecutionPlan.model_validate(res["execution_plan"])
 
         assert plan.mode == ExecutionMode.PARALLEL
-        assert "cardiology-guide" in plan.target_agents
-        assert "nephrology-guide" in plan.target_agents
+        assert "heart-care-coordinator" in plan.target_agents
+        assert "kidney-care-coordinator" in plan.target_agents

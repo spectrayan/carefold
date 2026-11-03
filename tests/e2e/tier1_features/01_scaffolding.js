@@ -77,9 +77,9 @@ export async function run() {
         const ws = createTempWorkspace();
         try {
           runCli(['init', ws]);
-          assertTrue(fs.existsSync(path.join(ws, 'agents', 'visit-steward', 'agent.yaml')));
-          assertTrue(fs.existsSync(path.join(ws, 'agents', 'benefits-guide', 'agent.yaml')));
-          assertTrue(fs.existsSync(path.join(ws, 'agents', 'habit-companion', 'agent.yaml')));
+          assertTrue(fs.existsSync(path.join(ws, 'agents', 'appointment-prep-coordinator', 'agent.yaml')));
+          assertTrue(fs.existsSync(path.join(ws, 'agents', 'benefits-coordinator', 'agent.yaml')));
+          assertTrue(fs.existsSync(path.join(ws, 'agents', 'habit-coordinator', 'agent.yaml')));
         } finally {
           removeTempWorkspace(ws);
         }

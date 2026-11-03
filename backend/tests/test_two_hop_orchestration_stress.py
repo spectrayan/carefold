@@ -37,11 +37,11 @@ from langchain_core.messages import AIMessage, HumanMessage
 
 from carefold.agents.registry import AgentRegistry
 from carefold.constants.agents import (
-    AGENT_BENEFITS_GUIDE,
+    AGENT_BENEFITS_COORDINATOR,
     AGENT_DOCUMENT_EXTRACTOR,
-    AGENT_HABIT_COMPANION,
+    AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_VISIT_STEWARD,
+    AGENT_VISIT_PREP_COORDINATOR,
     DEFAULT_ROUTING_FALLBACK_AGENT,
 )
 from carefold.memory.adapters.sqlite.catalog_adapter import (
@@ -209,8 +209,8 @@ class TestChallengeStep2DomainOnlyFallback:
         # Catalog contains standard wellness agents
         agents = [
             make_agent(
-                "habit-companion",
-                "Habit Companion",
+                "habit-coordinator",
+                "Habit Coordinator",
                 domain="wellness",
                 category="wellness.habits",
                 description="Assists with hydration and daily routines.",
@@ -236,7 +236,7 @@ class TestChallengeStep2DomainOnlyFallback:
             "reasoning": "Chrono-circadian sleep timing question.",
         })
         tier2_resp = json.dumps({
-            "agent_id": "habit-companion",
+            "agent_id": "habit-coordinator",
             "reasoning": "Habit companion selected from domain-level candidates.",
             "instructions": "Guide on regular sleep-wake schedules.",
         })
@@ -262,7 +262,7 @@ class TestChallengeStep2DomainOnlyFallback:
         assert calls[0]["domain"] == "wellness"
         assert calls[0]["category"] == obscure_category
 
-        # Call 2: domain only -> found habit-companion & nutrition-coach
+        # Call 2: domain only -> found habit-coordinator & nutrition-coach
         assert calls[1]["domain"] == "wellness"
         assert calls[1].get("category") is None or calls[1].get("category") == ""
 
@@ -270,9 +270,9 @@ class TestChallengeStep2DomainOnlyFallback:
         assert "query" not in calls[1]
         assert not any("query" in c for c in calls)
 
-        # Invariant 3: Clean delegation to habit-companion
-        assert res["current_agent"] == "habit-companion"
-        assert res["routed_subgraph"] == "habit-companion"
+        # Invariant 3: Clean delegation to habit-coordinator
+        assert res["current_agent"] == "habit-coordinator"
+        assert res["routed_subgraph"] == "habit-coordinator"
 
         await catalog.close()
 
@@ -300,16 +300,16 @@ class TestChallengeStep3FTSFallback:
         # Database contains wellness and navigation agents, NO therapy agents
         agents = [
             make_agent(
-                "habit-companion",
-                "Habit Companion",
+                "habit-coordinator",
+                "Habit Coordinator",
                 domain="wellness",
                 category="wellness.habits",
                 description="Assists with hydration, daily routines, and sleep hygiene tracking.",
                 tags=["habits", "hydration", "sleep", "insomnia", "bedtime"],
             ),
             make_agent(
-                "visit-steward",
-                "Visit Steward",
+                "appointment-prep-coordinator",
+                "Appointment Prep Coordinator",
                 domain="navigation",
                 category="navigation.appointments",
                 description="Doctor visit preparation and questions checklist.",
@@ -326,7 +326,7 @@ class TestChallengeStep3FTSFallback:
             "reasoning": "Counseling inquiry for severe insomnia.",
         })
         tier2_resp = json.dumps({
-            "agent_id": "habit-companion",
+            "agent_id": "habit-coordinator",
             "reasoning": "FTS matched sleep and insomnia tags in habit companion.",
             "instructions": "Support sleep hygiene routine.",
         })
@@ -360,9 +360,9 @@ class TestChallengeStep3FTSFallback:
         assert calls[2]["query"] == prompt_str
         assert calls[2]["limit"] == 8
 
-        # Invariant 2: Candidate retrieved via FTS was habit-companion
-        assert res["current_agent"] == "habit-companion"
-        assert res["routed_subgraph"] == "habit-companion"
+        # Invariant 2: Candidate retrieved via FTS was habit-coordinator
+        assert res["current_agent"] == "habit-coordinator"
+        assert res["routed_subgraph"] == "habit-coordinator"
 
         await catalog.close()
 
@@ -374,8 +374,8 @@ class TestChallengeStep3FTSFallback:
 
         agents = [
             make_agent(
-                "benefits-guide",
-                "Benefits Guide",
+                "benefits-coordinator",
+                "Benefits Coordinator",
                 domain="navigation",
                 category="navigation.insurance",
                 description="Specializes in deductible, copay, and coinsurance benefits.",
@@ -391,7 +391,7 @@ class TestChallengeStep3FTSFallback:
             "reasoning": "Flight physical insurance coverage.",
         })
         tier2_resp = json.dumps({
-            "agent_id": "benefits-guide",
+            "agent_id": "benefits-coordinator",
             "reasoning": "Selected benefits guide via FTS keyword match on copay.",
             "instructions": "",
         })
@@ -402,7 +402,7 @@ class TestChallengeStep3FTSFallback:
         state = {"messages": [HumanMessage(content="What is my in-network copay deductible for an aerospace flight physical?")]}
         res = await node.execute(state)
 
-        assert res["current_agent"] == "benefits-guide"
+        assert res["current_agent"] == "benefits-coordinator"
 
         await catalog.close()
 
@@ -429,8 +429,8 @@ class TestChallengeStep4PatternFallback:
 
         # Database has one agent that cannot match this gibberish
         await catalog.index_agent(make_agent(
-            "benefits-guide",
-            "Benefits Guide",
+            "benefits-coordinator",
+            "Benefits Coordinator",
             domain="navigation",
             category="navigation.insurance",
             description="Insurance guide",
@@ -509,8 +509,8 @@ class TestChallengeStep4PatternFallback:
             state = {"messages": [HumanMessage(content=prompt)]}
             res = await node.execute(state)
 
-        assert res["current_agent"] == "benefits-guide"
-        assert res["routed_subgraph"] == "benefits-guide"
+        assert res["current_agent"] == "benefits-coordinator"
+        assert res["routed_subgraph"] == "benefits-coordinator"
 
         await catalog.close()
 
@@ -712,8 +712,8 @@ class TestChallengeStep6EmptyCatalogPort:
 
         # Invariant 1: No crash, clean dict returned
         assert isinstance(res, dict)
-        assert res["current_agent"] == "benefits-guide"
-        assert res["routed_subgraph"] == "benefits-guide"
+        assert res["current_agent"] == "benefits-coordinator"
+        assert res["routed_subgraph"] == "benefits-coordinator"
         assert "pattern fallback" in res["orchestrator_reasoning"].lower()
 
         await empty_catalog.close()
@@ -777,7 +777,7 @@ class TestChallengeStep6EmptyCatalogPort:
         state = {"messages": [HumanMessage(content="I need a doctor appointment checklist")]}
         res = await node.execute(state)
 
-        assert res["current_agent"] == "visit-steward"
+        assert res["current_agent"] == "appointment-prep-coordinator"
         assert "Model unconfigured" in res["orchestrator_reasoning"]
 
         await empty_catalog.close()
@@ -800,8 +800,8 @@ class TestAdversarialHostileEdgeCases:
         registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
 
         await catalog.index_agent(make_agent(
-            "benefits-guide",
-            "Benefits Guide",
+            "benefits-coordinator",
+            "Benefits Coordinator",
             domain="navigation",
             category="navigation.insurance",
             description="Insurance guide",
@@ -813,7 +813,7 @@ class TestAdversarialHostileEdgeCases:
             "reasoning": "Symbols only.",
         })
         tier2_resp = json.dumps({
-            "agent_id": "benefits-guide",
+            "agent_id": "benefits-coordinator",
             "reasoning": "Fallback choice.",
             "instructions": "",
         })
@@ -837,8 +837,8 @@ class TestAdversarialHostileEdgeCases:
         registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
 
         await catalog.index_agent(make_agent(
-            "visit-steward",
-            "Visit Steward",
+            "appointment-prep-coordinator",
+            "Appointment Prep Coordinator",
             domain="navigation",
             category="navigation.appointments",
             description="Doctor appointment checklists and doctor visit preparation.",
@@ -851,7 +851,7 @@ class TestAdversarialHostileEdgeCases:
                     raise ConnectionResetError("Tier-1 LLM connection dropped by remote peer")
                 from langchain_core.runnables import RunnableLambda
                 return RunnableLambda(lambda msgs: OrchestratorDecision(
-                    agent_id="visit-steward",
+                    agent_id="appointment-prep-coordinator",
                     reasoning="Tier-2 succeeded despite Tier-1 crash.",
                     instructions="Prepare checklist.",
                 ))
@@ -864,8 +864,8 @@ class TestAdversarialHostileEdgeCases:
         state = {"messages": [HumanMessage(content="I need a doctor appointment preparation checklist")]}
         res = await node.execute(state)
 
-        assert res["current_agent"] == "visit-steward"
-        assert res["routed_subgraph"] == "visit-steward"
+        assert res["current_agent"] == "appointment-prep-coordinator"
+        assert res["routed_subgraph"] == "appointment-prep-coordinator"
 
         await catalog.close()
 
@@ -876,8 +876,8 @@ class TestAdversarialHostileEdgeCases:
         registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
 
         await catalog.index_agent(make_agent(
-            "habit-companion",
-            "Habit Companion",
+            "habit-coordinator",
+            "Habit Coordinator",
             domain="wellness",
             category="wellness.habits",
             description="Habit tracking.",
@@ -910,7 +910,7 @@ class TestAdversarialHostileEdgeCases:
         state = {"messages": [HumanMessage(content="Help me with hydration habits")]}
         res = await node.execute(state)
 
-        assert res["current_agent"] == "habit-companion"
+        assert res["current_agent"] == "habit-coordinator"
         assert "fallback to candidate" in res["orchestrator_reasoning"].lower()
 
         await catalog.close()
@@ -922,8 +922,8 @@ class TestAdversarialHostileEdgeCases:
         registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
 
         await catalog.index_agent(make_agent(
-            "benefits-guide",
-            "Benefits Guide",
+            "benefits-coordinator",
+            "Benefits Coordinator",
             domain="navigation",
             category="navigation.insurance",
             description="Insurance guide.",
@@ -946,8 +946,8 @@ class TestAdversarialHostileEdgeCases:
         state = {"messages": [HumanMessage(content="Explain my insurance deductible")]}
         res = await node.execute(state)
 
-        # Original choice hallucinated -> fell back to candidates[0] ('benefits-guide')
-        assert res["current_agent"] == "benefits-guide"
+        # Original choice hallucinated -> fell back to candidates[0] ('benefits-coordinator')
+        assert res["current_agent"] == "benefits-coordinator"
         assert "not found in registry" in res["orchestrator_reasoning"]
 
         await catalog.close()

@@ -19,7 +19,7 @@ Verifies:
    - Strict loop bound termination at max_tool_iterations ceiling without trace duplication.
 2. Allowlist boundary enforcement:
    - Agents declaring zero tools (effective_tools: [], e.g. `_template`) strictly deny any tool call.
-   - Agents with restricted toolsets (e.g. `habit-companion`, `benefits-guide`) strictly deny undeclared tools.
+   - Agents with restricted toolsets (e.g. `habit-coordinator`, `benefits-coordinator`) strictly deny undeclared tools.
    - Denied tools emit allowed=False, status="denied", success=False, output=None, and undeclared error string.
    - Audit log records allowed=False with undeclared reason.
    - ToolMessage in conversation state is marked with status="error".
@@ -91,7 +91,7 @@ class TestMultiIterationToolDeduplication:
 
         events: List[Dict[str, Any]] = []
         async for ev in execute_agent_run(
-            agent_id="habit-companion",
+            agent_id="habit-coordinator",
             prompt="Record morning and evening routines",
             model_client=model,
             workspace_root=temp_workspace,
@@ -124,7 +124,7 @@ class TestMultiIterationToolDeduplication:
         for ta in tool_audits:
             assert ta.get("tool") == "workspace-note"
             assert ta.get("allowed") is True
-            assert ta.get("agent_id") == "habit-companion"
+            assert ta.get("agent_id") == "habit-coordinator"
 
     @pytest.mark.asyncio
     async def test_three_iteration_tool_run_deduplication(self, temp_workspace: Path):
@@ -141,7 +141,7 @@ class TestMultiIterationToolDeduplication:
 
         events: List[Dict[str, Any]] = []
         async for ev in execute_agent_run(
-            agent_id="habit-companion",
+            agent_id="habit-coordinator",
             prompt="Record three notes",
             model_client=model,
             workspace_root=temp_workspace,
@@ -186,7 +186,7 @@ class TestMultiIterationToolDeduplication:
 
         events: List[Dict[str, Any]] = []
         async for ev in execute_agent_run(
-            agent_id="habit-companion",
+            agent_id="habit-coordinator",
             prompt="Run batch updates",
             model_client=model,
             workspace_root=temp_workspace,
@@ -231,7 +231,7 @@ class TestMultiIterationToolDeduplication:
         async for ev in service.execute_turn(
             thread_id="th-infinite-tool-loop",
             prompt="Loop forever",
-            agent_id="habit-companion",
+            agent_id="habit-coordinator",
         ):
             events.append(ev)
 
@@ -262,7 +262,7 @@ class TestMultiIterationToolDeduplication:
 
         events: List[Dict[str, Any]] = []
         async for ev in execute_agent_run(
-            agent_id="habit-companion",
+            agent_id="habit-coordinator",
             prompt="Try saving note",
             model_client=model,
             workspace_root=temp_workspace,
@@ -361,7 +361,7 @@ class TestAllowlistBoundaryEnforcement:
 
     @pytest.mark.asyncio
     async def test_restricted_toolset_agent_enforces_exact_boundary(self, temp_workspace: Path):
-        """Verifies habit-companion allows workspace-note but strictly denies attach-read and skill-docs."""
+        """Verifies habit-coordinator allows workspace-note but strictly denies attach-read and skill-docs."""
         audit_file = temp_workspace / "logs" / "audit.jsonl"
         if audit_file.exists():
             audit_file.unlink()
@@ -375,7 +375,7 @@ class TestAllowlistBoundaryEnforcement:
 
         events: List[Dict[str, Any]] = []
         async for ev in execute_agent_run(
-            agent_id="habit-companion",
+            agent_id="habit-coordinator",
             prompt="Run mixed operations",
             model_client=model,
             workspace_root=temp_workspace,
@@ -411,7 +411,7 @@ class TestAllowlistBoundaryEnforcement:
 
         events: List[Dict[str, Any]] = []
         async for ev in execute_agent_run(
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             prompt="Execute shell command",
             model_client=model,
             workspace_root=temp_workspace,
@@ -518,7 +518,7 @@ class TestRunnerFacadeBackwardCompatibility:
 
         events: List[Dict[str, Any]] = []
         async for ev in runner_mod.execute_agent_run(
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             prompt="Hello from monkeypatched test",
             workspace_root=temp_workspace,
         ):
@@ -550,7 +550,7 @@ class TestRunnerFacadeBackwardCompatibility:
 
         events: List[Dict[str, Any]] = []
         async for ev in runner_mod.execute_agent_run(
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             prompt="Testing direct client bypass",
             model_client=custom_model,
             workspace_root=temp_workspace,

@@ -79,7 +79,7 @@ describe('09: Stress Testing on Reference Packs', () => {
   // Requirement 1: Multi-turn chat sessions with reference agents
   // =========================================================================
   describe('Multi-turn Chat Sessions with Reference Packs', () => {
-    it('visit-steward: appointment agenda prep and attach-read tool invocation on dummy attachment', async () => {
+    it('appointment-prep-coordinator: appointment agenda prep and attach-read tool invocation on dummy attachment', async () => {
       // 1. Create dummy attachment in tempWs/attachments/
       const dummyContent = 'Patient Clinical Summary: Annual physical checkup. Notes: mild fatigue, family history of hypertension.';
       await fs.writeFile(path.join(tempWs, 'attachments', 'dummy_summary.txt'), dummyContent, 'utf8');
@@ -100,7 +100,7 @@ describe('09: Stress Testing on Reference Packs', () => {
       });
 
       const stream = executeAgentRun({
-        agentDir: path.join(REFERENCE_AGENTS_DIR, 'visit-steward'),
+        agentDir: path.join(REFERENCE_AGENTS_DIR, 'appointment-prep-coordinator'),
         skillsDir: REFERENCE_SKILLS_DIR,
         workspaceDir: tempWs,
         prompt: 'Please prepare an agenda for my appointment using dummy_summary.txt',
@@ -133,19 +133,19 @@ describe('09: Stress Testing on Reference Packs', () => {
 
       const toolAudit = auditEvents.find((e) => e.event === 'tool' && e.tool === 'attach-read');
       expect(toolAudit).toBeDefined();
-      expect(toolAudit?.agent_id).toBe('visit-steward');
+      expect(toolAudit?.agent_id).toBe('appointment-prep-coordinator');
       expect(toolAudit?.allowed).toBe(true);
 
       const runAudit = auditEvents.find((e) => e.event === 'run');
       expect(runAudit).toBeDefined();
-      expect(runAudit?.agent_id).toBe('visit-steward');
+      expect(runAudit?.agent_id).toBe('appointment-prep-coordinator');
       expect(runAudit?.allowed).toBe(true);
       // Redaction check
       expect(runAudit?.prompt).toBeUndefined();
       expect(runAudit?.completion).toBeUndefined();
     });
 
-    it('benefits-guide: insurance questions and skill-docs tool invocation on glossary.md', async () => {
+    it('benefits-coordinator: insurance questions and skill-docs tool invocation on glossary.md', async () => {
       const mockModel = new MockModelClient();
       // Turn 1: Model requests skill-docs for glossary.md in benefits-explainer
       mockModel.enqueueResponse({
@@ -162,7 +162,7 @@ describe('09: Stress Testing on Reference Packs', () => {
       });
 
       const stream = executeAgentRun({
-        agentDir: path.join(REFERENCE_AGENTS_DIR, 'benefits-guide'),
+        agentDir: path.join(REFERENCE_AGENTS_DIR, 'benefits-coordinator'),
         skillsDir: REFERENCE_SKILLS_DIR,
         workspaceDir: tempWs,
         prompt: 'Can you explain the difference between a deductible and coinsurance using the glossary?',
@@ -192,11 +192,11 @@ describe('09: Stress Testing on Reference Packs', () => {
       const auditEvents = await readAuditEvents(auditFile);
       const toolAudit = auditEvents.find((e) => e.event === 'tool' && e.tool === 'skill-docs');
       expect(toolAudit).toBeDefined();
-      expect(toolAudit?.agent_id).toBe('benefits-guide');
+      expect(toolAudit?.agent_id).toBe('benefits-coordinator');
       expect(toolAudit?.allowed).toBe(true);
     });
 
-    it('habit-companion: daily habit checkin and workspace-note tool invocation', async () => {
+    it('habit-coordinator: daily habit checkin and workspace-note tool invocation', async () => {
       const mockModel = new MockModelClient();
       // Turn 1: Model saves checkin note
       mockModel.enqueueResponse({
@@ -216,7 +216,7 @@ describe('09: Stress Testing on Reference Packs', () => {
       });
 
       const stream = executeAgentRun({
-        agentDir: path.join(REFERENCE_AGENTS_DIR, 'habit-companion'),
+        agentDir: path.join(REFERENCE_AGENTS_DIR, 'habit-coordinator'),
         skillsDir: REFERENCE_SKILLS_DIR,
         workspaceDir: tempWs,
         prompt: 'I drank 2.5L of water and walked 30 minutes today. Please save my checkin.',
@@ -235,7 +235,7 @@ describe('09: Stress Testing on Reference Packs', () => {
       expect(fsSync.existsSync(savedNotePath)).toBe(true);
       const savedNoteContent = await fs.readFile(savedNotePath, 'utf8');
       expect(savedNoteContent).toContain('Daily Habit Check-in:');
-      expect(savedNoteContent).toContain('agent_id: "habit-companion"');
+      expect(savedNoteContent).toContain('agent_id: "habit-coordinator"');
 
       // Verify final text
       expect(result.text).toContain('saved your daily habit check-in');
@@ -246,10 +246,10 @@ describe('09: Stress Testing on Reference Packs', () => {
       const auditEvents = await readAuditEvents(auditFile);
       const toolAudit = auditEvents.find((e) => e.event === 'tool' && e.tool === 'workspace-note');
       expect(toolAudit).toBeDefined();
-      expect(toolAudit?.agent_id).toBe('habit-companion');
+      expect(toolAudit?.agent_id).toBe('habit-coordinator');
     });
 
-    it('visit-steward: multi-step sequence with attach-read followed by workspace-note agenda save', async () => {
+    it('appointment-prep-coordinator: multi-step sequence with attach-read followed by workspace-note agenda save', async () => {
       // Create test attachment
       await fs.writeFile(
         path.join(tempWs, 'attachments', 'symptoms.txt'),
@@ -285,7 +285,7 @@ describe('09: Stress Testing on Reference Packs', () => {
       });
 
       const stream = executeAgentRun({
-        agentDir: path.join(REFERENCE_AGENTS_DIR, 'visit-steward'),
+        agentDir: path.join(REFERENCE_AGENTS_DIR, 'appointment-prep-coordinator'),
         skillsDir: REFERENCE_SKILLS_DIR,
         workspaceDir: tempWs,
         prompt: 'Review symptoms.txt and save a visit agenda note',
@@ -319,9 +319,9 @@ describe('09: Stress Testing on Reference Packs', () => {
       expect(toolEvents[1].tool).toBe('workspace-note');
     });
 
-    it('habit-companion: denies unauthorized attach-read attempt', async () => {
+    it('habit-coordinator: denies unauthorized attach-read attempt', async () => {
       const mockModel = new MockModelClient();
-      // Model attempts to invoke attach-read, which habit-companion does NOT declare
+      // Model attempts to invoke attach-read, which habit-coordinator does NOT declare
       mockModel.enqueueResponse({
         toolCalls: [
           {
@@ -335,7 +335,7 @@ describe('09: Stress Testing on Reference Packs', () => {
       });
 
       const stream = executeAgentRun({
-        agentDir: path.join(REFERENCE_AGENTS_DIR, 'habit-companion'),
+        agentDir: path.join(REFERENCE_AGENTS_DIR, 'habit-coordinator'),
         skillsDir: REFERENCE_SKILLS_DIR,
         workspaceDir: tempWs,
         prompt: 'Read private_attachment.txt',
@@ -353,7 +353,7 @@ describe('09: Stress Testing on Reference Packs', () => {
       const deniedAudit = auditEvents.find((e) => e.event === 'tool' && e.allowed === false);
       expect(deniedAudit).toBeDefined();
       expect(deniedAudit?.tool).toBe('attach-read');
-      expect(deniedAudit?.agent_id).toBe('habit-companion');
+      expect(deniedAudit?.agent_id).toBe('habit-coordinator');
     });
   });
 
@@ -384,7 +384,7 @@ describe('09: Stress Testing on Reference Packs', () => {
       }
     ];
 
-    const agents = ['visit-steward', 'benefits-guide', 'habit-companion'];
+    const agents = ['appointment-prep-coordinator', 'benefits-coordinator', 'habit-coordinator'];
 
     describe('Direct Safety Classifier on Unsafe Responses', () => {
       for (const t of refusalQueries) {
@@ -450,7 +450,7 @@ describe('09: Stress Testing on Reference Packs', () => {
         for (const t of refusalQueries) {
           const mockModel = new MockModelClient(); // No enqueued response, rely on internal simulation
           const stream = executeAgentRun({
-            agentDir: path.join(REFERENCE_AGENTS_DIR, 'visit-steward'),
+            agentDir: path.join(REFERENCE_AGENTS_DIR, 'appointment-prep-coordinator'),
             skillsDir: REFERENCE_SKILLS_DIR,
             workspaceDir: tempWs,
             prompt: t.query,
@@ -488,7 +488,7 @@ describe('09: Stress Testing on Reference Packs', () => {
 
       const promptText = 'Sensitive user prompt: My health details';
       const stream = executeAgentRun({
-        agentDir: path.join(REFERENCE_AGENTS_DIR, 'visit-steward'),
+        agentDir: path.join(REFERENCE_AGENTS_DIR, 'appointment-prep-coordinator'),
         skillsDir: REFERENCE_SKILLS_DIR,
         workspaceDir: tempWs,
         prompt: promptText,
@@ -509,7 +509,7 @@ describe('09: Stress Testing on Reference Packs', () => {
         // Required fields
         expect(parsed.ts).toBeDefined();
         expect(typeof parsed.ts).toBe('string');
-        expect(parsed.agent_id).toBe('visit-steward');
+        expect(parsed.agent_id).toBe('appointment-prep-coordinator');
         expect(parsed.event).toBe('run');
         expect(parsed.allowed).toBe(true);
         expect(typeof parsed.duration_ms).toBe('number');
@@ -528,7 +528,7 @@ describe('09: Stress Testing on Reference Packs', () => {
 
       const promptText = 'User prompt with store_bodies enabled';
       const stream = executeAgentRun({
-        agentDir: path.join(REFERENCE_AGENTS_DIR, 'visit-steward'),
+        agentDir: path.join(REFERENCE_AGENTS_DIR, 'appointment-prep-coordinator'),
         skillsDir: REFERENCE_SKILLS_DIR,
         workspaceDir: tempWs,
         prompt: promptText,

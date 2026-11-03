@@ -272,7 +272,7 @@ describe('E2E Storage Scoping Suite: Browser Storage Namespacing & Isolation', (
     it('w-storage-01: simulates Alice and Bob alternating sessions on a shared family tablet', () => {
       // Step 1: Alice logs in
       const aliceStore = new ScopedStorage({ userId: USER_A });
-      aliceStore.setItem('threads_index', [{ id: 'th-1', agent: 'cardiology-guide' }]);
+      aliceStore.setItem('threads_index', [{ id: 'th-1', agent: 'heart-care-coordinator' }]);
       aliceStore.setItem('draft_note', 'Ask cardiologist about palpitations');
 
       // Step 2: Alice logs out (clearing local session cache on shared tablet)
@@ -282,7 +282,7 @@ describe('E2E Storage Scoping Suite: Browser Storage Namespacing & Isolation', (
       // Step 3: Bob logs in on same browser
       const bobStore = new ScopedStorage({ userId: USER_B });
       expect(bobStore.getItem('threads_index')).toBeNull(); // Clean slate, Bob sees zero Alice data
-      bobStore.setItem('threads_index', [{ id: 'th-2', agent: 'derma-guide' }]);
+      bobStore.setItem('threads_index', [{ id: 'th-2', agent: 'skin-care-coordinator' }]);
       bobStore.setItem('draft_note', 'Inquire about rash');
 
       // Step 4: Bob finishes and logs out

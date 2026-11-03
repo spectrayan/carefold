@@ -22,7 +22,7 @@ from carefold.tools.workspace_note import execute_workspace_note
 
 
 class DummyContext:
-    def __init__(self, ws_path: Path, agent_id: str = "cardiology-guide"):
+    def __init__(self, ws_path: Path, agent_id: str = "heart-care-coordinator"):
         self.workspace_root = ws_path
         self.agent = type("Agent", (), {"id": agent_id})()
 
@@ -60,7 +60,7 @@ def test_profile_id(client: TestClient) -> str:
 
 def test_workspace_note_preserves_human_readable_title(temp_workspace: Path):
     """Verifies that workspace-note tool preserves human-readable title in frontmatter while slugifying filename."""
-    ctx = DummyContext(temp_workspace, agent_id="cardiology-guide")
+    ctx = DummyContext(temp_workspace, agent_id="heart-care-coordinator")
     import asyncio
     res = asyncio.run(
         execute_workspace_note(
@@ -84,7 +84,7 @@ def test_workspace_note_preserves_human_readable_title(temp_workspace: Path):
 
     content = saved_file.read_text(encoding="utf-8")
     assert 'title: "Cardiovascular Consultation & Vitals Prep"' in content
-    assert 'agent_id: "cardiology-guide"' in content
+    assert 'agent_id: "heart-care-coordinator"' in content
     assert "Check BP daily." in content
 
 

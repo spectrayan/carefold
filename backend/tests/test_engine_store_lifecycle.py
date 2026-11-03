@@ -309,7 +309,7 @@ class TestPhase5TurnPersistence:
             thread_id=thread_id,
             prompt="What should I ask my cardiologist at my visit?",
             specialist_outputs={
-                "cardiology-guide": "Ask about target heart rate and exercise tolerance.",
+                "heart-care-coordinator": "Ask about target heart rate and exercise tolerance.",
             },
         )
 

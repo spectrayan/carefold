@@ -13,9 +13,9 @@
 
 Verifies:
 1. Agent-specific suggestion chip precedence (persona keywords > tools > persona defaults > global defaults).
-2. Elimination of generic skill-docs leakage into non-visit agents (e.g. benefits-guide, cardiology-guide).
+2. Elimination of generic skill-docs leakage into non-visit agents (e.g. benefits-coordinator, heart-care-coordinator).
 3. Specialized chips across clinical and administrative agents (claims, prior-auth, cardiology, etc.).
-4. Preservation of visit-steward tool chips for appointment checklists and visit notes.
+4. Preservation of appointment-prep-coordinator tool chips for appointment checklists and visit notes.
 5. SuggestionNode dynamic generation with model and safety suppression on refusal.
 """
 
@@ -35,34 +35,34 @@ from carefold.engine.builder import GraphBuilder
 @pytest.mark.parametrize(
     "agent_id, prompt, completion, tools_used, expected_keyword, forbidden_keyword",
     [
-        # benefits-guide: should NEVER receive visit-steward appointment preparation chips
-        ("benefits-guide", "What is my deductible?", "Your deductible is $1500.", ["skill-docs"], "deductible", "appointment preparation"),
-        ("benefits-guide", "Tell me about prior authorization.", "Prior authorization is needed.", ["skill-docs"], "prior authorization", "appointment preparation"),
-        ("benefits-guide", "Explain in-network vs out-of-network.", "In-network providers...", ["skill-docs"], "network", "appointment preparation"),
-        ("benefits-guide", "General hello", "How can I help with your benefits?", ["skill-docs"], "coverage", "appointment preparation"),
+        # benefits-coordinator: should NEVER receive appointment-prep-coordinator appointment preparation chips
+        ("benefits-coordinator", "What is my deductible?", "Your deductible is $1500.", ["skill-docs"], "deductible", "appointment preparation"),
+        ("benefits-coordinator", "Tell me about prior authorization.", "Prior authorization is needed.", ["skill-docs"], "prior authorization", "appointment preparation"),
+        ("benefits-coordinator", "Explain in-network vs out-of-network.", "In-network providers...", ["skill-docs"], "network", "appointment preparation"),
+        ("benefits-coordinator", "General hello", "How can I help with your benefits?", ["skill-docs"], "coverage", "appointment preparation"),
 
-        # cardiology-guide: blood pressure and cardiology chips
-        ("cardiology-guide", "My blood pressure was 140/90.", "That reading is elevated.", ["skill-docs"], "blood pressure", "appointment preparation"),
-        ("cardiology-guide", "I feel heart palpitations.", "Let us note your symptoms.", ["skill-docs"], "palpitation", "appointment preparation"),
-        ("cardiology-guide", "General cardiology consultation", "Ready for your visit.", ["skill-docs"], "cardiology", "appointment preparation"),
+        # heart-care-coordinator: blood pressure and cardiology chips
+        ("heart-care-coordinator", "My blood pressure was 140/90.", "That reading is elevated.", ["skill-docs"], "blood pressure", "appointment preparation"),
+        ("heart-care-coordinator", "I feel heart palpitations.", "Let us note your symptoms.", ["skill-docs"], "palpitation", "appointment preparation"),
+        ("heart-care-coordinator", "General cardiology consultation", "Ready for your visit.", ["skill-docs"], "cardiology", "appointment preparation"),
 
-        # claims-appeals-guide: denial and EOB chips
-        ("claims-appeals-guide", "My claim was denied by insurance.", "Let us review the denial reason.", ["skill-docs"], "appeal", "appointment preparation"),
-        ("claims-appeals-guide", "What does this EOB balance mean?", "Here is how to read your EOB.", ["skill-docs"], "explanation of benefits", "appointment preparation"),
+        # claims-appeals-coordinator: denial and EOB chips
+        ("claims-appeals-coordinator", "My claim was denied by insurance.", "Let us review the denial reason.", ["skill-docs"], "appeal", "appointment preparation"),
+        ("claims-appeals-coordinator", "What does this EOB balance mean?", "Here is how to read your EOB.", ["skill-docs"], "explanation of benefits", "appointment preparation"),
 
-        # prior-auth-navigator: step therapy and delay chips
-        ("prior-auth-navigator", "What is step therapy?", "Step therapy requires trying alternatives.", ["skill-docs"], "step therapy", "appointment preparation"),
-        ("prior-auth-navigator", "My prior auth is still pending.", "Let us check turnaround times.", ["skill-docs"], "prior authorization", "appointment preparation"),
+        # prior-authorization-coordinator: step therapy and delay chips
+        ("prior-authorization-coordinator", "What is step therapy?", "Step therapy requires trying alternatives.", ["skill-docs"], "step therapy", "appointment preparation"),
+        ("prior-authorization-coordinator", "My prior auth is still pending.", "Let us check turnaround times.", ["skill-docs"], "prior authorization", "appointment preparation"),
 
-        # habit-companion: hydration and sleep chips
-        ("habit-companion", "How to drink more water?", "Stay hydrated daily.", ["skill-docs"], "hydration", "appointment preparation"),
-        ("habit-companion", "I have trouble sleeping.", "A consistent wind-down routine helps.", ["skill-docs"], "sleep", "appointment preparation"),
+        # habit-coordinator: hydration and sleep chips
+        ("habit-coordinator", "How to drink more water?", "Stay hydrated daily.", ["skill-docs"], "hydration", "appointment preparation"),
+        ("habit-coordinator", "I have trouble sleeping.", "A consistent wind-down routine helps.", ["skill-docs"], "sleep", "appointment preparation"),
 
-        # visit-steward: appointment prep chips ARE expected for visit-steward
-        ("visit-steward", "What about my lab tests?", "Here is your lab summary.", [], "lab", None),
-        ("visit-steward", "What about my medications?", "Here is your medication list.", [], "medication", None),
-        ("visit-steward", "Read docs", "Reference docs loaded.", ["skill-docs"], "checklist", None),
-        ("visit-steward", "Save visit note", "Note saved in workspace.", ["workspace-note"], "visit note", None),
+        # appointment-prep-coordinator: appointment prep chips ARE expected for appointment-prep-coordinator
+        ("appointment-prep-coordinator", "What about my lab tests?", "Here is your lab summary.", [], "lab", None),
+        ("appointment-prep-coordinator", "What about my medications?", "Here is your medication list.", [], "medication", None),
+        ("appointment-prep-coordinator", "Read docs", "Reference docs loaded.", ["skill-docs"], "checklist", None),
+        ("appointment-prep-coordinator", "Save visit note", "Note saved in workspace.", ["workspace-note"], "visit note", None),
     ],
 )
 def test_contextual_suggestions_specialization(
@@ -108,7 +108,7 @@ async def test_suggestion_node_dynamic_llm_generation():
 
     node = SuggestionNode(model=fake_model)
     res = await node.execute({
-        "current_agent": "benefits-guide",
+        "current_agent": "benefits-coordinator",
         "messages": [HumanMessage(content="What are my copays for PT?")],
         "output": "Physical therapy has a $30 specialist copay per visit.",
     })
@@ -128,7 +128,7 @@ async def test_suggestion_node_suppression_on_refusal():
     res = await node.execute({
         "is_refusal": True,
         "refusal_reason": "emergency_chest_pain",
-        "current_agent": "cardiology-guide",
+        "current_agent": "heart-care-coordinator",
         "messages": [HumanMessage(content="Crushing chest pain")],
     })
 
@@ -152,7 +152,7 @@ def test_multi_turn_suggestion_variation_and_deduplication():
     # Turn 1: Initial query about deductible
     t1_prompt = "What is my deductible?"
     t1_chips = loader.get_follow_up_suggestions(
-        agent_id="benefits-guide",
+        agent_id="benefits-coordinator",
         prompt=t1_prompt,
         completion="Your deductible is $1500 per year before insurance kicks in.",
         user_queries=[t1_prompt],
@@ -163,7 +163,7 @@ def test_multi_turn_suggestion_variation_and_deduplication():
     # Turn 2: User clicks the first suggestion chip
     clicked_chip = t1_chips[0]
     t2_chips = loader.get_follow_up_suggestions(
-        agent_id="benefits-guide",
+        agent_id="benefits-coordinator",
         prompt=clicked_chip,
         completion="Copays are fixed fees while coinsurance is a percentage of the total bill.",
         user_queries=[t1_prompt, clicked_chip],
@@ -176,8 +176,8 @@ def test_multi_turn_suggestion_variation_and_deduplication():
 
 
 @pytest.mark.asyncio
-async def test_cardiology_guide_skill_alias_resolution(tmp_path):
-    """Verifies that cardiology-guide agent requesting skill_id='cardiology' aliases to 'cardiology-prep'."""
+async def test_heart_care_coordinator_skill_alias_resolution(tmp_path):
+    """Verifies that heart-care-coordinator agent requesting skill_id='cardiology' aliases to 'cardiology-prep'."""
     from carefold.schemas.manifest import AgentManifest
     from carefold.tools.skill_docs import execute_skill_docs
 
@@ -195,8 +195,8 @@ async def test_cardiology_guide_skill_alias_resolution(tmp_path):
     agenda_file.write_text("# Cardiology Visit Agenda\n1. Review blood pressure log.", encoding="utf-8")
 
     agent = AgentManifest(
-        id="cardiology-guide",
-        title="Cardiology Navigator",
+        id="heart-care-coordinator",
+        title="Heart Care Coordinator",
         skills=["cardiology-prep"],
         persona="Role",
     )
@@ -228,8 +228,8 @@ async def test_skill_docs_dynamic_synthesis_on_missing_reference(tmp_path):
     (ws / "skills").mkdir(parents=True, exist_ok=True)
 
     agent = AgentManifest(
-        id="cardiology-guide",
-        title="Cardiology Navigator",
+        id="heart-care-coordinator",
+        title="Heart Care Coordinator",
         skills=["cardiology-prep"],
         persona="Role",
     )

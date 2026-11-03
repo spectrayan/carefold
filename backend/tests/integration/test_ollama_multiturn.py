@@ -266,7 +266,7 @@ class TestOllamaMultiTurnExecutionService:
         async for event in service.execute_turn(
             thread_id=thread_id,
             prompt=turn1_prompt,
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             allow_clinical=True,
         ):
             events_t1.append(event)
@@ -292,7 +292,7 @@ class TestOllamaMultiTurnExecutionService:
         async for event in service.execute_turn(
             thread_id=thread_id,
             prompt=turn2_prompt,
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             allow_clinical=True,
         ):
             events_t2.append(event)

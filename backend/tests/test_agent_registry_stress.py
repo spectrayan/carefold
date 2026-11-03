@@ -36,11 +36,11 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from carefold.agents.registry import AgentRegistry
 from carefold.constants.agents import (
-    AGENT_BENEFITS_GUIDE,
+    AGENT_BENEFITS_COORDINATOR,
     AGENT_DOCUMENT_EXTRACTOR,
-    AGENT_HABIT_COMPANION,
+    AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_VISIT_STEWARD,
+    AGENT_VISIT_PREP_COORDINATOR,
     TOOL_ATTACH_READ,
     TOOL_DELEGATE_TO_AGENT,
     TOOL_LIST_AGENTS,
@@ -63,13 +63,13 @@ async def test_tool_node_effective_tools_empty_list_denies_all_tools(temp_worksp
     node = ToolNode()
 
     state = {
-        "current_agent": "benefits-guide",
+        "current_agent": "benefits-coordinator",
         "workspace_root": str(temp_workspace),
         "effective_tools": [],  # Explicit zero-tool manifest
         "tool_calls": [
             {"id": "call_note", "name": TOOL_WORKSPACE_NOTE, "args": {"title": "X", "content": "Y"}},
             {"id": "call_attach", "name": TOOL_ATTACH_READ, "args": {"path": "test.txt"}},
-            {"id": "call_delegate", "name": TOOL_DELEGATE_TO_AGENT, "args": {"agent_id": "habit-companion"}},
+            {"id": "call_delegate", "name": TOOL_DELEGATE_TO_AGENT, "args": {"agent_id": "habit-coordinator"}},
         ],
     }
 
@@ -104,7 +104,7 @@ async def test_tool_node_effective_tools_empty_list_overrides_state_allowed_tool
     # Both effective_tools=[] and allowed_tools=['workspace-note'] are present in state.
     # effective_tools is evaluated first and must take precedence.
     state = {
-        "current_agent": "benefits-guide",
+        "current_agent": "benefits-coordinator",
         "workspace_root": str(temp_workspace),
         "effective_tools": [],
         "allowed_tools": [TOOL_WORKSPACE_NOTE],
@@ -126,7 +126,7 @@ async def test_tool_node_constructor_allowed_tools_empty_list_overrides_everythi
     node = ToolNode(allowed_tools=[])
 
     state = {
-        "current_agent": "benefits-guide",
+        "current_agent": "benefits-coordinator",
         "workspace_root": str(temp_workspace),
         "effective_tools": [TOOL_WORKSPACE_NOTE, TOOL_ATTACH_READ],
         "allowed_tools": [TOOL_WORKSPACE_NOTE, TOOL_ATTACH_READ],
@@ -148,7 +148,7 @@ async def test_tool_node_constructor_explicit_allowlist_enforcement(temp_workspa
     node = ToolNode(allowed_tools=[TOOL_WORKSPACE_NOTE])
 
     state = {
-        "current_agent": "benefits-guide",
+        "current_agent": "benefits-coordinator",
         "workspace_root": str(temp_workspace),
         "tool_calls": [
             {"id": "call_ok", "name": TOOL_WORKSPACE_NOTE, "args": {"title": "Allowed Note", "content": "Body"}},
@@ -197,7 +197,7 @@ async def test_tool_node_ai_message_tool_calls_extraction_with_empty_tools(temp_
     )
 
     state = {
-        "current_agent": "visit-steward",
+        "current_agent": "appointment-prep-coordinator",
         "workspace_root": str(temp_workspace),
         "effective_tools": [],
         "messages": [
@@ -250,7 +250,7 @@ async def test_tool_node_empty_tool_calls_graceful_handling():
     """Verify ToolNode returns clean structure when no tool calls are present."""
     node = ToolNode()
     state = {
-        "current_agent": "benefits-guide",
+        "current_agent": "benefits-coordinator",
         "messages": [HumanMessage(content="Hello")],
     }
     result = await node.execute(state)
@@ -274,9 +274,9 @@ async def test_orchestrator_dynamic_prompt_incorporates_registry_catalog(temp_wo
     prompt = node._build_system_prompt({})
 
     # Must contain delegatable agents and exclude orchestrator
-    assert AGENT_BENEFITS_GUIDE in prompt
-    assert AGENT_VISIT_STEWARD in prompt
-    assert AGENT_HABIT_COMPANION in prompt
+    assert AGENT_BENEFITS_COORDINATOR in prompt
+    assert AGENT_VISIT_PREP_COORDINATOR in prompt
+    assert AGENT_HABIT_COORDINATOR in prompt
     assert AGENT_DOCUMENT_EXTRACTOR in prompt
     assert f"- **{AGENT_ORCHESTRATOR}**" not in prompt
 
@@ -341,16 +341,16 @@ async def test_orchestrator_explicit_bypass_normalization(temp_workspace: Path):
     node = OrchestratorNode(model=None, registry=registry)
 
     # Test underscore to hyphen normalization
-    state1 = {"current_agent": "benefits_guide"}
+    state1 = {"current_agent": "benefits_coordinator"}
     res1 = await node.execute(state1)
-    assert res1["current_agent"] == "benefits-guide"
-    assert res1["next_step"] == "benefits-guide"
+    assert res1["current_agent"] == "benefits-coordinator"
+    assert res1["next_step"] == "benefits-coordinator"
 
     # Test exact registered match
-    state2 = {"routed_subgraph": "visit-steward"}
+    state2 = {"routed_subgraph": "appointment-prep-coordinator"}
     res2 = await node.execute(state2)
-    assert res2["current_agent"] == "visit-steward"
-    assert res2["next_step"] == "visit-steward"
+    assert res2["current_agent"] == "appointment-prep-coordinator"
+    assert res2["next_step"] == "appointment-prep-coordinator"
 
 
 # ============================================================================
@@ -380,9 +380,9 @@ def test_agent_registry_effective_tools_map(temp_workspace: Path):
     tools_map = registry.effective_tools_map
 
     assert isinstance(tools_map, dict)
-    assert AGENT_BENEFITS_GUIDE in tools_map
-    assert AGENT_VISIT_STEWARD in tools_map
-    assert AGENT_HABIT_COMPANION in tools_map
+    assert AGENT_BENEFITS_COORDINATOR in tools_map
+    assert AGENT_VISIT_PREP_COORDINATOR in tools_map
+    assert AGENT_HABIT_COORDINATOR in tools_map
     assert AGENT_DOCUMENT_EXTRACTOR in tools_map
 
     # Document extractor must have extraction tools

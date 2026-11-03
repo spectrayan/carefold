@@ -27,7 +27,7 @@ const mockMemories: MemoryRecord[] = [
     salience: 1.0,
     created_at: '2026-10-07T12:00:00Z',
     metadata: {
-      agent_id: 'cardiology-guide',
+      agent_id: 'heart-care-coordinator',
       session_id: 'sess-12345',
     },
   },
@@ -39,7 +39,7 @@ const mockMemories: MemoryRecord[] = [
     salience: 0.8,
     created_at: '2026-10-06T15:30:00Z',
     metadata: {
-      agent_id: 'visit-steward',
+      agent_id: 'appointment-prep-coordinator',
     },
   },
   {

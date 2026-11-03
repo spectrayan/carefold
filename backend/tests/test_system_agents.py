@@ -95,7 +95,7 @@ SYSTEM_AGENTS_SPEC: Dict[str, Dict[str, Any]] = {
         "fts_query": "red-flag-detector",
     },
     "quality-reviewer": {
-        "title": "Clinical Quality Reviewer",
+        "title": "Quality Reviewer",
         "domain": AgentDomain.EDUCATION,
         "category": "education.quality",
         "risk_class": RiskClass.ADMIN,
@@ -107,7 +107,7 @@ SYSTEM_AGENTS_SPEC: Dict[str, Dict[str, Any]] = {
 
 MANDATORY_HEADERS: List[str] = [
     "ROLE & EMPATHY",
-    "CLINICAL SCOPE & FOCUS",
+    "SCOPE & FOCUS",
     "STRUCTURED INTERACTION PROTOCOL",
     "STRICT NON-CLINICAL BOUNDARIES",
     "EXPLICIT EMERGENCY RED FLAGS",

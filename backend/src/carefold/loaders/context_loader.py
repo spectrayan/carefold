@@ -127,7 +127,7 @@ class ContextLoader:
         if agents_dir.is_dir():
             for ad in sorted(agents_dir.glob("*")):
                 if ad.is_dir() and not ad.name.startswith((".", "_")):
-                    desc = "healthcare navigation specialist"
+                    desc = "care coordinator"
                     manifest_file = ad / "agent.yaml"
                     if manifest_file.is_file():
                         try:

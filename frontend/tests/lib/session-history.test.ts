@@ -49,8 +49,8 @@ describe('sessionHistory Storage Index Library', () => {
     it('returns sessions sorted by updatedAt descending', () => {
       const s1: ChatSessionMeta = {
         id: 't-1',
-        agentId: 'visit-steward',
-        agentTitle: 'Visit Steward',
+        agentId: 'appointment-prep-coordinator',
+        agentTitle: 'Appointment Prep Coordinator',
         title: 'Older Session',
         createdAt: '2026-10-01T10:00:00.000Z',
         updatedAt: '2026-10-01T10:00:00.000Z',
@@ -58,7 +58,7 @@ describe('sessionHistory Storage Index Library', () => {
       };
       const s2: ChatSessionMeta = {
         id: 't-2',
-        agentId: 'cardiology-guide',
+        agentId: 'heart-care-coordinator',
         agentTitle: 'Cardiology Guide',
         title: 'Newer Session',
         createdAt: '2026-10-02T10:00:00.000Z',
@@ -78,7 +78,7 @@ describe('sessionHistory Storage Index Library', () => {
     it('filters sessions by agentId if specified', () => {
       const s1: ChatSessionMeta = {
         id: 't-1',
-        agentId: 'visit-steward',
+        agentId: 'appointment-prep-coordinator',
         title: 'Visit Session',
         createdAt: '2026-10-01T10:00:00.000Z',
         updatedAt: '2026-10-01T10:00:00.000Z',
@@ -86,7 +86,7 @@ describe('sessionHistory Storage Index Library', () => {
       };
       const s2: ChatSessionMeta = {
         id: 't-2',
-        agentId: 'cardiology-guide',
+        agentId: 'heart-care-coordinator',
         title: 'Cardio Session',
         createdAt: '2026-10-02T10:00:00.000Z',
         updatedAt: '2026-10-02T12:00:00.000Z',
@@ -96,16 +96,16 @@ describe('sessionHistory Storage Index Library', () => {
       saveSession(s1);
       saveSession(s2);
 
-      expect(listSessions('visit-steward')).toHaveLength(1);
-      expect(listSessions('visit-steward')[0].id).toBe('t-1');
-      expect(listSessions('cardiology-guide')).toHaveLength(1);
-      expect(listSessions('cardiology-guide')[0].id).toBe('t-2');
+      expect(listSessions('appointment-prep-coordinator')).toHaveLength(1);
+      expect(listSessions('appointment-prep-coordinator')[0].id).toBe('t-1');
+      expect(listSessions('heart-care-coordinator')).toHaveLength(1);
+      expect(listSessions('heart-care-coordinator')[0].id).toBe('t-2');
     });
 
     it('retrieves single session by threadId or returns null', () => {
       const s1: ChatSessionMeta = {
         id: 't-target',
-        agentId: 'visit-steward',
+        agentId: 'appointment-prep-coordinator',
         title: 'Target Session',
         createdAt: '2026-10-01T10:00:00.000Z',
         updatedAt: '2026-10-01T10:00:00.000Z',
@@ -127,13 +127,13 @@ describe('sessionHistory Storage Index Library', () => {
 
       const meta = upsertSessionFromMessages(
         'thread-123',
-        'cardiology-guide',
+        'heart-care-coordinator',
         messages,
         'Cardiology Guide'
       );
 
       expect(meta.id).toBe('thread-123');
-      expect(meta.agentId).toBe('cardiology-guide');
+      expect(meta.agentId).toBe('heart-care-coordinator');
       expect(meta.agentTitle).toBe('Cardiology Guide');
       expect(meta.messageCount).toBe(2);
       expect(meta.isCustomTitle).toBe(false);
@@ -152,15 +152,15 @@ describe('sessionHistory Storage Index Library', () => {
         { id: '1', role: 'assistant', content: 'Hello! How can I help you today?' }
       ];
 
-      const meta = upsertSessionFromMessages('thread-no-user', 'visit-steward', messages, 'Visit Steward');
-      expect(meta.title).toMatch(/Visit Steward Session|New Consultation/);
+      const meta = upsertSessionFromMessages('thread-no-user', 'appointment-prep-coordinator', messages, 'Appointment Prep Coordinator');
+      expect(meta.title).toMatch(/Appointment Prep Coordinator Session|New Consultation/);
     });
 
     it('preserves user custom title across subsequent message upserts', () => {
       const messages1 = [
         { id: '1', role: 'user', content: 'Initial message' }
       ];
-      upsertSessionFromMessages('thread-custom', 'visit-steward', messages1);
+      upsertSessionFromMessages('thread-custom', 'appointment-prep-coordinator', messages1);
 
       // Rename session
       renameSession('thread-custom', 'My Custom Specialist Appointment');
@@ -172,7 +172,7 @@ describe('sessionHistory Storage Index Library', () => {
         { id: '3', role: 'user', content: 'Follow-up question about symptoms' }
       ];
 
-      const updated = upsertSessionFromMessages('thread-custom', 'visit-steward', messages2);
+      const updated = upsertSessionFromMessages('thread-custom', 'appointment-prep-coordinator', messages2);
       expect(updated.title).toBe('My Custom Specialist Appointment');
       expect(updated.isCustomTitle).toBe(true);
       expect(updated.messageCount).toBe(3);
@@ -187,7 +187,7 @@ describe('sessionHistory Storage Index Library', () => {
       ];
       localStorage.setItem(`carefold_msgs_${threadId}`, JSON.stringify(originalMessages));
 
-      upsertSessionFromMessages(threadId, 'visit-steward', originalMessages);
+      upsertSessionFromMessages(threadId, 'appointment-prep-coordinator', originalMessages);
 
       const renamed = renameSession(threadId, 'Brand New Custom Title');
       expect(renamed).toBe(true);
@@ -212,12 +212,12 @@ describe('sessionHistory Storage Index Library', () => {
       const messages = [{ id: '1', role: 'user', content: 'Test' }];
 
       localStorage.setItem(`carefold_msgs_${threadId}`, JSON.stringify(messages));
-      upsertSessionFromMessages(threadId, 'visit-steward', messages);
+      upsertSessionFromMessages(threadId, 'appointment-prep-coordinator', messages);
 
       expect(getSession(threadId)).not.toBeNull();
       expect(localStorage.getItem(`carefold_msgs_${threadId}`)).not.toBeNull();
 
-      const deleted = deleteSession(threadId, 'visit-steward');
+      const deleted = deleteSession(threadId, 'appointment-prep-coordinator');
       expect(deleted).toBe(true);
 
       expect(getSession(threadId)).toBeNull();
@@ -231,7 +231,7 @@ describe('sessionHistory Storage Index Library', () => {
 
   describe('discoverAndMigrateLegacySessions', () => {
     it('scans localStorage for unindexed carefold_msgs_* keys and populates index', () => {
-      const threadId = 'thread-visit-steward-legacy-99';
+      const threadId = 'thread-appointment-prep-coordinator-legacy-99';
       const messages = [
         { id: 'msg_one', role: 'user', content: 'What questions to ask for annual physical?' },
         { id: 'msg_two', role: 'assistant', content: 'Here are 5 questions to ask.' }
@@ -247,7 +247,7 @@ describe('sessionHistory Storage Index Library', () => {
       expect(sessions.length).toBeGreaterThanOrEqual(1);
       const migrated = sessions.find((s) => s.id === threadId);
       expect(migrated).toBeDefined();
-      expect(migrated?.agentId).toBe('visit-steward');
+      expect(migrated?.agentId).toBe('appointment-prep-coordinator');
       expect(migrated?.title).toContain('What questions to ask');
       expect(migrated?.messageCount).toBe(2);
     });
@@ -259,7 +259,7 @@ describe('sessionHistory Storage Index Library', () => {
 
       const meta: ChatSessionMeta = {
         id: 't-clear',
-        agentId: 'visit-steward',
+        agentId: 'appointment-prep-coordinator',
         title: 'To Clear',
         createdAt: '2026-10-01T10:00:00.000Z',
         updatedAt: '2026-10-01T10:00:00.000Z',
@@ -276,25 +276,25 @@ describe('sessionHistory Storage Index Library', () => {
 
   describe('generateThreadId & extractAgentIdFromThread', () => {
     it('generates a thread ID prefixed with thread-{agentId} and timestamp', () => {
-      const threadId = generateThreadId('cardiology-guide');
-      expect(threadId).toMatch(/^thread-cardiology-guide-\d+-[a-zA-Z0-9_\-]+$/);
+      const threadId = generateThreadId('heart-care-coordinator');
+      expect(threadId).toMatch(/^thread-heart-care-coordinator-\d+-[a-zA-Z0-9_\-]+$/);
     });
 
-    it('defaults agentId to visit-steward when not provided', () => {
+    it('defaults agentId to appointment-prep-coordinator when not provided', () => {
       const threadId = generateThreadId();
-      expect(threadId).toMatch(/^thread-visit-steward-\d+-[a-zA-Z0-9_\-]+$/);
-      expect(extractAgentIdFromThread(threadId)).toBe('visit-steward');
+      expect(threadId).toMatch(/^thread-appointment-prep-coordinator-\d+-[a-zA-Z0-9_\-]+$/);
+      expect(extractAgentIdFromThread(threadId)).toBe('appointment-prep-coordinator');
     });
 
     it('generates unique thread IDs across subsequent calls', () => {
-      const id1 = generateThreadId('visit-steward');
-      const id2 = generateThreadId('visit-steward');
+      const id1 = generateThreadId('appointment-prep-coordinator');
+      const id2 = generateThreadId('appointment-prep-coordinator');
       expect(id1).not.toBe(id2);
     });
 
     it('extracts agent ID cleanly from generated thread IDs for both known and custom agents', () => {
-      const knownThread = generateThreadId('pulmonology-guide');
-      expect(extractAgentIdFromThread(knownThread)).toBe('pulmonology-guide');
+      const knownThread = generateThreadId('lung-breathing-coordinator');
+      expect(extractAgentIdFromThread(knownThread)).toBe('lung-breathing-coordinator');
 
       const customThread = generateThreadId('specialist-pediatric');
       expect(extractAgentIdFromThread(customThread)).toBe('specialist-pediatric');
@@ -312,7 +312,7 @@ describe('sessionHistory Storage Index Library', () => {
         const timestamp = new Date(Date.UTC(2026, 0, 1, 0, i, 0)).toISOString();
         saveSession({
           id: `thread-session-${i}`,
-          agentId: 'visit-steward',
+          agentId: 'appointment-prep-coordinator',
           title: `Session ${i}`,
           createdAt: timestamp,
           updatedAt: timestamp,

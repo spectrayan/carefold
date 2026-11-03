@@ -279,13 +279,13 @@ describe('DossierCard & Typed Dossier Components (Issue #94)', () => {
       render(
         <InsuranceBenefitsCard
           data={mockInsuranceData}
-          agentTitle="Benefits Guide"
+          agentTitle="Benefits Coordinator"
           isGrounded={true}
         />
       );
 
       expect(screen.getByText('Insurance Benefits Summary')).toBeInTheDocument();
-      expect(screen.getByText('Prepared with Benefits Guide')).toBeInTheDocument();
+      expect(screen.getByText('Prepared with Benefits Coordinator')).toBeInTheDocument();
       expect(screen.getByTestId('dossier-grounded-badge')).toHaveTextContent('Grounded');
 
       // Top metrics
@@ -482,7 +482,7 @@ describe('DossierCard & Typed Dossier Components (Issue #94)', () => {
         },
       };
 
-      render(<DossierCard trace={trace} agentTitle="Benefits Guide" />);
+      render(<DossierCard trace={trace} agentTitle="Benefits Coordinator" />);
       expect(screen.getByTestId('insurance-benefits-card')).toBeInTheDocument();
       expect(screen.getByTestId('metric-deductible')).toHaveTextContent('$2,000');
     });

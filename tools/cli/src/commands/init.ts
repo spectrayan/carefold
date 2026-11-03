@@ -118,7 +118,7 @@ You may obtain a copy of the License at
   if (options.bundled !== false) {
     try {
       const assets = resolveBundledAssets();
-      const defaultAgents = ['visit-steward', 'benefits-guide', 'habit-companion'];
+      const defaultAgents = ['appointment-prep-coordinator', 'benefits-coordinator', 'habit-coordinator'];
       const defaultSkills = ['visit-prep', 'benefits-explainer', 'habit-checkin'];
 
       for (const skillName of defaultSkills) {
@@ -153,5 +153,5 @@ You may obtain a copy of the License at
   console.log(`  • Directories: agents/, skills/, chats/, attachments/, logs/`);
   console.log(`\nNext steps:`);
   console.log(`  carefold agent list`);
-  console.log(`  carefold run --agent visit-steward "What questions should I ask my doctor?"`);
+  console.log(`  carefold run --agent appointment-prep-coordinator "What questions should I ask my doctor?"`);
 }

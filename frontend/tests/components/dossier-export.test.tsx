@@ -20,8 +20,8 @@ import type { AgentSummary } from '@/types/api';
 
 const mockAgents: AgentSummary[] = [
   {
-    id: 'visit-steward',
-    title: 'Visit Steward',
+    id: 'appointment-prep-coordinator',
+    title: 'Appointment Prep Coordinator',
     version: '0.4.0',
     risk_class: 'clinical_assist',
     skills: ['visit-prep', 'emergency-red-flags'],
@@ -30,7 +30,7 @@ const mockAgents: AgentSummary[] = [
     description: 'Prepares clinical visit checklists and symptom summaries.',
   },
   {
-    id: 'cardiology-guide',
+    id: 'heart-care-coordinator',
     title: 'Cardiology Guide',
     version: '0.4.0',
     risk_class: 'clinical_assist',
@@ -98,7 +98,7 @@ describe('DossierExportMenu Component & ChatClient Integration', () => {
         <DossierExportMenu
           messages={[]}
           agent={mockAgents[0]}
-          agentId="visit-steward"
+          agentId="appointment-prep-coordinator"
           threadId="thread-1"
           isStreaming={false}
         />
@@ -116,7 +116,7 @@ describe('DossierExportMenu Component & ChatClient Integration', () => {
         <DossierExportMenu
           messages={[]}
           agent={mockAgents[0]}
-          agentId="visit-steward"
+          agentId="appointment-prep-coordinator"
           threadId="thread-1"
           isStreaming={false}
         />
@@ -132,7 +132,7 @@ describe('DossierExportMenu Component & ChatClient Integration', () => {
         <DossierExportMenu
           messages={mockMessages}
           agent={mockAgents[0]}
-          agentId="visit-steward"
+          agentId="appointment-prep-coordinator"
           threadId="thread-1"
           isStreaming={true}
         />
@@ -148,7 +148,7 @@ describe('DossierExportMenu Component & ChatClient Integration', () => {
         <DossierExportMenu
           messages={mockMessages}
           agent={mockAgents[0]}
-          agentId="visit-steward"
+          agentId="appointment-prep-coordinator"
           threadId="thread-1"
           isStreaming={false}
         />
@@ -164,7 +164,7 @@ describe('DossierExportMenu Component & ChatClient Integration', () => {
         <DossierExportMenu
           messages={mockMessages}
           agent={mockAgents[0]}
-          agentId="visit-steward"
+          agentId="appointment-prep-coordinator"
           threadId="thread-1"
           isStreaming={false}
         />
@@ -196,7 +196,7 @@ describe('DossierExportMenu Component & ChatClient Integration', () => {
         <DossierExportMenu
           messages={mockMessages}
           agent={mockAgents[0]}
-          agentId="visit-steward"
+          agentId="appointment-prep-coordinator"
           threadId="thread-1"
           isStreaming={false}
         />
@@ -210,7 +210,7 @@ describe('DossierExportMenu Component & ChatClient Integration', () => {
 
       expect(createdUrls).toHaveLength(1);
       expect(clickedAnchors).toHaveLength(1);
-      expect(clickedAnchors[0].download).toMatch(/^carefold-visit-steward-prep-\d{4}-\d{2}-\d{2}\.md$/);
+      expect(clickedAnchors[0].download).toMatch(/^carefold-appointment-prep-coordinator-prep-\d{4}-\d{2}-\d{2}\.md$/);
       expect(revokedUrls).toHaveLength(1);
 
       expect(screen.queryByRole('menu')).not.toBeInTheDocument();
@@ -222,7 +222,7 @@ describe('DossierExportMenu Component & ChatClient Integration', () => {
         <DossierExportMenu
           messages={mockMessages}
           agent={mockAgents[0]}
-          agentId="visit-steward"
+          agentId="appointment-prep-coordinator"
           threadId="thread-1"
           isStreaming={false}
         />
@@ -236,7 +236,7 @@ describe('DossierExportMenu Component & ChatClient Integration', () => {
 
       expect(createdUrls).toHaveLength(1);
       expect(clickedAnchors).toHaveLength(1);
-      expect(clickedAnchors[0].download).toMatch(/^carefold-visit-steward-prep-\d{4}-\d{2}-\d{2}\.json$/);
+      expect(clickedAnchors[0].download).toMatch(/^carefold-appointment-prep-coordinator-prep-\d{4}-\d{2}-\d{2}\.json$/);
       expect(revokedUrls).toHaveLength(1);
 
       expect(screen.queryByRole('menu')).not.toBeInTheDocument();
@@ -248,7 +248,7 @@ describe('DossierExportMenu Component & ChatClient Integration', () => {
         <DossierExportMenu
           messages={mockMessages}
           agent={mockAgents[0]}
-          agentId="visit-steward"
+          agentId="appointment-prep-coordinator"
           threadId="thread-1"
           isStreaming={false}
         />
@@ -272,7 +272,7 @@ describe('DossierExportMenu Component & ChatClient Integration', () => {
           <DossierExportMenu
             messages={mockMessages}
             agent={mockAgents[0]}
-            agentId="visit-steward"
+            agentId="appointment-prep-coordinator"
             threadId="thread-1"
             isStreaming={false}
           />

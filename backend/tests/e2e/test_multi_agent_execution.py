@@ -151,15 +151,15 @@ class TestMultiAgentExecutionFeatureCoverage:
         dispatcher = get_dispatcher()
         plan = DispatchPlan(
             mode=ExecutionMode.SINGLE,
-            target_agents=["cardiology-guide"],
-            tasks=[DispatchTask(agent_id="cardiology-guide", task_description="BP check", dependencies=[])],
+            target_agents=["heart-care-coordinator"],
+            tasks=[DispatchTask(agent_id="heart-care-coordinator", task_description="BP check", dependencies=[])],
         )
         state = {"prompt": "What does my systolic pressure mean?"}
 
         outputs = await dispatcher.dispatch(state, plan)
 
-        assert "cardiology-guide" in outputs
-        assert "Response from cardiology-guide" in outputs["cardiology-guide"]
+        assert "heart-care-coordinator" in outputs
+        assert "Response from heart-care-coordinator" in outputs["heart-care-coordinator"]
         assert state["specialist_outputs"] == outputs
 
     @pytest.mark.asyncio
@@ -175,11 +175,11 @@ class TestMultiAgentExecutionFeatureCoverage:
         dispatcher = get_dispatcher(timed_runner)
         plan = DispatchPlan(
             mode=ExecutionMode.PARALLEL,
-            target_agents=["cardiology-guide", "endocrinology-guide", "nephrology-guide"],
+            target_agents=["heart-care-coordinator", "diabetes-thyroid-coordinator", "kidney-care-coordinator"],
             tasks=[
-                DispatchTask(agent_id="cardiology-guide", task_description="heart", dependencies=[]),
-                DispatchTask(agent_id="endocrinology-guide", task_description="glucose", dependencies=[]),
-                DispatchTask(agent_id="nephrology-guide", task_description="kidney", dependencies=[]),
+                DispatchTask(agent_id="heart-care-coordinator", task_description="heart", dependencies=[]),
+                DispatchTask(agent_id="diabetes-thyroid-coordinator", task_description="glucose", dependencies=[]),
+                DispatchTask(agent_id="kidney-care-coordinator", task_description="kidney", dependencies=[]),
             ],
         )
         state = {"prompt": "Managing diabetes, hypertension, and kidney health"}
@@ -187,9 +187,9 @@ class TestMultiAgentExecutionFeatureCoverage:
         outputs = await dispatcher.dispatch(state, plan)
 
         assert len(outputs) == 3
-        assert "cardiology-guide" in outputs
-        assert "endocrinology-guide" in outputs
-        assert "nephrology-guide" in outputs
+        assert "heart-care-coordinator" in outputs
+        assert "diabetes-thyroid-coordinator" in outputs
+        assert "kidney-care-coordinator" in outputs
         # Verify near-concurrent execution start times (within 0.1s)
         t_values = list(call_times.values())
         assert max(t_values) - min(t_values) < 0.1
@@ -202,27 +202,27 @@ class TestMultiAgentExecutionFeatureCoverage:
         def chained_runner(agent_id: str, context: Dict[str, Any]) -> str:
             pipeline_log.append(agent_id)
             prior = context.get("prior_specialist_outputs", {})
-            if agent_id == "prior-auth-navigator":
-                assert "ortho-guide" in prior, "Prior auth must receive ortho output"
-            elif agent_id == "formulary-guide":
-                assert "prior-auth-navigator" in prior, "Formulary must receive prior auth output"
+            if agent_id == "prior-authorization-coordinator":
+                assert "bone-joint-care-coordinator" in prior, "Prior auth must receive ortho output"
+            elif agent_id == "prescription-cost-coordinator":
+                assert "prior-authorization-coordinator" in prior, "Formulary must receive prior auth output"
             return f"Output from {agent_id}"
 
         dispatcher = get_dispatcher(chained_runner)
         plan = DispatchPlan(
             mode=ExecutionMode.PIPELINE,
-            target_agents=["ortho-guide", "prior-auth-navigator", "formulary-guide"],
+            target_agents=["bone-joint-care-coordinator", "prior-authorization-coordinator", "prescription-cost-coordinator"],
             tasks=[
-                DispatchTask(agent_id="ortho-guide", task_description="surgery plan", dependencies=[]),
-                DispatchTask(agent_id="prior-auth-navigator", task_description="auth checklist", dependencies=["ortho-guide"]),
-                DispatchTask(agent_id="formulary-guide", task_description="copay guide", dependencies=["prior-auth-navigator"]),
+                DispatchTask(agent_id="bone-joint-care-coordinator", task_description="surgery plan", dependencies=[]),
+                DispatchTask(agent_id="prior-authorization-coordinator", task_description="auth checklist", dependencies=["bone-joint-care-coordinator"]),
+                DispatchTask(agent_id="prescription-cost-coordinator", task_description="copay guide", dependencies=["prior-authorization-coordinator"]),
             ],
         )
         state = {"prompt": "Knee surgery coverage and recovery plan"}
 
         outputs = await dispatcher.dispatch(state, plan)
 
-        assert pipeline_log == ["ortho-guide", "prior-auth-navigator", "formulary-guide"]
+        assert pipeline_log == ["bone-joint-care-coordinator", "prior-authorization-coordinator", "prescription-cost-coordinator"]
         assert len(outputs) == 3
 
     def test_prompt_template_renders_provisioned_clinical_references(self, e2e_repo_root: Path):
@@ -248,7 +248,7 @@ class TestMultiAgentExecutionFeatureCoverage:
             )
             engine = TemplateEngine()
             ctx = {
-                "manifest": {"title": "Cardiology Guide"},
+                "manifest": {"title": "Heart Care Coordinator"},
                 "persona": "Pure clinical persona.",
                 "provisioned_references": {
                     "hypertension_log_template.md": {
@@ -264,7 +264,7 @@ class TestMultiAgentExecutionFeatureCoverage:
         else:
             engine = TemplateEngine()
             ctx = {
-                "manifest": {"title": "Cardiology Guide"},
+                "manifest": {"title": "Heart Care Coordinator"},
                 "persona": "Pure clinical persona.",
                 "provisioned_references": {
                     "hypertension_log_template.md": {
@@ -288,19 +288,19 @@ class TestMultiAgentExecutionFeatureCoverage:
         dispatcher = get_dispatcher(fault_tolerant_runner)
         plan = DispatchPlan(
             mode=ExecutionMode.PARALLEL,
-            target_agents=["cardiology-guide", "failing-agent", "nephrology-guide"],
+            target_agents=["heart-care-coordinator", "failing-agent", "kidney-care-coordinator"],
             tasks=[
-                DispatchTask(agent_id="cardiology-guide", task_description="heart", dependencies=[]),
+                DispatchTask(agent_id="heart-care-coordinator", task_description="heart", dependencies=[]),
                 DispatchTask(agent_id="failing-agent", task_description="crash", dependencies=[]),
-                DispatchTask(agent_id="nephrology-guide", task_description="kidney", dependencies=[]),
+                DispatchTask(agent_id="kidney-care-coordinator", task_description="kidney", dependencies=[]),
             ],
         )
         state = {"prompt": "Multimorbid inquiry"}
 
         outputs = await dispatcher.dispatch(state, plan)
 
-        assert "cardiology-guide" in outputs
-        assert "nephrology-guide" in outputs
+        assert "heart-care-coordinator" in outputs
+        assert "kidney-care-coordinator" in outputs
         assert "failing-agent" not in outputs
 
 
@@ -400,8 +400,8 @@ class TestMultiAgentExecutionCrossFeature:
         dispatcher = get_dispatcher(context_capturing_runner)
         plan = DispatchPlan(
             mode=ExecutionMode.SINGLE,
-            target_agents=["cardiology-guide"],
-            tasks=[DispatchTask(agent_id="cardiology-guide", task_description="prep", dependencies=[])],
+            target_agents=["heart-care-coordinator"],
+            tasks=[DispatchTask(agent_id="heart-care-coordinator", task_description="prep", dependencies=[])],
         )
         state = {
             "prompt": "Blood pressure review",
@@ -412,8 +412,8 @@ class TestMultiAgentExecutionCrossFeature:
 
         await dispatcher.dispatch(state, plan)
 
-        assert "cardiology-guide" in captured_contexts
-        ctx = captured_contexts["cardiology-guide"]
+        assert "heart-care-coordinator" in captured_contexts
+        ctx = captured_contexts["heart-care-coordinator"]
         assert "provisioned_references" in ctx
         assert "hypertension_log_template.md" in ctx["provisioned_references"]
 
@@ -429,33 +429,33 @@ class TestMultiAgentExecutionRealWorldScenarios:
     async def test_orthopedic_prior_auth_formulary_pipeline(self):
         """Real-world 3-agent clinical-to-administrative sequential pipeline."""
         def clinical_pipeline_runner(agent_id: str, context: Dict[str, Any]) -> str:
-            if agent_id == "ortho-guide":
+            if agent_id == "bone-joint-care-coordinator":
                 return "CLINICAL RECOMMENDATION: Left total knee arthroplasty, CPT 27447."
-            elif agent_id == "prior-auth-navigator":
+            elif agent_id == "prior-authorization-coordinator":
                 prior = context.get("prior_specialist_outputs", {})
-                ortho_out = prior.get("ortho-guide", "")
+                ortho_out = prior.get("bone-joint-care-coordinator", "")
                 assert "27447" in ortho_out
                 return "PRIOR AUTH CHECKLIST: CPT 27447 requires 6 weeks conservative therapy documentation."
-            elif agent_id == "formulary-guide":
+            elif agent_id == "prescription-cost-coordinator":
                 return "PHARMACY FORMULARY: Post-op celecoxib is Tier 1 ($10 copay); enoxaparin requires pre-auth."
             return "Unknown"
 
         dispatcher = get_dispatcher(clinical_pipeline_runner)
         plan = DispatchPlan(
             mode=ExecutionMode.PIPELINE,
-            target_agents=["ortho-guide", "prior-auth-navigator", "formulary-guide"],
+            target_agents=["bone-joint-care-coordinator", "prior-authorization-coordinator", "prescription-cost-coordinator"],
             tasks=[
-                DispatchTask(agent_id="ortho-guide", task_description="Surgical evaluation", dependencies=[]),
-                DispatchTask(agent_id="prior-auth-navigator", task_description="Insurance pre-auth", dependencies=["ortho-guide"]),
-                DispatchTask(agent_id="formulary-guide", task_description="Medication benefits", dependencies=["prior-auth-navigator"]),
+                DispatchTask(agent_id="bone-joint-care-coordinator", task_description="Surgical evaluation", dependencies=[]),
+                DispatchTask(agent_id="prior-authorization-coordinator", task_description="Insurance pre-auth", dependencies=["bone-joint-care-coordinator"]),
+                DispatchTask(agent_id="prescription-cost-coordinator", task_description="Medication benefits", dependencies=["prior-authorization-coordinator"]),
             ],
         )
         state = {"prompt": "Preparing for total knee replacement"}
 
         outputs = await dispatcher.dispatch(state, plan)
 
-        assert "ortho-guide" in outputs
-        assert "prior-auth-navigator" in outputs
-        assert "formulary-guide" in outputs
-        assert "27447" in outputs["prior-auth-navigator"]
-        assert "celecoxib" in outputs["formulary-guide"]
+        assert "bone-joint-care-coordinator" in outputs
+        assert "prior-authorization-coordinator" in outputs
+        assert "prescription-cost-coordinator" in outputs
+        assert "27447" in outputs["prior-authorization-coordinator"]
+        assert "celecoxib" in outputs["prescription-cost-coordinator"]

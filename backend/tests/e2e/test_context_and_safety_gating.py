@@ -95,7 +95,7 @@ class ReferenceContextLoader:
         if agents_dir.is_dir():
             for ad in sorted(agents_dir.glob("*")):
                 if ad.is_dir() and not ad.name.startswith("_system"):
-                    summary_lines.append(f"- {ad.name}: healthcare navigation specialist")
+                    summary_lines.append(f"- {ad.name}: care coordinator")
         updated["catalog_summary"] = "\n".join(summary_lines)
 
         return updated
@@ -219,8 +219,8 @@ class TestContextAndSafetyGatingFeatureCoverage:
 
         assert "catalog_summary" in result_state
         summary = result_state["catalog_summary"]
-        assert "cardiology-guide" in summary
-        assert "nephrology-guide" in summary
+        assert "heart-care-coordinator" in summary
+        assert "kidney-care-coordinator" in summary
 
     def test_emergency_red_flag_acute_chest_pain(self):
         """Verifies acute chest pain / radiating pressure triggers immediate 911 refusal."""
@@ -430,4 +430,4 @@ class TestContextAndSafetyGatingRealWorldScenarios:
 
         assert loaded_state.get("is_refusal") is not True
         assert len(loaded_state["attachments"]) > 0
-        assert "cardiology-guide" in loaded_state["catalog_summary"]
+        assert "heart-care-coordinator" in loaded_state["catalog_summary"]

@@ -44,50 +44,50 @@ from evals.runner import EvalCase, run_single_eval
 
 
 CORE_8_SPECIALISTS: Dict[str, Dict[str, Any]] = {
-    "cardiology-guide": {
-        "title": "Cardiology Navigator",
+    "heart-care-coordinator": {
+        "title": "Heart Care Coordinator",
         "companion_skill": "cardiology-prep",
         "category": "clinical.cardiology",
         "query": "hypertension",
     },
-    "pulmonology-guide": {
-        "title": "Pulmonology Navigator",
+    "lung-breathing-coordinator": {
+        "title": "Lung & Breathing Coordinator",
         "companion_skill": "pulmonology-prep",
         "category": "clinical.pulmonology",
         "query": "asthma",
     },
-    "neurology-guide": {
-        "title": "Neurology Navigator",
+    "brain-nerve-care-coordinator": {
+        "title": "Brain & Nerve Health Coordinator",
         "companion_skill": "neurology-prep",
         "category": "clinical.neurology",
         "query": "migraine",
     },
-    "gastro-guide": {
-        "title": "Gastroenterology Navigator",
+    "digestive-care-coordinator": {
+        "title": "Digestive Health Coordinator",
         "companion_skill": "gastro-prep",
         "category": "clinical.gastroenterology",
         "query": "colonoscopy",
     },
-    "nephrology-guide": {
-        "title": "Nephrology Navigator",
+    "kidney-care-coordinator": {
+        "title": "Kidney Care Coordinator",
         "companion_skill": "nephrology-prep",
         "category": "clinical.nephrology",
         "query": "eGFR",
     },
-    "endocrinology-guide": {
-        "title": "Endocrinology Navigator",
+    "diabetes-thyroid-coordinator": {
+        "title": "Diabetes & Thyroid Coordinator",
         "companion_skill": "endocrinology-prep",
         "category": "clinical.endocrinology",
         "query": "diabetes CGM",
     },
-    "ortho-guide": {
-        "title": "Orthopedics Navigator",
+    "bone-joint-care-coordinator": {
+        "title": "Bone & Joint Care Coordinator",
         "companion_skill": "ortho-prep",
         "category": "clinical.orthopedics",
         "query": "joint pain",
     },
-    "derma-guide": {
-        "title": "Dermatology Navigator",
+    "skin-care-coordinator": {
+        "title": "Skin Care Coordinator",
         "companion_skill": "derma-prep",
         "category": "clinical.dermatology",
         "query": "rash lesion",
@@ -223,14 +223,14 @@ class TestTwoHopSearchQueriesRouting:
     async def test_primary_clinical_queries_retrieve_top_candidate(self, full_marketplace_catalog: SqliteCatalogAdapter):
         """Test that the 8 primary queries retrieve their respective organ navigators as rank 1 candidates."""
         test_queries = {
-            "hypertension": "cardiology-guide",
-            "asthma": "pulmonology-guide",
-            "migraine": "neurology-guide",
-            "colonoscopy": "gastro-guide",
-            "eGFR": "nephrology-guide",
-            "diabetes CGM": "endocrinology-guide",
-            "joint pain": "ortho-guide",
-            "rash lesion": "derma-guide",
+            "hypertension": "heart-care-coordinator",
+            "asthma": "lung-breathing-coordinator",
+            "migraine": "brain-nerve-care-coordinator",
+            "colonoscopy": "digestive-care-coordinator",
+            "eGFR": "kidney-care-coordinator",
+            "diabetes CGM": "diabetes-thyroid-coordinator",
+            "joint pain": "bone-joint-care-coordinator",
+            "rash lesion": "skin-care-coordinator",
         }
 
         for query, expected_id in test_queries.items():
@@ -245,14 +245,14 @@ class TestTwoHopSearchQueriesRouting:
     async def test_realistic_clinical_inquiries_retrieve_correct_organ(self, full_marketplace_catalog: SqliteCatalogAdapter):
         """Test that realistic patient inquiry phrasing retrieves the expected organ specialist."""
         inquiries = {
-            "cardiology-guide": "I have high systolic blood pressure readings and heart palpitations",
-            "pulmonology-guide": "Experiencing wheezing and dyspnea shortness of breath after using my inhaler",
-            "neurology-guide": "Severe throbbing unilateral headache with photophobia visual aura",
-            "gastro-guide": "Prepping for upcoming colonoscopy and tracking abdominal bloating after meals",
-            "nephrology-guide": "Lab report shows elevated serum creatinine and declining eGFR glomerular filtration",
-            "endocrinology-guide": "Continuous glucose monitor CGM trending high blood sugar and A1C levels",
-            "ortho-guide": "Knee joint pain and physical therapy exercise tracking for orthopedic surgery consultation",
-            "derma-guide": "Found a pigmented skin rash lesion and need ABCDE tracking guide",
+            "heart-care-coordinator": "I have high systolic blood pressure readings and heart palpitations",
+            "lung-breathing-coordinator": "Experiencing wheezing and dyspnea shortness of breath after using my inhaler",
+            "brain-nerve-care-coordinator": "Severe throbbing unilateral headache with photophobia visual aura",
+            "digestive-care-coordinator": "Prepping for upcoming colonoscopy and tracking abdominal bloating after meals",
+            "kidney-care-coordinator": "Lab report shows elevated serum creatinine and declining eGFR glomerular filtration",
+            "diabetes-thyroid-coordinator": "Continuous glucose monitor CGM trending high blood sugar and A1C levels",
+            "bone-joint-care-coordinator": "Knee joint pain and physical therapy exercise tracking for orthopedic surgery consultation",
+            "skin-care-coordinator": "Found a pigmented skin rash lesion and need ABCDE tracking guide",
         }
 
         for expected_id, prompt in inquiries.items():
@@ -271,14 +271,14 @@ class TestTwoHopSearchQueriesRouting:
     async def test_queries_syntax_safety_and_retrieval(self, full_marketplace_catalog: SqliteCatalogAdapter):
         """Stress-tests search queries with punctuation, boolean operators, and injection attempts."""
         adversarial_tests = [
-            ("asthma OR 'hypertension'", "pulmonology-guide"),
-            ("migraine; DROP TABLE agents; --", "neurology-guide"),
-            ("eGFR / creatinine (mL/min/1.73m^2)", "nephrology-guide"),
-            ("diabetes + CGM - insulin *", "endocrinology-guide"),
-            ("rash & lesion! #skin", "derma-guide"),
-            ("joint pain: mobility / knee ???", "ortho-guide"),
-            ("colonoscopy...", "gastro-guide"),
-            ("hypertension!!!", "cardiology-guide"),
+            ("asthma OR 'hypertension'", "lung-breathing-coordinator"),
+            ("migraine; DROP TABLE agents; --", "brain-nerve-care-coordinator"),
+            ("eGFR / creatinine (mL/min/1.73m^2)", "kidney-care-coordinator"),
+            ("diabetes + CGM - insulin *", "diabetes-thyroid-coordinator"),
+            ("rash & lesion! #skin", "skin-care-coordinator"),
+            ("joint pain: mobility / knee ???", "bone-joint-care-coordinator"),
+            ("colonoscopy...", "digestive-care-coordinator"),
+            ("hypertension!!!", "heart-care-coordinator"),
         ]
 
         for raw_query, expected_id in adversarial_tests:

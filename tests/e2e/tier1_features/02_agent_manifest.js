@@ -24,8 +24,8 @@ export async function run() {
         const script = `
 from carefold.loaders.agent_loader import load_agent
 from pathlib import Path
-agent, tools, skills = load_agent('agents/visit-steward', 'skills')
-assert agent.id == 'visit-steward'
+agent, tools, skills = load_agent('agents/appointment-prep-coordinator', 'skills')
+assert agent.id == 'appointment-prep-coordinator'
 assert agent.version == '0.1.0'
 assert agent.risk_class.value == 'wellness'
 assert agent.persona is not None
@@ -44,7 +44,7 @@ else:
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent
-agent, tools, skills = load_agent('agents/visit-steward', 'skills')
+agent, tools, skills = load_agent('agents/appointment-prep-coordinator', 'skills')
 skill_ids = [s.id for s in skills]
 assert 'visit-prep' in skill_ids
 assert len(skills) >= 1
@@ -59,7 +59,7 @@ assert len(skills) >= 1
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent
-agent, tools, skills = load_agent('agents/visit-steward', 'skills')
+agent, tools, skills = load_agent('agents/appointment-prep-coordinator', 'skills')
 assert hasattr(agent, 'model')
 `;
         const res = runPython(script);
@@ -74,9 +74,9 @@ assert hasattr(agent, 'model')
 from carefold.loaders.agent_loader import load_all_agents
 agents = load_all_agents('agents', 'skills')
 ids = [a.id for a in agents]
-assert 'visit-steward' in ids
-assert 'benefits-guide' in ids
-assert 'habit-companion' in ids
+assert 'appointment-prep-coordinator' in ids
+assert 'benefits-coordinator' in ids
+assert 'habit-coordinator' in ids
 assert '_template' in ids
 assert len(agents) == 4
 `;
@@ -90,7 +90,7 @@ assert len(agents) == 4
       fn: () => {
         const script = `
 from carefold.loaders.agent_loader import load_agent_starters
-starters = load_agent_starters('agents/visit-steward')
+starters = load_agent_starters('agents/appointment-prep-coordinator')
 assert isinstance(starters, list)
 assert len(starters) >= 1
 assert any('question' in s.lower() for s in starters)

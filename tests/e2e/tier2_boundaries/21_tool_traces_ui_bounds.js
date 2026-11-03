@@ -28,7 +28,7 @@ from carefold.engine.runner import execute_agent_run
 # Inquiring about non-existent doc triggers tool execution that handles not-found
 async def main():
     tool_ends = []
-    async for ev in execute_agent_run('visit-steward', 'Read doc missing_nonexistent_guide.md', mock=True):
+    async for ev in execute_agent_run('appointment-prep-coordinator', 'Read doc missing_nonexistent_guide.md', mock=True):
         if ev.get('type') == 'tool_end':
             tool_ends.append(ev)
     # Runner completes without crashing even if tool returns error
@@ -68,7 +68,7 @@ from carefold.engine.runner import execute_agent_run
 
 async def main():
     events = []
-    async for ev in execute_agent_run('visit-steward', 'Check the questions guide checklist', mock=True):
+    async for ev in execute_agent_run('appointment-prep-coordinator', 'Check the questions guide checklist', mock=True):
         if ev.get('type') in ['tool_start', 'tool_end']:
             events.append(ev['type'])
 
@@ -93,7 +93,7 @@ import asyncio
 from carefold.engine.runner import execute_agent_run
 
 async def main():
-    async for ev in execute_agent_run('visit-steward', 'Check questions guide', mock=True):
+    async for ev in execute_agent_run('appointment-prep-coordinator', 'Check questions guide', mock=True):
         if ev.get('type') == 'tool_end':
             d = ev.get('duration_ms', 0)
             assert d >= 0.0
@@ -115,7 +115,7 @@ from carefold.engine.runner import execute_agent_run
 from carefold.schemas.manifest import PHASE_0_REGISTRY
 
 async def main():
-    async for ev in execute_agent_run('visit-steward', 'Check the checklist for my appointment', mock=True):
+    async for ev in execute_agent_run('appointment-prep-coordinator', 'Check the checklist for my appointment', mock=True):
         if ev.get('type') == 'tool_start':
             tool_name = ev.get('tool')
             assert tool_name in PHASE_0_REGISTRY, f"Tool {tool_name} not in registry"

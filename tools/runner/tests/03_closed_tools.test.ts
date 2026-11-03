@@ -79,7 +79,7 @@ describe('Closed Tools Sandbox & Security', () => {
     it('writes markdown note with frontmatter metadata', async () => {
       const res = await executeWorkspaceNote(
         { title: 'doctor-prep', content: 'Ask about dosage adjustments' },
-        { workspaceDir: ws, agent: { id: 'visit-steward' } }
+        { workspaceDir: ws, agent: { id: 'appointment-prep-coordinator' } }
       );
       expect(res.success).toBe(true);
       expect(res.output.title).toBe('doctor-prep');
@@ -89,7 +89,7 @@ describe('Closed Tools Sandbox & Security', () => {
       const notePath = path.join(ws, res.output.path);
       const content = await fs.readFile(notePath, 'utf8');
       expect(content).toContain('title: "doctor-prep"');
-      expect(content).toContain('agent_id: "visit-steward"');
+      expect(content).toContain('agent_id: "appointment-prep-coordinator"');
       expect(content).toContain('Ask about dosage adjustments');
     });
 
@@ -129,7 +129,7 @@ describe('Closed Tools Sandbox & Security', () => {
     it('reads reference document from skill references directory', async () => {
       const res = await executeSkillDocs(
         { skill_id: 'visit-prep', doc: 'agenda.md' },
-        { workspaceDir: ws, agent: { id: 'visit-steward', skills: ['visit-prep'] } }
+        { workspaceDir: ws, agent: { id: 'appointment-prep-coordinator', skills: ['visit-prep'] } }
       );
       expect(res.success).toBe(true);
       expect(res.output.content).toContain('# Appointment Questions');
@@ -138,7 +138,7 @@ describe('Closed Tools Sandbox & Security', () => {
     it('rejects path traversal attempting to escape skill references directory', async () => {
       const res = await executeSkillDocs(
         { skill_id: 'visit-prep', doc: '../SKILL.md' },
-        { workspaceDir: ws, agent: { id: 'visit-steward', skills: ['visit-prep'] } }
+        { workspaceDir: ws, agent: { id: 'appointment-prep-coordinator', skills: ['visit-prep'] } }
       );
       expect(res.success).toBe(false);
       expect(res.error).toMatch(/Path traversal forbidden/i);
@@ -147,7 +147,7 @@ describe('Closed Tools Sandbox & Security', () => {
     it('rejects access to skill not declared on agent (CF-S46)', async () => {
       const res = await executeSkillDocs(
         { skill_id: 'benefits-explainer', doc: 'copay.md' },
-        { workspaceDir: ws, agent: { id: 'visit-steward', skills: ['visit-prep'] } }
+        { workspaceDir: ws, agent: { id: 'appointment-prep-coordinator', skills: ['visit-prep'] } }
       );
       expect(res.success).toBe(false);
       expect(res.error).toMatch(/Access denied: Skill "benefits-explainer" is not declared/i);
@@ -156,7 +156,7 @@ describe('Closed Tools Sandbox & Security', () => {
     it('returns error when reference document does not exist', async () => {
       const res = await executeSkillDocs(
         { skill_id: 'visit-prep', doc: 'missing.md' },
-        { workspaceDir: ws, agent: { id: 'visit-steward', skills: ['visit-prep'] } }
+        { workspaceDir: ws, agent: { id: 'appointment-prep-coordinator', skills: ['visit-prep'] } }
       );
       expect(res.success).toBe(false);
       expect(res.error).toMatch(/File not found/i);
@@ -167,7 +167,7 @@ describe('Closed Tools Sandbox & Security', () => {
     it('rejects relative path traversal in skill_id (CF-VULN-01)', async () => {
       const res = await executeSkillDocs(
         { skill_id: '../external_dir', doc: 'guide.md' },
-        { workspaceDir: ws, agent: { id: 'visit-steward', skills: ['../external_dir'] } }
+        { workspaceDir: ws, agent: { id: 'appointment-prep-coordinator', skills: ['../external_dir'] } }
       );
       expect(res.success).toBe(false);
       expect(res.error).toMatch(/Path traversal forbidden/i);
@@ -185,7 +185,7 @@ describe('Closed Tools Sandbox & Security', () => {
     it('rejects access to skill docs when agent.skills is omitted (CF-VULN-02)', async () => {
       const res = await executeSkillDocs(
         { skill_id: 'visit-prep', doc: 'agenda.md' },
-        { workspaceDir: ws, agent: { id: 'visit-steward' } } // no skills array
+        { workspaceDir: ws, agent: { id: 'appointment-prep-coordinator' } } // no skills array
       );
       expect(res.success).toBe(false);
       expect(res.error).toMatch(/Access denied/i);
@@ -220,7 +220,7 @@ describe('Closed Tools Sandbox & Security', () => {
 
       const res = await executeWorkspaceNote(
         { title: 'symlink-note', content: 'ATTACK_OVERWRITE' },
-        { workspaceDir: ws, agent: { id: 'visit-steward' } }
+        { workspaceDir: ws, agent: { id: 'appointment-prep-coordinator' } }
       );
 
       expect(res.success).toBe(false);

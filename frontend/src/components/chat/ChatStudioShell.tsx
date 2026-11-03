@@ -118,8 +118,8 @@ const EMPTY_AGENTS: AgentSummary[] = [];
 
 const DEFAULT_FALLBACK_AGENTS: AgentSummary[] = [
   {
-    id: 'visit-steward',
-    title: 'Visit Steward',
+    id: 'appointment-prep-coordinator',
+    title: 'Appointment Prep Coordinator',
     version: '0.4.0',
     risk_class: 'clinical_assist',
     skills: ['visit-prep'],
@@ -128,8 +128,8 @@ const DEFAULT_FALLBACK_AGENTS: AgentSummary[] = [
     description: 'Prepares questions and checklists for upcoming clinical visits.'
   },
   {
-    id: 'benefits-guide',
-    title: 'Benefits Guide',
+    id: 'benefits-coordinator',
+    title: 'Benefits Coordinator',
     version: '0.4.0',
     risk_class: 'admin',
     skills: ['benefits-explainer'],
@@ -138,8 +138,8 @@ const DEFAULT_FALLBACK_AGENTS: AgentSummary[] = [
     description: 'Explains health insurance coverage, copays, and deductibles.'
   },
   {
-    id: 'habit-companion',
-    title: 'Habit Companion',
+    id: 'habit-coordinator',
+    title: 'Habit Coordinator',
     version: '0.4.0',
     risk_class: 'wellness',
     skills: ['habit-checkin'],
@@ -262,7 +262,7 @@ export function ChatStudioShell({
 
   const agentParam = searchParams.get('agent');
   const [selectedAgentId, setSelectedAgentId] = useState<string>(
-    agentParam || agents[0]?.id || 'visit-steward'
+    agentParam || agents[0]?.id || 'appointment-prep-coordinator'
   );
 
   useEffect(() => {
@@ -378,7 +378,7 @@ export function ChatStudioShell({
           id: s.id,
           title: s.title,
           agentId: s.agentId,
-          agentTitle: s.agentTitle || 'Visit Steward',
+          agentTitle: s.agentTitle || 'Appointment Prep Coordinator',
           timeStr,
           group
         };

@@ -30,11 +30,11 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from carefold.agents.registry import AgentRegistry, get_agent_registry
 from carefold.constants.agents import (
-    AGENT_BENEFITS_GUIDE,
+    AGENT_BENEFITS_COORDINATOR,
     AGENT_DOCUMENT_EXTRACTOR,
-    AGENT_HABIT_COMPANION,
+    AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_VISIT_STEWARD,
+    AGENT_VISIT_PREP_COORDINATOR,
     TOOL_ATTACH_READ,
     TOOL_DELEGATE_TO_AGENT,
     TOOL_LIST_AGENTS,
@@ -61,17 +61,17 @@ async def test_orchestrator_multi_domain_query_routing(temp_workspace: Path):
     queries_and_decisions = [
         (
             "I got a $500 bill from my doctor visit last Tuesday, but my insurance was supposed to cover it.",
-            AGENT_BENEFITS_GUIDE,
+            AGENT_BENEFITS_COORDINATOR,
             "Billing and insurance coverage inquiry takes priority.",
         ),
         (
             "I have an upcoming appointment with my oncologist and need to know what questions to ask.",
-            AGENT_VISIT_STEWARD,
+            AGENT_VISIT_PREP_COORDINATOR,
             "Clinical appointment preparation.",
         ),
         (
             "I want to track my water intake and make sure I drink 8 glasses a day.",
-            AGENT_HABIT_COMPANION,
+            AGENT_HABIT_COORDINATOR,
             "Hydration and lifestyle habit tracking.",
         ),
         (
@@ -108,7 +108,7 @@ async def test_orchestrator_structured_output_code_fence_repair(temp_workspace: 
 
     fenced_json = """```json
 {
-  "agent_id": "benefits-guide",
+  "agent_id": "benefits-coordinator",
   "reasoning": "User inquired about copay requirements.",
   "instructions": "List specialist copays."
 }
@@ -139,26 +139,26 @@ async def test_orchestrator_explicit_bypass_variants(temp_workspace: Path):
 
     # 1. Via routed_subgraph with hyphen
     res1 = await node.execute({
-        "routed_subgraph": "habit-companion",
+        "routed_subgraph": "habit-coordinator",
         "messages": [HumanMessage(content="Random text")],
     })
-    assert res1["current_agent"] == "habit-companion"
-    assert res1["routed_subgraph"] == "habit-companion"
+    assert res1["current_agent"] == "habit-coordinator"
+    assert res1["routed_subgraph"] == "habit-coordinator"
 
     # 2. Via current_agent with underscore normalization
     res2 = await node.execute({
-        "current_agent": "visit_steward",
+        "current_agent": "appointment_prep_coordinator",
         "messages": [HumanMessage(content="Random text")],
     })
-    assert res2["current_agent"] == "visit-steward"
-    assert res2["routed_subgraph"] == "visit-steward"
+    assert res2["current_agent"] == "appointment-prep-coordinator"
+    assert res2["routed_subgraph"] == "appointment-prep-coordinator"
 
     # 3. Via uppercase name
     res3 = await node.execute({
-        "current_agent": "BENEFITS-GUIDE",
+        "current_agent": "BENEFITS-COORDINATOR",
         "messages": [HumanMessage(content="Random text")],
     })
-    assert res3["current_agent"] == "benefits-guide"
+    assert res3["current_agent"] == "benefits-coordinator"
 
     # 4. Leading underscore template agent is NOT hyphen-replaced
     res4 = await node.execute({
@@ -174,7 +174,7 @@ async def test_orchestrator_explicit_bypass_ignores_self_routing(temp_workspace:
     registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
 
     model_resp = json.dumps({
-        "agent_id": "benefits-guide",
+        "agent_id": "benefits-coordinator",
         "reasoning": "Insurance question.",
         "instructions": "",
     })
@@ -186,8 +186,8 @@ async def test_orchestrator_explicit_bypass_ignores_self_routing(temp_workspace:
         "current_agent": "orchestrator",
         "messages": [HumanMessage(content="What is my deductible?")],
     })
-    assert res["current_agent"] == "benefits-guide"
-    assert res["routed_subgraph"] == "benefits-guide"
+    assert res["current_agent"] == "benefits-coordinator"
+    assert res["routed_subgraph"] == "benefits-coordinator"
     assert res["orchestrator_reasoning"] == "Insurance question."
 
 
@@ -268,9 +268,9 @@ def test_registry_get_delegatable_agents_strictly_excludes_can_delegate(temp_wor
         assert agent.id != AGENT_ORCHESTRATOR
 
     # Ensure all registered non-orchestrator specialists are present
-    assert AGENT_BENEFITS_GUIDE in delegatable_ids
-    assert AGENT_VISIT_STEWARD in delegatable_ids
-    assert AGENT_HABIT_COMPANION in delegatable_ids
+    assert AGENT_BENEFITS_COORDINATOR in delegatable_ids
+    assert AGENT_VISIT_PREP_COORDINATOR in delegatable_ids
+    assert AGENT_HABIT_COORDINATOR in delegatable_ids
     assert AGENT_DOCUMENT_EXTRACTOR in delegatable_ids
 
 
@@ -280,9 +280,9 @@ def test_registry_format_agent_catalog_excludes_orchestrator(temp_workspace: Pat
     catalog = registry.format_agent_catalog()
 
     assert AGENT_ORCHESTRATOR not in catalog
-    assert AGENT_BENEFITS_GUIDE in catalog
-    assert AGENT_VISIT_STEWARD in catalog
-    assert AGENT_HABIT_COMPANION in catalog
+    assert AGENT_BENEFITS_COORDINATOR in catalog
+    assert AGENT_VISIT_PREP_COORDINATOR in catalog
+    assert AGENT_HABIT_COORDINATOR in catalog
     assert AGENT_DOCUMENT_EXTRACTOR in catalog
 
 
@@ -307,16 +307,16 @@ async def test_supervisor_node_parameterless_full_matrix():
 
     test_cases = [
         # (prompt, expected_route)
-        ("What is my insurance copay?", "benefits-guide"),
-        ("Explain my out-of-pocket maximum and deductible", "benefits-guide"),
-        ("I need to submit a health insurance claim", "benefits-guide"),
-        ("How much water should I drink for hydration?", "habit-companion"),
-        ("Track my daily steps and sleep routine", "habit-companion"),
-        ("Prepare questions for my doctor visit tomorrow", "visit-steward"),
-        ("I have a clinic appointment with a physician", "visit-steward"),
+        ("What is my insurance copay?", "benefits-coordinator"),
+        ("Explain my out-of-pocket maximum and deductible", "benefits-coordinator"),
+        ("I need to submit a health insurance claim", "benefits-coordinator"),
+        ("How much water should I drink for hydration?", "habit-coordinator"),
+        ("Track my daily steps and sleep routine", "habit-coordinator"),
+        ("Prepare questions for my doctor visit tomorrow", "appointment-prep-coordinator"),
+        ("I have a clinic appointment with a physician", "appointment-prep-coordinator"),
         ("Please extract the table from this attachment", "document-extractor"),
         ("Extract data from my pdf file", "document-extractor"),
-        ("Completely ambiguous query with no keywords", "visit-steward"),  # default fallback
+        ("Completely ambiguous query with no keywords", "appointment-prep-coordinator"),  # default fallback
     ]
 
     for prompt, expected_agent in test_cases:
@@ -472,7 +472,7 @@ async def test_graph_builder_dynamic_orchestrator_integration(temp_workspace: Pa
 
     registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
     mock_model = FakeListChatModel(responses=[
-        json.dumps({"agent_id": "benefits-guide", "reasoning": "Deductible question", "instructions": ""}),
+        json.dumps({"agent_id": "benefits-coordinator", "reasoning": "Deductible question", "instructions": ""}),
         "Your deductible is $1,000 for in-network care.",
     ])
 
@@ -489,7 +489,7 @@ async def test_graph_builder_dynamic_orchestrator_integration(temp_workspace: Pa
     }
 
     result = await graph.ainvoke(state)
-    assert result["current_agent"] == "benefits-guide"
+    assert result["current_agent"] == "benefits-coordinator"
     assert "deductible" in result["output"].lower()
 
 
@@ -514,5 +514,5 @@ async def test_graph_builder_legacy_supervisor_compatibility(temp_workspace: Pat
     }
 
     result = await graph.ainvoke(state)
-    assert result["routed_subgraph"] == "visit-steward"
+    assert result["routed_subgraph"] == "appointment-prep-coordinator"
 

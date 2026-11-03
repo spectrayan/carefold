@@ -17,10 +17,10 @@ Authoritative stress-testing for:
    - MockChatModel
    - MemorySaver checkpointer persistence
 2. Multi-agent dispatch and state handoff across all 5 canonical specialists:
-   - benefits-guide
-   - visit-steward
+   - benefits-coordinator
+   - appointment-prep-coordinator
    - document-extractor
-   - habit-companion
+   - habit-coordinator
    - generalist
 3. Return transitions and supervisor loopback:
    - Clean termination to END
@@ -47,11 +47,11 @@ from langgraph.graph.state import CompiledStateGraph
 from carefold.workflows.state import AgentState, create_initial_state
 from carefold.workflows.subgraphs.supervisor import (
     DEFAULT_SPECIALISTS,
-    SPECIALIST_BENEFITS_GUIDE,
+    SPECIALIST_BENEFITS_COORDINATOR,
     SPECIALIST_DOCUMENT_EXTRACTOR,
     SPECIALIST_GENERALIST,
-    SPECIALIST_HABIT_COMPANION,
-    SPECIALIST_VISIT_STEWARD,
+    SPECIALIST_HABIT_COORDINATOR,
+    SPECIALIST_VISIT_PREP_COORDINATOR,
     build_supervisor_subgraph,
     create_supervisor_router_node,
     create_supervisor_subgraph,
@@ -73,10 +73,10 @@ class TestSupervisorCompilation:
         graph = create_supervisor_subgraph(model=fake, compile=False)
         assert isinstance(graph, StateGraph)
         assert "supervisor_node" in graph.nodes
-        assert "benefits_guide" in graph.nodes
-        assert "visit_steward" in graph.nodes
+        assert "benefits_coordinator" in graph.nodes
+        assert "appointment_prep_coordinator" in graph.nodes
         assert "document_extractor" in graph.nodes
-        assert "habit_companion" in graph.nodes
+        assert "habit_coordinator" in graph.nodes
         assert "generalist" in graph.nodes
 
     def test_compiled_with_fakelistchatmodel(self):
@@ -107,7 +107,7 @@ class TestSupervisorCompilation:
         fake = FakeListChatModel(responses=["default response"])
         app = build_supervisor_subgraph(
             model=fake,
-            specialists={"benefits-guide": custom_benefits_node},
+            specialists={"benefits-coordinator": custom_benefits_node},
         )
         assert isinstance(app, CompiledStateGraph)
 
@@ -120,7 +120,7 @@ class TestSupervisorMultiAgentDispatch:
     """Verifies intent classification, dispatching, and state handoff across all 5 specialists."""
 
     @pytest.mark.asyncio
-    async def test_dispatch_benefits_guide_inferred(self):
+    async def test_dispatch_benefits_coordinator_inferred(self):
         fake = FakeListChatModel(responses=["Your in-network deductible is $500 with a $20 copay."])
         app = build_supervisor_subgraph(model=fake)
 
@@ -131,8 +131,8 @@ class TestSupervisorMultiAgentDispatch:
         )
         result = await app.ainvoke(state)
 
-        assert result["current_agent"] == SPECIALIST_BENEFITS_GUIDE
-        assert result["routed_subgraph"] == SPECIALIST_BENEFITS_GUIDE
+        assert result["current_agent"] == SPECIALIST_BENEFITS_COORDINATOR
+        assert result["routed_subgraph"] == SPECIALIST_BENEFITS_COORDINATOR
         assert "deductible" in result["output"].lower()
         # Ensure message reducer added the AI message
         messages = result["messages"]
@@ -141,7 +141,7 @@ class TestSupervisorMultiAgentDispatch:
         assert "500" in messages[-1].content
 
     @pytest.mark.asyncio
-    async def test_dispatch_visit_steward_inferred(self):
+    async def test_dispatch_appointment_prep_coordinator_inferred(self):
         fake = FakeListChatModel(responses=["Here is your doctor appointment prep checklist."])
         app = build_supervisor_subgraph(model=fake)
 
@@ -152,8 +152,8 @@ class TestSupervisorMultiAgentDispatch:
         )
         result = await app.ainvoke(state)
 
-        assert result["current_agent"] == SPECIALIST_VISIT_STEWARD
-        assert result["routed_subgraph"] == SPECIALIST_VISIT_STEWARD
+        assert result["current_agent"] == SPECIALIST_VISIT_PREP_COORDINATOR
+        assert result["routed_subgraph"] == SPECIALIST_VISIT_PREP_COORDINATOR
         assert "doctor" in result["output"].lower() or "checklist" in result["output"].lower()
 
     @pytest.mark.asyncio
@@ -214,7 +214,7 @@ class TestSupervisorMultiAgentDispatch:
         assert result["document_dossiers"][0]["copay"] == 20
 
     @pytest.mark.asyncio
-    async def test_dispatch_habit_companion_inferred(self):
+    async def test_dispatch_habit_coordinator_inferred(self):
         fake = FakeListChatModel(responses=["Let's build a consistent daily hydration habit of 64 ounces."])
         app = build_supervisor_subgraph(model=fake)
 
@@ -225,8 +225,8 @@ class TestSupervisorMultiAgentDispatch:
         )
         result = await app.ainvoke(state)
 
-        assert result["current_agent"] == SPECIALIST_HABIT_COMPANION
-        assert result["routed_subgraph"] == SPECIALIST_HABIT_COMPANION
+        assert result["current_agent"] == SPECIALIST_HABIT_COORDINATOR
+        assert result["routed_subgraph"] == SPECIALIST_HABIT_COORDINATOR
         assert "hydration" in result["output"].lower()
 
     @pytest.mark.asyncio
@@ -250,10 +250,10 @@ class TestSupervisorMultiAgentDispatch:
     async def test_dispatch_all_five_specialists_coverage(self):
         """Ensures every one of the 5 canonical specialists can be reached."""
         specialist_prompts = {
-            SPECIALIST_BENEFITS_GUIDE: "What is my insurance copay?",
-            SPECIALIST_VISIT_STEWARD: "Doctor visit checklist prep",
+            SPECIALIST_BENEFITS_COORDINATOR: "What is my insurance copay?",
+            SPECIALIST_VISIT_PREP_COORDINATOR: "Doctor visit checklist prep",
             SPECIALIST_DOCUMENT_EXTRACTOR: "Extract document pdf dossier",
-            SPECIALIST_HABIT_COMPANION: "Track my sleep habit routine",
+            SPECIALIST_HABIT_COORDINATOR: "Track my sleep habit routine",
             SPECIALIST_GENERALIST: "General non-clinical care guidance",
         }
 
@@ -292,7 +292,7 @@ class TestSupervisorMockChatModelExecution:
         )
         result = await app.ainvoke(state)
 
-        assert result["current_agent"] == SPECIALIST_BENEFITS_GUIDE
+        assert result["current_agent"] == SPECIALIST_BENEFITS_COORDINATOR
         assert isinstance(result["output"], str)
         assert len(result["output"]) > 0
         assert mock.call_count >= 1
@@ -309,7 +309,7 @@ class TestSupervisorMockChatModelExecution:
         )
         result = await app.ainvoke(state)
 
-        assert result["current_agent"] == SPECIALIST_VISIT_STEWARD
+        assert result["current_agent"] == SPECIALIST_VISIT_PREP_COORDINATOR
         assert len(result["output"]) > 0
 
 
@@ -334,7 +334,7 @@ class TestSupervisorReturnTransitions:
     async def test_multi_hop_delegation_loop(self):
         """Simulates a specialist delegating back to supervisor, which routes to another specialist.
         
-        Step 1: Benefits Guide identifies need for document extraction and sets:
+        Step 1: Benefits Coordinator identifies need for document extraction and sets:
                 requires_supervisor=True, routed_subgraph='document-extractor'
         Step 2: Supervisor re-routes to Document Extractor.
         Step 3: Document Extractor finishes with next_step='done' -> END.
@@ -360,7 +360,7 @@ class TestSupervisorReturnTransitions:
         fake = FakeListChatModel(responses=["unused"])
         app = build_supervisor_subgraph(
             model=fake,
-            specialists={SPECIALIST_BENEFITS_GUIDE: dynamic_benefits_node},
+            specialists={SPECIALIST_BENEFITS_COORDINATOR: dynamic_benefits_node},
         )
 
         state = create_initial_state(
@@ -370,7 +370,7 @@ class TestSupervisorReturnTransitions:
         )
         result = await app.ainvoke(state)
 
-        # Confirm the chain ran through benefits_guide -> supervisor_node -> document_extractor -> END
+        # Confirm the chain ran through benefits_coordinator -> supervisor_node -> document_extractor -> END
         assert hop_counter == 1
         assert result["current_agent"] == SPECIALIST_DOCUMENT_EXTRACTOR
         assert result["routed_subgraph"] == SPECIALIST_DOCUMENT_EXTRACTOR
@@ -404,7 +404,7 @@ class TestSupervisorStatePersistence:
             messages=[HumanMessage(content="What is my deductible under this insurance plan?")],
         )
         res1 = await app.ainvoke(state1, config=config)
-        assert res1["current_agent"] == SPECIALIST_BENEFITS_GUIDE
+        assert res1["current_agent"] == SPECIALIST_BENEFITS_COORDINATOR
         assert "$1000" in res1["output"]
 
         # Turn 2: Follow-up question on same thread
@@ -412,7 +412,7 @@ class TestSupervisorStatePersistence:
             "messages": [HumanMessage(content="Does my copay count toward that deductible?")],
         }
         res2 = await app.ainvoke(state2, config=config)
-        assert res2["current_agent"] == SPECIALIST_BENEFITS_GUIDE
+        assert res2["current_agent"] == SPECIALIST_BENEFITS_COORDINATOR
 
         # Verify thread history in checkpointer
         checkpoint = await memory.aget(config)
@@ -437,10 +437,10 @@ class TestSupervisorConcurrency:
         app = build_supervisor_subgraph(model=mock)
 
         prompts = [
-            ("benefits-guide", "What is my copay for specialist visits?"),
-            ("visit-steward", "Doctor appointment question preparation checklist"),
+            ("benefits-coordinator", "What is my copay for specialist visits?"),
+            ("appointment-prep-coordinator", "Doctor appointment question preparation checklist"),
             ("document-extractor", "Extract data from this uploaded document"),
-            ("habit-companion", "Help me build a water intake habit"),
+            ("habit-coordinator", "Help me build a water intake habit"),
         ]
 
         async def run_single(idx: int) -> Dict[str, Any]:
@@ -498,7 +498,7 @@ class TestSupervisorConcurrency:
             agents = [f.result(timeout=10) for f in futures]
 
         assert len(agents) == 20
-        assert all(a == SPECIALIST_BENEFITS_GUIDE for a in agents)
+        assert all(a == SPECIALIST_BENEFITS_COORDINATOR for a in agents)
 
 
 # ============================================================================
@@ -515,8 +515,8 @@ class TestSupervisorEdgeCases:
 
         state = {"messages": []}
         res = await app.ainvoke(state)
-        # Should not crash; defaults to fallback agent (visit-steward)
-        assert res["current_agent"] == SPECIALIST_VISIT_STEWARD
+        # Should not crash; defaults to fallback agent (appointment-prep-coordinator)
+        assert res["current_agent"] == SPECIALIST_VISIT_PREP_COORDINATOR
         assert res["output"] == "Fallback guidance"
 
     @pytest.mark.asyncio
@@ -528,7 +528,7 @@ class TestSupervisorEdgeCases:
             "messages": [SystemMessage(content="System directive: maintain HIPAA compliance.")],
         }
         res = await app.ainvoke(state)
-        assert res["current_agent"] == SPECIALIST_VISIT_STEWARD
+        assert res["current_agent"] == SPECIALIST_VISIT_PREP_COORDINATOR
 
     @pytest.mark.asyncio
     async def test_competing_domain_keywords_priority(self):
@@ -547,4 +547,4 @@ class TestSupervisorEdgeCases:
         )
         res = await app.ainvoke(state)
         # Benefits pattern matched first
-        assert res["current_agent"] == SPECIALIST_BENEFITS_GUIDE
+        assert res["current_agent"] == SPECIALIST_BENEFITS_COORDINATOR

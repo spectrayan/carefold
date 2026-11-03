@@ -111,8 +111,8 @@ export default async function ProfileHomePage({ params }: PageProps) {
           timeStr: dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
           clinician: [upcoming.provider_name, upcoming.specialty].filter(Boolean).join(' · ') || 'Care Provider',
           clinic: upcoming.location || 'Primary Care Clinic',
-          specialistId: upcoming.specialty?.toLowerCase().includes('cardio') ? 'cardiology-guide' : 'visit-steward',
-          specialistTitle: upcoming.specialty?.toLowerCase().includes('cardio') ? 'Cardiology Guide' : 'Visit Steward',
+          specialistId: upcoming.specialty?.toLowerCase().includes('cardio') ? 'heart-care-coordinator' : 'appointment-prep-coordinator',
+          specialistTitle: upcoming.specialty?.toLowerCase().includes('cardio') ? 'Cardiology Guide' : 'Appointment Prep Coordinator',
           prepCompletedQuestions: checklist.filter((c: any) => c.isDone).length,
           prepTotalQuestions: checklist.length,
           checklist,
@@ -146,8 +146,8 @@ export default async function ProfileHomePage({ params }: PageProps) {
               n.type === 'visit_prep'
                 ? 'Cardiology Guide'
                 : n.type === 'benefits_summary'
-                  ? 'Benefits Guide'
-                  : 'Visit Steward',
+                  ? 'Benefits Coordinator'
+                  : 'Appointment Prep Coordinator',
             dateFormatted: dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
             slug: n.slug,
           };

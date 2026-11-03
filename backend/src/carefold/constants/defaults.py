@@ -112,9 +112,9 @@ DEFAULT_CORS_ORIGINS: Tuple[str, ...] = (
 
 BUNDLED_AGENT_IDS: FrozenSet[str] = frozenset({
     "orchestrator",
-    "visit-steward",
-    "benefits-guide",
-    "habit-companion",
+    "appointment-prep-coordinator",
+    "benefits-coordinator",
+    "habit-coordinator",
     "document-extractor",
     "suggestion-generator",
 })

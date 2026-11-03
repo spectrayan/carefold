@@ -68,14 +68,14 @@ def compile_execution_plan(intent: str, parameters: Optional[Dict[str, Any]] = N
             {"step": 3, "tool": "draft_questions", "description": "Prioritize 3-5 clinical questions for clinician"},
             {"step": 4, "tool": "generate_prep_pack", "description": "Compile formatted consultation prep dossier"},
         ]
-        target_agent = "visit-steward"
+        target_agent = "appointment-prep-coordinator"
         specialty = str(params.get("specialty", "")).strip().lower()
         if "cardio" in specialty:
-            target_agent = "cardiology-guide"
+            target_agent = "heart-care-coordinator"
         elif "pulmon" in specialty:
-            target_agent = "pulmonology-guide"
+            target_agent = "lung-breathing-coordinator"
         elif "endo" in specialty:
-            target_agent = "endocrinology-guide"
+            target_agent = "diabetes-thyroid-coordinator"
 
         tasks = [
             AgentTask(
@@ -116,27 +116,27 @@ def compile_execution_plan(intent: str, parameters: Optional[Dict[str, Any]] = N
         ]
         tasks = [
             AgentTask(
-                agent_id="visit-steward",
+                agent_id="appointment-prep-coordinator",
                 task_description="Normalize LOINC observation and units",
                 instructions="tool: parse_observation",
                 priority=1,
             ),
             AgentTask(
-                agent_id="visit-steward",
+                agent_id="appointment-prep-coordinator",
                 task_description="Evaluate non-clinical boundary safety rules",
                 instructions="tool: check_red_flags",
                 priority=2,
                 depends_on=["task_1"],
             ),
             AgentTask(
-                agent_id="visit-steward",
+                agent_id="appointment-prep-coordinator",
                 task_description="Persist Observation to health_resources store",
                 instructions="tool: record_vitals",
                 priority=3,
                 depends_on=["task_2"],
             ),
         ]
-        target_agents = ["visit-steward"]
+        target_agents = ["appointment-prep-coordinator"]
 
     elif intent == "remind_me":
         steps = [

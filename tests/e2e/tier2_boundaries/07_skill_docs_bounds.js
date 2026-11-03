@@ -29,7 +29,7 @@ from pathlib import Path
 from carefold.tools.skill_docs import skill_docs_tool
 
 async def main():
-    agent = type('Agent', (), {'id': 'visit-steward', 'skills': ['visit-prep']})()
+    agent = type('Agent', (), {'id': 'appointment-prep-coordinator', 'skills': ['visit-prep']})()
     skill = type('Skill', (), {'id': 'visit-prep'})()
     ctx = type('Ctx', (), {
         'workspace_root': Path('.').resolve(),
@@ -59,7 +59,7 @@ from pathlib import Path
 from carefold.tools.skill_docs import skill_docs_tool
 
 async def main():
-    agent = type('Agent', (), {'id': 'visit-steward', 'skills': ['visit-prep']})()
+    agent = type('Agent', (), {'id': 'appointment-prep-coordinator', 'skills': ['visit-prep']})()
     skill = type('Skill', (), {'id': 'visit-prep'})()
     ctx = type('Ctx', (), {
         'workspace_root': Path('.').resolve(),

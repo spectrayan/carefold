@@ -202,7 +202,7 @@ async def test_sql_audit_event_insertion_with_payload_hash(audit_env):
     expected_hash = compute_payload_hash(test_payload)
 
     ev = AuditEvent(
-        agent_id="cardiology-guide",
+        agent_id="heart-care-coordinator",
         event="tool",
         tool="attach-read",
         allowed=True,
@@ -264,7 +264,7 @@ async def test_query_by_profile_id_with_valid_permission(audit_env):
         # Record audit event for Profile A1
         await record_audit(
             {
-                "agent_id": "cardiology-guide",
+                "agent_id": "heart-care-coordinator",
                 "event": "run",
                 "profile_id": profile_id,
                 "actor_user_id": user_a["id"],
@@ -283,7 +283,7 @@ async def test_query_by_profile_id_with_valid_permission(audit_env):
         event_v1 = data_v1["events"][0]
         assert event_v1["profile_id"] == profile_id
         assert event_v1["payload_hash"] is not None
-        assert event_v1["agent_id"] == "cardiology-guide"
+        assert event_v1["agent_id"] == "heart-care-coordinator"
 
         # Also verify backward-compatible dual-mount /api/audit
         resp_compat = client.get(f"/api/audit?profile_id={profile_id}", headers=user_a["headers"])
@@ -350,7 +350,7 @@ async def test_admin_without_explicit_grant_denied_audit_and_management(audit_en
         # Record audit event for Owner's profile
         await record_audit(
             {
-                "agent_id": "neurology-guide",
+                "agent_id": "brain-nerve-care-coordinator",
                 "event": "run",
                 "profile_id": profile_id,
                 "actor_user_id": user_owner["id"],
@@ -534,7 +534,7 @@ async def test_tool_execution_event_populates_payload_hash(audit_env):
 
     # Calling with dictionary carrying args
     event_dict = {
-        "agent_id": "visit-steward",
+        "agent_id": "appointment-prep-coordinator",
         "event": "tool",
         "tool": "attach-read",
         "args": tool_args,

@@ -41,9 +41,9 @@ describe('02: CLI Integration: carefold init', () => {
     expect(await ws.exists('README.md')).toBe(true);
 
     // Verify bundled agents and skills copied
-    expect(await ws.exists('agents/visit-steward/agent.yaml')).toBe(true);
-    expect(await ws.exists('agents/benefits-guide/agent.yaml')).toBe(true);
-    expect(await ws.exists('agents/habit-companion/agent.yaml')).toBe(true);
+    expect(await ws.exists('agents/appointment-prep-coordinator/agent.yaml')).toBe(true);
+    expect(await ws.exists('agents/benefits-coordinator/agent.yaml')).toBe(true);
+    expect(await ws.exists('agents/habit-coordinator/agent.yaml')).toBe(true);
     expect(await ws.exists('skills/visit-prep/SKILL.md')).toBe(true);
     expect(await ws.exists('skills/benefits-explainer/SKILL.md')).toBe(true);
     expect(await ws.exists('skills/habit-checkin/SKILL.md')).toBe(true);
@@ -115,6 +115,6 @@ describe('02: CLI Integration: carefold init', () => {
     expect(res.exitCode).toBe(0);
     expect(await ws.exists('carefold.config.json')).toBe(true);
     expect(await ws.exists('agents')).toBe(true);
-    expect(await ws.exists('agents/visit-steward')).toBe(false);
+    expect(await ws.exists('agents/appointment-prep-coordinator')).toBe(false);
   });
 });

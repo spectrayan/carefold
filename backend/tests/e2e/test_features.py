@@ -204,20 +204,20 @@ class TestFeature04PromptsResource:
             pytest.skip("F-04: prompts.yaml pending implementation")
         assert "supervisor" in path.read_text(encoding="utf-8").lower()
 
-    def test_f04_prompts_visit_steward_prompt(self, e2e_repo_root: Path):
+    def test_f04_prompts_appointment_prep_coordinator_prompt(self, e2e_repo_root: Path):
         path = e2e_repo_root / "backend" / "src" / "carefold" / "resources" / "prompts.yaml"
         if not path.exists():
             pytest.skip("F-04: prompts.yaml pending implementation")
         content = path.read_text(encoding="utf-8").lower()
         assert "visit" in content or "clinical" in content
 
-    def test_f04_prompts_benefits_guide_prompt(self, e2e_repo_root: Path):
+    def test_f04_prompts_benefits_coordinator_prompt(self, e2e_repo_root: Path):
         path = e2e_repo_root / "backend" / "src" / "carefold" / "resources" / "prompts.yaml"
         if not path.exists():
             pytest.skip("F-04: prompts.yaml pending implementation")
         assert "benefits" in path.read_text(encoding="utf-8").lower()
 
-    def test_f04_prompts_habit_companion_prompt(self, e2e_repo_root: Path):
+    def test_f04_prompts_habit_coordinator_prompt(self, e2e_repo_root: Path):
         path = e2e_repo_root / "backend" / "src" / "carefold" / "resources" / "prompts.yaml"
         if not path.exists():
             pytest.skip("F-04: prompts.yaml pending implementation")
@@ -838,7 +838,7 @@ class TestFeature18ProductionMockPurge:
 
     def test_f18_chat_endpoint_no_mock_parameter(self, e2e_client: TestClient):
         res = e2e_client.post("/api/chat", json={
-            "agent_id": "visit-steward",
+            "agent_id": "appointment-prep-coordinator",
             "message": "Hello",
             "use_mock": True
         })
@@ -1092,7 +1092,7 @@ class TestFeature23SupervisorNode:
         cls = getattr(node_mod, "SupervisorNode")
         node = cls()
         out = await node.execute({"messages": [{"role": "user", "content": "Prepare questions for doctor appointment"}]})
-        assert out.get("routed_subgraph") in ("visit-steward", "visit_prep", "clinical")
+        assert out.get("routed_subgraph") in ("appointment-prep-coordinator", "visit_prep", "clinical")
 
     @pytest.mark.asyncio
     async def test_f23_supervisor_routes_benefits_intent(self):
@@ -1102,7 +1102,7 @@ class TestFeature23SupervisorNode:
         cls = getattr(node_mod, "SupervisorNode")
         node = cls()
         out = await node.execute({"messages": [{"role": "user", "content": "Explain my health insurance deductible"}]})
-        assert out.get("routed_subgraph") in ("benefits-guide", "insurance", "benefits")
+        assert out.get("routed_subgraph") in ("benefits-coordinator", "insurance", "benefits")
 
     @pytest.mark.asyncio
     async def test_f23_supervisor_routes_habit_intent(self):
@@ -1112,7 +1112,7 @@ class TestFeature23SupervisorNode:
         cls = getattr(node_mod, "SupervisorNode")
         node = cls()
         out = await node.execute({"messages": [{"role": "user", "content": "Track my water drinking habits"}]})
-        assert out.get("routed_subgraph") in ("habit-companion", "habits")
+        assert out.get("routed_subgraph") in ("habit-coordinator", "habits")
 
     @pytest.mark.asyncio
     async def test_f23_supervisor_updates_current_agent(self):
@@ -1422,7 +1422,7 @@ class TestFeature30SuggestionNode:
         if node_mod is None:
             pytest.skip("F-30: SuggestionNode pending implementation")
         node = node_mod.SuggestionNode()
-        out = await node.execute({"current_agent": "visit-steward", "messages": [{"role": "user", "content": "Doctor visit"}]})
+        out = await node.execute({"current_agent": "appointment-prep-coordinator", "messages": [{"role": "user", "content": "Doctor visit"}]})
         suggestions = out.get("follow_up_suggestions", [])
         assert isinstance(suggestions, list)
 
@@ -1432,7 +1432,7 @@ class TestFeature30SuggestionNode:
         if node_mod is None:
             pytest.skip("F-30: SuggestionNode pending implementation")
         node = node_mod.SuggestionNode()
-        out = await node.execute({"current_agent": "benefits-guide", "messages": []})
+        out = await node.execute({"current_agent": "benefits-coordinator", "messages": []})
         suggestions = out.get("follow_up_suggestions", [])
         assert len(suggestions) <= 4
 
@@ -1471,7 +1471,7 @@ class TestFeature31AuditNode:
         if node_mod is None:
             pytest.skip("F-31: AuditNode pending implementation")
         node = node_mod.AuditNode()
-        await node.execute({"thread_id": "test-t1", "current_agent": "visit-steward"})
+        await node.execute({"thread_id": "test-t1", "current_agent": "appointment-prep-coordinator"})
         log_path = settings.audit_log_path
         if log_path.exists():
             lines = log_path.read_text().splitlines()
@@ -1486,7 +1486,7 @@ class TestFeature31AuditNode:
         assert "completion" not in redacted
 
     def test_f31_audit_node_logs_agent_and_tools(self, e2e_workspace: Path):
-        record_audit_sync({"event": "tool_executed", "agent_id": "visit-steward", "tool": "attach-read"})
+        record_audit_sync({"event": "tool_executed", "agent_id": "appointment-prep-coordinator", "tool": "attach-read"})
         assert settings.audit_log_path.exists()
 
     def test_f31_audit_node_records_refusal_event(self, e2e_workspace: Path):

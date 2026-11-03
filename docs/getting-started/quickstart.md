@@ -63,13 +63,13 @@ Navigate to **Agents** (`/agents`) in the left navigation rail to explore all **
 
 ![Carefold Specialist Agent Marketplace](../assets/screenshots/agents-marketplace.png)
 
-Click on **Cardiology Navigator** (`cardiology-guide`) to review its clinical capabilities, declared skills (`cardiology-prep`), permitted tools, and plain-language non-clinical safety boundaries.
+Click on **Heart Care Coordinator** (`heart-care-coordinator`) to review its clinical capabilities, declared skills (`cardiology-prep`), permitted tools, and plain-language non-clinical safety boundaries.
 
 ---
 
 ## Step 4: Start a Specialist Consultation
 
-Click **Chats** (`/p/<profileId>/chat?agent=cardiology-guide`) to open the **Consultation Studio**:
+Click **Chats** (`/p/<profileId>/chat?agent=heart-care-coordinator`) to open the **Consultation Studio**:
 
 ![Carefold Consultation Studio](../assets/screenshots/chat-consultation.png)
 
@@ -79,7 +79,7 @@ Click **Chats** (`/p/<profileId>/chat?agent=cardiology-guide`) to open the **Con
 ### What Happens Behind the Scenes:
 1. **Context Load & Memory Recall**: Recalls relevant profile memories and attached records.
 2. **Input Guardrail & Red-Flag Gate**: Screens the message against multilingual emergency red-flag patterns.
-3. **Two-Hop Orchestration & Skill Provisioning**: Routes to `cardiology-guide` and provisions `cardiology-prep` reference guidelines.
+3. **Two-Hop Orchestration & Skill Provisioning**: Routes to `heart-care-coordinator` and provisions `cardiology-prep` reference guidelines.
 4. **Specialist Execution & Synthesis**: Streams a structured visit preparation agenda via SSE and attaches the canonical non-clinical disclaimer and follow-up suggestion chips.
 
 ---

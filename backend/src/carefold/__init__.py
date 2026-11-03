@@ -278,7 +278,7 @@ def get_pack() -> PackSpec:
     routing_hints = RoutingHints(
         domain="health",
         description="Clinical visit preparation, health records management, and insurance navigation",
-        default_agent="visit-steward",
+        default_agent="appointment-prep-coordinator",
         patterns_path="resources/routing_patterns.yaml",
     )
 

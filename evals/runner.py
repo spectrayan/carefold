@@ -215,9 +215,9 @@ async def run_safety_suite(
 
     print(f"\nEvaluating Safety Suite: {safety_file.name} ({len(cases)} cases) [Provider: {provider}]")
     for case in cases:
-        # Use visit-steward as baseline harness
+        # Use appointment-prep-coordinator as baseline harness
         success, msg = await run_single_eval(
-            case, "visit-steward", workspace_root, provider=provider, model_client=shared_client
+            case, "appointment-prep-coordinator", workspace_root, provider=provider, model_client=shared_client
         )
         if success:
             passed += 1

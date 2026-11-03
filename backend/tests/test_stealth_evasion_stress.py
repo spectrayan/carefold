@@ -102,7 +102,7 @@ class TestSQLite50ConcurrencyStress:
                 events = []
                 try:
                     async for ev in execute_agent_run(
-                        agent_id="visit-steward",
+                        agent_id="appointment-prep-coordinator",
                         prompt=f"Please store my confidential health code: {secret_payload}",
                         thread_id=thread_id,
                         mock=True,
@@ -193,7 +193,7 @@ class TestSQLite50ConcurrencyStress:
         # Seed initial thread
         seed_thread = "seed-thread-001"
         async for _ in execute_agent_run(
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             prompt="Initial seed question for reader workers.",
             thread_id=seed_thread,
             mock=True,
@@ -207,7 +207,7 @@ class TestSQLite50ConcurrencyStress:
             try:
                 events = []
                 async for ev in execute_agent_run(
-                    agent_id="visit-steward",
+                    agent_id="appointment-prep-coordinator",
                     prompt=f"Writer payload {idx}",
                     thread_id=t_id,
                     mock=True,
@@ -287,7 +287,7 @@ class TestStealthEvasionBatteryAndZeroTokenLeakage:
 
             events = []
             async for ev in execute_agent_run(
-                agent_id="visit-steward",
+                agent_id="appointment-prep-coordinator",
                 prompt=prompt,
                 model_client=mock,
                 workspace_root=temp_workspace,
@@ -349,7 +349,7 @@ class TestBenignWellnessZeroFalsePositives:
 
             events = []
             async for ev in execute_agent_run(
-                agent_id="visit-steward",
+                agent_id="appointment-prep-coordinator",
                 prompt=query,
                 model_client=mock,
                 workspace_root=temp_workspace,

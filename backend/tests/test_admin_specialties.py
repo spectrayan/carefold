@@ -53,8 +53,8 @@ from evals.runner import EvalCase, run_single_eval
 # ============================================================================
 
 ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
-    "prior-auth-navigator": {
-        "title": "Prior Authorization Navigator",
+    "prior-authorization-coordinator": {
+        "title": "Prior Authorization Coordinator",
         "companion_skill": "prior-auth-prep",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.prior_auth",
@@ -64,8 +64,8 @@ ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "prior-authorization",
         "fts_query": "prior authorization",
     },
-    "claims-appeals-guide": {
-        "title": "Claims & Appeals Steward",
+    "claims-appeals-coordinator": {
+        "title": "Claims & Appeals Coordinator",
         "companion_skill": "claims-appeals-prep",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.claims",
@@ -76,7 +76,7 @@ ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "fts_query": "denial appeal",
     },
     "records-coordinator": {
-        "title": "Medical Records Coordinator",
+        "title": "Records Coordinator",
         "companion_skill": "records-management",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.records",
@@ -86,8 +86,8 @@ ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
         "primary_tag": "medical-records",
         "fts_query": "hipaa record request",
     },
-    "formulary-guide": {
-        "title": "Prescription & Formulary Guide",
+    "prescription-cost-coordinator": {
+        "title": "Prescription Cost Coordinator",
         "companion_skill": "formulary-navigation",
         "domain": AgentDomain.NAVIGATION,
         "category": "navigation.formulary",
@@ -101,7 +101,7 @@ ADMIN_EXPECTED_AGENTS: Dict[str, Dict[str, Any]] = {
 
 MANDATORY_PERSONA_HEADERS: List[str] = [
     "ROLE & EMPATHY",
-    "CLINICAL SCOPE & FOCUS",
+    "SCOPE & FOCUS",
     "STRUCTURED INTERACTION PROTOCOL",
     "STRICT NON-CLINICAL BOUNDARIES",
     "EXPLICIT EMERGENCY RED FLAGS",
@@ -229,7 +229,7 @@ class TestAdminSpecialtiesPersonas:
             manifest, _, _ = load_agent(agent_path)
             persona_text = manifest.persona if isinstance(manifest.persona, str) else str(manifest.persona)
             assert "ROLE & EMPATHY" in persona_text
-            assert "CLINICAL SCOPE & FOCUS" in persona_text
+            assert "SCOPE & FOCUS" in persona_text
 
     def test_all_4_personas_enforce_safety_boundaries_and_red_flags(self, temp_workspace: Path):
         """Universal profile must explicitly declare prohibitions against diagnosing, prescribing, and dosage."""

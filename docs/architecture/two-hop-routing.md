@@ -37,7 +37,7 @@ sequenceDiagram
     Note over Orch: Hop 2: Specialist Retrieval via CatalogPort
     Orch->>Catalog: search_agents(domain="navigation", category="navigation.prior_auth")
     alt Primary match found
-        Catalog-->>Orch: [prior-auth-navigator, claims-appeals-guide, benefits-guide]
+        Catalog-->>Orch: [prior-authorization-coordinator, claims-appeals-coordinator, benefits-coordinator]
     else Fallback to domain
         Catalog-->>Orch: [All navigation agents]
     else Fallback to FTS query
@@ -46,7 +46,7 @@ sequenceDiagram
     
     Note over Orch: Candidate Prompt Assembly
     Orch->>Picker: TIER2_PICKER_PROMPT (Rendered with Candidate Manifests)
-    Picker-->>Orch: OrchestratorDecision(agent_id="prior-auth-navigator", reasoning="...", instructions="...")
+    Picker-->>Orch: OrchestratorDecision(agent_id="prior-authorization-coordinator", reasoning="...", instructions="...")
     
     Note over Orch: Execution Plan Construction
     Orch->>Dispatcher: Dispatch ExecutionPlan(mode=ExecutionMode.SINGLE, tasks=[...])
@@ -100,7 +100,7 @@ To guarantee resilient routing even with novel user terminology, `OrchestratorNo
 3. **Step 3: FTS5 Full-Text Match**:
    If Step 2 yields 0 candidates, executes full-text search against the SQLite FTS5 index (`agents_fts`) matching prompt keywords against agent titles, descriptions, and personas.
 4. **Step 4: Deterministic Pattern Fallback**:
-   If no candidates match, selects the default general triage agent (`visit-steward` or `triage-auditor`).
+   If no candidates match, selects the default general triage agent (`appointment-prep-coordinator` or `triage-auditor`).
 
 ### Decision Output & Plan Construction
 
@@ -112,7 +112,7 @@ class OrchestratorDecision(BaseModel):
 
     agent_id: str = Field(
         ...,
-        description="ID of the chosen specialist agent to delegate to (e.g., 'prior-auth-navigator').",
+        description="ID of the chosen specialist agent to delegate to (e.g., 'prior-authorization-coordinator').",
     )
     reasoning: str = Field(
         ...,

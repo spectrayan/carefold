@@ -812,8 +812,8 @@ class TestToolExecutionHardening:
         list_tool = ListAgentsTool()
         catalog = list_tool._run()
         assert isinstance(catalog, str)
-        assert "visit-steward" in catalog
-        assert "benefits-guide" in catalog
+        assert "appointment-prep-coordinator" in catalog
+        assert "benefits-coordinator" in catalog
         assert "document-extractor" in catalog
 
         async_catalog = asyncio.run(list_tool._arun())
@@ -822,10 +822,10 @@ class TestToolExecutionHardening:
         # 2. DelegateToAgentTool trims inputs and emits valid JSON
         delegate_tool = DelegateToAgentTool()
         raw_json = delegate_tool._run(
-            agent_id="   visit-steward   ",
+            agent_id="   appointment-prep-coordinator   ",
             instructions="  Prepare doctor checklist.  ",
         )
         parsed = json.loads(raw_json)
         assert parsed["status"] == "delegated"
-        assert parsed["agent_id"] == "visit-steward"
+        assert parsed["agent_id"] == "appointment-prep-coordinator"
         assert parsed["instructions"] == "Prepare doctor checklist."

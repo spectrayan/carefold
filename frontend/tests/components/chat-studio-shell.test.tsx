@@ -44,8 +44,8 @@ describe('ChatStudioShell Component (/p/[profileId]/chat)', () => {
     }
     saveSession({
       id: 'thread-rosa-1',
-      agentId: 'visit-steward',
-      agentTitle: 'Visit Steward',
+      agentId: 'appointment-prep-coordinator',
+      agentTitle: 'Appointment Prep Coordinator',
       title: 'Cardiology prep for Oct 13',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -75,7 +75,7 @@ describe('ChatStudioShell Component (/p/[profileId]/chat)', () => {
     expect(screen.getByRole('complementary', { name: /rosa rivera's consultation sessions/i })).toBeInTheDocument();
     expect(screen.getByText('Cardiology prep for Oct 13')).toBeInTheDocument();
     expect(screen.getByText('About Rosa')).toBeInTheDocument();
-    expect(screen.getAllByText('Visit Steward').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Appointment Prep Coordinator').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders persistent quiet safety footer disclaimer', () => {
@@ -87,7 +87,7 @@ describe('ChatStudioShell Component (/p/[profileId]/chat)', () => {
   it('intercepts ambiguous family member prompt with client-side ambiguity hold card', async () => {
     render(<ChatStudioShell profileId="rosa" />);
 
-    const textarea = screen.getByPlaceholderText(/ask visit steward about rosa rivera/i);
+    const textarea = screen.getByPlaceholderText(/ask appointment prep coordinator about rosa rivera/i);
     fireEvent.change(textarea, { target: { value: 'Did Leo get his flu vaccine?' } });
 
     const sendBtn = screen.getByRole('button', { name: /send message/i });
@@ -107,7 +107,7 @@ describe('ChatStudioShell Component (/p/[profileId]/chat)', () => {
   it('resolves ambiguity by clicking "Keep it in Rosa\'s chat"', async () => {
     render(<ChatStudioShell profileId="rosa" />);
 
-    const textarea = screen.getByPlaceholderText(/ask visit steward about rosa rivera/i);
+    const textarea = screen.getByPlaceholderText(/ask appointment prep coordinator about rosa rivera/i);
     fireEvent.change(textarea, { target: { value: 'Did Leo get his flu vaccine?' } });
 
     const sendBtn = screen.getByRole('button', { name: /send message/i });
@@ -129,7 +129,7 @@ describe('ChatStudioShell Component (/p/[profileId]/chat)', () => {
   it('sends normal message directly and adds to message stream', async () => {
     render(<ChatStudioShell profileId="rosa" />);
 
-    const textarea = screen.getByPlaceholderText(/ask visit steward about rosa rivera/i);
+    const textarea = screen.getByPlaceholderText(/ask appointment prep coordinator about rosa rivera/i);
     fireEvent.change(textarea, { target: { value: 'What questions should I ask Dr. Whitfield about blood pressure?' } });
 
     const sendBtn = screen.getByRole('button', { name: /send message/i });

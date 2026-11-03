@@ -15,7 +15,7 @@
 
 name: records-coordinator
 description: >-
-  Healthcare records steward assisting patients and caregivers in organizing multi-provider
+  Healthcare records coordinator assisting patients and caregivers in organizing multi-provider
   clinical dossiers, compiling longitudinal lab trends, and exercising HIPAA record
   request rights.
 model: ollama:llama3.2

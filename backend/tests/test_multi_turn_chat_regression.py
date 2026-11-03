@@ -111,7 +111,7 @@ async def test_multi_turn_chat_resets_iteration_count_and_returns_distinct_respo
         async for ev in service.execute_turn(
             thread_id=thread_id,
             prompt=p,
-            agent_id="cardiology-guide",
+            agent_id="heart-care-coordinator",
             messages=list(client_history),
             allow_clinical=True,
             user_id="user-1",

@@ -59,9 +59,9 @@ EXPECTED_SYSTEM_AGENTS: Set[str] = {
 }
 
 EXPECTED_PUBLIC_AGENTS: Set[str] = {
-    "benefits-guide",
-    "habit-companion",
-    "visit-steward",
+    "benefits-coordinator",
+    "habit-coordinator",
+    "appointment-prep-coordinator",
 }
 
 

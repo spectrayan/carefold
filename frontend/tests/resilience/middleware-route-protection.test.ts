@@ -54,8 +54,8 @@ describe('Edge Middleware Route Guarding & Path Bypass Suite', () => {
 
       // /agents prefix and subroutes
       { path: '/agents', expectedRedirect: '/agents' },
-      { path: '/agents/cardiology-guide', expectedRedirect: '/agents/cardiology-guide' },
-      { path: '/agents/pulmonology-guide', expectedRedirect: '/agents/pulmonology-guide' },
+      { path: '/agents/heart-care-coordinator', expectedRedirect: '/agents/heart-care-coordinator' },
+      { path: '/agents/lung-breathing-coordinator', expectedRedirect: '/agents/lung-breathing-coordinator' },
 
       // /family prefix and subroutes
       { path: '/family', expectedRedirect: '/family' },
@@ -92,7 +92,7 @@ describe('Edge Middleware Route Guarding & Path Bypass Suite', () => {
 
       // /helpers prefix and subroutes
       { path: '/helpers', expectedRedirect: '/helpers' },
-      { path: '/helpers/cardiology-guide', expectedRedirect: '/helpers/cardiology-guide' },
+      { path: '/helpers/heart-care-coordinator', expectedRedirect: '/helpers/heart-care-coordinator' },
       { path: '/helpers/skills', expectedRedirect: '/helpers/skills' },
     ];
 
@@ -204,7 +204,7 @@ describe('Edge Middleware Route Guarding & Path Bypass Suite', () => {
   // =========================================================================
   describe('3. Redirect Query Parameter Preservation', () => {
     it('preserves thread_id and agent query parameters on /chat', () => {
-      const originalPath = '/chat?thread_id=xyz-987&agent=cardiology-guide';
+      const originalPath = '/chat?thread_id=xyz-987&agent=heart-care-coordinator';
       const req = new NextRequest(new URL(originalPath, BASE_URL));
       const res = middleware(req);
 

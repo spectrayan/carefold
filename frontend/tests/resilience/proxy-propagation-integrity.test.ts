@@ -425,10 +425,10 @@ describe('Resilience Suite: Next.js Proxy Routes Propagation & Streaming', () =>
       expect(getHeader(call.headers, 'authorization')).toBe(TEST_AUTH);
     });
 
-    it('preserves parsed queries (?limit=50&agent_id=cardiology-guide&event=message) and headers on GET /api/audit', async () => {
+    it('preserves parsed queries (?limit=50&agent_id=heart-care-coordinator&event=message) and headers on GET /api/audit', async () => {
       setupMockFetch();
       const req = new NextRequest(
-        'http://localhost:3000/api/audit?limit=50&agent_id=cardiology-guide&event=message',
+        'http://localhost:3000/api/audit?limit=50&agent_id=heart-care-coordinator&event=message',
         { headers: { cookie: TEST_COOKIE, authorization: TEST_AUTH } }
       );
       const res = await getAudit(req);
@@ -438,7 +438,7 @@ describe('Resilience Suite: Next.js Proxy Routes Propagation & Streaming', () =>
       const call = capturedFetches[0];
       expect(call.url).toContain('/api/v1/audit');
       expect(call.url).toContain('limit=50');
-      expect(call.url).toContain('agent_id=cardiology-guide');
+      expect(call.url).toContain('agent_id=heart-care-coordinator');
       expect(call.url).toContain('event=message');
       expect(call.url).toContain('full=false');
       expect(getHeader(call.headers, 'cookie')).toBe(TEST_COOKIE);
@@ -519,7 +519,7 @@ describe('Resilience Suite: Next.js Proxy Routes Propagation & Streaming', () =>
           authorization: TEST_AUTH,
         },
         body: JSON.stringify({
-          agentId: 'cardiology-guide',
+          agentId: 'heart-care-coordinator',
           prompt: 'Hello, what does 120/80 mean?',
           allow_clinical: true,
         }),
@@ -570,7 +570,7 @@ describe('Resilience Suite: Next.js Proxy Routes Propagation & Streaming', () =>
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          agentId: 'cardiology-guide',
+          agentId: 'heart-care-coordinator',
           prompt: 'Prescribe me meds',
           allow_clinical: false,
         }),

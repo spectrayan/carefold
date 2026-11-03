@@ -80,7 +80,7 @@ class TestResponseSynthesizerAdversarial:
         # Case A: Cardio only with fluid
         state_cardio_only = {
             "specialist_outputs": {
-                "cardiology-guide": "Recommend strict fluid restriction of 1.5L daily."
+                "heart-care-coordinator": "Recommend strict fluid restriction of 1.5L daily."
             }
         }
         res_a = ResponseSynthesizerNode.synthesize_response(state_cardio_only)
@@ -89,7 +89,7 @@ class TestResponseSynthesizerAdversarial:
         # Case B: Nephro only with fluid
         state_nephro_only = {
             "specialist_outputs": {
-                "nephrology-guide": "Monitor serum electrolytes and fluid intake carefully."
+                "kidney-care-coordinator": "Monitor serum electrolytes and fluid intake carefully."
             }
         }
         res_b = ResponseSynthesizerNode.synthesize_response(state_nephro_only)
@@ -98,8 +98,8 @@ class TestResponseSynthesizerAdversarial:
         # Case C: Cardio + Nephro, but NO fluid or sodium mentioned
         state_both_no_fluid = {
             "specialist_outputs": {
-                "cardiology-guide": "Review ECG tracing and resting heart rate trends.",
-                "nephrology-guide": "Review urine protein-to-creatinine ratio from lab work.",
+                "heart-care-coordinator": "Review ECG tracing and resting heart rate trends.",
+                "kidney-care-coordinator": "Review urine protein-to-creatinine ratio from lab work.",
             }
         }
         res_c = ResponseSynthesizerNode.synthesize_response(state_both_no_fluid)
@@ -109,8 +109,8 @@ class TestResponseSynthesizerAdversarial:
         # Case D: Cardio + Nephro WITH fluid/sodium mentioned -> MUST trigger
         state_both_with_sodium = {
             "specialist_outputs": {
-                "cardiology-guide": "Watch out for excess sodium intake which increases intravascular volume.",
-                "nephrology-guide": "Kidneys require adequate perfusion; low sodium may cause hypotension.",
+                "heart-care-coordinator": "Watch out for excess sodium intake which increases intravascular volume.",
+                "kidney-care-coordinator": "Kidneys require adequate perfusion; low sodium may cause hypotension.",
             }
         }
         res_d = ResponseSynthesizerNode.synthesize_response(state_both_with_sodium)
@@ -121,8 +121,8 @@ class TestResponseSynthesizerAdversarial:
         """Cardiorenal discussion points must be formulated as doctor questions, never prescriptions."""
         state = {
             "specialist_outputs": {
-                "cardiology-guide": "Fluid restriction 1.5L.",
-                "nephrology-guide": "Fluid intake must be sufficient to maintain GFR.",
+                "heart-care-coordinator": "Fluid restriction 1.5L.",
+                "kidney-care-coordinator": "Fluid intake must be sufficient to maintain GFR.",
             }
         }
         output = ResponseSynthesizerNode.synthesize_response(state)
@@ -173,8 +173,8 @@ class TestZeroBodyAuditConcurrency:
 
         state = {
             "specialist_outputs": {
-                "cardiology-guide": "Secret clinical advice about patient John Doe SSN 000-00-0000",
-                "nephrology-guide": "Secret renal values eGFR 28 ml/min",
+                "heart-care-coordinator": "Secret clinical advice about patient John Doe SSN 000-00-0000",
+                "kidney-care-coordinator": "Secret renal values eGFR 28 ml/min",
             },
             "prompt": "Confidential query with patient name John Doe",
             "thread_id": "thread-12345",
@@ -276,16 +276,16 @@ class TestGraphBuilderIntegration:
         # If execution_plan has mode=parallel, route_supervisor should return 'dispatcher'
         plan = ExecutionPlan(
             mode=ExecutionMode.PARALLEL,
-            target_agents=["cardiology-guide", "nephrology-guide"],
+            target_agents=["heart-care-coordinator", "kidney-care-coordinator"],
             tasks=[
-                AgentTask(agent_id="cardiology-guide", task_description="Cardio check"),
-                AgentTask(agent_id="nephrology-guide", task_description="Renal check"),
+                AgentTask(agent_id="heart-care-coordinator", task_description="Cardio check"),
+                AgentTask(agent_id="kidney-care-coordinator", task_description="Renal check"),
             ],
             reasoning="Multimorbid care",
         )
         state: AgentState = {
             "execution_plan": plan,
-            "current_agent": "cardiology-guide",
+            "current_agent": "heart-care-coordinator",
         }
 
         # Inspect routing logic from builder
@@ -299,8 +299,8 @@ class TestGraphBuilderIntegration:
         """Supervisor router directs single execution plans to agent."""
         plan = ExecutionPlan(
             mode=ExecutionMode.SINGLE,
-            target_agents=["cardiology-guide"],
-            tasks=[AgentTask(agent_id="cardiology-guide", task_description="Cardio check")],
+            target_agents=["heart-care-coordinator"],
+            tasks=[AgentTask(agent_id="heart-care-coordinator", task_description="Cardio check")],
             reasoning="Single specialty",
         )
         mode_val = plan.mode.value if hasattr(plan.mode, "value") else str(plan.mode)
@@ -317,18 +317,18 @@ class TestGraphBuilderIntegration:
             async def execute(self, state):
                 return {
                     "specialist_outputs": {
-                        "cardiology-guide": "Cardio advice on heart rate.\nDISCLAIMER: Consult physician.",
-                        "endocrinology-guide": "Endo advice on insulin.\nDISCLAIMER: Consult doctor.",
+                        "heart-care-coordinator": "Cardio advice on heart rate.\nDISCLAIMER: Consult physician.",
+                        "diabetes-thyroid-coordinator": "Endo advice on insulin.\nDISCLAIMER: Consult doctor.",
                     },
                     "next_step": "response_synthesizer",
                 }
 
         plan = ExecutionPlan(
             mode=ExecutionMode.PARALLEL,
-            target_agents=["cardiology-guide", "endocrinology-guide"],
+            target_agents=["heart-care-coordinator", "diabetes-thyroid-coordinator"],
             tasks=[
-                AgentTask(agent_id="cardiology-guide", task_description="Cardio"),
-                AgentTask(agent_id="endocrinology-guide", task_description="Endo"),
+                AgentTask(agent_id="heart-care-coordinator", task_description="Cardio"),
+                AgentTask(agent_id="diabetes-thyroid-coordinator", task_description="Endo"),
             ],
             reasoning="Multi-specialty",
         )
@@ -352,8 +352,8 @@ class TestGraphBuilderIntegration:
         assert "output" in result
         out_text = result["output"]
         assert "# Patient Consultation Master Agenda" in out_text
-        assert "Cardiology Guide Guidance" in out_text
-        assert "Endocrinology Guide Guidance" in out_text
+        assert "Heart Care Coordinator Guidance" in out_text
+        assert "Diabetes Thyroid Coordinator Guidance" in out_text
         assert CANONICAL_DISCLAIMER in out_text
         # Disclaimers deduplicated
         assert out_text.count("DISCLAIMER:") == 1

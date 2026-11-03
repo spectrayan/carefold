@@ -17,12 +17,12 @@ boundary thresholds, and filesystem paths.
 
 from carefold.constants import agents, api, defaults, extraction, models, paths
 from carefold.constants.agents import (
-    AGENT_BENEFITS_GUIDE,
+    AGENT_BENEFITS_COORDINATOR,
     AGENT_DOCUMENT_EXTRACTOR,
-    AGENT_HABIT_COMPANION,
+    AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
     AGENT_TEMPLATE,
-    AGENT_VISIT_STEWARD,
+    AGENT_VISIT_PREP_COORDINATOR,
     DELEGATION_TOOLS,
     EXTRACTION_TOOLS,
 )
@@ -143,9 +143,9 @@ __all__ = [
     # Agents
     "AGENT_ORCHESTRATOR",
     "AGENT_DOCUMENT_EXTRACTOR",
-    "AGENT_VISIT_STEWARD",
-    "AGENT_BENEFITS_GUIDE",
-    "AGENT_HABIT_COMPANION",
+    "AGENT_VISIT_PREP_COORDINATOR",
+    "AGENT_BENEFITS_COORDINATOR",
+    "AGENT_HABIT_COORDINATOR",
     "AGENT_TEMPLATE",
     "DELEGATION_TOOLS",
     "EXTRACTION_TOOLS",

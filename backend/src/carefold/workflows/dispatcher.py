@@ -201,7 +201,7 @@ class ExecutionDispatcher(BaseNode):
 
         if plan is None:
             mode_val = "single"
-            target_agent = str(state.get("current_agent") or state.get("agent_id") or "visit-steward")
+            target_agent = str(state.get("current_agent") or state.get("agent_id") or "appointment-prep-coordinator")
             target_agents = [target_agent] if target_agent else []
             tasks = []
         else:

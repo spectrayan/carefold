@@ -11,7 +11,7 @@ This specification formalizes the `AgentManifest` Pydantic model defined in `bac
 Each agent directory contains:
 
 ```
-agents/cardiology-guide/
+agents/heart-care-coordinator/
 ├── agent.yaml      # Structured metadata, taxonomy, declared skills, and tool permissions
 └── persona.md      # Pure clinical persona, empathy instructions, and interview protocols
 ```
@@ -24,7 +24,7 @@ agents/cardiology-guide/
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `id` | `str` | Yes | Unique kebab-case identifier (e.g., `cardiology-guide`). |
+| `id` | `str` | Yes | Unique kebab-case identifier (e.g., `heart-care-coordinator`). |
 | `title` | `str` | Yes | Human-readable display name (e.g., `Cardiology Guide`). |
 | `version` | `str` | Yes | Semantic version string (e.g., `0.1.0`). |
 | `domain` | `str` | Yes | High-level taxonomy domain: `clinical`, `therapy`, `wellness`, `navigation`, or `education`. |
@@ -46,10 +46,10 @@ agents/cardiology-guide/
 
 ---
 
-## Annotated Example: `cardiology-guide/agent.yaml`
+## Annotated Example: `heart-care-coordinator/agent.yaml`
 
 ```yaml
-id: cardiology-guide
+id: heart-care-coordinator
 title: Cardiology Guide
 version: 0.1.0
 domain: clinical
@@ -97,7 +97,7 @@ Under Carefold's **Persona Purity Contract**, personas must never contain:
 - Low-level tool invocation JSON or function calling syntax.
 - Hardcoded references to tool registries.
 
-### Example Persona Structure (`cardiology-guide/persona.md`):
+### Example Persona Structure (`heart-care-coordinator/persona.md`):
 
 ```markdown
 # Role & Clinical Scope

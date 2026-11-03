@@ -134,7 +134,7 @@ def test_migration_with_legacy_data(tmp_path: Path) -> None:
     # 2. Create sample notes
     note1 = ws_dir / "notes" / "blood-pressure-log.md"
     note1.write_text(
-        "---\ntitle: 'Blood Pressure Log'\nagent_id: 'cardiology-guide'\n---\n# Daily BP\nValues normal.",
+        "---\ntitle: 'Blood Pressure Log'\nagent_id: 'heart-care-coordinator'\n---\n# Daily BP\nValues normal.",
         encoding="utf-8",
     )
 
@@ -174,7 +174,7 @@ def test_parse_markdown_note(tmp_path: Path) -> None:
     """Verifies markdown note parsing with frontmatter."""
     sample_file = tmp_path / "sample-note.md"
     sample_file.write_text(
-        "---\ntitle: 'Cardio Prep'\nagent_id: 'cardiology-guide'\nprofile_id: 'prof-123'\n---\n# Overview\nPatient history.",
+        "---\ntitle: 'Cardio Prep'\nagent_id: 'heart-care-coordinator'\nprofile_id: 'prof-123'\n---\n# Overview\nPatient history.",
         encoding="utf-8",
     )
 
@@ -182,7 +182,7 @@ def test_parse_markdown_note(tmp_path: Path) -> None:
     assert parsed["slug"] == "sample-note"
     assert parsed["title"] == "Cardio Prep"
     assert parsed["profile_id"] == "prof-123"
-    assert "cardiology-guide" in parsed["tags"]
+    assert "heart-care-coordinator" in parsed["tags"]
     assert "# Overview" in parsed["content"]
 
 

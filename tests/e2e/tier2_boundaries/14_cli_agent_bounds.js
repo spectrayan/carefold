@@ -49,11 +49,11 @@ export async function run() {
         const ws = createTempWorkspace();
         try {
           runCli(['init', ws, '--bare']);
-          runCli(['agent', 'add', 'habit-companion'], { cwd: ws });
+          runCli(['agent', 'add', 'habit-coordinator'], { cwd: ws });
           // Add again
-          const res2 = runCli(['agent', 'add', 'habit-companion'], { cwd: ws });
+          const res2 = runCli(['agent', 'add', 'habit-coordinator'], { cwd: ws });
           assertTrue(res2.status === 0 || res2.status === 1);
-          assertTrue(fs.existsSync(path.join(ws, 'agents', 'habit-companion', 'agent.yaml')));
+          assertTrue(fs.existsSync(path.join(ws, 'agents', 'habit-coordinator', 'agent.yaml')));
         } finally {
           removeTempWorkspace(ws);
         }
@@ -63,7 +63,7 @@ export async function run() {
       id: 'F14-B04',
       name: 'carefold agent inspect displays effective tools correctly for multi-tool agent',
       fn: () => {
-        const res = runCli(['agent', 'inspect', 'visit-steward']);
+        const res = runCli(['agent', 'inspect', 'appointment-prep-coordinator']);
         assertEqual(res.status, 0, `Failed inspect: ${res.stderr}`);
         // Effective tools union should list tools
         const out = res.stdout.toLowerCase();

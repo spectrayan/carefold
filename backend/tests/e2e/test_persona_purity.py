@@ -35,7 +35,7 @@ from carefold.loaders.agent_loader import load_agent
 
 MANDATORY_HEADERS: List[str] = [
     "ROLE & EMPATHY:",
-    "CLINICAL SCOPE & FOCUS:",
+    "SCOPE & FOCUS:",
 ]
 
 FORBIDDEN_TOOL_KEYWORDS: Set[str] = {
@@ -315,7 +315,7 @@ class TestPersonaPurityBoundaries:
         )
         violations = inspect_persona_violations(malformed_text)
         assert "ROLE & EMPATHY:" in violations["missing_headers"]
-        assert "CLINICAL SCOPE & FOCUS:" in violations["missing_headers"]
+        assert "SCOPE & FOCUS:" in violations["missing_headers"]
 
     def test_empty_persona_handling(self):
         """Verifies empty or whitespace personas are rejected on word count and headers."""
@@ -327,7 +327,7 @@ class TestPersonaPurityBoundaries:
         """Verifies tool mentions inside markdown code blocks or quotes are still flagged."""
         quoted_text = (
             "ROLE & EMPATHY:\nTest.\n"
-            "CLINICAL SCOPE & FOCUS:\nTest.\n"
+            "SCOPE & FOCUS:\nTest.\n"
             "STRUCTURED INTERACTION PROTOCOL:\n"
             "> As noted earlier: `attach-read` should be called.\n"
             "STRICT NON-CLINICAL BOUNDARIES:\nTest.\n"
@@ -364,11 +364,11 @@ class TestPersonaRealWorldScenarios:
     """Tier 4: Realistic persona validation for key clinical specialties."""
 
     @pytest.mark.parametrize("specialist_id", [
-        "cardiology-guide",
-        "nephrology-guide",
-        "endocrinology-guide",
-        "pulmonology-guide",
-        "ortho-guide",
+        "heart-care-coordinator",
+        "kidney-care-coordinator",
+        "diabetes-thyroid-coordinator",
+        "lung-breathing-coordinator",
+        "bone-joint-care-coordinator",
     ])
     def test_core_specialists_have_clinical_protocols(self, e2e_repo_root: Path, specialist_id: str):
         """Verifies core clinical specialists have robust protocol structure and emergency red flags."""

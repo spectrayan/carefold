@@ -20,8 +20,8 @@ import type { SkillSummary } from '@/app/helpers/HelpersClient';
 
 const mockAgents: AgentSummary[] = [
   {
-    id: 'visit-steward',
-    title: 'Visit Steward',
+    id: 'appointment-prep-coordinator',
+    title: 'Appointment Prep Coordinator',
     version: '0.4.0',
     risk_class: 'clinical_assist',
     skills: ['visit-prep'],
@@ -30,8 +30,8 @@ const mockAgents: AgentSummary[] = [
     description: 'Prepares questions and checklists for upcoming clinical visits.'
   },
   {
-    id: 'benefits-guide',
-    title: 'Benefits Guide',
+    id: 'benefits-coordinator',
+    title: 'Benefits Coordinator',
     version: '0.4.0',
     risk_class: 'admin',
     skills: ['benefits-explainer'],
@@ -40,8 +40,8 @@ const mockAgents: AgentSummary[] = [
     description: 'Explains health insurance coverage, copays, and deductibles.'
   },
   {
-    id: 'habit-companion',
-    title: 'Habit Companion',
+    id: 'habit-coordinator',
+    title: 'Habit Coordinator',
     version: '0.4.0',
     risk_class: 'wellness',
     skills: ['habit-checkin'],
@@ -105,8 +105,8 @@ describe('Helpers & Skills Catalog (/helpers)', () => {
     );
 
     // Initial view: Assistants
-    expect(screen.getByText('Visit Steward')).toBeInTheDocument();
-    expect(screen.getByText('Benefits Guide')).toBeInTheDocument();
+    expect(screen.getByText('Appointment Prep Coordinator')).toBeInTheDocument();
+    expect(screen.getByText('Benefits Coordinator')).toBeInTheDocument();
 
     // Click Skill Packs tab
     const skillsTab = screen.getByRole('radio', { name: /skill packs/i });
@@ -125,8 +125,8 @@ describe('Helpers & Skills Catalog (/helpers)', () => {
     const searchInput = screen.getByPlaceholderText(/search helpers or skills/i);
     fireEvent.change(searchInput, { target: { value: 'insurance' } });
 
-    expect(screen.getByText('Benefits Guide')).toBeInTheDocument();
-    expect(screen.queryByText('Visit Steward')).not.toBeInTheDocument();
+    expect(screen.getByText('Benefits Coordinator')).toBeInTheDocument();
+    expect(screen.queryByText('Appointment Prep Coordinator')).not.toBeInTheDocument();
   });
 
   it('filters assistants by safety level dropdown', () => {
@@ -137,9 +137,9 @@ describe('Helpers & Skills Catalog (/helpers)', () => {
     const riskSelect = screen.getByLabelText(/safety level/i);
     fireEvent.change(riskSelect, { target: { value: 'clinical_assist' } });
 
-    expect(screen.getByText('Visit Steward')).toBeInTheDocument();
-    expect(screen.queryByText('Habit Companion')).not.toBeInTheDocument();
-    expect(screen.queryByText('Benefits Guide')).not.toBeInTheDocument();
+    expect(screen.getByText('Appointment Prep Coordinator')).toBeInTheDocument();
+    expect(screen.queryByText('Habit Coordinator')).not.toBeInTheDocument();
+    expect(screen.queryByText('Benefits Coordinator')).not.toBeInTheDocument();
   });
 
   it('renders 3-column clinical safety boundary card', () => {

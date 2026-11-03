@@ -14,7 +14,7 @@
 Tests and documents:
 1. Tool Allow-List Enforcement & Bounding:
    - Arbitrary system tool invocation attempts (bash, sh, subprocess, rm_rf).
-   - Phase 0 tool allow-list boundaries per agent (habit-companion blocking attach-read/skill-docs; benefits-guide blocking workspace-note; _template blocking all tools).
+   - Phase 0 tool allow-list boundaries per agent (habit-coordinator blocking attach-read/skill-docs; benefits-coordinator blocking workspace-note; _template blocking all tools).
    - Loop bounds enforcement on repeated undeclared tool calls via MAX_TOOL_ITERATIONS = 5.
    - Trace generation (status='denied', allowed=False) and audit logging of rejections.
 2. Clinical Safety Refusal & Stealth Evasion Vulnerabilities:
@@ -81,7 +81,7 @@ class TestToolAllowListEnforcement:
 
         events: List[Dict[str, Any]] = []
         async for ev in execute_agent_run(
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             prompt=f"Run system tool {forbidden_tool}.",
             model_client=mock,
             workspace_root=temp_workspace,
@@ -108,11 +108,11 @@ class TestToolAllowListEnforcement:
     @pytest.mark.parametrize(
         "agent_id,unauthorized_tool",
         [
-            # habit-companion declares only workspace-note
-            ("habit-companion", "attach-read"),
-            ("habit-companion", "skill-docs"),
-            # benefits-guide declares attach-read and skill-docs, but NOT workspace-note
-            ("benefits-guide", "workspace-note"),
+            # habit-coordinator declares only workspace-note
+            ("habit-coordinator", "attach-read"),
+            ("habit-coordinator", "skill-docs"),
+            # benefits-coordinator declares attach-read and skill-docs, but NOT workspace-note
+            ("benefits-coordinator", "workspace-note"),
             # _template declares [] (zero tools)
             ("_template", "attach-read"),
             ("_template", "workspace-note"),
@@ -168,7 +168,7 @@ class TestToolAllowListEnforcement:
 
         events: List[Dict[str, Any]] = []
         async for ev in execute_agent_run(
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             prompt="Trigger repeated tool loop.",
             model_client=mock,
             workspace_root=temp_workspace,
@@ -195,7 +195,7 @@ class TestToolAllowListEnforcement:
         )
         state: AgentState = {
             "messages": [ai_msg],
-            "agent_id": "habit-companion",
+            "agent_id": "habit-coordinator",
             "effective_tools": ["workspace-note"], # Neither eval nor attach-read is allowed
             "workspace_root": str(temp_workspace),
             "iteration_count": 0,
@@ -239,7 +239,7 @@ class TestClinicalSafetyRefusalAndEvasion:
         """Verifies overt diagnostic and dosing queries are refused before generation."""
         events: List[Dict[str, Any]] = []
         async for ev in execute_agent_run(
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             prompt=overt_prompt,
             mock=True,
             workspace_root=temp_workspace,
@@ -267,7 +267,7 @@ class TestClinicalSafetyRefusalAndEvasion:
         )
         state: AgentState = {
             "messages": [ai_msg],
-            "agent_id": "visit-steward",
+            "agent_id": "appointment-prep-coordinator",
             "effective_tools": ["workspace-note"],
             "workspace_root": str(temp_workspace),
         }
@@ -315,7 +315,7 @@ class TestClinicalSafetyRefusalAndEvasion:
         for prompt, expected_intent in evasion_prompts:
             events: List[Dict[str, Any]] = []
             async for ev in execute_agent_run(
-                agent_id="visit-steward",
+                agent_id="appointment-prep-coordinator",
                 prompt=prompt,
                 mock=True,
                 workspace_root=temp_workspace,
@@ -358,7 +358,7 @@ class TestClinicalSafetyRefusalAndEvasion:
 
         events: List[Dict[str, Any]] = []
         async for ev in execute_agent_run(
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
             prompt=benign_disclosure,
             model_client=mock,
             workspace_root=temp_workspace,
@@ -414,7 +414,7 @@ class TestConcurrentGraphExecution:
             events = []
             try:
                 async for ev in execute_agent_run(
-                    agent_id="visit-steward",
+                    agent_id="appointment-prep-coordinator",
                     prompt=f"Please record my secret: {secret}",
                     thread_id=thread_id,
                     mock=True,
@@ -469,7 +469,7 @@ class TestConcurrentGraphExecution:
         tasks = [
             record_audit(
                 AuditEvent(
-                    agent_id="visit-steward",
+                    agent_id="appointment-prep-coordinator",
                     event="run",
                     allowed=True,
                     prompt=f"Prompt {i}",
@@ -491,7 +491,7 @@ class TestConcurrentGraphExecution:
                 data = json.loads(line)
             except Exception as e:
                 pytest.fail(f"Corrupted line {idx} in audit.jsonl: {line} ({e})")
-            assert data["agent_id"] == "visit-steward"
+            assert data["agent_id"] == "appointment-prep-coordinator"
             assert data["event"] == "run"
             assert data["allowed"] is True
 

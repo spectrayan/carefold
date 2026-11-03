@@ -32,13 +32,13 @@ from carefold.audit.logger import record_audit
 from carefold.schemas.audit import AuditEvent
 
 async def main():
-    event = AuditEvent(agent_id='visit-steward', event='run', allowed=True, duration_ms=120.0)
+    event = AuditEvent(agent_id='appointment-prep-coordinator', event='run', allowed=True, duration_ms=120.0)
     await record_audit(event, workspace_root=Path('${ws}'))
     log_file = Path('${ws}') / 'logs' / 'audit.jsonl'
     assert log_file.is_file()
     lines = log_file.read_text(encoding='utf-8').strip().split('\\n')
     assert len(lines) == 1
-    assert 'visit-steward' in lines[0]
+    assert 'appointment-prep-coordinator' in lines[0]
 
 asyncio.run(main())
 `;
@@ -63,7 +63,7 @@ from carefold.schemas.audit import AuditEvent
 
 async def main():
     event = AuditEvent(
-        agent_id='visit-steward',
+        agent_id='appointment-prep-coordinator',
         event='run',
         allowed=True,
         prompt='Confidential health symptom details',
@@ -98,7 +98,7 @@ from carefold.schemas.audit import AuditEvent
 
 async def main():
     event = AuditEvent(
-        agent_id='visit-steward',
+        agent_id='appointment-prep-coordinator',
         event='refuse',
         allowed=False,
         reason='forbidden_intent:diagnose',
@@ -134,7 +134,7 @@ from carefold.schemas.audit import AuditEvent
 
 async def main():
     event = AuditEvent(
-        agent_id='visit-steward',
+        agent_id='appointment-prep-coordinator',
         event='tool',
         tool='attach-read',
         allowed=True,

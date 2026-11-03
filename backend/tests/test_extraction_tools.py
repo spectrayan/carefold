@@ -492,9 +492,9 @@ class TestDelegationToolsAdversarial:
         output = tool.invoke({})
         assert isinstance(output, str)
         # Verify specialist agents are present
-        assert "visit-steward" in output
-        assert "benefits-guide" in output
-        assert "habit-companion" in output
+        assert "appointment-prep-coordinator" in output
+        assert "benefits-coordinator" in output
+        assert "habit-coordinator" in output
         assert "document-extractor" in output
         # Verify orchestrator itself is excluded from specialist delegation catalog
         assert "**orchestrator**" not in output
@@ -503,7 +503,7 @@ class TestDelegationToolsAdversarial:
         tool = ListAgentsTool(registry=None)
         output = tool.invoke({})
         assert isinstance(output, str)
-        assert "visit-steward" in output
+        assert "appointment-prep-coordinator" in output
         assert "document-extractor" in output
 
     @pytest.mark.asyncio
@@ -521,12 +521,12 @@ class TestDelegationToolsAdversarial:
     def test_delegate_to_agent_tool_output_format(self):
         tool = DelegateToAgentTool()
         raw_res = tool.invoke({
-            "agent_id": "benefits-guide",
+            "agent_id": "benefits-coordinator",
             "instructions": "Please analyze copays and deductibles.",
         })
         payload = json.loads(raw_res)
         assert payload["status"] == "delegated"
-        assert payload["agent_id"] == "benefits-guide"
+        assert payload["agent_id"] == "benefits-coordinator"
         assert payload["instructions"] == "Please analyze copays and deductibles."
 
     def test_delegate_to_agent_tool_whitespace_handling(self):
@@ -543,12 +543,12 @@ class TestDelegationToolsAdversarial:
     async def test_delegate_to_agent_tool_async(self):
         tool = DelegateToAgentTool()
         raw_res = await tool.ainvoke({
-            "agent_id": "visit-steward",
+            "agent_id": "appointment-prep-coordinator",
             "instructions": "Prepare for oncology consult.",
         })
         payload = json.loads(raw_res)
         assert payload["status"] == "delegated"
-        assert payload["agent_id"] == "visit-steward"
+        assert payload["agent_id"] == "appointment-prep-coordinator"
 
 
 # ============================================================================

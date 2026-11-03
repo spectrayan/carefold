@@ -424,7 +424,7 @@ class TestZeroPermissionCrossProfile:
         # 7. Eve tries to initiate chat stream scoped to Father profile
         bad_chat = client.post(
             "/api/chat",
-            json={"agent_id": "cardiology-guide", "prompt": "Tell me about his stent", "profile_id": father_id},
+            json={"agent_id": "heart-care-coordinator", "prompt": "Tell me about his stent", "profile_id": father_id},
             headers=eve["headers"],
         )
         assert bad_chat.status_code == 403

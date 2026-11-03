@@ -49,14 +49,14 @@ from carefold.schemas.manifest import (
 
 
 CORE_ORGAN_AGENTS: List[str] = [
-    "cardiology-guide",
-    "pulmonology-guide",
-    "neurology-guide",
-    "gastro-guide",
-    "nephrology-guide",
-    "endocrinology-guide",
-    "ortho-guide",
-    "derma-guide",
+    "heart-care-coordinator",
+    "lung-breathing-coordinator",
+    "brain-nerve-care-coordinator",
+    "digestive-care-coordinator",
+    "kidney-care-coordinator",
+    "diabetes-thyroid-coordinator",
+    "bone-joint-care-coordinator",
+    "skin-care-coordinator",
 ]
 
 CORE_ORGAN_SKILLS: List[str] = [
@@ -70,11 +70,26 @@ CORE_ORGAN_SKILLS: List[str] = [
     "derma-prep",
 ]
 
+AGENT_TO_CATEGORY: Dict[str, str] = dict(
+    zip(
+        CORE_ORGAN_AGENTS,
+        [
+            "cardiology",
+            "pulmonology",
+            "neurology",
+            "gastroenterology",
+            "nephrology",
+            "endocrinology",
+            "orthopedics",
+            "dermatology",
+        ],
+    )
+)
 AGENT_TO_SKILL: Dict[str, str] = dict(zip(CORE_ORGAN_AGENTS, CORE_ORGAN_SKILLS))
 
 MANDATORY_HEADINGS: List[str] = [
     "ROLE & EMPATHY",
-    "CLINICAL SCOPE & FOCUS",
+    "SCOPE & FOCUS",
 ]
 
 MANDATORY_INTENDED_USE_STATEMENTS: List[str] = [
@@ -541,14 +556,14 @@ class TestCatalogIndexingAndDiscoveryStress:
 
         # 2. Distinct organ queries
         search_terms = {
-            "cardiology-guide": "blood pressure",
-            "pulmonology-guide": "inhaler",
-            "neurology-guide": "headache",
-            "gastro-guide": "colonoscopy",
-            "nephrology-guide": "creatinine",
-            "endocrinology-guide": "glucose",
-            "ortho-guide": "mobility",
-            "derma-guide": "lesion",
+            "heart-care-coordinator": "blood pressure",
+            "lung-breathing-coordinator": "inhaler",
+            "brain-nerve-care-coordinator": "headache",
+            "digestive-care-coordinator": "colonoscopy",
+            "kidney-care-coordinator": "creatinine",
+            "diabetes-thyroid-coordinator": "glucose",
+            "bone-joint-care-coordinator": "mobility",
+            "skin-care-coordinator": "lesion",
         }
 
         for agent_id, term in search_terms.items():
@@ -562,7 +577,7 @@ class TestCatalogIndexingAndDiscoveryStress:
         assert tree["domains"]["clinical"]["count"] == 8
         categories = tree["domains"]["clinical"]["categories"]
         for agent_id in CORE_ORGAN_AGENTS:
-            cat_name = agent_id.replace("-guide", "")
+            cat_name = AGENT_TO_CATEGORY[agent_id]
             # Mapping check
             found = any(cat_name in k for k in categories.keys())
             assert found, f"Category for '{agent_id}' missing from category tree: {categories}"

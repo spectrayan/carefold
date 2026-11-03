@@ -127,8 +127,8 @@ describe('Web UI Polish, Accessibility & Plain-Language Verification (#171–#18
       render(
         <AgentDetailClient
           agent={{
-            id: 'visit-steward',
-            title: 'Visit Steward',
+            id: 'appointment-prep-coordinator',
+            title: 'Appointment Prep Coordinator',
             version: '0.4.0',
             risk_class: 'wellness',
             model: 'llama3.2',
@@ -190,7 +190,7 @@ describe('Web UI Polish, Accessibility & Plain-Language Verification (#171–#18
         <ChatMessageItem
           message={failedMessage}
           onRetry={onRetry}
-          agentTitle="Visit Steward"
+          agentTitle="Appointment Prep Coordinator"
         />
       );
 

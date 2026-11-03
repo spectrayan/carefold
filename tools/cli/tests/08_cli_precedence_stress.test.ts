@@ -43,19 +43,19 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
   // =========================================================================
   describe('1. Positional Syntax & Argument Combinations', () => {
     it('VERIFY-POS-1: executes positional syntax carefold run <agent-id> "<prompt>"', async () => {
-      const res = await runCli(['run', 'visit-steward', 'What questions should I ask?', '--mock'], {
+      const res = await runCli(['run', 'appointment-prep-coordinator', 'What questions should I ask?', '--mock'], {
         cwd: ws.workspaceDir
       });
       expect(res.exitCode).toBe(0);
       expect(res.stdout).toContain('care navigation assistant');
 
       const auditContent = await ws.readFile('logs/audit.jsonl');
-      expect(auditContent).toContain('"agent_id":"visit-steward"');
+      expect(auditContent).toContain('"agent_id":"appointment-prep-coordinator"');
       expect(auditContent).toContain('"event":"run"');
     });
 
     it('VERIFY-POS-2: executes explicit flag syntax carefold run --agent <agent-id> "<prompt>"', async () => {
-      const res = await runCli(['run', '--agent', 'visit-steward', 'What questions should I ask?', '--mock'], {
+      const res = await runCli(['run', '--agent', 'appointment-prep-coordinator', 'What questions should I ask?', '--mock'], {
         cwd: ws.workspaceDir
       });
       expect(res.exitCode).toBe(0);
@@ -63,7 +63,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
     });
 
     it('VERIFY-POS-3: executes prompt before flag carefold run "<prompt>" --agent <agent-id>', async () => {
-      const res = await runCli(['run', 'What questions should I ask?', '--agent', 'visit-steward', '--mock'], {
+      const res = await runCli(['run', 'What questions should I ask?', '--agent', 'appointment-prep-coordinator', '--mock'], {
         cwd: ws.workspaceDir
       });
       expect(res.exitCode).toBe(0);
@@ -71,7 +71,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
     });
 
     it('VERIFY-POS-4: executes unquoted multi-word prompt with positional agent', async () => {
-      const res = await runCli(['run', 'visit-steward', 'What', 'questions', 'should', 'I', 'ask', 'my', 'doctor?', '--mock'], {
+      const res = await runCli(['run', 'appointment-prep-coordinator', 'What', 'questions', 'should', 'I', 'ask', 'my', 'doctor?', '--mock'], {
         cwd: ws.workspaceDir
       });
       expect(res.exitCode).toBe(0);
@@ -79,7 +79,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
     });
 
     it('VERIFY-POS-5: executes unquoted multi-word prompt with --agent flag', async () => {
-      const res = await runCli(['run', '--agent', 'visit-steward', 'What', 'questions', 'should', 'I', 'ask?', '--mock'], {
+      const res = await runCli(['run', '--agent', 'appointment-prep-coordinator', 'What', 'questions', 'should', 'I', 'ask?', '--mock'], {
         cwd: ws.workspaceDir
       });
       expect(res.exitCode).toBe(0);
@@ -93,35 +93,35 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
     });
 
     it('VERIFY-POS-7: rejects invocation with single positional argument (treated as missing target)', async () => {
-      const res = await runCli(['run', 'visit-steward', '--mock'], { cwd: ws.workspaceDir });
+      const res = await runCli(['run', 'appointment-prep-coordinator', '--mock'], { cwd: ws.workspaceDir });
       expect(res.exitCode).not.toBe(0);
       expect(res.stderr).toContain('Either --agent <id> or --skill <id> is required');
     });
 
     it('VERIFY-POS-8: rejects invocation with --agent but missing prompt', async () => {
-      const res = await runCli(['run', '--agent', 'visit-steward', '--mock'], { cwd: ws.workspaceDir });
+      const res = await runCli(['run', '--agent', 'appointment-prep-coordinator', '--mock'], { cwd: ws.workspaceDir });
       expect(res.exitCode).not.toBe(0);
       expect(res.stderr).toContain('Missing required argument <prompt>');
     });
 
     it('VERIFY-POS-9: rejects empty string prompt and whitespace prompt', async () => {
       // Empty string with positional
-      const resEmptyPos = await runCli(['run', 'visit-steward', '', '--mock'], { cwd: ws.workspaceDir });
+      const resEmptyPos = await runCli(['run', 'appointment-prep-coordinator', '', '--mock'], { cwd: ws.workspaceDir });
       expect(resEmptyPos.exitCode).not.toBe(0);
       expect(resEmptyPos.stderr).toContain('Missing required argument <prompt>');
 
       // Whitespace string with positional
-      const resWsPos = await runCli(['run', 'visit-steward', '   \t  ', '--mock'], { cwd: ws.workspaceDir });
+      const resWsPos = await runCli(['run', 'appointment-prep-coordinator', '   \t  ', '--mock'], { cwd: ws.workspaceDir });
       expect(resWsPos.exitCode).not.toBe(0);
       expect(resWsPos.stderr).toContain('Missing required argument <prompt>');
 
       // Empty string with --agent
-      const resEmptyFlag = await runCli(['run', '--agent', 'visit-steward', '', '--mock'], { cwd: ws.workspaceDir });
+      const resEmptyFlag = await runCli(['run', '--agent', 'appointment-prep-coordinator', '', '--mock'], { cwd: ws.workspaceDir });
       expect(resEmptyFlag.exitCode).not.toBe(0);
       expect(resEmptyFlag.stderr).toContain('Missing required argument <prompt>');
 
       // Whitespace string with --agent
-      const resWsFlag = await runCli(['run', '--agent', 'visit-steward', '   ', '--mock'], { cwd: ws.workspaceDir });
+      const resWsFlag = await runCli(['run', '--agent', 'appointment-prep-coordinator', '   ', '--mock'], { cwd: ws.workspaceDir });
       expect(resWsFlag.exitCode).not.toBe(0);
       expect(resWsFlag.stderr).toContain('Missing required argument <prompt>');
     });
@@ -157,14 +157,14 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       for (const prov of providers) {
         // Short alias -p
         const resShort = await runCli(
-          ['run', 'visit-steward', 'Hello', '-p', prov, '--mock'],
+          ['run', 'appointment-prep-coordinator', 'Hello', '-p', prov, '--mock'],
           { cwd: ws.workspaceDir }
         );
         expect(resShort.exitCode).toBe(0);
 
         // Long option --provider
         const resLong = await runCli(
-          ['run', 'visit-steward', 'Hello', '--provider', prov, '--mock'],
+          ['run', 'appointment-prep-coordinator', 'Hello', '--provider', prov, '--mock'],
           { cwd: ws.workspaceDir }
         );
         expect(resLong.exitCode).toBe(0);
@@ -173,13 +173,13 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
 
     it('VERIFY-ALIAS-2: verifies -m and --model overrides model name', async () => {
       const resShort = await runCli(
-        ['run', 'visit-steward', 'Hello', '-m', 'custom-llm-short', '--mock'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '-m', 'custom-llm-short', '--mock'],
         { cwd: ws.workspaceDir }
       );
       expect(resShort.exitCode).toBe(0);
 
       const resLong = await runCli(
-        ['run', 'visit-steward', 'Hello', '--model', 'custom-llm-long', '--mock'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '--model', 'custom-llm-long', '--mock'],
         { cwd: ws.workspaceDir }
       );
       expect(resLong.exitCode).toBe(0);
@@ -187,13 +187,13 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
 
     it('VERIFY-ALIAS-3: verifies -k and --key overrides API key', async () => {
       const resShort = await runCli(
-        ['run', 'visit-steward', 'Hello', '-k', 'secret-key-1', '--mock'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '-k', 'secret-key-1', '--mock'],
         { cwd: ws.workspaceDir }
       );
       expect(resShort.exitCode).toBe(0);
 
       const resLong = await runCli(
-        ['run', 'visit-steward', 'Hello', '--key', 'secret-key-2', '--mock'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '--key', 'secret-key-2', '--mock'],
         { cwd: ws.workspaceDir }
       );
       expect(resLong.exitCode).toBe(0);
@@ -202,21 +202,21 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
     it('VERIFY-ALIAS-4: verifies --mock does NOT collide with -m (short alias for model)', async () => {
       // 1. -m followed by model name, then --mock
       const res1 = await runCli(
-        ['run', 'visit-steward', 'Hello', '-m', 'my-test-model', '--mock'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '-m', 'my-test-model', '--mock'],
         { cwd: ws.workspaceDir }
       );
       expect(res1.exitCode).toBe(0);
 
       // 2. --mock followed by -m and model name
       const res2 = await runCli(
-        ['run', 'visit-steward', 'Hello', '--mock', '-m', 'my-test-model'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '--mock', '-m', 'my-test-model'],
         { cwd: ws.workspaceDir }
       );
       expect(res2.exitCode).toBe(0);
 
       // 3. -m without argument errors out with option missing argument
       const resMissingModel = await runCli(
-        ['run', 'visit-steward', 'Hello', '-m'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '-m'],
         { cwd: ws.workspaceDir }
       );
       expect(resMissingModel.exitCode).not.toBe(0);
@@ -224,7 +224,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
 
       // 4. -p without argument errors out
       const resMissingProv = await runCli(
-        ['run', 'visit-steward', 'Hello', '-p'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '-p'],
         { cwd: ws.workspaceDir }
       );
       expect(resMissingProv.exitCode).not.toBe(0);
@@ -232,7 +232,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
 
       // 5. -k without argument errors out
       const resMissingKey = await runCli(
-        ['run', 'visit-steward', 'Hello', '-k'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '-k'],
         { cwd: ws.workspaceDir }
       );
       expect(resMissingKey.exitCode).not.toBe(0);
@@ -253,7 +253,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
 
       // 2. Run with env var AND direct CLI key
       const res = await runCli(
-        ['run', 'visit-steward', 'Hello', '--key', 'cli-top-precedence-key', '--mock'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '--key', 'cli-top-precedence-key', '--mock'],
         {
           cwd: ws.workspaceDir,
           env: { OPENAI_API_KEY: 'env-var-api-key' }
@@ -270,7 +270,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       await ws.createFile('carefold.config.json', JSON.stringify(config, null, 2));
 
       const res = await runCli(
-        ['run', 'visit-steward', 'Hello', '--mock'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '--mock'],
         {
           cwd: ws.workspaceDir,
           env: { ANTHROPIC_API_KEY: 'env-key-to-ignore' }
@@ -288,7 +288,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
 
       // With GOOGLE_API_KEY in environment
       const res = await runCli(
-        ['run', 'visit-steward', 'Hello', '--mock'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '--mock'],
         {
           cwd: ws.workspaceDir,
           env: { GOOGLE_API_KEY: 'google-env-key-resolved' }
@@ -299,7 +299,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
 
     it('VERIFY-PREC-4: whitespace CLI --key falls back to environment variable', async () => {
       const res = await runCli(
-        ['run', 'visit-steward', 'Hello', '-p', 'openai', '-k', '   ', '--mock'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '-p', 'openai', '-k', '   ', '--mock'],
         {
           cwd: ws.workspaceDir,
           env: { OPENAI_API_KEY: 'openai-env-key-fallback' }
@@ -315,7 +315,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
   describe('4. Cloud Provider Missing Key Validation in Non-Mock Mode', () => {
     it('VERIFY-VAL-1: google/gemini requires GEMINI_API_KEY or GOOGLE_API_KEY', async () => {
       const resGoogle = await runCli(
-        ['run', 'visit-steward', 'Hello', '--provider', 'google'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '--provider', 'google'],
         {
           cwd: ws.workspaceDir,
           env: { GEMINI_API_KEY: '', GOOGLE_API_KEY: '' }
@@ -326,7 +326,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(resGoogle.stderr).toContain('GEMINI_API_KEY or GOOGLE_API_KEY');
 
       const resGemini = await runCli(
-        ['run', 'visit-steward', 'Hello', '--provider', 'gemini'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '--provider', 'gemini'],
         {
           cwd: ws.workspaceDir,
           env: { GEMINI_API_KEY: '', GOOGLE_API_KEY: '' }
@@ -338,7 +338,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
 
     it('VERIFY-VAL-2: anthropic/claude requires ANTHROPIC_API_KEY', async () => {
       const resAnthropic = await runCli(
-        ['run', 'visit-steward', 'Hello', '--provider', 'anthropic'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '--provider', 'anthropic'],
         {
           cwd: ws.workspaceDir,
           env: { ANTHROPIC_API_KEY: '' }
@@ -349,7 +349,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
       expect(resAnthropic.stderr).toContain('ANTHROPIC_API_KEY');
 
       const resClaude = await runCli(
-        ['run', 'visit-steward', 'Hello', '--provider', 'claude'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '--provider', 'claude'],
         {
           cwd: ws.workspaceDir,
           env: { ANTHROPIC_API_KEY: '' }
@@ -361,7 +361,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
 
     it('VERIFY-VAL-3: openai requires OPENAI_API_KEY', async () => {
       const resOpenAI = await runCli(
-        ['run', 'visit-steward', 'Hello', '--provider', 'openai'],
+        ['run', 'appointment-prep-coordinator', 'Hello', '--provider', 'openai'],
         {
           cwd: ws.workspaceDir,
           env: { OPENAI_API_KEY: '' }
@@ -374,7 +374,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
 
     it('VERIFY-VAL-4: whitespace-only key in non-mock mode triggers missing key error', async () => {
       const resWsKey = await runCli(
-        ['run', 'visit-steward', 'Hello', '--provider', 'openai', '--key', '   \t  '],
+        ['run', 'appointment-prep-coordinator', 'Hello', '--provider', 'openai', '--key', '   \t  '],
         {
           cwd: ws.workspaceDir,
           env: { OPENAI_API_KEY: '' }
@@ -398,7 +398,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
 
       for (const prompt of refusalPrompts) {
         const res = await runCli(
-          ['run', 'visit-steward', prompt, '-p', 'google', '-m', 'gemini-2.0-flash', '-k', 'test-key', '--mock'],
+          ['run', 'appointment-prep-coordinator', prompt, '-p', 'google', '-m', 'gemini-2.0-flash', '-k', 'test-key', '--mock'],
           { cwd: ws.workspaceDir }
         );
         expect(res.exitCode).toBe(0);
@@ -421,7 +421,7 @@ describe('08: CLI Arguments, Aliases & Precedence Suite', () => {
 
       for (const prompt of dosingPrompts) {
         const res = await runCli(
-          ['run', '--agent', 'visit-steward', prompt, '--provider', 'anthropic', '--model', 'claude-3-5-haiku', '--mock'],
+          ['run', '--agent', 'appointment-prep-coordinator', prompt, '--provider', 'anthropic', '--model', 'claude-3-5-haiku', '--mock'],
           { cwd: ws.workspaceDir }
         );
         expect(res.exitCode).toBe(0);

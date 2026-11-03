@@ -79,31 +79,31 @@ Carefold organizes clinical, administrative, and wellness specialists under clea
 
 | Agent Identifier | Domain | Category | Risk Class | Key Skills |
 |---|---|---|---|---|
-| `cardiology-guide` | `clinical` | `cardiology` | `clinical_assist` | `cardiology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
-| `pulmonology-guide` | `clinical` | `pulmonology` | `clinical_assist` | `pulmonology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
-| `derma-guide` | `clinical` | `dermatology` | `clinical_assist` | `derma-prep`, `clinical-safety-boundaries` |
-| `gastro-guide` | `clinical` | `gastroenterology` | `clinical_assist` | `gastro-prep`, `clinical-safety-boundaries` |
-| `neurology-guide` | `clinical` | `neurology` | `clinical_assist` | `neurology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
-| `nephrology-guide` | `clinical` | `nephrology` | `clinical_assist` | `nephrology-prep`, `clinical-safety-boundaries` |
-| `endocrinology-guide` | `clinical` | `endocrinology` | `clinical_assist` | `endocrinology-prep`, `clinical-safety-boundaries` |
-| `rheuma-guide` | `clinical` | `rheumatology` | `clinical_assist` | `rheuma-prep`, `clinical-safety-boundaries` |
-| `ortho-guide` | `clinical` | `orthopedics` | `clinical_assist` | `ortho-prep`, `clinical-safety-boundaries` |
-| `urology-guide` | `clinical` | `urology` | `clinical_assist` | `urology-prep`, `clinical-safety-boundaries` |
-| `ent-guide` | `clinical` | `ent` | `clinical_assist` | `ent-prep`, `clinical-safety-boundaries` |
-| `eye-guide` | `clinical` | `ophthalmology` | `clinical_assist` | `vision-prep`, `clinical-safety-boundaries` |
-| `hematology-guide` | `clinical` | `hematology` | `clinical_assist` | `hematology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
-| `oncology-navigator` | `clinical` | `oncology` | `clinical_assist` | `oncology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
-| `oral-health-guide` | `clinical` | `dentistry` | `clinical_assist` | `oral-health-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
-| `podiatry-guide` | `clinical` | `podiatry` | `clinical_assist` | `podiatry-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
-| `vascular-guide` | `clinical` | `vascular` | `clinical_assist` | `vascular-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
-| `visit-steward` | `clinical` | `general` | `clinical_assist` | `visit-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
-| `benefits-guide` | `navigation` | `insurance` | `admin` | `benefits-explainer`, `records-management` |
-| `claims-appeals-guide` | `navigation` | `appeals` | `admin` | `claims-appeals-prep`, `benefits-explainer` |
-| `prior-auth-navigator` | `navigation` | `authorizations` | `admin` | `prior-auth-prep`, `records-management` |
-| `formulary-guide` | `navigation` | `pharmacy` | `admin` | `formulary-navigation`, `benefits-explainer` |
+| `heart-care-coordinator` | `clinical` | `cardiology` | `clinical_assist` | `cardiology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
+| `lung-breathing-coordinator` | `clinical` | `pulmonology` | `clinical_assist` | `pulmonology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
+| `skin-care-coordinator` | `clinical` | `dermatology` | `clinical_assist` | `derma-prep`, `clinical-safety-boundaries` |
+| `digestive-care-coordinator` | `clinical` | `gastroenterology` | `clinical_assist` | `gastro-prep`, `clinical-safety-boundaries` |
+| `brain-nerve-care-coordinator` | `clinical` | `neurology` | `clinical_assist` | `neurology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
+| `kidney-care-coordinator` | `clinical` | `nephrology` | `clinical_assist` | `nephrology-prep`, `clinical-safety-boundaries` |
+| `diabetes-thyroid-coordinator` | `clinical` | `endocrinology` | `clinical_assist` | `endocrinology-prep`, `clinical-safety-boundaries` |
+| `autoimmune-care-coordinator` | `clinical` | `rheumatology` | `clinical_assist` | `rheuma-prep`, `clinical-safety-boundaries` |
+| `bone-joint-care-coordinator` | `clinical` | `orthopedics` | `clinical_assist` | `ortho-prep`, `clinical-safety-boundaries` |
+| `bladder-pelvic-care-coordinator` | `clinical` | `urology` | `clinical_assist` | `urology-prep`, `clinical-safety-boundaries` |
+| `ent-care-coordinator` | `clinical` | `ent` | `clinical_assist` | `ent-prep`, `clinical-safety-boundaries` |
+| `eye-care-coordinator` | `clinical` | `ophthalmology` | `clinical_assist` | `vision-prep`, `clinical-safety-boundaries` |
+| `blood-care-coordinator` | `clinical` | `hematology` | `clinical_assist` | `hematology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
+| `cancer-care-coordinator` | `clinical` | `oncology` | `clinical_assist` | `oncology-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
+| `dental-care-coordinator` | `clinical` | `dentistry` | `clinical_assist` | `oral-health-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
+| `foot-care-coordinator` | `clinical` | `podiatry` | `clinical_assist` | `podiatry-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
+| `circulation-vein-care-coordinator` | `clinical` | `vascular` | `clinical_assist` | `vascular-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
+| `appointment-prep-coordinator` | `clinical` | `general` | `clinical_assist` | `visit-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
+| `benefits-coordinator` | `navigation` | `insurance` | `admin` | `benefits-explainer`, `records-management` |
+| `claims-appeals-coordinator` | `navigation` | `appeals` | `admin` | `claims-appeals-prep`, `benefits-explainer` |
+| `prior-authorization-coordinator` | `navigation` | `authorizations` | `admin` | `prior-auth-prep`, `records-management` |
+| `prescription-cost-coordinator` | `navigation` | `pharmacy` | `admin` | `formulary-navigation`, `benefits-explainer` |
 | `records-coordinator` | `navigation` | `records` | `admin` | `records-management` |
-| `habit-companion` | `wellness` | `habits` | `wellness` | `habit-checkin` |
-| `nutrition-dietitian-guide` | `wellness` | `nutrition` | `wellness` | `nutrition-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
+| `habit-coordinator` | `wellness` | `habits` | `wellness` | `habit-checkin` |
+| `nutrition-coordinator` | `wellness` | `nutrition` | `wellness` | `nutrition-prep`, `emergency-red-flags`, `clinical-safety-boundaries` |
 | `_template` | `clinical` | `template` | `education` | Starter template for community agents |
 
 ### 2.2 System Agents (`agents/_system`)

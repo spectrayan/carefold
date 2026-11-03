@@ -157,8 +157,8 @@ sequenceDiagram
     autonumber
     participant Orch as OrchestratorNode
     participant Disp as ExecutionDispatcher
-    participant SpecA as Primary Specialist (e.g. cardiology-guide)
-    participant SpecB as Secondary Specialist (e.g. prior-auth-navigator)
+    participant SpecA as Primary Specialist (e.g. heart-care-coordinator)
+    participant SpecB as Secondary Specialist (e.g. prior-authorization-coordinator)
     participant Synth as ResponseSynthesizerNode
 
     Note over Orch: Analyzes query: requires clinical review then prior auth
@@ -171,7 +171,7 @@ sequenceDiagram
     Disp->>SpecB: Execute SpecB (injected with SpecA output & prior-auth references)
     SpecB-->>Disp: Prior auth navigation output
     
-    Disp->>Synth: specialist_outputs: {cardiology-guide, prior-auth-navigator}
+    Disp->>Synth: specialist_outputs: {heart-care-coordinator, prior-authorization-coordinator}
     Synth->>Synth: Reconcile, Deduplicate Disclaimers & Append Canonical Footer
     Synth-->>Orch: Patient Consultation Master Agenda
 ```

@@ -18,7 +18,7 @@ import { AgentDetailClient } from '@/app/agents/[id]/AgentDetailClient';
 import type { AgentDetail } from '@/lib/types';
 
 const mockAgent: AgentDetail = {
-  id: 'cardiology-guide',
+  id: 'heart-care-coordinator',
   title: 'Cardiology Guide',
   version: '0.1.0',
   model: 'llama3.2:3b',

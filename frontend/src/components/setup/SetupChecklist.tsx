@@ -437,13 +437,13 @@ export function SetupChecklist({
               <StepBadge badge="[READY]" />
             </div>
             <p className="text-xs text-slate-600 dark:text-zinc-300 mt-1">
-              Visit Steward is ready with pre-configured appointment preparation questions.
+              Appointment Prep Coordinator is ready with pre-configured appointment preparation questions.
             </p>
           </div>
         </div>
 
         <Link
-          href="/chat?agent=visit-steward"
+          href="/chat?agent=appointment-prep-coordinator"
           data-testid="setup-starter-btn"
           onClick={handleStarterClick}
           className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] shadow-sm transition whitespace-nowrap cursor-pointer shrink-0"

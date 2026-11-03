@@ -87,8 +87,8 @@ class ReferenceResponseSynthesizerNode:
         sections: List[str] = ["# Patient Consultation Master Agenda\n"]
 
         # Check for cardiorenal fluid/sodium tradeoff
-        has_cardio = "cardiology-guide" in specialist_outputs
-        has_nephro = "nephrology-guide" in specialist_outputs
+        has_cardio = "heart-care-coordinator" in specialist_outputs
+        has_nephro = "kidney-care-coordinator" in specialist_outputs
         combined_text = " ".join(specialist_outputs.values()).lower()
         has_fluid_conflict = ("fluid" in combined_text or "sodium" in combined_text) and (has_cardio and has_nephro)
 
@@ -139,7 +139,7 @@ class TestResponseSynthesisFeatureCoverage:
             "DISCLAIMER: I am not a doctor. Consult your physician."
         )
         state = {
-            "specialist_outputs": {"cardiology-guide": raw_text},
+            "specialist_outputs": {"heart-care-coordinator": raw_text},
         }
 
         output = synth.synthesize_response(state)
@@ -155,17 +155,17 @@ class TestResponseSynthesisFeatureCoverage:
         synth = get_synthesizer()
         state = {
             "specialist_outputs": {
-                "cardiology-guide": "Track daily pulse and blood pressure.",
-                "endocrinology-guide": "Review 14-day continuous glucose monitor report.",
+                "heart-care-coordinator": "Track daily pulse and blood pressure.",
+                "diabetes-thyroid-coordinator": "Review 14-day continuous glucose monitor report.",
             },
         }
 
         output = synth.synthesize_response(state)
 
         assert "# Patient Consultation Master Agenda" in output
-        assert "## Cardiology Guide Guidance" in output
+        assert "## Heart Care Coordinator Guidance" in output
         assert "Track daily pulse and blood pressure." in output
-        assert "## Endocrinology Guide Guidance" in output
+        assert "## Diabetes Thyroid Coordinator Guidance" in output
         assert "Review 14-day continuous glucose monitor report." in output
 
     def test_cardiorenal_tradeoff_collaborative_doctor_questions(self):
@@ -173,8 +173,8 @@ class TestResponseSynthesisFeatureCoverage:
         synth = get_synthesizer()
         state = {
             "specialist_outputs": {
-                "cardiology-guide": "Cardiology recommends strict 1.5L daily fluid restriction and sodium moderation.",
-                "nephrology-guide": "Nephrology cautions that severe fluid restriction may increase serum creatinine.",
+                "heart-care-coordinator": "Cardiology recommends strict 1.5L daily fluid restriction and sodium moderation.",
+                "kidney-care-coordinator": "Nephrology cautions that severe fluid restriction may increase serum creatinine.",
             },
         }
 
@@ -192,9 +192,9 @@ class TestResponseSynthesisFeatureCoverage:
         synth = get_synthesizer()
         state = {
             "specialist_outputs": {
-                "cardiology-guide": "Cardio advice.\nDISCLAIMER: I am not a doctor. Consult your physician.",
-                "nephrology-guide": "Renal advice.\nDISCLAIMER: I am not a physician. Consult your doctor.",
-                "endocrinology-guide": "Endo advice.\nNOTE: I am not a clinician. See your physician.",
+                "heart-care-coordinator": "Cardio advice.\nDISCLAIMER: I am not a doctor. Consult your physician.",
+                "kidney-care-coordinator": "Renal advice.\nDISCLAIMER: I am not a physician. Consult your doctor.",
+                "diabetes-thyroid-coordinator": "Endo advice.\nNOTE: I am not a clinician. See your physician.",
             },
         }
 
@@ -214,7 +214,7 @@ class TestResponseSynthesisFeatureCoverage:
             "event": "run",
             "agent_id": "orchestrator",
             "execution_plan_mode": "parallel",
-            "target_agents": ["cardiology-guide", "nephrology-guide"],
+            "target_agents": ["heart-care-coordinator", "kidney-care-coordinator"],
             "request_body": "Sensitive patient medical record with PII and clinical history",
             "response_body": "Detailed clinical synthesis with confidential diagnoses",
         }
@@ -263,7 +263,7 @@ class TestResponseSynthesisBoundaries:
         """Clean outputs without any existing disclaimers receive the canonical disclaimer."""
         synth = get_synthesizer()
         state = {
-            "specialist_outputs": {"cardiology-guide": "Simple lifestyle recommendations."},
+            "specialist_outputs": {"heart-care-coordinator": "Simple lifestyle recommendations."},
         }
         output = synth.synthesize_response(state)
         assert CANONICAL_DISCLAIMER in output
@@ -299,14 +299,14 @@ class TestResponseSynthesisCrossFeature:
         synth = get_synthesizer()
         state = {
             "specialist_outputs": {
-                "ortho-guide": "Pre-operative physical therapy assessment.",
-                "prior-auth-navigator": "Prior authorization checklist complete.",
+                "bone-joint-care-coordinator": "Pre-operative physical therapy assessment.",
+                "prior-authorization-coordinator": "Prior authorization checklist complete.",
             },
         }
 
         full_output = synth.synthesize_response(state)
-        assert "Ortho Guide Guidance" in full_output
-        assert "Prior Auth Navigator Guidance" in full_output
+        assert "Bone Joint Care Coordinator Guidance" in full_output
+        assert "Prior Authorization Coordinator Guidance" in full_output
         assert state["output"] == full_output
 
 
@@ -322,14 +322,14 @@ class TestResponseSynthesisRealWorldScenarios:
         synth = get_synthesizer()
         state = {
             "specialist_outputs": {
-                "cardiology-guide": (
+                "heart-care-coordinator": (
                     "CARDIOLOGY ENCOUNTER PREPARATION:\n"
                     "- Review 7-day home BP log (average 138/86 mmHg).\n"
                     "- Note reported 3-lb weight gain and bilateral ankle puffiness.\n"
                     "- Discuss 1.5L daily fluid restriction.\n"
                     "DISCLAIMER: Consult your doctor."
                 ),
-                "nephrology-guide": (
+                "kidney-care-coordinator": (
                     "NEPHROLOGY ENCOUNTER PREPARATION:\n"
                     "- Current eGFR 42 mL/min (Stage 3 CKD).\n"
                     "- Monitor for over-diuresis and acute kidney injury with strict fluid limits.\n"
@@ -347,8 +347,8 @@ class TestResponseSynthesisRealWorldScenarios:
         assert "Priority Doctor-Discussion Questions" in output
         assert "fluid restriction and sodium intake" in output
         # 3. Specialty Guidance
-        assert "Cardiology Guide Guidance" in output
-        assert "Nephrology Guide Guidance" in output
+        assert "Heart Care Coordinator Guidance" in output
+        assert "Kidney Care Coordinator Guidance" in output
         # 4. Canonical Disclaimer Footer
         assert CANONICAL_DISCLAIMER in output
         assert output.count("DISCLAIMER:") == 1

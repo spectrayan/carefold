@@ -70,7 +70,7 @@ from tests.fixtures.fake_model import FakeListChatModel
 ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
     # 8 Core Organ Navigators (R1)
     {
-        "id": "cardiology-guide",
+        "id": "heart-care-coordinator",
         "companion_skill": "cardiology-prep",
         "domain": "clinical",
         "category": "clinical.cardiology",
@@ -79,7 +79,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.cardiology",
     },
     {
-        "id": "pulmonology-guide",
+        "id": "lung-breathing-coordinator",
         "companion_skill": "pulmonology-prep",
         "domain": "clinical",
         "category": "clinical.pulmonology",
@@ -88,7 +88,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.pulmonology",
     },
     {
-        "id": "neurology-guide",
+        "id": "brain-nerve-care-coordinator",
         "companion_skill": "neurology-prep",
         "domain": "clinical",
         "category": "clinical.neurology",
@@ -97,7 +97,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.neurology",
     },
     {
-        "id": "gastro-guide",
+        "id": "digestive-care-coordinator",
         "companion_skill": "gastro-prep",
         "domain": "clinical",
         "category": "clinical.gastroenterology",
@@ -106,7 +106,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.gastroenterology",
     },
     {
-        "id": "nephrology-guide",
+        "id": "kidney-care-coordinator",
         "companion_skill": "nephrology-prep",
         "domain": "clinical",
         "category": "clinical.nephrology",
@@ -115,7 +115,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.nephrology",
     },
     {
-        "id": "endocrinology-guide",
+        "id": "diabetes-thyroid-coordinator",
         "companion_skill": "endocrinology-prep",
         "domain": "clinical",
         "category": "clinical.endocrinology",
@@ -124,7 +124,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.endocrinology",
     },
     {
-        "id": "ortho-guide",
+        "id": "bone-joint-care-coordinator",
         "companion_skill": "ortho-prep",
         "domain": "clinical",
         "category": "clinical.orthopedics",
@@ -133,7 +133,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.orthopedics",
     },
     {
-        "id": "derma-guide",
+        "id": "skin-care-coordinator",
         "companion_skill": "derma-prep",
         "domain": "clinical",
         "category": "clinical.dermatology",
@@ -143,7 +143,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
     },
     # 5 Extended Medical & Surgical Navigators (R2)
     {
-        "id": "oncology-navigator",
+        "id": "cancer-care-coordinator",
         "companion_skill": "oncology-prep",
         "domain": "clinical",
         "category": "clinical.oncology",
@@ -152,7 +152,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.oncology",
     },
     {
-        "id": "rheuma-guide",
+        "id": "autoimmune-care-coordinator",
         "companion_skill": "rheuma-prep",
         "domain": "clinical",
         "category": "clinical.rheumatology",
@@ -161,7 +161,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.rheumatology",
     },
     {
-        "id": "urology-guide",
+        "id": "bladder-pelvic-care-coordinator",
         "companion_skill": "urology-prep",
         "domain": "clinical",
         "category": "clinical.urology",
@@ -170,7 +170,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.urology",
     },
     {
-        "id": "eye-guide",
+        "id": "eye-care-coordinator",
         "companion_skill": "vision-prep",
         "domain": "clinical",
         "category": "clinical.ophthalmology",
@@ -179,7 +179,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "clinical.ophthalmology",
     },
     {
-        "id": "ent-guide",
+        "id": "ent-care-coordinator",
         "companion_skill": "ent-prep",
         "domain": "clinical",
         "category": "clinical.ent",
@@ -189,7 +189,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
     },
     # 4 Healthcare Administration Stewards (R3)
     {
-        "id": "prior-auth-navigator",
+        "id": "prior-authorization-coordinator",
         "companion_skill": "prior-auth-prep",
         "domain": "navigation",
         "category": "navigation.prior_auth",
@@ -198,7 +198,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "navigation.prior_auth",
     },
     {
-        "id": "claims-appeals-guide",
+        "id": "claims-appeals-coordinator",
         "companion_skill": "claims-appeals-prep",
         "domain": "navigation",
         "category": "navigation.claims",
@@ -216,7 +216,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
         "tier1_category": "navigation.records",
     },
     {
-        "id": "formulary-guide",
+        "id": "prescription-cost-coordinator",
         "companion_skill": "formulary-navigation",
         "domain": "navigation",
         "category": "navigation.formulary",
@@ -226,7 +226,7 @@ ALL_17_SPECIALIST_SPECS: List[Dict[str, Any]] = [
     },
 ]
 
-BASELINE_AGENT_IDS = ["benefits-guide", "habit-companion", "visit-steward"]
+BASELINE_AGENT_IDS = ["benefits-coordinator", "habit-coordinator", "appointment-prep-coordinator"]
 SYSTEM_AGENT_IDS = ["triage-auditor", "quality-reviewer"]
 
 
@@ -380,23 +380,23 @@ class TestCatalogIndexing:
         # 1. Tag filtering via json_each
         tagged = await populated_catalog.search_agents(tags=["hypertension"])
         assert len(tagged) >= 1
-        assert any(a.id == "cardiology-guide" for a in tagged)
+        assert any(a.id == "heart-care-coordinator" for a in tagged)
 
         # 2. Deletion lifecycle
-        cardio = await populated_catalog.get_agent("cardiology-guide")
+        cardio = await populated_catalog.get_agent("heart-care-coordinator")
         assert cardio is not None
 
-        deleted = await populated_catalog.delete_agent("cardiology-guide")
+        deleted = await populated_catalog.delete_agent("heart-care-coordinator")
         assert deleted is True
 
-        post_delete = await populated_catalog.get_agent("cardiology-guide")
+        post_delete = await populated_catalog.get_agent("heart-care-coordinator")
         assert post_delete is None
 
         # 3. Re-index
         await populated_catalog.index_agent(cardio)
-        post_reindex = await populated_catalog.get_agent("cardiology-guide")
+        post_reindex = await populated_catalog.get_agent("heart-care-coordinator")
         assert post_reindex is not None
-        assert post_reindex.id == "cardiology-guide"
+        assert post_reindex.id == "heart-care-coordinator"
 
 
 # ============================================================================
@@ -443,7 +443,7 @@ class TestCategoryTreeAndAPI:
             assert cat in nav_cats, f"Navigation category '{cat}' missing from category tree"
             assert nav_cats[cat]["count"] >= 1
 
-        # Wellness agent (habit-companion)
+        # Wellness agent (habit-coordinator)
         assert domains["wellness"]["count"] >= 1
         assert "habits" in domains["wellness"]["categories"]
 
@@ -553,7 +553,7 @@ class TestTwoHopRoutingIntegration:
             "reasoning": "Unrecognized category under navigation",
         })
         tier2_resp = json.dumps({
-            "agent_id": "prior-auth-navigator",
+            "agent_id": "prior-authorization-coordinator",
             "reasoning": "Selected from domain candidates",
             "instructions": "",
         })
@@ -568,7 +568,7 @@ class TestTwoHopRoutingIntegration:
         state = {"messages": [HumanMessage(content="I need help with prior authorization")]}
         result = await node.execute(state)
 
-        assert result["current_agent"] == "prior-auth-navigator"
+        assert result["current_agent"] == "prior-authorization-coordinator"
 
     @pytest.mark.asyncio
     async def test_two_hop_fallback_step3_fts_query(
@@ -583,7 +583,7 @@ class TestTwoHopRoutingIntegration:
             "reasoning": "Misclassified domain with 0 candidates",
         })
         tier2_resp = json.dumps({
-            "agent_id": "nephrology-guide",
+            "agent_id": "kidney-care-coordinator",
             "reasoning": "Selected from FTS retrieved candidates",
             "instructions": "",
         })
@@ -598,7 +598,7 @@ class TestTwoHopRoutingIntegration:
         state = {"messages": [HumanMessage(content="elevated creatinine kidney egfr labs")]}
         result = await node.execute(state)
 
-        assert result["current_agent"] == "nephrology-guide"
+        assert result["current_agent"] == "kidney-care-coordinator"
 
     @pytest.mark.asyncio
     async def test_two_hop_fallback_step4_pattern_fallback(
@@ -624,7 +624,7 @@ class TestTwoHopRoutingIntegration:
         state = {"messages": [HumanMessage(content="severe sinusitis pressure and audiology tinnitus evaluation")]}
         result = await node.execute(state)
 
-        assert result["current_agent"] == "ent-guide"
+        assert result["current_agent"] == "ent-care-coordinator"
         assert "Catalog fallback chain returned 0 candidates" in result["orchestrator_reasoning"]
         await empty_catalog.close()
 
@@ -641,7 +641,7 @@ class TestTwoHopRoutingIntegration:
             "reasoning": "Cardiology inquiry",
         })
         tier2_resp = json.dumps({
-            "agent_id": "cardiology-guide",
+            "agent_id": "heart-care-coordinator",
             "reasoning": "Cardiology specialist selected",
             "instructions": "",
             "required_docs": ["hypertension_log_template.md", "cardiology_visit_agenda.md"],
@@ -660,7 +660,7 @@ class TestTwoHopRoutingIntegration:
         }
         result = await node.execute(state)
 
-        assert result["current_agent"] == "cardiology-guide"
+        assert result["current_agent"] == "heart-care-coordinator"
         # Pre-flight provisioning confirms reference docs declared by cardiology-prep are recognized
         cardio_skill = live_registry.get_skill("cardiology-prep")
         assert cardio_skill is not None

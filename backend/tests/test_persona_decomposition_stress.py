@@ -14,7 +14,7 @@
 Boundary Stress Invariants:
 1. Decomposed Persona Integrity:
    - All 21 public agent packs + template: persona_slim.md token budget constraints (40 <= words < 600).
-   - Sections 1 & 2 (ROLE & EMPATHY, CLINICAL SCOPE & FOCUS) must be present in sequence.
+   - Sections 1 & 2 (ROLE & EMPATHY, SCOPE & FOCUS) must be present in sequence.
    - Sections 3, 4, 5 (STRUCTURED INTERACTION PROTOCOL, STRICT NON-CLINICAL BOUNDARIES,
      EXPLICIT EMERGENCY RED FLAGS) must be strictly excluded.
    - persona.md.migrated must preserve the historical 5-section layout for audit compliance.
@@ -92,16 +92,16 @@ class TestDecomposedPersonaAdversarial:
 
     @pytest.mark.parametrize("agent_dir", get_public_agent_dirs(), ids=lambda d: d.name)
     def test_persona_slim_sections_1_and_2_presence(self, agent_dir: Path):
-        """Verify Section 1 (ROLE & EMPATHY) and Section 2 (CLINICAL SCOPE & FOCUS) exist and are non-empty."""
+        """Verify Section 1 (ROLE & EMPATHY) and Section 2 (SCOPE & FOCUS) exist and are non-empty."""
         text = (agent_dir / "persona.md").read_text(encoding="utf-8")
 
-        sec1_match = re.search(r"^ROLE & EMPATHY:\s*(.*?)(?=\nCLINICAL SCOPE & FOCUS:|\Z)", text, re.DOTALL | re.MULTILINE)
+        sec1_match = re.search(r"^ROLE & EMPATHY:\s*(.*?)(?=\nSCOPE & FOCUS:|\Z)", text, re.DOTALL | re.MULTILINE)
         assert sec1_match is not None, f"{agent_dir.name} missing Section 1 (ROLE & EMPATHY:)"
         sec1_content = sec1_match.group(1).strip()
         assert len(sec1_content.split()) >= 20, f"{agent_dir.name} Section 1 too short ({len(sec1_content.split())} words)"
 
-        sec2_match = re.search(r"^CLINICAL SCOPE & FOCUS:\s*(.*?)\Z", text, re.DOTALL | re.MULTILINE)
-        assert sec2_match is not None, f"{agent_dir.name} missing Section 2 (CLINICAL SCOPE & FOCUS:)"
+        sec2_match = re.search(r"^SCOPE & FOCUS:\s*(.*?)\Z", text, re.DOTALL | re.MULTILINE)
+        assert sec2_match is not None, f"{agent_dir.name} missing Section 2 (SCOPE & FOCUS:)"
         sec2_content = sec2_match.group(1).strip()
         assert len(sec2_content.split()) >= 20, f"{agent_dir.name} Section 2 too short ({len(sec2_content.split())} words)"
 
@@ -250,7 +250,7 @@ class TestPromptAssemblyAndTokenBudgetInvariants:
         # Pre-stuffing: safety preamble + full monolithic persona (1200 words across 5 sections) + full SKILL.md body + references
         legacy_persona = (
             "ROLE & EMPATHY:\n" + ("empathy " * 300) + "\n\n"
-            "CLINICAL SCOPE & FOCUS:\n" + ("scope " * 250) + "\n\n"
+            "SCOPE & FOCUS:\n" + ("scope " * 250) + "\n\n"
             "STRUCTURED INTERACTION PROTOCOL:\n" + ("protocol " * 350) + "\n\n"
             "STRICT NON-CLINICAL BOUNDARIES:\n" + ("boundary " * 200) + "\n\n"
             "EXPLICIT EMERGENCY RED FLAGS:\n" + ("redflag " * 200) + "\n"

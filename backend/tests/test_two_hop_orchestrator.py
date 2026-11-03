@@ -37,11 +37,11 @@ from langchain_core.messages import AIMessage, HumanMessage
 
 from carefold.agents.registry import AgentRegistry
 from carefold.constants.agents import (
-    AGENT_BENEFITS_GUIDE,
+    AGENT_BENEFITS_COORDINATOR,
     AGENT_DOCUMENT_EXTRACTOR,
-    AGENT_HABIT_COMPANION,
+    AGENT_HABIT_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_VISIT_STEWARD,
+    AGENT_VISIT_PREP_COORDINATOR,
     DEFAULT_ROUTING_FALLBACK_AGENT,
 )
 from carefold.memory.adapters.sqlite.catalog_adapter import SqliteCatalogAdapter
@@ -97,8 +97,8 @@ async def indexed_catalog() -> SqliteCatalogAdapter:
 
     agents = [
         make_test_manifest(
-            agent_id="benefits-guide",
-            title="Benefits Guide",
+            agent_id="benefits-coordinator",
+            title="Benefits Coordinator",
             domain="navigation",
             category="navigation.insurance",
             description="Specializes in health insurance coverage, copays, deductibles, and claims navigation.",
@@ -106,8 +106,8 @@ async def indexed_catalog() -> SqliteCatalogAdapter:
             tools=["attach-read", "workspace-note"],
         ),
         make_test_manifest(
-            agent_id="visit-steward",
-            title="Visit Steward",
+            agent_id="appointment-prep-coordinator",
+            title="Appointment Prep Coordinator",
             domain="navigation",
             category="navigation.appointments",
             description="Assists with clinical appointment preparation, doctor questions, and visit checklists.",
@@ -115,8 +115,8 @@ async def indexed_catalog() -> SqliteCatalogAdapter:
             tools=["workspace-note", "attach-read"],
         ),
         make_test_manifest(
-            agent_id="habit-companion",
-            title="Habit Companion",
+            agent_id="habit-coordinator",
+            title="Habit Coordinator",
             domain="wellness",
             category="wellness.habits",
             description="Helps users build consistent healthy habits, track hydration, and improve sleep hygiene.",
@@ -197,9 +197,9 @@ class TestTwoHopSchemasAndPromptContract:
         assert "education.conditions" in prompt
 
         # Invariant: Must NOT contain agent catalog descriptions or specific agent IDs
-        assert "benefits-guide" not in prompt
-        assert "visit-steward" not in prompt
-        assert "habit-companion" not in prompt
+        assert "benefits-coordinator" not in prompt
+        assert "appointment-prep-coordinator" not in prompt
+        assert "habit-coordinator" not in prompt
         assert "document-extractor" not in prompt
 
         # Invariant: Prompt must be compact and bounded (~500 tokens / <500 words)
@@ -240,7 +240,7 @@ class TestBackwardCompatibility:
         """Confirms that when catalog is None, node executes single-hop format_agent_catalog flow."""
         registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
         model_response = json.dumps({
-            "agent_id": "benefits-guide",
+            "agent_id": "benefits-coordinator",
             "reasoning": "Single-hop routing to benefits guide.",
             "instructions": "Clarify copay details.",
         })
@@ -250,8 +250,8 @@ class TestBackwardCompatibility:
         state = {"messages": [HumanMessage(content="What is my copay for a specialist?")]}
         result = await node.execute(state)
 
-        assert result["current_agent"] == "benefits-guide"
-        assert result["routed_subgraph"] == "benefits-guide"
+        assert result["current_agent"] == "benefits-coordinator"
+        assert result["routed_subgraph"] == "benefits-coordinator"
         assert result["orchestrator_instructions"] == "Clarify copay details."
         assert "Single-hop routing to benefits guide" in result["orchestrator_reasoning"]
 
@@ -263,9 +263,9 @@ class TestBackwardCompatibility:
 
         prompt = node._build_system_prompt({})
         assert "Available Specialist Agents:" in prompt
-        assert AGENT_BENEFITS_GUIDE in prompt
-        assert AGENT_VISIT_STEWARD in prompt
-        assert AGENT_HABIT_COMPANION in prompt
+        assert AGENT_BENEFITS_COORDINATOR in prompt
+        assert AGENT_VISIT_PREP_COORDINATOR in prompt
+        assert AGENT_HABIT_COORDINATOR in prompt
         assert AGENT_DOCUMENT_EXTRACTOR in prompt
 
     @pytest.mark.asyncio
@@ -277,7 +277,7 @@ class TestBackwardCompatibility:
         state = {"messages": [HumanMessage(content="What is my copay?")]}
         result = await node.execute(state)
 
-        assert result["current_agent"] == "benefits-guide"
+        assert result["current_agent"] == "benefits-coordinator"
         assert "Model unconfigured" in result["orchestrator_reasoning"]
 
 
@@ -299,8 +299,8 @@ class TestTwoHopRoutingFlow:
             "reasoning": "User asks about insurance coverage and deductibles.",
         })
         tier2_resp = json.dumps({
-            "agent_id": "benefits-guide",
-            "reasoning": "Selected benefits-guide from candidate set to handle insurance query.",
+            "agent_id": "benefits-coordinator",
+            "reasoning": "Selected benefits-coordinator from candidate set to handle insurance query.",
             "instructions": "Explain in-network deductible terms.",
         })
 
@@ -310,14 +310,14 @@ class TestTwoHopRoutingFlow:
         state = {"messages": [HumanMessage(content="Can you explain my deductible?")]}
         result = await node.execute(state)
 
-        assert result["current_agent"] == "benefits-guide"
-        assert result["routed_subgraph"] == "benefits-guide"
+        assert result["current_agent"] == "benefits-coordinator"
+        assert result["routed_subgraph"] == "benefits-coordinator"
         assert result["orchestrator_instructions"] == "Explain in-network deductible terms."
-        assert "Selected benefits-guide from candidate set" in result["orchestrator_reasoning"]
+        assert "Selected benefits-coordinator from candidate set" in result["orchestrator_reasoning"]
 
     @pytest.mark.asyncio
     async def test_two_hop_wellness_domain_selection(self, indexed_catalog: SqliteCatalogAdapter, temp_workspace: Path):
-        """Tier-1 classifies wellness.habits, Tier-2 selects habit-companion."""
+        """Tier-1 classifies wellness.habits, Tier-2 selects habit-coordinator."""
         registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
 
         tier1_resp = json.dumps({
@@ -326,7 +326,7 @@ class TestTwoHopRoutingFlow:
             "reasoning": "Query asks about water intake and daily sleep habits.",
         })
         tier2_resp = json.dumps({
-            "agent_id": "habit-companion",
+            "agent_id": "habit-coordinator",
             "reasoning": "Habit companion is best suited for hydration and sleep tracking.",
             "instructions": "Set a goal of 64 ounces of water daily.",
         })
@@ -337,8 +337,8 @@ class TestTwoHopRoutingFlow:
         state = {"messages": [HumanMessage(content="How much water should I drink every day?")]}
         result = await node.execute(state)
 
-        assert result["current_agent"] == "habit-companion"
-        assert result["routed_subgraph"] == "habit-companion"
+        assert result["current_agent"] == "habit-coordinator"
+        assert result["routed_subgraph"] == "habit-coordinator"
         assert result["orchestrator_instructions"] == "Set a goal of 64 ounces of water daily."
 
 
@@ -405,7 +405,7 @@ class TestFallbackChain:
             "reasoning": "Wellness category that is not indexed in catalog.",
         })
         tier2_resp = json.dumps({
-            "agent_id": "habit-companion",
+            "agent_id": "habit-coordinator",
             "reasoning": "Fell back to domain-wide candidates and selected habit companion.",
             "instructions": "",
         })
@@ -425,12 +425,12 @@ class TestFallbackChain:
             result = await node.execute(state)
 
         # Call 1: domain="wellness", category="wellness.mental_wellness" -> 0 results
-        # Call 2: domain="wellness" (domain-only) -> matched candidates [habit-companion, nutrition-coach]
+        # Call 2: domain="wellness" (domain-only) -> matched candidates [habit-coordinator, nutrition-coach]
         assert len(calls) == 2
         assert calls[0]["category"] == "wellness.mental_wellness"
         assert calls[1].get("category") is None or calls[1].get("category") == ""
         assert calls[1]["domain"] == "wellness"
-        assert result["current_agent"] == "habit-companion"
+        assert result["current_agent"] == "habit-coordinator"
 
     @pytest.mark.asyncio
     async def test_fallback_step3_fts_when_domain_unmatched(
@@ -446,7 +446,7 @@ class TestFallbackChain:
             "reasoning": "Therapy domain classification.",
         })
         tier2_resp = json.dumps({
-            "agent_id": "habit-companion",
+            "agent_id": "habit-coordinator",
             "reasoning": "FTS matched sleep hygiene tags in habit companion.",
             "instructions": "Focus on evening sleep routine.",
         })
@@ -462,18 +462,18 @@ class TestFallbackChain:
             return await original_search(*args, **kwargs)
 
         with patch.object(indexed_catalog, "search_agents", side_effect=spy_search):
-            # Prompt text explicitly mentions "sleep hygiene" which matches habit-companion tags/description
+            # Prompt text explicitly mentions "sleep hygiene" which matches habit-coordinator tags/description
             state = {"messages": [HumanMessage(content="I need help with my sleep hygiene and bedtime routine")]}
             result = await node.execute(state)
 
         # Call 1: domain="therapy", category="therapy.cbt" -> 0
         # Call 2: domain="therapy" -> 0
-        # Call 3: query="I need help with my sleep hygiene and bedtime routine" -> FTS matches habit-companion!
+        # Call 3: query="I need help with my sleep hygiene and bedtime routine" -> FTS matches habit-coordinator!
         assert len(calls) == 3
         assert calls[0]["domain"] == "therapy"
         assert calls[1]["domain"] == "therapy"
         assert calls[2]["query"] == "I need help with my sleep hygiene and bedtime routine"
-        assert result["current_agent"] == "habit-companion"
+        assert result["current_agent"] == "habit-coordinator"
 
     @pytest.mark.asyncio
     async def test_fallback_step4_pattern_fallback_when_fts_returns_zero(
@@ -493,7 +493,7 @@ class TestFallbackChain:
         fake_model = FakeListChatModel(responses=[tier1_resp])
         node = OrchestratorNode(model=fake_model, registry=registry, catalog=indexed_catalog)
 
-        # Prompt contains regex keyword for benefits-guide ("in-network copay deductible")
+        # Prompt contains regex keyword for benefits-coordinator ("in-network copay deductible")
         # but catalog has FTS mocked or returning 0
         with patch.object(indexed_catalog, "search_agents", new_callable=AsyncMock) as mock_search:
             mock_search.return_value = []  # All catalog queries return 0 candidates
@@ -507,9 +507,9 @@ class TestFallbackChain:
         # Step 3: query
         assert mock_search.call_count == 3
 
-        # Step 4: pattern fallback resolved to benefits-guide via regex
-        assert result["current_agent"] == "benefits-guide"
-        assert result["routed_subgraph"] == "benefits-guide"
+        # Step 4: pattern fallback resolved to benefits-coordinator via regex
+        assert result["current_agent"] == "benefits-coordinator"
+        assert result["routed_subgraph"] == "benefits-coordinator"
         assert "pattern fallback" in result["orchestrator_reasoning"].lower()
 
 
@@ -529,13 +529,13 @@ class TestTwoHopResilienceAndEdgeCases:
         node = OrchestratorNode(model=None, registry=registry, catalog=indexed_catalog)
 
         state = {
-            "current_agent": "visit-steward",
+            "current_agent": "appointment-prep-coordinator",
             "messages": [HumanMessage(content="Hello doctor")],
         }
         result = await node.execute(state)
 
-        assert result["current_agent"] == "visit-steward"
-        assert result["routed_subgraph"] == "visit-steward"
+        assert result["current_agent"] == "appointment-prep-coordinator"
+        assert result["routed_subgraph"] == "appointment-prep-coordinator"
         assert "Explicitly requested" in result["orchestrator_reasoning"]
 
     @pytest.mark.asyncio
@@ -556,7 +556,7 @@ class TestTwoHopResilienceAndEdgeCases:
                 # Tier-2 succeeds
                 from langchain_core.runnables import RunnableLambda
                 return RunnableLambda(lambda msgs: OrchestratorDecision(
-                    agent_id="visit-steward",
+                    agent_id="appointment-prep-coordinator",
                     reasoning="Tier-2 succeeded after Tier-1 recovery.",
                     instructions="",
                 ))
@@ -570,8 +570,8 @@ class TestTwoHopResilienceAndEdgeCases:
         state = {"messages": [HumanMessage(content="doctor appointment prep checklist")]}
         result = await node.execute(state)
 
-        assert result["current_agent"] == "visit-steward"
-        assert result["routed_subgraph"] == "visit-steward"
+        assert result["current_agent"] == "appointment-prep-coordinator"
+        assert result["routed_subgraph"] == "appointment-prep-coordinator"
 
     @pytest.mark.asyncio
     async def test_two_hop_tier2_model_error_falls_back_to_first_candidate(
@@ -592,7 +592,7 @@ class TestTwoHopResilienceAndEdgeCases:
         state = {"messages": [HumanMessage(content="What is my insurance copay?")]}
         result = await node.execute(state)
 
-        assert result["current_agent"] == "benefits-guide"
+        assert result["current_agent"] == "benefits-coordinator"
         assert "fallback" in result["orchestrator_reasoning"].lower()
 
     @pytest.mark.asyncio
@@ -618,6 +618,6 @@ class TestTwoHopResilienceAndEdgeCases:
         state = {"messages": [HumanMessage(content="Insurance deductible inquiry")]}
         result = await node.execute(state)
 
-        # Candidate benefits-guide was retrieved in Tier-2 candidate list, so fallback selects it
-        assert result["current_agent"] == "benefits-guide"
+        # Candidate benefits-coordinator was retrieved in Tier-2 candidate list, so fallback selects it
+        assert result["current_agent"] == "benefits-coordinator"
         assert "not found in registry" in result["orchestrator_reasoning"]

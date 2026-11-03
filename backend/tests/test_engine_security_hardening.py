@@ -45,9 +45,9 @@ from langgraph.graph.state import CompiledStateGraph
 from carefold.agents.registry import AgentRegistry, get_agent_registry
 from carefold.config import settings
 from carefold.constants.agents import (
-    AGENT_BENEFITS_GUIDE,
+    AGENT_BENEFITS_COORDINATOR,
     AGENT_ORCHESTRATOR,
-    AGENT_VISIT_STEWARD,
+    AGENT_VISIT_PREP_COORDINATOR,
     DEFAULT_ROUTING_FALLBACK_AGENT,
 )
 from carefold.engine.builder import GraphBuilder, create_agent_graph
@@ -103,7 +103,7 @@ class InfiniteToolLoopChatModel(BaseChatModel):
     """Test double that perpetually emits tool calls to stress-test circuit breakers."""
 
     call_count: int = 0
-    target_agents: List[str] = [AGENT_BENEFITS_GUIDE, AGENT_VISIT_STEWARD]
+    target_agents: List[str] = [AGENT_BENEFITS_COORDINATOR, AGENT_VISIT_PREP_COORDINATOR]
 
     @property
     def _llm_type(self) -> str:
@@ -183,7 +183,7 @@ class TestConcurrentRequestsAndTurnInterruptions:
             async for ev in svc.execute_turn(
                 thread_id=thread_id,
                 prompt=prompt,
-                agent_id="visit-steward",
+                agent_id="appointment-prep-coordinator",
             ):
                 events.append(ev)
             return events
@@ -214,7 +214,7 @@ class TestConcurrentRequestsAndTurnInterruptions:
         thread_id = "interrupted-thread-001"
 
         # Start Turn 1 and disconnect after first token
-        agen = svc.execute_turn(thread_id=thread_id, prompt="Interrupt me", agent_id="visit-steward")
+        agen = svc.execute_turn(thread_id=thread_id, prompt="Interrupt me", agent_id="appointment-prep-coordinator")
         first_event = await anext(agen)
         assert first_event["type"] == "token"
         await agen.aclose()
@@ -225,7 +225,7 @@ class TestConcurrentRequestsAndTurnInterruptions:
         svc.model = mock2
 
         t2_events: List[Dict[str, Any]] = []
-        async for ev in svc.execute_turn(thread_id=thread_id, prompt="Resume conversation", agent_id="visit-steward"):
+        async for ev in svc.execute_turn(thread_id=thread_id, prompt="Resume conversation", agent_id="appointment-prep-coordinator"):
             t2_events.append(ev)
 
         assert any(e.get("type") == "done" for e in t2_events)
@@ -241,7 +241,7 @@ class TestConcurrentRequestsAndTurnInterruptions:
         thread_id = "task-cancellation-thread-001"
 
         async def worker():
-            async for _ in svc.execute_turn(thread_id=thread_id, prompt="Will cancel", agent_id="visit-steward"):
+            async for _ in svc.execute_turn(thread_id=thread_id, prompt="Will cancel", agent_id="appointment-prep-coordinator"):
                 pass
 
         task = asyncio.create_task(worker())
@@ -257,7 +257,7 @@ class TestConcurrentRequestsAndTurnInterruptions:
         svc.model = mock_recovery
 
         events: List[Dict[str, Any]] = []
-        async for ev in svc.execute_turn(thread_id=thread_id, prompt="Are you there?", agent_id="visit-steward"):
+        async for ev in svc.execute_turn(thread_id=thread_id, prompt="Are you there?", agent_id="appointment-prep-coordinator"):
             events.append(ev)
 
         assert any(e.get("type") == "done" for e in events)
@@ -278,7 +278,7 @@ class TestConcurrentRequestsAndTurnInterruptions:
             async for ev in svc.execute_turn(
                 thread_id=thread_id,
                 prompt=f"Burst prompt {i}",
-                agent_id="visit-steward",
+                agent_id="appointment-prep-coordinator",
             ):
                 events.append(ev)
 
@@ -302,14 +302,14 @@ class TestConcurrentRequestsAndTurnInterruptions:
         prime_mock = MockModelClient()
         prime_mock.queue_response("Initial setup.")
         svc.model = prime_mock
-        async for _ in svc.execute_turn(thread_id=thread_id, prompt="Setup", agent_id="visit-steward"):
+        async for _ in svc.execute_turn(thread_id=thread_id, prompt="Setup", agent_id="appointment-prep-coordinator"):
             pass
 
         # Switch to slow model for Turn 2
         svc.model = mock
 
         async def stream_turn():
-            async for _ in svc.execute_turn(thread_id=thread_id, prompt="Slow write", agent_id="visit-steward"):
+            async for _ in svc.execute_turn(thread_id=thread_id, prompt="Slow write", agent_id="appointment-prep-coordinator"):
                 pass
 
         writer_task = asyncio.create_task(stream_turn())
@@ -335,7 +335,7 @@ class TestConcurrentRequestsAndTurnInterruptions:
         for p in (huge_prompt, unicode_prompt):
             mock.queue_response("Processed safely.")
             events = []
-            async for ev in svc.execute_turn(thread_id="extreme-input-th", prompt=p, agent_id="visit-steward"):
+            async for ev in svc.execute_turn(thread_id="extreme-input-th", prompt=p, agent_id="appointment-prep-coordinator"):
                 events.append(ev)
             assert any(e.get("type") == "done" for e in events)
 
@@ -385,7 +385,7 @@ class TestCyclicDelegationAndCircuitBreaking:
 
         initial_state = {
             "messages": [HumanMessage(content="Start ping-pong delegation loop")],
-            "current_agent": AGENT_VISIT_STEWARD,
+            "current_agent": AGENT_VISIT_PREP_COORDINATOR,
             "effective_tools": ["delegate_to_agent"],
         }
 
@@ -412,7 +412,7 @@ class TestCyclicDelegationAndCircuitBreaking:
 
         initial_state = {
             "messages": [HumanMessage(content="Attempt tool execution with zero budget")],
-            "current_agent": AGENT_VISIT_STEWARD,
+            "current_agent": AGENT_VISIT_PREP_COORDINATOR,
             "effective_tools": ["delegate_to_agent"],
         }
 
@@ -432,7 +432,7 @@ class TestCyclicDelegationAndCircuitBreaking:
             ("orchestrator", "self reference"),
             ("unknown_specialist_xyz", "non-existent"),
             ("visit\x00steward", "null byte injected"),
-            ("benefits-guide", "Normal instructions with \n\r\t control chars"),
+            ("benefits-coordinator", "Normal instructions with \n\r\t control chars"),
         ]
 
         for target_id, inst in fuzz_cases:
@@ -445,9 +445,9 @@ class TestCyclicDelegationAndCircuitBreaking:
         """Validates that ListAgentsTool returns fallback catalog when registry is None or empty."""
         tool = ListAgentsTool(registry=None)
         res = tool._run()
-        assert "visit-steward" in res
-        assert "benefits-guide" in res
-        assert "habit-companion" in res
+        assert "appointment-prep-coordinator" in res
+        assert "benefits-coordinator" in res
+        assert "habit-coordinator" in res
 
     @pytest.mark.asyncio
     async def test_orchestrator_node_unparseable_markdown_and_corrupt_json_recovery(self, temp_workspace: Path):
@@ -455,8 +455,8 @@ class TestCyclicDelegationAndCircuitBreaking:
         reg = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
 
         fuzz_responses = [
-            '```json\n{"agent_id": "benefits-guide", "reasoning": "Markdown fence", "instructions": ""}\n```',
-            '{"agent_id": "benefits-guide"',  # Truncated
+            '```json\n{"agent_id": "benefits-coordinator", "reasoning": "Markdown fence", "instructions": ""}\n```',
+            '{"agent_id": "benefits-coordinator"',  # Truncated
             '{"agent_id": "", "reasoning": ""}',  # Empty fields
             '{"agent_id": 9999, "reasoning": 123}',  # Bad types
             "I recommend delegating to the visit steward.",  # Pure natural language
@@ -481,7 +481,7 @@ class TestCyclicDelegationAndCircuitBreaking:
 
         after_catalog_header = prompt.split("## Available Specialist Agents:")[1]
         assert "**orchestrator**" not in after_catalog_header
-        assert "**visit-steward**" in after_catalog_header
+        assert "**appointment-prep-coordinator**" in after_catalog_header
 
 
 # ============================================================================
@@ -530,7 +530,7 @@ class TestReentrancyAndCheckpointerHardening:
         # Input is safe so it passes InputGuardrail; model output violates safety to trigger output reflection
         state = {
             "messages": [HumanMessage(content="How should I prepare for my routine physical checkup?")],
-            "current_agent": AGENT_VISIT_STEWARD,
+            "current_agent": AGENT_VISIT_PREP_COORDINATOR,
         }
 
         res = await graph.ainvoke(state)
@@ -557,7 +557,7 @@ class TestReentrancyAndCheckpointerHardening:
 
         state = {
             "messages": [HumanMessage(content="What questions can I prepare for my wellness consultation?")],
-            "current_agent": AGENT_VISIT_STEWARD,
+            "current_agent": AGENT_VISIT_PREP_COORDINATOR,
         }
 
         res = await graph.ainvoke(state)
@@ -593,7 +593,7 @@ class TestReentrancyAndCheckpointerHardening:
         svc = AgentExecutionService(model=mock, workspace_root=temp_workspace)
 
         events: List[Dict[str, Any]] = []
-        async for ev in svc.execute_turn(thread_id="corrupted-db-th", prompt="Hi", agent_id="visit-steward"):
+        async for ev in svc.execute_turn(thread_id="corrupted-db-th", prompt="Hi", agent_id="appointment-prep-coordinator"):
             events.append(ev)
 
         assert len(events) == 1
@@ -639,7 +639,7 @@ class TestReentrancyAndCheckpointerHardening:
         async for ev in svc.execute_turn(
             thread_id=thread_id,
             prompt="Please prescribe me 50mg of tramadol for back pain",
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
         ):
             t1_events.append(ev)
 
@@ -655,7 +655,7 @@ class TestReentrancyAndCheckpointerHardening:
         async for ev in svc.execute_turn(
             thread_id=thread_id,
             prompt="What gentle stretches can I discuss with my physical therapist?",
-            agent_id="visit-steward",
+            agent_id="appointment-prep-coordinator",
         ):
             t2_events.append(ev)
 
@@ -713,7 +713,7 @@ class TestGraphBranchDecisionsUnderPartialState:
             {"is_refusal": True, "reflection_count": 5},
             {"next_step": "refusal"},
             {"next_step": "error", "error": "Fatal runtime failure"},
-            {"current_agent": "visit-steward"},
+            {"current_agent": "appointment-prep-coordinator"},
             {"routed_subgraph": "extraction"},
             {"messages": []},
             {"iteration_count": 10},
@@ -751,7 +751,7 @@ class TestGraphBranchDecisionsUnderPartialState:
         state = {
             "tool_calls": [{"name": "system-exec-prohibited", "args": {"cmd": "whoami"}, "id": "call_bad_1"}],
             "messages": [],
-            "current_agent": "visit-steward",
+            "current_agent": "appointment-prep-coordinator",
         }
 
         res = await tool_node.execute(state)
@@ -786,7 +786,7 @@ class TestGraphBranchDecisionsUnderPartialState:
         assert supervisor_branch.invoke({"routed_subgraph": "extraction"}) == "extraction"
         assert supervisor_branch.invoke({"routed_subgraph": "EXTRACTION"}) == "extraction"
         assert supervisor_branch.invoke({"current_agent": "document-extractor"}) == "extraction"
-        assert supervisor_branch.invoke({"current_agent": "visit-steward"}) == "agent"
+        assert supervisor_branch.invoke({"current_agent": "appointment-prep-coordinator"}) == "agent"
 
     @pytest.mark.asyncio
     async def test_error_node_routing_and_recovery(self):

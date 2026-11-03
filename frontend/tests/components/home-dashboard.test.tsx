@@ -42,8 +42,8 @@ const mockRosaAppointment = {
   clinician: 'Dr. Elena Whitfield · Cardiology',
   clinic: 'Lakeside Heart Clinic',
   linkedDocTitle: 'Discharge summary, Sep 2',
-  specialistId: 'visit-steward',
-  specialistTitle: 'Visit Steward',
+  specialistId: 'appointment-prep-coordinator',
+  specialistTitle: 'Appointment Prep Coordinator',
   prepCompletedQuestions: 4,
   prepTotalQuestions: 6,
   checklist: [

@@ -61,7 +61,7 @@ for fpath in glob.glob("evals/*.golden.jsonl") + glob.glob("agents/*/evals/*.jso
         const script = `
 from pathlib import Path
 
-for agent_id in ['visit-steward', 'benefits-guide', 'habit-companion']:
+for agent_id in ['appointment-prep-coordinator', 'benefits-coordinator', 'habit-coordinator']:
     agent_eval_file = Path('agents') / agent_id / 'evals' / 'golden.jsonl'
     assert agent_eval_file.is_file(), f"Missing golden evals for {agent_id}"
     lines = [l for l in agent_eval_file.read_text().splitlines() if l.strip()]
@@ -75,7 +75,7 @@ for agent_id in ['visit-steward', 'benefits-guide', 'habit-companion']:
       id: 'F23-B04',
       name: 'evals runner operates without network even when OLLAMA_HOST is unreachable',
       fn: () => {
-        const res = runPython('evals/runner.py', ['--agent', 'visit-steward'], {
+        const res = runPython('evals/runner.py', ['--agent', 'appointment-prep-coordinator'], {
           env: { OLLAMA_HOST: 'http://127.0.0.1:59999/broken' }
         });
         assertEqual(res.status, 0, `Evals failed under unreachable Ollama host: ${res.stderr}`);
@@ -86,10 +86,10 @@ for agent_id in ['visit-steward', 'benefits-guide', 'habit-companion']:
       id: 'F23-B05',
       name: 'evals runner verbose mode displays individual test case IDs and statuses',
       fn: () => {
-        const res = runPython('evals/runner.py', ['--verbose', '--agent', 'benefits-guide']);
+        const res = runPython('evals/runner.py', ['--verbose', '--agent', 'benefits-coordinator']);
         assertEqual(res.status, 0, `Verbose evals failed: ${res.stderr}`);
         assertContains(res.stdout, '[PASS]');
-        assertContains(res.stdout, 'benefits-guide');
+        assertContains(res.stdout, 'benefits-coordinator');
       }
     }
   ];

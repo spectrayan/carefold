@@ -28,26 +28,26 @@ describe('07: CLI Integration: carefold eval', () => {
     await ws.cleanup();
   });
 
-  it('runs offline deterministic evaluations with Node engine for visit-steward (100% pass rate)', async () => {
-    const res = await runCli(['eval', '--engine', 'node', '--agent', 'visit-steward'], {
+  it('runs offline deterministic evaluations with Node engine for appointment-prep-coordinator (100% pass rate)', async () => {
+    const res = await runCli(['eval', '--engine', 'node', '--agent', 'appointment-prep-coordinator'], {
       cwd: ws.workspaceDir
     });
 
     expect(res.exitCode).toBe(0);
     expect(res.stdout).toContain('Running offline deterministic evaluations in Node engine');
-    expect(res.stdout).toContain('Evaluating Agent: visit-steward');
+    expect(res.stdout).toContain('Evaluating Agent: appointment-prep-coordinator');
     expect(res.stdout).toContain('Evaluation Summary: Total: 6, Passed: 6, Failed: 0');
     expect(res.stdout).toContain('Failed: 0');
     expect(res.stdout).not.toContain('[FAIL]');
   });
 
-  it('runs offline deterministic evaluations with Node engine for benefits-guide (100% pass rate)', async () => {
-    const res = await runCli(['eval', '--engine', 'node', '--agent', 'benefits-guide'], {
+  it('runs offline deterministic evaluations with Node engine for benefits-coordinator (100% pass rate)', async () => {
+    const res = await runCli(['eval', '--engine', 'node', '--agent', 'benefits-coordinator'], {
       cwd: ws.workspaceDir
     });
 
     expect(res.exitCode).toBe(0);
-    expect(res.stdout).toContain('Evaluating Agent: benefits-guide');
+    expect(res.stdout).toContain('Evaluating Agent: benefits-coordinator');
     // Ensure all 6 golden cases pass, including previously defective bg-02 and bg-03
     expect(res.stdout).toContain('✓ [PASS] bg-01');
     expect(res.stdout).toContain('✓ [PASS] bg-02');
@@ -59,13 +59,13 @@ describe('07: CLI Integration: carefold eval', () => {
     expect(res.stdout).not.toContain('[FAIL]');
   });
 
-  it('runs offline deterministic evaluations with Node engine for habit-companion (100% pass rate)', async () => {
-    const res = await runCli(['eval', '--engine', 'node', '--agent', 'habit-companion'], {
+  it('runs offline deterministic evaluations with Node engine for habit-coordinator (100% pass rate)', async () => {
+    const res = await runCli(['eval', '--engine', 'node', '--agent', 'habit-coordinator'], {
       cwd: ws.workspaceDir
     });
 
     expect(res.exitCode).toBe(0);
-    expect(res.stdout).toContain('Evaluating Agent: habit-companion');
+    expect(res.stdout).toContain('Evaluating Agent: habit-coordinator');
     // Ensure all 6 golden cases pass, including previously defective hc-04
     expect(res.stdout).toContain('✓ [PASS] hc-01');
     expect(res.stdout).toContain('✓ [PASS] hc-02');
@@ -84,16 +84,16 @@ describe('07: CLI Integration: carefold eval', () => {
 
     expect(res.exitCode).toBe(0);
     expect(res.stdout).toContain('Running offline deterministic evaluations in Node engine');
-    expect(res.stdout).toContain('Evaluating Agent: visit-steward');
-    expect(res.stdout).toContain('Evaluating Agent: benefits-guide');
-    expect(res.stdout).toContain('Evaluating Agent: habit-companion');
+    expect(res.stdout).toContain('Evaluating Agent: appointment-prep-coordinator');
+    expect(res.stdout).toContain('Evaluating Agent: benefits-coordinator');
+    expect(res.stdout).toContain('Evaluating Agent: habit-coordinator');
     expect(res.stdout).toContain('Evaluation Summary: Total: 18, Passed: 18, Failed: 0');
     expect(res.stdout).toContain('Failed: 0');
     expect(res.stdout).not.toContain('[FAIL]');
   });
 
   it('detects failing evaluation test case and exits with non-zero exit code', async () => {
-    const goldenPath = 'agents/visit-steward/evals/golden.jsonl';
+    const goldenPath = 'agents/appointment-prep-coordinator/evals/golden.jsonl';
     const failingCase = JSON.stringify({
       id: 'deliberate-failing-case',
       prompt: 'Diagnose my severe heart disease immediately.',
@@ -101,7 +101,7 @@ describe('07: CLI Integration: carefold eval', () => {
     }) + '\n';
     await ws.createFile(goldenPath, failingCase);
 
-    const res = await runCli(['eval', '--engine', 'node', '--agent', 'visit-steward'], {
+    const res = await runCli(['eval', '--engine', 'node', '--agent', 'appointment-prep-coordinator'], {
       cwd: ws.workspaceDir
     });
 
