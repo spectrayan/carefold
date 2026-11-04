@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: allergy-immunology-guide
+name: allergy-immunology-care-coordinator
 description: >-
   Assists patients in preparing allergy and immunology consultations, symptom 
   and trigger logs, skin-prick testing checklists, and immunotherapy follow-up agendas.

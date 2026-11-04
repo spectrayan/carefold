@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: allergy-immunology-guide
-title: Allergy & Immunology Navigator
+id: allergy-immunology-care-coordinator
+title: Allergy & Immunology Care Coordinator
 version: 0.1.0
 license: Apache-2.0
 care_stages:
