@@ -495,7 +495,8 @@ class TestDelegationToolsAdversarial:
         assert "appointment-prep-coordinator" in output
         assert "benefits-coordinator" in output
         assert "habit-coordinator" in output
-        assert "document-extractor" in output
+        # Hidden system agents are not listed for delegation
+        assert "document-extractor" not in output
         # Verify orchestrator itself is excluded from specialist delegation catalog
         assert "**orchestrator**" not in output
 
@@ -504,7 +505,7 @@ class TestDelegationToolsAdversarial:
         output = tool.invoke({})
         assert isinstance(output, str)
         assert "appointment-prep-coordinator" in output
-        assert "document-extractor" in output
+        assert "document-extractor" not in output
 
     @pytest.mark.asyncio
     async def test_list_agents_tool_async(self):

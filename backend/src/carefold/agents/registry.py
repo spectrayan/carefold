@@ -203,24 +203,38 @@ class AgentRegistry:
         return dict(self._effective_tools)
 
     def get_delegatable_agents(self, exclude: str = "") -> List[AgentManifest]:
-        """Returns non-orchestrator agents available for delegation.
-
-        Filters out agents where can_delegate is True (such as orchestrator)
-        and optionally filters out an agent by explicit ID.
-        """
+        """Returns agents that can be handed work (not hidden, not delegators, not ``exclude``)."""
         return [
             a for a in sorted(self._agents.values(), key=lambda a: a.id)
-            if a.id != exclude and not a.can_delegate
+            if a.id != exclude and not a.can_delegate and not a.hidden
         ]
 
-    def format_agent_catalog(self, exclude: str = AGENT_ORCHESTRATOR) -> str:
+    def search(self, query: str = "", limit: Optional[int] = None, exclude: str = AGENT_ORCHESTRATOR) -> List[AgentManifest]:
+        """Keyword search over delegatable agents (parity with yarvelle-core 0.2.0)."""
+        import re as _re
+        agents = self.get_delegatable_agents(exclude)
+        terms = set(_re.findall(r"[a-z0-9]+", (query or "").lower()))
+        if terms:
+            scored = []
+            for a in agents:
+                hay = " ".join(
+                    [a.id, a.title, a.description or _extract_first_line(a.persona), a.category, *a.tags, *a.skills]
+                ).lower()
+                words = set(_re.findall(r"[a-z0-9]+", hay))
+                score = len(terms & words)
+                if score:
+                    scored.append((-score, a.id, a))
+            agents = [a for _, _, a in sorted(scored, key=lambda tup: (tup[0], tup[1]))]
+        return agents[:limit] if limit else agents
+
+    def format_agent_catalog(self, exclude: str = AGENT_ORCHESTRATOR, agents: Optional[List[AgentManifest]] = None) -> str:
         """Formats agent catalog for the orchestrator's dynamic system prompt.
 
         Generates formatted markdown from live agent.yaml files.
         """
-        agents = self.get_delegatable_agents(exclude)
+        chosen = list(agents) if agents is not None else self.get_delegatable_agents(exclude)
         lines: List[str] = []
-        for a in agents:
+        for a in chosen:
             desc = a.description or _extract_first_line(a.persona)
             tools_str = ", ".join(self._effective_tools.get(a.id, []))
             lines.append(

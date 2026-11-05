@@ -76,8 +76,8 @@ async def test_orchestrator_multi_domain_query_routing(temp_workspace: Path):
         ),
         (
             "Here is the scanned PDF of my Explanation of Benefits document.",
-            AGENT_DOCUMENT_EXTRACTOR,
-            "Document attachment and structured extraction.",
+            AGENT_BENEFITS_COORDINATOR,
+            "EOB / benefits document belongs with benefits coordination (hidden extractors are not model-pickable).",
         ),
     ]
 
@@ -271,7 +271,9 @@ def test_registry_get_delegatable_agents_strictly_excludes_can_delegate(temp_wor
     assert AGENT_BENEFITS_COORDINATOR in delegatable_ids
     assert AGENT_VISIT_PREP_COORDINATOR in delegatable_ids
     assert AGENT_HABIT_COORDINATOR in delegatable_ids
-    assert AGENT_DOCUMENT_EXTRACTOR in delegatable_ids
+    assert AGENT_DOCUMENT_EXTRACTOR not in delegatable_ids
+    for agent in delegatable:
+        assert agent.hidden is False
 
 
 def test_registry_format_agent_catalog_excludes_orchestrator(temp_workspace: Path):
@@ -283,7 +285,7 @@ def test_registry_format_agent_catalog_excludes_orchestrator(temp_workspace: Pat
     assert AGENT_BENEFITS_COORDINATOR in catalog
     assert AGENT_VISIT_PREP_COORDINATOR in catalog
     assert AGENT_HABIT_COORDINATOR in catalog
-    assert AGENT_DOCUMENT_EXTRACTOR in catalog
+    assert AGENT_DOCUMENT_EXTRACTOR not in catalog
 
 
 def test_specialists_do_not_contain_delegation_tools(temp_workspace: Path):

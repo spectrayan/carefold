@@ -103,8 +103,8 @@ def test_filesystem_agent_loading_and_taxonomy_metadata(repo_root: Path):
     assert "benefits" in bg.tags
     assert bg.icon == "FileText"
     assert bg.maturity == AgentMaturity.STABLE or bg.maturity == "stable"
-    assert "post_visit" in bg.care_stages
-    assert "daily_living" in bg.care_stages
+    assert "post_visit" in bg.extensions.get("care_stages", [])
+    assert "daily_living" in bg.extensions.get("care_stages", [])
 
     hc = summary_map["habit-coordinator"]
     assert hc.domain == AgentDomain.WELLNESS or hc.domain == "wellness"
@@ -112,7 +112,7 @@ def test_filesystem_agent_loading_and_taxonomy_metadata(repo_root: Path):
     assert "habits" in hc.tags
     assert "hydration" in hc.tags
     assert hc.icon == "HeartPulse"
-    assert "daily_living" in hc.care_stages
+    assert "daily_living" in hc.extensions.get("care_stages", [])
 
     vs = summary_map["appointment-prep-coordinator"]
     assert vs.domain == AgentDomain.NAVIGATION or vs.domain == "navigation"
@@ -120,8 +120,8 @@ def test_filesystem_agent_loading_and_taxonomy_metadata(repo_root: Path):
     assert "visit-prep" in vs.tags
     assert "appointment" in vs.tags
     assert vs.icon == "Stethoscope"
-    assert "pre_visit" in vs.care_stages
-    assert "during_visit" in vs.care_stages
+    assert "pre_visit" in vs.extensions.get("care_stages", [])
+    assert "during_visit" in vs.extensions.get("care_stages", [])
 
     # Verify individual load_agent on system agents
     orch, _, _ = load_agent(agents_dir / "_system" / "orchestrator", skills_dir)

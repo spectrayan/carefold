@@ -360,7 +360,7 @@ def test_agent_load_bundled_agents_taxonomy(temp_workspace: Path):
     agent_vs, _, _ = load_agent(agents_dir / "appointment-prep-coordinator", skills_dir)
     assert agent_vs.domain == "navigation"
     assert agent_vs.category == "navigation.appointments"
-    assert agent_vs.care_stages == ["pre_visit", "during_visit"]
+    assert agent_vs.extensions.get("care_stages", []) == ["pre_visit", "during_visit"]
     assert agent_vs.tags == ["visit-prep", "appointment", "checklist", "doctor"]
     assert agent_vs.icon == "Stethoscope"
     assert agent_vs.maturity == "stable"
@@ -370,7 +370,7 @@ def test_agent_load_bundled_agents_taxonomy(temp_workspace: Path):
     agent_bg, _, _ = load_agent(agents_dir / "benefits-coordinator", skills_dir)
     assert agent_bg.domain == "navigation"
     assert agent_bg.category == "navigation.insurance"
-    assert agent_bg.care_stages == ["post_visit", "daily_living"]
+    assert agent_bg.extensions.get("care_stages", []) == ["post_visit", "daily_living"]
     assert agent_bg.tags == ["insurance", "benefits", "EOB", "deductible", "copay"]
     assert agent_bg.icon == "FileText"
     assert agent_bg.maturity == "stable"
@@ -379,7 +379,7 @@ def test_agent_load_bundled_agents_taxonomy(temp_workspace: Path):
     agent_hc, _, _ = load_agent(agents_dir / "habit-coordinator", skills_dir)
     assert agent_hc.domain == "wellness"
     assert agent_hc.category == "wellness.habits"
-    assert agent_hc.care_stages == ["daily_living"]
+    assert agent_hc.extensions.get("care_stages", []) == ["daily_living"]
     assert agent_hc.tags == ["habits", "hydration", "sleep", "checklist"]
     assert agent_hc.icon == "HeartPulse"
     assert agent_hc.maturity == "stable"
@@ -402,7 +402,7 @@ persona: Legacy assistant role
     # Verify all 7 defaults
     assert agent.domain == AgentDomain.WELLNESS or agent.domain == "wellness"
     assert agent.category == ""
-    assert agent.care_stages == []
+    assert agent.extensions.get("care_stages", []) == []
     assert agent.target_audience == []
     assert agent.tags == []
     assert agent.icon == "Shield"
@@ -450,7 +450,7 @@ def test_load_all_agents_includes_taxonomy(temp_workspace: Path):
     vs = by_id["appointment-prep-coordinator"]
     assert vs.domain == "navigation"
     assert vs.category == "navigation.appointments"
-    assert vs.care_stages == ["pre_visit", "during_visit"]
+    assert vs.extensions.get("care_stages", []) == ["pre_visit", "during_visit"]
     assert vs.tags == ["visit-prep", "appointment", "checklist", "doctor"]
     assert vs.icon == "Stethoscope"
     assert vs.maturity == "stable"
@@ -460,7 +460,7 @@ def test_load_all_agents_includes_taxonomy(temp_workspace: Path):
     bg = by_id["benefits-coordinator"]
     assert bg.domain == "navigation"
     assert bg.category == "navigation.insurance"
-    assert bg.care_stages == ["post_visit", "daily_living"]
+    assert bg.extensions.get("care_stages", []) == ["post_visit", "daily_living"]
     assert bg.tags == ["insurance", "benefits", "EOB", "deductible", "copay"]
     assert bg.icon == "FileText"
     assert bg.maturity == "stable"
@@ -469,7 +469,7 @@ def test_load_all_agents_includes_taxonomy(temp_workspace: Path):
     hc = by_id["habit-coordinator"]
     assert hc.domain == "wellness"
     assert hc.category == "wellness.habits"
-    assert hc.care_stages == ["daily_living"]
+    assert hc.extensions.get("care_stages", []) == ["daily_living"]
     assert hc.tags == ["habits", "hydration", "sleep", "checklist"]
     assert hc.icon == "HeartPulse"
     assert hc.maturity == "stable"

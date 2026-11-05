@@ -814,7 +814,8 @@ class TestToolExecutionHardening:
         assert isinstance(catalog, str)
         assert "appointment-prep-coordinator" in catalog
         assert "benefits-coordinator" in catalog
-        assert "document-extractor" in catalog
+        # Hidden system agents stay out of the delegatable catalog (core 0.2.0)
+        assert "document-extractor" not in catalog
 
         async_catalog = asyncio.run(list_tool._arun())
         assert async_catalog == catalog

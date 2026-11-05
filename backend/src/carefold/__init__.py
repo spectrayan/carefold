@@ -13,6 +13,52 @@
 
 from __future__ import annotations
 
+import os as _os
+
+# yarvelle-core 0.2+ runtime identity / pack discovery (Carefold brand).
+_os.environ.setdefault("YARVELLE_PACK_PACKAGES", "carefold")
+_os.environ.setdefault("YARVELLE_APP_SLUG", "carefold")
+_os.environ.setdefault("YARVELLE_LOCAL_DOMAIN", "carefold.local")
+_os.environ.setdefault("YARVELLE_HOME_DIR_NAME", ".carefold")
+
+# Align yarvelle-core settings brand with Carefold (skill-docs / ICS / prompts).
+try:
+    from yarvelle_core.config import BrandConfig as _YcBrandConfig
+    from yarvelle_core.config import settings as _yc_settings
+
+    _yc_settings._brand_config = _YcBrandConfig(
+        product_name="Carefold",
+        env_prefix="CAREFOLD_",
+        home_dir_name=".carefold",
+        default_agent="appointment-prep-coordinator",
+    )
+except Exception:
+    pass
+
+# Inject Carefold routing dossier_types into yarvelle-core ResourceLoader so
+# extraction subgraph auto-inference sees insurance/clinical patterns (core's
+# packaged routing_patterns.yaml only knows generic; pack patterns_path is
+# consumed for orchestrator hints, not the extraction loader).
+try:
+    from yarvelle_core.resources.loader import get_resource_loader as _yc_get_resource_loader
+
+    from carefold.resources.loader import get_resource_loader as _cf_get_resource_loader
+
+    _yc_loader = _yc_get_resource_loader()
+    _cf_patterns = _cf_get_resource_loader().get_routing_patterns()
+    _merged = dict(_yc_loader.get_routing_patterns())
+    if isinstance(_cf_patterns.get("dossier_types"), dict):
+        _merged["dossier_types"] = dict(_cf_patterns["dossier_types"])
+    # Prefer Carefold agent routing keys when present
+    for _k, _v in _cf_patterns.items():
+        if _k == "dossier_types":
+            continue
+        if _k not in _merged or not _merged.get(_k):
+            _merged[_k] = _v
+    _yc_loader._cache["routing_patterns.yaml"] = _merged
+except Exception:
+    pass
+
 import importlib as _importlib
 import importlib.abc as _importlib_abc
 import importlib.machinery as _machinery
@@ -295,7 +341,7 @@ def get_pack() -> PackSpec:
         name="Carefold Health Pack",
         version=__version__,
         domain="health",
-        requires_core=">=0.1.0,<0.2.0",
+        requires_core=">=0.2.0,<0.3.0",
         owned_scopes=["health.*", "health.clinical", "health.paperwork"],
         declared_reads=[],
         risk_tier_max="T4",

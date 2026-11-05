@@ -99,6 +99,9 @@ EXPECTED_HEAD_TABLES = (
     | EXPECTED_AUTONOMY_BATCH_5_TABLES
     | EXPECTED_AUTONOMY_BATCH_6_TABLES
     | EXPECTED_AUTONOMY_BATCH_8_TABLES
+    | {
+        "turn_tasks",
+    }
 )
 
 EXPECTED_ATTACHMENT_CAS_COLUMNS = {
@@ -169,12 +172,12 @@ def test_upgrade_head_fresh_sqlite():
         }
         assert expected_job_cols.issubset(job_cols)
 
-        # Assert 35 tables at head
-        assert len(EXPECTED_HEAD_TABLES) == 35
+        # Assert 36 tables at head
+        assert len(EXPECTED_HEAD_TABLES) == 36
 
-        # Assert head revision is 0011_scopes
+        # Assert head revision is 0013_turn_tasks
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0011_scopes"
+        assert curr_ver == "0013_turn_tasks"
 
         # Assert scope_grants table exists and has expected columns
         sg_cols = {c["name"] for c in insp.get_columns("scope_grants")}
@@ -295,14 +298,14 @@ def test_upgrade_head_fresh_sqlite():
 
 
 def test_downgrade_to_0010_i18n_and_locale_storage():
-    """Tests downgrading from 0011_scopes to 0010_i18n_and_locale_storage and re-upgrading."""
+    """Tests downgrading from 0013_turn_tasks to 0010_i18n_and_locale_storage and re-upgrading."""
     engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
     with engine.connect() as conn:
         cfg = get_alembic_config(conn)
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0011_scopes"
+        assert curr_ver == "0013_turn_tasks"
 
         alembic.command.downgrade(cfg, "0010_i18n_and_locale_storage")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -322,7 +325,7 @@ def test_downgrade_to_0010_i18n_and_locale_storage():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0011_scopes"
+        assert curr_ver_up == "0013_turn_tasks"
 
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
@@ -339,7 +342,7 @@ def test_downgrade_to_0008_routines_mcp_and_drafts():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0011_scopes"
+        assert curr_ver == "0013_turn_tasks"
 
         alembic.command.downgrade(cfg, "0008_routines_mcp_and_drafts")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -356,7 +359,7 @@ def test_downgrade_to_0008_routines_mcp_and_drafts():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0011_scopes"
+        assert curr_ver_up == "0013_turn_tasks"
 
 
 def test_downgrade_to_0007_connectors_and_consent():
@@ -367,7 +370,7 @@ def test_downgrade_to_0007_connectors_and_consent():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0011_scopes"
+        assert curr_ver == "0013_turn_tasks"
 
         alembic.command.downgrade(cfg, "0007_connectors_and_consent")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -385,7 +388,7 @@ def test_downgrade_to_0007_connectors_and_consent():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0011_scopes"
+        assert curr_ver_up == "0013_turn_tasks"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_6_TABLES.issubset(tables_up)
@@ -400,7 +403,7 @@ def test_downgrade_to_0006_preventive_and_school_forms():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0011_scopes"
+        assert curr_ver == "0013_turn_tasks"
 
         alembic.command.downgrade(cfg, "0006_preventive_and_school_forms")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -417,7 +420,7 @@ def test_downgrade_to_0006_preventive_and_school_forms():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0011_scopes"
+        assert curr_ver_up == "0013_turn_tasks"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_5_TABLES.issubset(tables_up)
@@ -432,7 +435,7 @@ def test_downgrade_to_0005_clinical_domain_records():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0011_scopes"
+        assert curr_ver == "0013_turn_tasks"
 
         alembic.command.downgrade(cfg, "0005_clinical_domain_records")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -449,7 +452,7 @@ def test_downgrade_to_0005_clinical_domain_records():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0011_scopes"
+        assert curr_ver_up == "0013_turn_tasks"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_4_TABLES.issubset(tables_up)
@@ -547,7 +550,7 @@ def test_downgrade_to_0004_policy_gate_and_vault():
         # Re-upgrade to head (0009_companion_and_handover)
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0011_scopes"
+        assert curr_ver_up == "0013_turn_tasks"
 
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())

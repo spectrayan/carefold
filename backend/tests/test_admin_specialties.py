@@ -174,11 +174,11 @@ class TestAdminSpecialtiesManifests:
         for agent_id, spec in ADMIN_EXPECTED_AGENTS.items():
             manifest, _, _ = load_agent(agents_dir / agent_id, skills_dir)
 
-            assert isinstance(manifest.care_stages, list) and len(manifest.care_stages) > 0, (
+            assert isinstance(manifest.extensions.get("care_stages", []), list) and len(manifest.extensions.get("care_stages", [])) > 0, (
                 f"Agent '{agent_id}' must specify non-empty care_stages"
             )
-            assert set(manifest.care_stages).issubset(valid_care_stages), (
-                f"Agent '{agent_id}' has invalid care_stages: {set(manifest.care_stages) - valid_care_stages}"
+            assert set(manifest.extensions.get("care_stages", [])).issubset(valid_care_stages), (
+                f"Agent '{agent_id}' has invalid care_stages: {set(manifest.extensions.get("care_stages", [])) - valid_care_stages}"
             )
 
             assert isinstance(manifest.target_audience, list) and len(manifest.target_audience) > 0, (

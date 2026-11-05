@@ -27,7 +27,7 @@ down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = ("health",)
 depends_on: Union[str, Sequence[str], None] = None
 
-REQUIRED_CORE_REVISION = "0011_scopes"
+REQUIRED_CORE_REVISION = "0013_turn_tasks"
 DEFAULT_SCOPE = "health"
 
 HEALTH_TABLES = [

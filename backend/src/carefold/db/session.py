@@ -264,8 +264,8 @@ def _run_schema_migrations(connection) -> None:
     # 2. Agent column migrations (existing)
     if "agent" in tables:
         columns = [c["name"] for c in inspector.get_columns("agent")]
-        if "care_stages_json" not in columns:
-            connection.exec_driver_sql("ALTER TABLE agent ADD COLUMN care_stages_json TEXT NOT NULL DEFAULT '[]'")
+        if "extensions_json" not in columns:
+            connection.exec_driver_sql("ALTER TABLE agent ADD COLUMN extensions_json TEXT NOT NULL DEFAULT '{}'")
         if "target_audience_json" not in columns:
             connection.exec_driver_sql("ALTER TABLE agent ADD COLUMN target_audience_json TEXT NOT NULL DEFAULT '[]'")
         if "forbidden_json" not in columns:
@@ -634,7 +634,7 @@ def run_pack_migrations(
     migrations_dir: Path | str,
     version_table: str = "alembic_version_health",
     target: str = "head",
-    depends_on_core: Optional[str] = "0011_scopes",
+    depends_on_core: Optional[str] = "0013_turn_tasks",
 ) -> None:
     """Executes database schema migrations for an enabled pack with isolated version tracking."""
     inspector = inspect(connection)
@@ -684,7 +684,7 @@ def resolve_health_migrations_dir() -> Path:
 
 def run_all_migrations(connection: Connection, enabled_packs: Optional[list[str]] = None) -> None:
     """Executes core baseline migrations followed by all enabled pack migrations."""
-    # 1. Run Core Baseline Migrations (alembic_version -> 0011_scopes)
+    # 1. Run Core Baseline Migrations (alembic_version -> 0013_turn_tasks)
     run_alembic_migrations(connection)
 
     # 2. Discover Enabled Packs (e.g. ['health'] in Carefold)
@@ -698,7 +698,7 @@ def run_all_migrations(connection: Connection, enabled_packs: Optional[list[str]
                     connection=connection,
                     migrations_dir=health_mig_dir,
                     version_table="alembic_version_health",
-                    depends_on_core="0011_scopes",
+                    depends_on_core="0013_turn_tasks",
                 )
 
 

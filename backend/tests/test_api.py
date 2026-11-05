@@ -619,7 +619,7 @@ def test_api_agents_list_taxonomy_fields(client: TestClient):
     vs = by_id["appointment-prep-coordinator"]
     assert vs["domain"] == "navigation"
     assert vs["category"] == "navigation.appointments"
-    assert vs["care_stages"] == ["pre_visit", "during_visit"]
+    assert vs["extensions"].get("care_stages", []) == ["pre_visit", "during_visit"]
     assert vs["tags"] == ["visit-prep", "appointment", "checklist", "doctor"]
     assert vs["icon"] == "Stethoscope"
     assert vs["maturity"] == "stable"
@@ -630,7 +630,7 @@ def test_api_agents_list_taxonomy_fields(client: TestClient):
     bg = by_id["benefits-coordinator"]
     assert bg["domain"] == "navigation"
     assert bg["category"] == "navigation.insurance"
-    assert bg["care_stages"] == ["post_visit", "daily_living"]
+    assert bg["extensions"].get("care_stages", []) == ["post_visit", "daily_living"]
     assert bg["tags"] == ["insurance", "benefits", "EOB", "deductible", "copay"]
     assert bg["icon"] == "FileText"
     assert bg["maturity"] == "stable"
@@ -640,7 +640,7 @@ def test_api_agents_list_taxonomy_fields(client: TestClient):
     hc = by_id["habit-coordinator"]
     assert hc["domain"] == "wellness"
     assert hc["category"] == "wellness.habits"
-    assert hc["care_stages"] == ["daily_living"]
+    assert hc["extensions"].get("care_stages", []) == ["daily_living"]
     assert hc["tags"] == ["habits", "hydration", "sleep", "checklist"]
     assert hc["icon"] == "HeartPulse"
     assert hc["maturity"] == "stable"
@@ -654,7 +654,7 @@ def test_api_agents_detail_taxonomy_fields(client: TestClient):
     data_vs = res_vs.json()
     assert data_vs["domain"] == "navigation"
     assert data_vs["category"] == "navigation.appointments"
-    assert data_vs["care_stages"] == ["pre_visit", "during_visit"]
+    assert data_vs["extensions"].get("care_stages", []) == ["pre_visit", "during_visit"]
     assert data_vs["tags"] == ["visit-prep", "appointment", "checklist", "doctor"]
     assert data_vs["icon"] == "Stethoscope"
     assert data_vs["maturity"] == "stable"
@@ -666,7 +666,7 @@ def test_api_agents_detail_taxonomy_fields(client: TestClient):
     data_bg = res_bg.json()
     assert data_bg["domain"] == "navigation"
     assert data_bg["category"] == "navigation.insurance"
-    assert data_bg["care_stages"] == ["post_visit", "daily_living"]
+    assert data_bg["extensions"].get("care_stages", []) == ["post_visit", "daily_living"]
     assert data_bg["tags"] == ["insurance", "benefits", "EOB", "deductible", "copay"]
     assert data_bg["icon"] == "FileText"
     assert data_bg["maturity"] == "stable"
@@ -677,7 +677,7 @@ def test_api_agents_detail_taxonomy_fields(client: TestClient):
     data_hc = res_hc.json()
     assert data_hc["domain"] == "wellness"
     assert data_hc["category"] == "wellness.habits"
-    assert data_hc["care_stages"] == ["daily_living"]
+    assert data_hc["extensions"].get("care_stages", []) == ["daily_living"]
     assert data_hc["tags"] == ["habits", "hydration", "sleep", "checklist"]
     assert data_hc["icon"] == "HeartPulse"
     assert data_hc["maturity"] == "stable"

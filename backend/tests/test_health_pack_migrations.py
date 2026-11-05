@@ -56,7 +56,7 @@ def test_health_pack_migration_greenfield_sqlite():
 
         # Check alembic_version
         core_revs = [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()]
-        assert "0011_scopes" in core_revs
+        assert "0013_turn_tasks" in core_revs
 
         # Check alembic_version_health
         health_revs = [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()]
@@ -72,14 +72,14 @@ def test_health_pack_migration_greenfield_sqlite():
 
 
 def test_health_pack_migration_upgrade_existing_db():
-    """Sets up an existing DB at 0011_scopes with pre-inserted health rows, then runs pack migrations."""
+    """Sets up an existing DB at 0013_turn_tasks with pre-inserted health rows, then runs pack migrations."""
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
     with engine.connect() as conn:
-        # Run core migrations up to 0011_scopes
+        # Run core migrations up to 0013_turn_tasks
         run_alembic_migrations(conn)
         conn.commit()
 
@@ -156,7 +156,7 @@ def test_health_pack_migration_upgrade_existing_db():
 
 
 def test_health_pack_migration_missing_core_precondition():
-    """Creating a database without 0011_scopes raises RuntimeError when running pack migrations."""
+    """Creating a database without 0013_turn_tasks raises RuntimeError when running pack migrations."""
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -167,15 +167,15 @@ def test_health_pack_migration_missing_core_precondition():
     with engine.connect() as conn:
         # Case A: empty database
         with pytest.raises(RuntimeError, match="alembic_version"):
-            run_pack_migrations(conn, migrations_dir=mig_dir, depends_on_core="0011_scopes")
+            run_pack_migrations(conn, migrations_dir=mig_dir, depends_on_core="0013_turn_tasks")
 
         # Case B: database only at 0004
         cfg_core = get_alembic_config(conn)
         alembic.command.upgrade(cfg_core, "0004_policy_gate_and_vault")
         conn.commit()
 
-        with pytest.raises(RuntimeError, match="0011_scopes"):
-            run_pack_migrations(conn, migrations_dir=mig_dir, depends_on_core="0011_scopes")
+        with pytest.raises(RuntimeError, match="0013_turn_tasks"):
+            run_pack_migrations(conn, migrations_dir=mig_dir, depends_on_core="0013_turn_tasks")
 
 
 def test_dual_version_isolation_and_rollback():
@@ -189,7 +189,7 @@ def test_dual_version_isolation_and_rollback():
         run_all_migrations(conn, enabled_packs=["health"])
         conn.commit()
 
-        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()] == ["0011_scopes"]
+        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()] == ["0013_turn_tasks"]
         assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()] == ["health_0001_baseline"]
 
         # Downgrade core to 0010_i18n_and_locale_storage
@@ -203,8 +203,8 @@ def test_dual_version_isolation_and_rollback():
         assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()] == ["health_0001_baseline"]
 
         # Re-upgrade core to head
-        alembic.command.upgrade(cfg_core, "0011_scopes")
+        alembic.command.upgrade(cfg_core, "0013_turn_tasks")
         conn.commit()
 
-        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()] == ["0011_scopes"]
+        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()] == ["0013_turn_tasks"]
         assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()] == ["health_0001_baseline"]
