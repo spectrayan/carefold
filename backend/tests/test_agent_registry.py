@@ -74,9 +74,11 @@ def test_agent_registry_delegatable_agents(temp_workspace: Path):
     assert AGENT_VISIT_PREP_COORDINATOR in delegatable_ids
     assert AGENT_BENEFITS_COORDINATOR in delegatable_ids
     assert AGENT_HABIT_COORDINATOR in delegatable_ids
-    assert AGENT_DOCUMENT_EXTRACTOR in delegatable_ids
+    # Hidden system agents are not delegatable (parity with yarvelle-core 0.2.0)
+    assert AGENT_DOCUMENT_EXTRACTOR not in delegatable_ids
     for agent in delegatable:
         assert agent.can_delegate is False
+        assert agent.hidden is False
 
 
 def test_agent_registry_format_agent_catalog(temp_workspace: Path):
@@ -88,8 +90,8 @@ def test_agent_registry_format_agent_catalog(temp_workspace: Path):
     assert f"- **{AGENT_BENEFITS_COORDINATOR}**" in catalog
     assert f"- **{AGENT_VISIT_PREP_COORDINATOR}**" in catalog
     assert f"- **{AGENT_HABIT_COORDINATOR}**" in catalog
-    assert f"- **{AGENT_DOCUMENT_EXTRACTOR}**" in catalog
-    assert f"- **{AGENT_SUGGESTION_GENERATOR}**" in catalog
+    assert f"- **{AGENT_DOCUMENT_EXTRACTOR}**" not in catalog
+    assert f"- **{AGENT_SUGGESTION_GENERATOR}**" not in catalog
     assert f"- **{AGENT_ORCHESTRATOR}**" not in catalog
     assert "Tools: [" in catalog
 
@@ -130,7 +132,7 @@ def test_agent_registry_taxonomy_metadata(temp_workspace: Path):
     assert vs is not None
     assert vs.domain == "navigation"
     assert vs.category == "navigation.appointments"
-    assert vs.care_stages == ["pre_visit", "during_visit"]
+    assert vs.extensions.get("care_stages", []) == ["pre_visit", "during_visit"]
     assert vs.tags == ["visit-prep", "appointment", "checklist", "doctor"]
     assert vs.icon == "Stethoscope"
     assert vs.maturity == "stable"
@@ -141,7 +143,7 @@ def test_agent_registry_taxonomy_metadata(temp_workspace: Path):
     assert bg is not None
     assert bg.domain == "navigation"
     assert bg.category == "navigation.insurance"
-    assert bg.care_stages == ["post_visit", "daily_living"]
+    assert bg.extensions.get("care_stages", []) == ["post_visit", "daily_living"]
     assert bg.tags == ["insurance", "benefits", "EOB", "deductible", "copay"]
     assert bg.icon == "FileText"
     assert bg.maturity == "stable"
@@ -151,7 +153,7 @@ def test_agent_registry_taxonomy_metadata(temp_workspace: Path):
     assert hc is not None
     assert hc.domain == "wellness"
     assert hc.category == "wellness.habits"
-    assert hc.care_stages == ["daily_living"]
+    assert hc.extensions.get("care_stages", []) == ["daily_living"]
     assert hc.tags == ["habits", "hydration", "sleep", "checklist"]
     assert hc.icon == "HeartPulse"
     assert hc.maturity == "stable"
@@ -170,7 +172,7 @@ def test_agent_registry_all_manifests_conform_to_taxonomy(temp_workspace: Path):
         assert domain_val in valid_domains, f"Agent {manifest.id} has invalid domain: {manifest.domain}"
         assert maturity_val in valid_maturities, f"Agent {manifest.id} has invalid maturity: {manifest.maturity}"
         assert isinstance(manifest.category, str)
-        assert isinstance(manifest.care_stages, list)
+        assert isinstance(manifest.extensions.get("care_stages", []), list)
         assert isinstance(manifest.target_audience, list)
         assert isinstance(manifest.tags, list)
         assert isinstance(manifest.icon, str) and len(manifest.icon) > 0

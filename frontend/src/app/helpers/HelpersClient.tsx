@@ -142,7 +142,7 @@ export function HelpersClient({
 
       // Care Stage
       if (selectedCareStage !== 'all') {
-        const stages = (agent.care_stages || []).map((s) => s.toLowerCase());
+        const stages = (((agent.extensions?.care_stages as string[] | undefined) || [])).map((s) => s.toLowerCase());
         if (!stages.includes(selectedCareStage.toLowerCase())) {
           return false;
         }
@@ -435,9 +435,9 @@ export function HelpersClient({
                     </p>
 
                     {/* Care Stage Tags */}
-                    {agent.care_stages && agent.care_stages.length > 0 && (
+                    {Array.isArray(agent.extensions?.care_stages) && (agent.extensions.care_stages as string[]).length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mb-4">
-                        {agent.care_stages.slice(0, 3).map((stage) => (
+                        {(agent.extensions!.care_stages as string[]).slice(0, 3).map((stage) => (
                           <span
                             key={stage}
                             className="text-xs font-medium px-2 py-0.5 rounded-md bg-[var(--cf-surface-2)] text-[var(--cf-fg-subtle)]"

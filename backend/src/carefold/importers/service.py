@@ -49,7 +49,7 @@ from carefold.importers.ccda import parse_ccda_xml
 from carefold.importers.fhir_bundle import parse_fhir_bundle
 from carefold.importers.iis_pdf import parse_iis_immunisation_text
 from carefold.importers.smart_health_card import verify_and_parse_smart_health_card
-from yarvelle_core.storage.cas import store_cas_file
+from carefold.storage.cas import store_cas_file
 
 logger = logging.getLogger("carefold.importers.service")
 

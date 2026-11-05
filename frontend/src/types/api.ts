@@ -90,7 +90,7 @@ export interface AgentSummary {
   error?: string;
   domain?: 'clinical' | 'therapy' | 'wellness' | 'navigation' | 'education' | string;
   category?: string;
-  care_stages?: string[];
+  extensions?: Record<string, unknown>;
   target_audience?: string[];
   tags?: string[];
   icon?: string;
@@ -136,7 +136,7 @@ export interface AgentDetailResponse {
   readmeText?: string;
   domain?: 'clinical' | 'therapy' | 'wellness' | 'navigation' | 'education' | string;
   category?: string;
-  care_stages?: string[];
+  extensions?: Record<string, unknown>;
   target_audience?: string[];
   tags?: string[];
   icon?: string;
@@ -164,7 +164,7 @@ export interface SkillSummary {
   error?: string;
   domain?: 'clinical' | 'therapy' | 'wellness' | 'navigation' | 'education' | string;
   category?: string;
-  care_stages?: string[];
+  extensions?: Record<string, unknown>;
   target_audience?: string[];
   tags?: string[];
   icon?: string;
@@ -189,7 +189,7 @@ export interface SkillDetailResponse {
   type?: 'bundled' | 'system' | 'user' | string;
   domain?: 'clinical' | 'therapy' | 'wellness' | 'navigation' | 'education' | string;
   category?: string;
-  care_stages?: string[];
+  extensions?: Record<string, unknown>;
   target_audience?: string[];
   tags?: string[];
   icon?: string;

@@ -139,7 +139,7 @@ export function AgentsClient({
 
       // Care Stage
       if (selectedCareStage !== 'all') {
-        const stages = (agent.care_stages || []).map((s) => s.toLowerCase());
+        const stages = (((agent.extensions?.care_stages as string[] | undefined) || [])).map((s) => s.toLowerCase());
         if (!stages.includes(selectedCareStage.toLowerCase())) {
           return false;
         }

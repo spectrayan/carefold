@@ -29,7 +29,7 @@ Tests and documents:
    - Late-added system agents verified via dynamic on-demand resolution.
 4. Delegation Tools Fallback & Registry Consistency:
    - ListAgentsTool catalog formatting excludes orchestrator and _template, while exposing
-     delegatable specialists (including document-extractor).
+     delegatable specialists (excluding hidden system agents such as document-extractor).
 5. API Layer Security & Isolation:
    - GET /api/agents excludes system agents and _template by default.
    - GET /api/agents?include_hidden=true includes system agents with hidden=True, never _template.
@@ -337,7 +337,7 @@ def test_on_demand_resolution_of_late_added_system_agent(tmp_path: Path):
 
 
 def test_delegation_tool_fallback_and_system_agents(temp_workspace: Path):
-    """Verify ListAgentsTool fallback format excludes orchestrator and _template, includes specialists."""
+    """Verify ListAgentsTool fallback format excludes orchestrator and _template, excludes hidden system specialists."""
     # 1. Unregistered fallback execution
     tool_fallback = ListAgentsTool(registry=None)
     output_fallback = tool_fallback._run()
@@ -345,8 +345,8 @@ def test_delegation_tool_fallback_and_system_agents(temp_workspace: Path):
     # Orchestrator is excluded from specialist catalog
     assert AGENT_ORCHESTRATOR not in output_fallback
     assert "_template" not in output_fallback
-    # document-extractor is a specialist in _system, should be present in delegatable catalog
-    assert "document-extractor" in output_fallback
+    # Hidden system agents are omitted from the delegatable catalog
+    assert "document-extractor" not in output_fallback
 
     # 2. Registered execution
     registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
@@ -355,7 +355,7 @@ def test_delegation_tool_fallback_and_system_agents(temp_workspace: Path):
 
     assert AGENT_ORCHESTRATOR not in output_registered
     assert "_template" not in output_registered
-    assert "document-extractor" in output_registered
+    assert "document-extractor" not in output_registered
 
 
 # ============================================================================

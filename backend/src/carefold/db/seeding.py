@@ -201,7 +201,7 @@ async def _do_sync(session: AsyncSession) -> dict[str, int]:
             res = await session.execute(stmt)
             existing_agent = res.scalar_one_or_none()
 
-            care_stages_list = [s.value if hasattr(s, "value") else str(s) for s in getattr(agent, "care_stages", []) or []]
+            extensions_dict = dict(getattr(agent, "extensions", None) or {})
             target_audience_list = [t.value if hasattr(t, "value") else str(t) for t in getattr(agent, "target_audience", []) or []]
             forbidden_list = [f.value if hasattr(f, "value") else str(f) for f in getattr(agent, "forbidden", []) or []]
 
@@ -221,7 +221,7 @@ async def _do_sync(session: AsyncSession) -> dict[str, int]:
                     category=agent.category,
                     risk_class=risk_val,
                     tags_json=json.dumps(agent.tags),
-                    care_stages_json=json.dumps(care_stages_list),
+                    extensions_json=json.dumps(extensions_dict),
                     target_audience_json=json.dumps(target_audience_list),
                     forbidden_json=json.dumps(forbidden_list),
                     icon=agent.icon,
@@ -245,7 +245,7 @@ async def _do_sync(session: AsyncSession) -> dict[str, int]:
                 existing_agent.category = agent.category
                 existing_agent.risk_class = risk_val
                 existing_agent.tags_json = json.dumps(agent.tags)
-                existing_agent.care_stages_json = json.dumps(care_stages_list)
+                existing_agent.extensions_json = json.dumps(extensions_dict)
                 existing_agent.target_audience_json = json.dumps(target_audience_list)
                 existing_agent.forbidden_json = json.dumps(forbidden_list)
                 existing_agent.icon = agent.icon

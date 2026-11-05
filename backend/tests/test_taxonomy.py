@@ -276,7 +276,7 @@ class TestDefaultsAndBackwardCompatibility:
         assert agent.domain == AgentDomain.WELLNESS
         assert agent.domain == "wellness"
         assert agent.category == ""
-        assert agent.care_stages == []
+        assert agent.extensions.get("care_stages", []) == []
         assert agent.target_audience == []
         assert agent.tags == []
         assert agent.icon == "Shield"
@@ -303,7 +303,7 @@ class TestDefaultsAndBackwardCompatibility:
         )
         assert summary.domain == AgentDomain.WELLNESS
         assert summary.category == ""
-        assert summary.care_stages == []
+        assert summary.extensions.get("care_stages", []) == []
         assert summary.target_audience == []
         assert summary.tags == []
         assert summary.icon == "Shield"
@@ -317,7 +317,7 @@ class TestDefaultsAndBackwardCompatibility:
         )
         assert detail.domain == AgentDomain.WELLNESS
         assert detail.category == ""
-        assert detail.care_stages == []
+        assert detail.extensions.get("care_stages", []) == []
         assert detail.target_audience == []
         assert detail.tags == []
         assert detail.icon == "Shield"
@@ -354,7 +354,7 @@ class TestDefaultsAndBackwardCompatibility:
         )
         assert agent1.domain == AgentDomain.THERAPY
         assert agent1.category == ""
-        assert agent1.care_stages == []
+        assert agent1.extensions.get("care_stages", []) == []
         assert agent1.target_audience == []
         assert agent1.tags == []
         assert agent1.icon == "Shield"
@@ -370,7 +370,7 @@ class TestDefaultsAndBackwardCompatibility:
         )
         assert agent2.domain == AgentDomain.WELLNESS
         assert agent2.category == "clinical.pediatrics"
-        assert agent2.care_stages == []
+        assert agent2.extensions.get("care_stages", []) == []
         assert agent2.target_audience == []
         assert agent2.tags == []
         assert agent2.icon == "Shield"
@@ -381,12 +381,12 @@ class TestDefaultsAndBackwardCompatibility:
             id="agent-3",
             title="Agent 3",
             persona="Bot",
-            care_stages=["pre_visit", "during_visit"],
+            extensions={"care_stages": ["pre_visit", "during_visit"]},
             icon="Stethoscope",
         )
         assert agent3.domain == AgentDomain.WELLNESS
         assert agent3.category == ""
-        assert agent3.care_stages == ["pre_visit", "during_visit"]
+        assert agent3.extensions.get("care_stages", []) == ["pre_visit", "during_visit"]
         assert agent3.icon == "Stethoscope"
         assert agent3.maturity == AgentMaturity.STABLE
 
@@ -395,11 +395,11 @@ class TestDefaultsAndBackwardCompatibility:
         agent_a = AgentManifest(id="agent-a", title="A", persona="Bot")
         agent_b = AgentManifest(id="agent-b", title="B", persona="Bot")
 
-        agent_a.care_stages.append("daily_living")
+        agent_a.extensions = {**agent_a.extensions, "care_stages": ["daily_living"]}
         agent_a.target_audience.append("adult")
         agent_a.tags.append("urgent")
 
-        assert agent_b.care_stages == []
+        assert agent_b.extensions.get("care_stages", []) == []
         assert agent_b.target_audience == []
         assert agent_b.tags == []
 
@@ -426,7 +426,7 @@ class TestAdversarialInputs:
 
     @pytest.mark.parametrize(
         "null_field",
-        ["domain", "maturity", "category", "tags", "care_stages", "target_audience", "icon"],
+        ["domain", "maturity", "category", "tags", "extensions", "target_audience", "icon"],
     )
     def test_explicit_null_in_non_nullable_fields_raises_validation_error(self, null_field: str):
         """Explicitly passing null (None) to non-optional fields must raise ValidationError."""
@@ -495,7 +495,7 @@ class TestSerializationAndRoundTrip:
             title="Roundtrip Agent",
             domain=AgentDomain.CLINICAL,
             category="clinical.cardiology",
-            care_stages=["pre_visit", "during_visit"],
+            extensions={"care_stages": ["pre_visit", "during_visit"]},
             target_audience=["patient_adult"],
             tags=["cardiology", "ecg"],
             icon="Heart",
@@ -551,7 +551,7 @@ class TestSerializationAndRoundTrip:
             title="RT Summary",
             domain=AgentDomain.NAVIGATION,
             category="navigation.insurance",
-            care_stages=["post_visit"],
+            extensions={"care_stages": ["post_visit"]},
             target_audience=["parent_caregiver"],
             tags=["insurance", "claim"],
             icon="FileText",
@@ -570,7 +570,7 @@ class TestSerializationAndRoundTrip:
             personaSummary="Summary of guide",
             domain=AgentDomain.THERAPY,
             category="therapy.cbt",
-            care_stages=["daily_living"],
+            extensions={"care_stages": ["daily_living"]},
             target_audience=["patient_adult"],
             tags=["cbt", "journal"],
             icon="Brain",
@@ -628,7 +628,7 @@ persona: Persona text
         agent1, _, _ = load_agent(dir1)
         assert agent1.domain == AgentDomain.WELLNESS
         assert agent1.category == ""
-        assert agent1.care_stages == []
+        assert agent1.extensions.get("care_stages", []) == []
         assert agent1.target_audience == []
         assert agent1.tags == []
         assert agent1.icon == "Shield"
@@ -835,7 +835,7 @@ class TestWorkspaceManifestAudit:
         bg = by_id["benefits-coordinator"]
         assert bg.domain == AgentDomain.NAVIGATION
         assert bg.category == "navigation.insurance"
-        assert set(bg.care_stages) == {"post_visit", "daily_living"}
+        assert set(bg.extensions.get("care_stages", [])) == {"post_visit", "daily_living"}
         assert bg.icon == "FileText"
         assert bg.maturity == AgentMaturity.STABLE
         assert "insurance" in bg.tags
@@ -846,7 +846,7 @@ class TestWorkspaceManifestAudit:
         hc = by_id["habit-coordinator"]
         assert hc.domain == AgentDomain.WELLNESS
         assert hc.category == "wellness.habits"
-        assert set(hc.care_stages) == {"daily_living"}
+        assert set(hc.extensions.get("care_stages", [])) == {"daily_living"}
         assert hc.icon == "HeartPulse"
         assert hc.maturity == AgentMaturity.STABLE
         assert "habits" in hc.tags
@@ -856,7 +856,7 @@ class TestWorkspaceManifestAudit:
         vs = by_id["appointment-prep-coordinator"]
         assert vs.domain == AgentDomain.NAVIGATION
         assert vs.category == "navigation.appointments"
-        assert set(vs.care_stages) == {"pre_visit", "during_visit"}
+        assert set(vs.extensions.get("care_stages", [])) == {"pre_visit", "during_visit"}
         assert vs.icon == "Stethoscope"
         assert vs.maturity == AgentMaturity.STABLE
         assert "visit-prep" in vs.tags
@@ -868,7 +868,7 @@ class TestWorkspaceManifestAudit:
                 sys_a = by_id[sys_id]
                 assert sys_a.domain == AgentDomain.WELLNESS
                 assert sys_a.category == ""
-                assert sys_a.care_stages == []
+                assert sys_a.extensions.get("care_stages", []) == []
                 assert sys_a.target_audience == []
                 assert sys_a.tags == []
                 assert sys_a.icon == "Shield"
@@ -894,8 +894,9 @@ class TestApiTaxonomyEndpoints:
             assert agent["domain"] in [d.value for d in AgentDomain]
             assert "category" in agent
             assert isinstance(agent["category"], str)
-            assert "care_stages" in agent
-            assert isinstance(agent["care_stages"], list)
+            ext = agent.get("extensions") or {}
+            assert isinstance(ext, dict)
+            assert isinstance(ext.get("care_stages", []), list)
             assert "target_audience" in agent
             assert isinstance(agent["target_audience"], list)
             assert "tags" in agent
@@ -915,7 +916,7 @@ class TestApiTaxonomyEndpoints:
         assert data["category"] == "navigation.insurance"
         assert data["icon"] == "FileText"
         assert data["maturity"] == "stable"
-        assert "post_visit" in data["care_stages"]
+        assert "post_visit" in data["extensions"].get("care_stages", [])
         assert "insurance" in data["tags"]
 
     def test_api_list_skills_taxonomy_serialization(self, client):
