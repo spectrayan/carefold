@@ -137,9 +137,18 @@ if not any(type(f).__name__ == "_CarefoldRedirectFinder" for f in _sys.meta_path
 
 
 import logging
+from pathlib import Path
 from typing import List
 
 from yarvelle_core.pack.spec import PackEvalsSpec, PackSpec, RouterContribution
+from yarvelle_core.schemas.orchestration import (
+    FixedRoute,
+    GuardrailFlagTrigger,
+    HasAttachmentsTrigger,
+    OrchestrationLimits,
+    PackOrchestrationSpec,
+    SynthesisSpec,
+)
 from yarvelle_core.schemas.routing import RoutingHints
 from yarvelle_core.workflows.subgraphs.extraction.dossiers import register_dossier_type
 
@@ -325,10 +334,39 @@ def get_pack() -> PackSpec:
         domain="health",
         description="Clinical visit preparation, health records management, and insurance navigation",
         default_agent="appointment-prep-coordinator",
-        patterns_path="resources/routing_patterns.yaml",
+        patterns_resource="resources/routing_patterns.yaml",
     )
 
-    # 7. Evals spec
+    # 7. Orchestration (pack.yaml orchestration twin)
+    synthesis_path = Path(__file__).resolve().parent / "resources" / "prompts" / "orchestrator" / "synthesis.md"
+    synthesis_instructions = synthesis_path.read_text(encoding="utf-8").strip()
+    orchestration = PackOrchestrationSpec(
+        default_agent="appointment-prep-coordinator",
+        limits=OrchestrationLimits(
+            max_agents=4,
+            agent_timeout_s=60.0,
+            turn_timeout_s=120.0,
+        ),
+        fixed_routes=[
+            FixedRoute(
+                route_id="document-intake",
+                when=HasAttachmentsTrigger(
+                    mime_types=["application/pdf", "image/*", "text/plain"],
+                ),
+                agent_id="document-extractor",
+                description="Uploaded documents go to the document extractor.",
+            ),
+            FixedRoute(
+                route_id="red-flag-escalation",
+                when=GuardrailFlagTrigger(flag="red_flag"),
+                agent_id="triage-auditor",
+                description="Guardrail red-flag signals go to the triage auditor.",
+            ),
+        ],
+        synthesis=SynthesisSpec(instructions=synthesis_instructions),
+    )
+
+    # 8. Evals spec
     evals = PackEvalsSpec(
         golden_path="evals/golden.jsonl",
         min_pass_rate=0.95,
@@ -355,6 +393,7 @@ def get_pack() -> PackSpec:
         maintainers=["spectrayan/carefold-maintainers"],
         routing_hints=routing_hints,
         scoped_models=scoped_models,
+        orchestration=orchestration,
     )
     return spec
 
