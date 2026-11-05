@@ -150,6 +150,39 @@ provides:
   connectors_dir: "connectors/"
   evals: "evals/golden.jsonl"
 
+
+orchestration:
+  schema_version: 1
+  default_agent: appointment-prep-coordinator
+  limits:
+    max_agents: 4
+    agent_timeout_s: 60
+    turn_timeout_s: 120
+  fixed_routes:
+    - route_id: document-intake
+      when:
+        kind: has_attachments
+        mime_types:
+          - application/pdf
+          - image/*
+          - text/plain
+      agent_id: document-extractor
+      description: Uploaded documents go to the document extractor.
+    - route_id: red-flag-escalation
+      when:
+        kind: guardrail_flag
+        flag: red_flag
+      agent_id: triage-auditor
+      description: Guardrail red-flag signals go to the triage auditor.
+  synthesis:
+    instructions: |-
+      When composing the family-facing reply from specialist outputs:
+      - Lead with a short plain-language summary a caregiver can act on.
+      - Credit which specialists contributed; state clearly what is still missing or failed.
+      - When specialist recommendations conflict, turn the conflict into questions to raise with the clinician rather than choosing a side.
+      - Never invent clinical facts, coverage details, or vitals that specialists did not provide.
+      - Keep emergency and red-flag referral language intact; do not soften or rephrase diversion guidance.
+
 migrations:
   branch: health
   version_table: alembic_version_health
