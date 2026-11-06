@@ -43,7 +43,6 @@ from typing import (
     Union,
 )
 
-import aiosqlite
 from langchain_core.callbacks.manager import adispatch_custom_event
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import (
@@ -59,6 +58,8 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.store.base import BaseStore
 
+from yarvelle_core.engine import graph as _core_graph
+
 from carefold.audit.logger import record_audit
 from carefold.config import settings
 from carefold.constants.api import (
@@ -67,12 +68,7 @@ from carefold.constants.api import (
     SSE_EVENT_TOOL_END,
     SSE_EVENT_TOOL_START,
 )
-from carefold.constants.defaults import (
-    MAX_TOOL_ITERATIONS,
-    SQLITE_BUSY_TIMEOUT_MS,
-    SQLITE_CONNECT_TIMEOUT_SECONDS,
-    SQLITE_JOURNAL_MODE,
-)
+from carefold.constants.defaults import MAX_TOOL_ITERATIONS
 from carefold.constants.paths import (
     CHATS_DIR,
     DEFAULT_AUDIT_LOG_FILE,
@@ -441,68 +437,37 @@ def _get_db_lock(canon_path: str) -> asyncio.Lock:
 
 
 def reset_db_init_cache() -> None:
-    """Resets the initialization cache for testing purposes."""
+    """Resets the initialization cache for testing purposes (Carefold and core)."""
     _INITIALIZED_DBS.clear()
     _DB_LOCKS.clear()
+    _core_graph.reset_db_init_cache()
 
 
-def create_sqlite_saver(db_path: Union[str, Path]) -> SqliteSaver:
-    """Creates a synchronous SqliteSaver instance with WAL mode and busy timeout."""
-    import sqlite3
+def create_sqlite_saver(
+    db_path: Union[str, Path],
+    serde: Optional[Any] = None,
+) -> SqliteSaver:
+    """Synchronous SqliteSaver (WAL, busy timeout) from core.
 
-    path = Path(db_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    canon_path = str(path.resolve())
-
-    conn = sqlite3.connect(str(path), check_same_thread=False, timeout=SQLITE_CONNECT_TIMEOUT_SECONDS)
-    conn.execute(f"PRAGMA busy_timeout={SQLITE_BUSY_TIMEOUT_MS};")
-    saver = SqliteSaver(conn)
-
-    cursor = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='checkpoints';")
-    table_exists = cursor.fetchone() is not None
-
-    if canon_path not in _INITIALIZED_DBS or not table_exists:
-        conn.execute(f"PRAGMA journal_mode={SQLITE_JOURNAL_MODE};")
-        saver.setup()
-        _INITIALIZED_DBS.add(canon_path)
-
-    saver.is_setup = True
-    return saver
+    Delegates to ``yarvelle_core.engine.graph.create_sqlite_saver`` so checkpoint
+    encryption at rest follows the core settings: blobs are sealed when
+    ``checkpoint_encryption`` is on and encrypted rows can always be read back.
+    """
+    return _core_graph.create_sqlite_saver(db_path, serde=serde)
 
 
 @asynccontextmanager
 async def create_async_sqlite_saver(
     db_path: Union[str, Path],
+    serde: Optional[Any] = None,
 ) -> AsyncIterator[AsyncSqliteSaver]:
-    """Async context manager creating an AsyncSqliteSaver for FastAPI SSE streams.
+    """Async context manager for core's AsyncSqliteSaver (FastAPI SSE streams, history).
 
-    Features:
-    - Enables WAL journal mode (PRAGMA journal_mode=WAL;) for concurrent reader/writer access.
-    - Configures 10-second busy timeout (PRAGMA busy_timeout=10000;) to eliminate lock errors.
-    - Single-flight initialization guard (asyncio.Lock + table verification) preventing concurrent DDL setup.
-    - Explicitly sets saver.is_setup = True to prevent redundant executescript DDL on checkpoint reads/writes.
+    Delegates to ``yarvelle_core.engine.graph.create_async_sqlite_saver`` (WAL,
+    busy timeout, single-flight setup) so every Carefold checkpoint reader and
+    writer uses the same encryption-aware serializer as the chat runtime.
     """
-    path = Path(db_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    canon_path = str(path.resolve())
-
-    async with aiosqlite.connect(str(path), timeout=SQLITE_CONNECT_TIMEOUT_SECONDS) as conn:
-        await conn.execute(f"PRAGMA busy_timeout={SQLITE_BUSY_TIMEOUT_MS};")
-        saver = AsyncSqliteSaver(conn)
-
-        async with _get_db_lock(canon_path):
-            async with conn.execute(
-                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='checkpoints';"
-            ) as cursor:
-                row = await cursor.fetchone()
-                table_exists = row is not None
-
-            if canon_path not in _INITIALIZED_DBS or not table_exists:
-                await conn.execute(f"PRAGMA journal_mode={SQLITE_JOURNAL_MODE};")
-                await saver.setup()
-                _INITIALIZED_DBS.add(canon_path)
-
-        saver.is_setup = True
+    async with _core_graph.create_async_sqlite_saver(db_path, serde=serde) as saver:
         yield saver
 
 
