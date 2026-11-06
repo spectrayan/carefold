@@ -55,6 +55,40 @@ CAREFOLD_CORS_ORIGINS=["http://localhost:3010", "http://127.0.0.1:3010", "http:/
 
 ---
 
+## Conversation Checkpoint Encryption
+
+Chat threads are saved as checkpoints in `checkpoints.db`. Carefold encrypts new
+checkpoints at rest by default (AES-256-GCM, key derived from the vault key).
+This is separate from audit logging (`CAREFOLD_AUDIT_STORE_BODIES`) and from
+long-term memory settings; changing one does not change the others.
+
+| Variable | Default | Description |
+|---|---|---|
+| `CAREFOLD_CHECKPOINT_ENCRYPTION` | `true` | Encrypt checkpoints at rest. Set `false` to opt out explicitly. |
+| `CAREFOLD_CHECKPOINT_PLAINTEXT_READS` | `true` | Keep reading checkpoints written before encryption. Turn off after migrating. |
+| `CAREFOLD_CHECKPOINT_KEY_VERSION` | `1` | Active checkpoint key version (raise it to rotate keys). |
+
+The checkpoint key comes from the vault key (KEK). Carefold looks for it in this
+order: the OS keychain entry, `CAREFOLD_VAULT_KEK_FILE`, then
+`CAREFOLD_VAULT_PASSPHRASE` (with `CAREFOLD_VAULT_SALT`). With encryption on and
+no vault key, a chat turn fails with an error instead of saving plaintext.
+
+To encrypt threads saved before encryption was on, back up `checkpoints.db`, then run:
+
+```bash
+python -m carefold.checkpoints status    # count plaintext and encrypted rows
+python -m carefold.checkpoints encrypt   # writes checkpoints.db.bak-<time> first
+python -m carefold.checkpoints verify    # every thread loads; same messages
+```
+
+`encrypt` checks that every thread has the same messages before and after, and
+keeps the plaintext `.bak-<time>` copy. Delete that copy yourself once `verify`
+passes. `decrypt` reverses the migration. Pass `--db <path>` for a non-default
+database and `--json` for a machine-readable report. Checkpoint metadata is not
+encrypted.
+
+---
+
 ## Multi-Provider Support
 
 While Carefold defaults to local Ollama inference for maximum patient privacy, the engine supports external LLM providers via standard environment variables or the in-app **Settings → Model & Provider** panel (`/settings/model`):
