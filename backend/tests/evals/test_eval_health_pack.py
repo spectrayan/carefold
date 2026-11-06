@@ -73,3 +73,15 @@ def test_eval_agents_are_the_real_agents_with_two_eval_adaptations(tmp_path: Pat
         assert (root / "agents" / agent_id / "persona.md").read_text(encoding="utf-8") == (
             source / "persona.md"
         ).read_text(encoding="utf-8")
+
+
+def test_fake_marker_mode_only_prepends_the_persona_marker(tmp_path: Path) -> None:
+    """The scripted fake model finds an agent by "You are the <id> agent."; live
+    runs keep the shipped persona text untouched."""
+    root = materialize_health_pack(tmp_path / "pack", persona_markers=True)
+    for agent_id in EVAL_AGENT_IDS:
+        originals = [REPO_ROOT / "agents" / agent_id, REPO_ROOT / "agents" / "_system" / agent_id]
+        source = next(p for p in originals if (p / "agent.yaml").is_file())
+        persona = (root / "agents" / agent_id / "persona.md").read_text(encoding="utf-8")
+        marker = f"You are the {agent_id} agent.\n\n"
+        assert persona == marker + (source / "persona.md").read_text(encoding="utf-8")

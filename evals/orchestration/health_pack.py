@@ -90,8 +90,14 @@ def _eval_manifest(agent_id: str, manifest: dict, route_targets: set[str]) -> di
     return out
 
 
-def materialize_health_pack(dest: Path, agent_ids: Optional[Iterable[str]] = None) -> Path:
-    """Writes the health eval pack into ``dest`` and returns its directory."""
+def materialize_health_pack(
+    dest: Path, agent_ids: Optional[Iterable[str]] = None, *, persona_markers: bool = False
+) -> Path:
+    """Writes the health eval pack into ``dest`` and returns its directory.
+
+    ``persona_markers`` prepends "You are the <id> agent." to each persona so
+    the scripted fake model can tell the agents apart; live runs leave it off.
+    """
     ids = tuple(agent_ids) if agent_ids is not None else EVAL_AGENT_IDS
     production = yaml.safe_load(PRODUCTION_PACK_FILE.read_text(encoding="utf-8"))
     pack = {
@@ -114,6 +120,11 @@ def materialize_health_pack(dest: Path, agent_ids: Optional[Iterable[str]] = Non
         for name in _AGENT_FILES:
             if (source / name).is_file():
                 shutil.copyfile(source / name, target / name)
+        if persona_markers:
+            persona = target / "persona.md"
+            persona.write_text(
+                f"You are the {agent_id} agent.\n\n" + persona.read_text(encoding="utf-8"), encoding="utf-8"
+            )
         manifest = yaml.safe_load((source / "agent.yaml").read_text(encoding="utf-8")) or {}
         skills.update(str(s) for s in manifest.get("skills") or [])
         (target / "agent.yaml").write_text(
