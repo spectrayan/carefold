@@ -30,7 +30,11 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.checkpoint.base import empty_checkpoint
 import pytest
 
-from tests.fixtures.checkpoint_crypto import raw_checkpoint_rows, use_test_checkpoint_keyring
+from tests.fixtures.checkpoint_crypto import (
+    raw_checkpoint_rows,
+    use_real_checkpoint_key_loader,
+    use_test_checkpoint_keyring,
+)
 from tests.fixtures.fake_model import MockModelClient
 
 LEGACY_THREAD = "f4-golden-legacy-thread"
@@ -213,6 +217,7 @@ def test_missing_vault_key_fails_closed_without_touching_db(
     from yarvelle_core.vault import checkpoints as cp
     from yarvelle_core.vault import kek as core_kek
 
+    use_real_checkpoint_key_loader(monkeypatch)
     monkeypatch.setattr(core_kek, "HAS_KEYRING", False)  # never the real OS keychain
     for name in ("VAULT_KEK_FILE", "VAULT_PASSPHRASE"):
         monkeypatch.delenv(f"CAREFOLD_{name}", raising=False)
@@ -244,6 +249,7 @@ def test_kek_file_roundtrip_uses_carefold_vault_identity(
     kek = os.urandom(32)
     kek_file = tmp_path / "test-kek.bin"
     kek_file.write_bytes(kek)
+    use_real_checkpoint_key_loader(monkeypatch)
     monkeypatch.setattr(core_kek, "HAS_KEYRING", False)
     monkeypatch.delenv("CAREFOLD_VAULT_SALT", raising=False)
     monkeypatch.setenv("CAREFOLD_VAULT_KEK_FILE", str(kek_file))

@@ -19,6 +19,9 @@ and ``CAREFOLD_CHECKPOINT_KEY_VERSION``. When a Carefold-prefixed value is
 set and valid it takes precedence: it is mirrored into the ``YARVELLE_CORE_``
 variable (so later ``Settings`` instances and CLI subprocesses agree) and
 applied to the live settings object. Blank or invalid values are ignored.
+
+Checkpoint encryption itself defaults to on in Carefold (see
+``apply_checkpoint_encryption_default``); an explicit value always wins.
 """
 
 from __future__ import annotations
@@ -84,4 +87,33 @@ def apply_checkpoint_env_aliases(
     return applied
 
 
-__all__ = ["CHECKPOINT_ALIASES", "apply_checkpoint_env_aliases"]
+def apply_checkpoint_encryption_default(
+    environ: Optional[MutableMapping[str, str]] = None,
+    settings_obj: Optional[Any] = None,
+) -> bool:
+    """Turn checkpoint encryption on unless it was configured explicitly.
+
+    Carefold keeps conversation checkpoints encrypted at rest by default. An
+    explicit ``CAREFOLD_CHECKPOINT_ENCRYPTION`` or ``YARVELLE_CORE_CHECKPOINT_ENCRYPTION``
+    value (including ``false``) is left alone; an invalid Carefold value is
+    ignored like the aliases ignore it. Plaintext reads keep their own
+    default so threads written before encryption stay readable until migrated.
+    Returns True when the default was applied.
+    """
+    env = os.environ if environ is None else environ
+    suffix = "CHECKPOINT_ENCRYPTION"
+    if _parse_bool(env.get(f"{APP_PREFIX}{suffix}") or "") is not None:
+        return False  # valid Carefold value (already applied by the aliases)
+    if (env.get(f"{CORE_PREFIX}{suffix}") or "").strip():
+        return False  # explicit core value (core settings validate it)
+    env[f"{CORE_PREFIX}{suffix}"] = "true"
+    if settings_obj is not None:
+        settings_obj.checkpoint_encryption = True
+    return True
+
+
+__all__ = [
+    "CHECKPOINT_ALIASES",
+    "apply_checkpoint_encryption_default",
+    "apply_checkpoint_env_aliases",
+]

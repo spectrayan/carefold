@@ -39,9 +39,12 @@ try:
         default_agent="appointment-prep-coordinator",
     )
     # CAREFOLD_CHECKPOINT_* aliases for core checkpoint encryption settings.
+    from carefold.checkpoint_env import apply_checkpoint_encryption_default as _apply_cp_default
     from carefold.checkpoint_env import apply_checkpoint_env_aliases as _apply_cp_aliases
 
     _apply_cp_aliases(_os.environ, _yc_settings)
+    # Checkpoints are encrypted at rest by default (explicit settings win).
+    _apply_cp_default(_os.environ, _yc_settings)
 except Exception:
     pass
 
