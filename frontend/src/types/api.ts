@@ -231,7 +231,9 @@ export type SSEEventName =
   | 'refusal'
   | 'suggestions'
   | 'done'
-  | 'error';
+  | 'error'
+  | 'task_status'
+  | 'orchestration_notice';
 
 export type SSEEventType = SSEEventName;
 
@@ -275,6 +277,23 @@ export interface SSEDoneData {
 export interface SSEErrorData {
   message: string;
   code?: string;
+}
+
+export interface SSETaskStatusData {
+  type?: 'task_status';
+  turn_id?: string;
+  task_id: string;
+  agent_id: string;
+  state: 'started' | 'completed' | 'failed' | 'timed_out' | 'cancelled';
+  detail?: string | null;
+}
+
+export interface SSEOrchestrationNoticeData {
+  type?: 'orchestration_notice';
+  turn_id?: string;
+  code: 'model_unavailable' | 'main_agent_failed' | 'partial_failure' | 'truncated';
+  message: string;
+  agent_ids?: string[];
 }
 
 // ---------------------------------------------------------------------------

@@ -47,6 +47,30 @@ export interface ToolTraceItem {
 export type ToolTrace = ToolTraceItem;
 
 // ---------------------------------------------------------------------------
+// Orchestration Status Types (task_status / orchestration_notice SSE events)
+// ---------------------------------------------------------------------------
+export type TaskState = 'started' | 'completed' | 'failed' | 'timed_out' | 'cancelled';
+
+export interface TaskStatusItem {
+  taskId: string;
+  agentId: string;
+  state: TaskState;
+  detail?: string;
+}
+
+export type OrchestrationNoticeCode =
+  | 'model_unavailable'
+  | 'main_agent_failed'
+  | 'partial_failure'
+  | 'truncated';
+
+export interface OrchestrationNoticeItem {
+  code: OrchestrationNoticeCode;
+  message: string;
+  agentIds: string[];
+}
+
+// ---------------------------------------------------------------------------
 // Chat Message Interface
 // ---------------------------------------------------------------------------
 export interface ChatMessage {
@@ -68,6 +92,8 @@ export interface ChatMessage {
   contextSources?: ContextSourceItem[];
   plan?: ExecutionPlan;
   roundtable?: DeliberationRoundtableData;
+  taskStatuses?: TaskStatusItem[];
+  orchestrationNotices?: OrchestrationNoticeItem[];
   error?: string;
   isError?: boolean;
 }
