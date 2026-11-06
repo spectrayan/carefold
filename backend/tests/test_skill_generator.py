@@ -20,7 +20,7 @@ from carefold.config import settings
 from carefold.schemas.manifest import AgentManifest
 from carefold.tools.skill_docs import execute_skill_docs
 from carefold.workflows.nodes.agent_execution_node import AgentExecutionNode
-from carefold.workflows.nodes.orchestrator_node import OrchestratorDecision, OrchestratorNode
+from tests.fixtures.core_routing import OrchestratorDecision, OrchestratorNode
 from carefold.workflows.nodes.skill_generator_node import SkillGeneratorNode
 
 

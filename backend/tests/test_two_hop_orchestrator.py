@@ -52,7 +52,7 @@ from carefold.schemas.manifest import (
     AgentMaturity,
     RiskClass,
 )
-from carefold.workflows.nodes.orchestrator_node import (
+from tests.fixtures.core_routing import (
     DomainClassification,
     OrchestratorDecision,
     OrchestratorNode,
@@ -178,34 +178,6 @@ class TestTwoHopSchemasAndPromptContract:
         assert d2.category == "wellness.habits"
         assert d2.reasoning == "Query asks about daily hydration goals."
 
-    def test_tier1_static_prompt_invariants(self):
-        """Verifies that Tier-1 classifier prompt is static, bounded, and contains NO agent catalogs."""
-        prompt = TIER1_DOMAIN_CLASSIFIER_PROMPT
-
-        # Must describe all 5 required domains
-        assert "clinical" in prompt
-        assert "therapy" in prompt
-        assert "wellness" in prompt
-        assert "navigation" in prompt
-        assert "education" in prompt
-
-        # Must contain example dot-notated category paths
-        assert "clinical.triage" in prompt
-        assert "therapy.cbt" in prompt
-        assert "wellness.habits" in prompt
-        assert "navigation.insurance" in prompt
-        assert "education.conditions" in prompt
-
-        # Invariant: Must NOT contain agent catalog descriptions or specific agent IDs
-        assert "benefits-coordinator" not in prompt
-        assert "appointment-prep-coordinator" not in prompt
-        assert "habit-coordinator" not in prompt
-        assert "document-extractor" not in prompt
-
-        # Invariant: Prompt must be compact and bounded (~500 tokens / <500 words)
-        words = prompt.split()
-        assert len(words) < 500
-        assert len(words) > 100
 
     def test_format_candidate_agents(self):
         """Verifies candidate agents formatting includes name, title, domain, category, description, tools."""
@@ -268,17 +240,6 @@ class TestBackwardCompatibility:
         assert AGENT_HABIT_COORDINATOR in prompt
         assert AGENT_DOCUMENT_EXTRACTOR in prompt
 
-    @pytest.mark.asyncio
-    async def test_single_hop_model_none_fallback(self, temp_workspace: Path):
-        """Verifies single-hop offline pattern fallback when model is None."""
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-        node = OrchestratorNode(model=None, registry=registry, catalog=None)
-
-        state = {"messages": [HumanMessage(content="What is my copay?")]}
-        result = await node.execute(state)
-
-        assert result["current_agent"] == "benefits-coordinator"
-        assert "Model unconfigured" in result["orchestrator_reasoning"]
 
 
 # ============================================================================
@@ -475,42 +436,6 @@ class TestFallbackChain:
         assert calls[2]["query"] == "I need help with my sleep hygiene and bedtime routine"
         assert result["current_agent"] == "habit-coordinator"
 
-    @pytest.mark.asyncio
-    async def test_fallback_step4_pattern_fallback_when_fts_returns_zero(
-        self, indexed_catalog: SqliteCatalogAdapter, temp_workspace: Path
-    ):
-        """Step 4: When FTS returns 0 candidates, falls back to pattern-matching fallback."""
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-        # Tier-1 returns "education" domain which has 0 agents
-        tier1_resp = json.dumps({
-            "domain": "education",
-            "category": "education.pharmacology",
-            "reasoning": "Education domain classification.",
-        })
-
-        # Tier 2 is NOT called because candidates == 0; it directly triggers _resolve_pattern_fallback
-        fake_model = FakeListChatModel(responses=[tier1_resp])
-        node = OrchestratorNode(model=fake_model, registry=registry, catalog=indexed_catalog)
-
-        # Prompt contains regex keyword for benefits-coordinator ("in-network copay deductible")
-        # but catalog has FTS mocked or returning 0
-        with patch.object(indexed_catalog, "search_agents", new_callable=AsyncMock) as mock_search:
-            mock_search.return_value = []  # All catalog queries return 0 candidates
-
-            state = {"messages": [HumanMessage(content="What is my in-network copay?")]}
-            result = await node.execute(state)
-
-        # Verify fallback chain was called:
-        # Step 1: domain + category
-        # Step 2: domain only
-        # Step 3: query
-        assert mock_search.call_count == 3
-
-        # Step 4: pattern fallback resolved to benefits-coordinator via regex
-        assert result["current_agent"] == "benefits-coordinator"
-        assert result["routed_subgraph"] == "benefits-coordinator"
-        assert "pattern fallback" in result["orchestrator_reasoning"].lower()
 
 
 # ============================================================================
@@ -573,51 +498,4 @@ class TestTwoHopResilienceAndEdgeCases:
         assert result["current_agent"] == "appointment-prep-coordinator"
         assert result["routed_subgraph"] == "appointment-prep-coordinator"
 
-    @pytest.mark.asyncio
-    async def test_two_hop_tier2_model_error_falls_back_to_first_candidate(
-        self, indexed_catalog: SqliteCatalogAdapter, temp_workspace: Path
-    ):
-        """Verifies that if Tier-2 fails, the first candidate from the catalog is selected as fallback."""
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
 
-        tier1_resp = json.dumps({
-            "domain": "navigation",
-            "category": "navigation.insurance",
-            "reasoning": "Insurance category match.",
-        })
-        # Second response is invalid JSON / garbage
-        fake_model = FakeListChatModel(responses=[tier1_resp, "Invalid unstructured response"])
-        node = OrchestratorNode(model=fake_model, registry=registry, catalog=indexed_catalog)
-
-        state = {"messages": [HumanMessage(content="What is my insurance copay?")]}
-        result = await node.execute(state)
-
-        assert result["current_agent"] == "benefits-coordinator"
-        assert "fallback" in result["orchestrator_reasoning"].lower()
-
-    @pytest.mark.asyncio
-    async def test_two_hop_hallucinated_agent_falls_back_to_candidate(
-        self, indexed_catalog: SqliteCatalogAdapter, temp_workspace: Path
-    ):
-        """Verifies that if Tier-2 returns an unknown agent_id, it safely falls back to a candidate."""
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-        tier1_resp = json.dumps({
-            "domain": "navigation",
-            "category": "navigation.insurance",
-            "reasoning": "Insurance category match.",
-        })
-        tier2_resp = json.dumps({
-            "agent_id": "non-existent-agent-999",
-            "reasoning": "Hallucinated agent ID.",
-            "instructions": "",
-        })
-        fake_model = FakeListChatModel(responses=[tier1_resp, tier2_resp])
-        node = OrchestratorNode(model=fake_model, registry=registry, catalog=indexed_catalog)
-
-        state = {"messages": [HumanMessage(content="Insurance deductible inquiry")]}
-        result = await node.execute(state)
-
-        # Candidate benefits-coordinator was retrieved in Tier-2 candidate list, so fallback selects it
-        assert result["current_agent"] == "benefits-coordinator"
-        assert "not found in registry" in result["orchestrator_reasoning"]

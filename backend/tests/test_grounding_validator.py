@@ -75,10 +75,6 @@ from carefold.workflows.subgraphs.extraction import (
     extract_numeric_tokens,
     sanitize_pii,
 )
-from carefold.workflows.subgraphs.supervisor import (
-    SPECIALIST_DOCUMENT_EXTRACTOR,
-    build_supervisor_subgraph,
-)
 from tests.fixtures.fake_model import FakeListChatModel
 
 
@@ -445,29 +441,6 @@ class TestExtractionSubgraphExecution:
         assert result["document_dossiers"][0]["dossier_type"] in ("clinical", "clinical_visit")
         assert result["document_dossiers"][0]["data"]["follow_up_timeline"] == "4 weeks"
 
-    @pytest.mark.asyncio
-    async def test_supervisor_subgraph_wires_document_extractor_and_populates_dossiers(self):
-        """Specialist supervisor dispatches to document-extractor and preserves document_dossiers."""
-        fake = FakeListChatModel(responses=[""])
-        app = build_supervisor_subgraph(model=fake)
-
-        state = create_initial_state(
-            thread_id="t-sup-doc",
-            user_id="u-1",
-            messages=[HumanMessage(content="Extract structured data from this document")],
-        )
-        state["document_text"] = (
-            "SCHEDULE OF BENEFITS\n"
-            "Annual Deductible: $1,500\n"
-            "Copay: $25\n"
-            "Coinsurance: 20%\n"
-        )
-        state["routed_subgraph"] = SPECIALIST_DOCUMENT_EXTRACTOR
-
-        result = await app.ainvoke(state)
-        assert result["current_agent"] == SPECIALIST_DOCUMENT_EXTRACTOR
-        assert len(result.get("document_dossiers", [])) == 1
-        assert result["document_dossiers"][0]["data"]["deductible"] == "$1,500"
 
 
 # ============================================================================

@@ -53,12 +53,10 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
-from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
-from langgraph.graph.state import CompiledStateGraph
 from langgraph.store.base import BaseStore
 
 from carefold.audit.logger import record_audit
@@ -402,34 +400,6 @@ def route_post_safety(state: AgentState) -> str:
 
 
 # ============================================================================
-# 4. Graph Builder
-# ============================================================================
-
-def create_agent_graph(
-    model: BaseChatModel,
-    execution_context: Optional[Any] = None,
-    checkpointer: Optional[BaseCheckpointSaver] = None,
-    system_prompt: Optional[str] = None,
-    store: Optional[BaseStore] = None,
-    **kwargs: Any,
-) -> CompiledStateGraph:
-    """Builds and compiles the Carefold LangGraph stateful execution graph.
-
-    Delegates directly to GraphBuilder (engine/builder.py) as the sole execution graph.
-    """
-    from carefold.engine.builder import create_agent_graph as builder_create_agent_graph
-
-    return builder_create_agent_graph(
-        model=model,
-        execution_context=execution_context,
-        checkpointer=checkpointer,
-        system_prompt=system_prompt,
-        store=store,
-        **kwargs,
-    )
-
-
-# ============================================================================
 # 5. SQLite Persistence Helpers
 # ============================================================================
 
@@ -556,7 +526,6 @@ async def get_thread_history(
 __all__ = [
     "AgentState",
     "CLOSED_TOOL_DEFINITIONS",
-    "create_agent_graph",
     "safety_guard_node",
     "create_agent_node",
     "post_safety_node",

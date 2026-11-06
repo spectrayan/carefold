@@ -61,11 +61,6 @@ from carefold.workflows.subgraphs.extraction import (
     sanitize_pii,
     sanitize_pii_with_metadata,
 )
-from carefold.workflows.subgraphs.supervisor import (
-    SPECIALIST_DOCUMENT_EXTRACTOR,
-    build_supervisor_subgraph,
-    create_supervisor_subgraph,
-)
 from tests.fixtures.fake_model import FakeListChatModel
 from langchain_core.messages import HumanMessage
 
@@ -343,29 +338,6 @@ class TestExtractionSubgraph:
         assert len(result["document_dossiers"]) >= 1
         assert "Document extraction completed" in result["output"]
 
-    @pytest.mark.asyncio
-    async def test_supervisor_wiring_with_extraction(self):
-        fake_model = FakeListChatModel(responses=["Unused"])
-        app = build_supervisor_subgraph(model=fake_model)
-
-        raw_text = (
-            "CLINICAL VISIT NOTE\n"
-            "Patient: Jane Doe, SSN: 123-45-6789\n"
-            "Reason for visit: Follow-up visit.\n"
-            "Follow-up: Return in 4 weeks.\n"
-        )
-        state = create_initial_state(
-            thread_id="t-msg_four-sup",
-            user_id="u-test",
-            messages=[HumanMessage(content="Extract document details from attachment")],
-        )
-        state["document_text"] = raw_text
-        state["dossier_type"] = "clinical"
-
-        result = await app.ainvoke(state)
-        assert result["current_agent"] == SPECIALIST_DOCUMENT_EXTRACTOR
-        assert len(result["document_dossiers"]) >= 1
-        assert "Document extraction completed" in result["output"]
 
 
 # ============================================================================

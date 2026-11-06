@@ -58,7 +58,6 @@ BASELINE_ALLOWLIST: Dict[str, int] = {
     "constants/models.py": 1,
     "db/models.py": 34,
     "db/session.py": 5,
-    "engine/builder.py": 1,
     "engine/graph.py": 3,
     "engine/service.py": 3,
     "engine/runtime.py": 0,
@@ -91,7 +90,6 @@ BASELINE_ALLOWLIST: Dict[str, int] = {
     "search/reranker.py": 7,
     "workflows/nodes/agent_execution_node.py": 1,
     "workflows/nodes/input_guardrail_node.py": 10,
-    "workflows/nodes/orchestrator_node.py": 11,
     "workflows/nodes/output_guardrail_node.py": 3,
     "workflows/nodes/reflection_node.py": 2,
     "workflows/nodes/refusal_node.py": 5,
@@ -103,7 +101,6 @@ BASELINE_ALLOWLIST: Dict[str, int] = {
     "workflows/subgraphs/extraction/sanitizer.py": 5,
     "workflows/subgraphs/extraction/subgraph.py": 1,
     "workflows/subgraphs/extraction/tool.py": 3,
-    "workflows/subgraphs/supervisor.py": 2,
 }
 
 

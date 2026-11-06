@@ -29,7 +29,7 @@ from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
 from carefold.resources.loader import get_resource_loader
 from carefold.workflows.nodes.suggestion_node import SuggestionNode
-from carefold.engine.builder import GraphBuilder
+from tests.fixtures.core_routing import GraphBuilder
 
 
 @pytest.mark.parametrize(

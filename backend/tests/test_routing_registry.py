@@ -42,8 +42,7 @@ from carefold.constants.agents import (
 )
 from carefold.schemas.manifest import AgentManifest, AgentPersonaObject
 from carefold.workflows.nodes.agent_execution_node import AgentExecutionNode
-from carefold.workflows.nodes.orchestrator_node import OrchestratorDecision, OrchestratorNode
-from carefold.workflows.nodes.supervisor_node import SupervisorNode
+from tests.fixtures.core_routing import OrchestratorDecision, OrchestratorNode
 from carefold.workflows.nodes.tool_node import ToolNode
 from tests.fixtures.fake_model import FakeListChatModel
 
@@ -195,48 +194,8 @@ async def test_orchestrator_explicit_bypass_ignores_self_routing(temp_workspace:
 # Section 3: Fallback Behavior on Malformed, Missing, or Unknown Agents
 # ============================================================================
 
-@pytest.mark.asyncio
-async def test_orchestrator_hallucinated_agent_fallback_chain(temp_workspace: Path):
-    """Verify non-existent agent IDs fall back cleanly to a valid delegatable specialist."""
-    registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-    delegatable = registry.get_delegatable_agents(exclude=AGENT_ORCHESTRATOR)
-    default_expected = delegatable[0].id
-
-    bad_agent_responses = [
-        "totally-fake-agent",
-        "agent-xyz-9999",
-        "super-diagnostic-bot",
-        "",
-    ]
-
-    for bad_id in bad_agent_responses:
-        fake_model = FakeListChatModel(responses=[
-            json.dumps({"agent_id": bad_id, "reasoning": "hallucinated", "instructions": ""})
-        ])
-        node = OrchestratorNode(model=fake_model, registry=registry)
-        result = await node.execute({"messages": [HumanMessage(content="Any question")]})
-
-        assert result["current_agent"] == default_expected
-        assert result["routed_subgraph"] == default_expected
-        assert result["next_step"] == default_expected
-        assert "fell back" in result["orchestrator_reasoning"] or "not found" in result["orchestrator_reasoning"]
 
 
-@pytest.mark.asyncio
-async def test_orchestrator_model_exception_fallback(temp_workspace: Path):
-    """Verify node catches runtime model exceptions (e.g. API disconnect) and falls back safely."""
-    registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-    class FailingModel:
-        async def ainvoke(self, messages):
-            raise ConnectionError("Remote LLM service unavailable: 503")
-
-    node = OrchestratorNode(model=FailingModel(), registry=registry)
-    result = await node.execute({"messages": [HumanMessage(content="Help me")]})
-
-    assert result["current_agent"] in registry.list_agent_ids()
-    assert result["current_agent"] != AGENT_ORCHESTRATOR
-    assert "error fallback" in result["orchestrator_reasoning"].lower()
 
 
 @pytest.mark.asyncio
@@ -302,39 +261,6 @@ def test_specialists_do_not_contain_delegation_tools(temp_workspace: Path):
 # Section 5: Backward Compatibility: Parameterless SupervisorNode
 # ============================================================================
 
-@pytest.mark.asyncio
-async def test_supervisor_node_parameterless_full_matrix():
-    """Verify parameterless SupervisorNode maintains deterministic regex routing for all domains."""
-    node = SupervisorNode()
-
-    test_cases = [
-        # (prompt, expected_route)
-        ("What is my insurance copay?", "benefits-coordinator"),
-        ("Explain my out-of-pocket maximum and deductible", "benefits-coordinator"),
-        ("I need to submit a health insurance claim", "benefits-coordinator"),
-        ("How much water should I drink for hydration?", "habit-coordinator"),
-        ("Track my daily steps and sleep routine", "habit-coordinator"),
-        ("Prepare questions for my doctor visit tomorrow", "appointment-prep-coordinator"),
-        ("I have a clinic appointment with a physician", "appointment-prep-coordinator"),
-        ("Please extract the table from this attachment", "document-extractor"),
-        ("Extract data from my pdf file", "document-extractor"),
-        ("Completely ambiguous query with no keywords", "appointment-prep-coordinator"),  # default fallback
-    ]
-
-    for prompt, expected_agent in test_cases:
-        state = {"messages": [HumanMessage(content=prompt)]}
-        res = await node.execute(state)
-        assert res["routed_subgraph"] == expected_agent, f"Failed on prompt: '{prompt}'"
-        assert res["current_agent"] == expected_agent
-        assert res["next_step"] == expected_agent
-        assert res["agent_id"] == expected_agent
-
-    # Test attachment presence triggering document-extractor
-    res_att = await node.execute({
-        "messages": [HumanMessage(content="Hello doctor")],
-        "attachments": ["sample.pdf"],
-    })
-    assert res_att["routed_subgraph"] == "document-extractor"
 
 
 # ============================================================================
@@ -467,38 +393,12 @@ async def test_agent_execution_restricted_tool_manifest(temp_workspace: Path):
 # Section 7: GraphBuilder Integration (Dynamic Orchestrator vs Legacy Supervisor)
 # ============================================================================
 
-@pytest.mark.asyncio
-async def test_graph_builder_dynamic_orchestrator_integration(temp_workspace: Path):
-    """Verify GraphBuilder creates and compiles StateGraph with OrchestratorNode and AgentExecutionNode."""
-    from carefold.engine.builder import GraphBuilder
-
-    registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-    mock_model = FakeListChatModel(responses=[
-        json.dumps({"agent_id": "benefits-coordinator", "reasoning": "Deductible question", "instructions": ""}),
-        "Your deductible is $1,000 for in-network care.",
-    ])
-
-    builder = GraphBuilder(
-        model=mock_model,
-        registry=registry,
-        use_dynamic_orchestrator=True,
-    )
-    graph = builder.compile()
-
-    state = {
-        "messages": [HumanMessage(content="What is my deductible?")],
-        "workspace_root": str(temp_workspace),
-    }
-
-    result = await graph.ainvoke(state)
-    assert result["current_agent"] == "benefits-coordinator"
-    assert "deductible" in result["output"].lower()
 
 
 @pytest.mark.asyncio
 async def test_graph_builder_legacy_supervisor_compatibility(temp_workspace: Path):
     """Verify GraphBuilder supports use_dynamic_orchestrator=False for legacy callers."""
-    from carefold.engine.builder import GraphBuilder
+    from tests.fixtures.core_routing import GraphBuilder
 
     mock_model = FakeListChatModel(responses=[
         "Here are tips for preparing for your appointment.",

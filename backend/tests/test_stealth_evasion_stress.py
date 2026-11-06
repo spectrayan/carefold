@@ -36,8 +36,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from carefold.config import settings
+from yarvelle_core.engine.builder import create_agent_graph
+
 from carefold.engine.graph import (
-    create_agent_graph,
     create_async_sqlite_saver,
     create_sqlite_saver,
     get_thread_history,

@@ -83,16 +83,6 @@ class TestCrossFeatureInteractions:
         val = grd_mod.GroundingValidator.validate_numerical_value("$1,500", sample_insurance_text)
         assert val.is_grounded is True
 
-    @pytest.mark.asyncio
-    async def test_i05_supervisor_routing_specialist_subgraph(self):
-        """Interaction: SupervisorNode -> Specialist Subgraph -> State Propagation."""
-        node_mod = _try_import("carefold.workflows.nodes.supervisor_node")
-        if node_mod is None:
-            pytest.skip("F-23: SupervisorNode pending implementation")
-        sup = node_mod.SupervisorNode()
-        state = {"messages": [{"role": "user", "content": "Review my doctor's instructions"}]}
-        out = await sup.execute(state)
-        assert "current_agent" in out or "routed_subgraph" in out
 
     @pytest.mark.asyncio
     async def test_i06_tool_execution_validator_traces(self, e2e_workspace: Path):
@@ -152,7 +142,7 @@ class TestCrossFeatureInteractions:
 
     def test_i12_checkpointer_multiturn_state_persistence(self):
         """Interaction: SQLite Checkpointer -> Thread State -> Multi-Turn Resumption."""
-        bld_mod = _try_import("carefold.engine.builder")
+        bld_mod = _try_import("yarvelle_core.engine.builder")
         if bld_mod is None:
             pytest.skip("F-39: GraphBuilder pending implementation")
         assert hasattr(bld_mod.GraphBuilder, "build_graph")

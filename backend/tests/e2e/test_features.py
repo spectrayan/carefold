@@ -1081,58 +1081,6 @@ class TestFeature22InputGuardrailNode:
 # F-23: Supervisor Node (carefold.workflows.nodes.supervisor_node)
 # ============================================================================
 
-class TestFeature23SupervisorNode:
-    """F-23: SupervisorNode intent classifier and routing dispatcher."""
-
-    @pytest.mark.asyncio
-    async def test_f23_supervisor_routes_visit_intent(self):
-        node_mod = _try_import("carefold.workflows.nodes.supervisor_node")
-        if node_mod is None:
-            pytest.skip("F-23: SupervisorNode pending implementation")
-        cls = getattr(node_mod, "SupervisorNode")
-        node = cls()
-        out = await node.execute({"messages": [{"role": "user", "content": "Prepare questions for doctor appointment"}]})
-        assert out.get("routed_subgraph") in ("appointment-prep-coordinator", "visit_prep", "clinical")
-
-    @pytest.mark.asyncio
-    async def test_f23_supervisor_routes_benefits_intent(self):
-        node_mod = _try_import("carefold.workflows.nodes.supervisor_node")
-        if node_mod is None:
-            pytest.skip("F-23: SupervisorNode pending implementation")
-        cls = getattr(node_mod, "SupervisorNode")
-        node = cls()
-        out = await node.execute({"messages": [{"role": "user", "content": "Explain my health insurance deductible"}]})
-        assert out.get("routed_subgraph") in ("benefits-coordinator", "insurance", "benefits")
-
-    @pytest.mark.asyncio
-    async def test_f23_supervisor_routes_habit_intent(self):
-        node_mod = _try_import("carefold.workflows.nodes.supervisor_node")
-        if node_mod is None:
-            pytest.skip("F-23: SupervisorNode pending implementation")
-        cls = getattr(node_mod, "SupervisorNode")
-        node = cls()
-        out = await node.execute({"messages": [{"role": "user", "content": "Track my water drinking habits"}]})
-        assert out.get("routed_subgraph") in ("habit-coordinator", "habits")
-
-    @pytest.mark.asyncio
-    async def test_f23_supervisor_updates_current_agent(self):
-        node_mod = _try_import("carefold.workflows.nodes.supervisor_node")
-        if node_mod is None:
-            pytest.skip("F-23: SupervisorNode pending implementation")
-        cls = getattr(node_mod, "SupervisorNode")
-        node = cls()
-        out = await node.execute({"messages": [{"role": "user", "content": "Insurance claim questions"}]})
-        assert "current_agent" in out
-
-    @pytest.mark.asyncio
-    async def test_f23_supervisor_fallback_on_unclear_intent(self):
-        node_mod = _try_import("carefold.workflows.nodes.supervisor_node")
-        if node_mod is None:
-            pytest.skip("F-23: SupervisorNode pending implementation")
-        cls = getattr(node_mod, "SupervisorNode")
-        node = cls()
-        out = await node.execute({"messages": [{"role": "user", "content": "12345!?"}]})
-        assert out.get("current_agent") is not None
 
 
 # ============================================================================
@@ -1553,38 +1501,6 @@ class TestFeature32ErrorNode:
 # F-33: Specialist Supervisor Subgraph (carefold.workflows.subgraphs.supervisor)
 # ============================================================================
 
-class TestFeature33SpecialistSupervisorSubgraph:
-    """F-33: Multi-agent coordination graph in workflows/subgraphs/supervisor.py."""
-
-    def test_f33_supervisor_subgraph_compilation(self):
-        sub_mod = _try_import("carefold.workflows.subgraphs.supervisor")
-        if sub_mod is None:
-            pytest.skip("F-33: Supervisor Subgraph pending implementation")
-        assert hasattr(sub_mod, "create_supervisor_subgraph") or hasattr(sub_mod, "build_supervisor_subgraph")
-
-    def test_f33_supervisor_subgraph_conditional_routing(self):
-        sub_mod = _try_import("carefold.workflows.subgraphs.supervisor")
-        if sub_mod is None:
-            pytest.skip("F-33: Supervisor Subgraph pending implementation")
-        pass
-
-    def test_f33_supervisor_subgraph_state_handoff(self):
-        sub_mod = _try_import("carefold.workflows.subgraphs.supervisor")
-        if sub_mod is None:
-            pytest.skip("F-33: Supervisor Subgraph pending implementation")
-        pass
-
-    def test_f33_supervisor_subgraph_return_transition(self):
-        sub_mod = _try_import("carefold.workflows.subgraphs.supervisor")
-        if sub_mod is None:
-            pytest.skip("F-33: Supervisor Subgraph pending implementation")
-        pass
-
-    def test_f33_supervisor_subgraph_multi_specialist_support(self):
-        sub_mod = _try_import("carefold.workflows.subgraphs.supervisor")
-        if sub_mod is None:
-            pytest.skip("F-33: Supervisor Subgraph pending implementation")
-        pass
 
 
 # ============================================================================
@@ -1826,39 +1742,39 @@ class TestFeature38DualInvocationExtraction:
 
 
 # ============================================================================
-# F-39: GraphBuilder Engine (carefold.engine.builder)
+# F-39: GraphBuilder Engine (yarvelle_core.engine.builder)
 # ============================================================================
 
 class TestFeature39GraphBuilderEngine:
     """F-39: engine/builder.py assembling nodes, subgraphs, edges, and SqliteSaver."""
 
     def test_f39_graph_builder_compiles_graph(self):
-        bld_mod = _try_import("carefold.engine.builder")
+        bld_mod = _try_import("yarvelle_core.engine.builder")
         if bld_mod is None:
             pytest.skip("F-39: GraphBuilder pending implementation")
         cls = getattr(bld_mod, "GraphBuilder", None)
         assert cls is not None
 
     def test_f39_graph_builder_attaches_checkpointer(self):
-        bld_mod = _try_import("carefold.engine.builder")
+        bld_mod = _try_import("yarvelle_core.engine.builder")
         if bld_mod is None:
             pytest.skip("F-39: GraphBuilder pending implementation")
         assert hasattr(bld_mod.GraphBuilder, "build_graph")
 
     def test_f39_graph_builder_configures_guardrail_edges(self):
-        bld_mod = _try_import("carefold.engine.builder")
+        bld_mod = _try_import("yarvelle_core.engine.builder")
         if bld_mod is None:
             pytest.skip("F-39: GraphBuilder pending implementation")
         pass
 
     def test_f39_graph_builder_configures_reflection_edges(self):
-        bld_mod = _try_import("carefold.engine.builder")
+        bld_mod = _try_import("yarvelle_core.engine.builder")
         if bld_mod is None:
             pytest.skip("F-39: GraphBuilder pending implementation")
         pass
 
     def test_f39_graph_builder_graph_inspection(self):
-        bld_mod = _try_import("carefold.engine.builder")
+        bld_mod = _try_import("yarvelle_core.engine.builder")
         if bld_mod is None:
             pytest.skip("F-39: GraphBuilder pending implementation")
         pass

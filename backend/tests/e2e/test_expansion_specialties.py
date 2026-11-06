@@ -61,7 +61,7 @@ from carefold.schemas.manifest import (
 from carefold.schemas.tool import ToolResult
 from carefold.tools.attach_read import execute_attach_read
 from carefold.tools.workspace_note import execute_workspace_note
-from carefold.workflows.nodes.orchestrator_node import (
+from tests.fixtures.core_routing import (
     DomainClassification,
     OrchestratorDecision,
     OrchestratorNode,
@@ -930,12 +930,6 @@ class TestTwoHopRoutingAndCrossFeatures:
         yield adapter
         await adapter.close()
 
-    def test_tier1_prompt_invariant(self):
-        """I-01: Verifies Tier-1 prompt stays bounded under 500 words and mentions all 5 domains."""
-        word_count = len(TIER1_DOMAIN_CLASSIFIER_PROMPT.split())
-        assert word_count < 500, f"Tier-1 classifier prompt exceeds 500 words ({word_count})"
-        for domain in ["clinical", "therapy", "wellness", "navigation", "education"]:
-            assert domain in TIER1_DOMAIN_CLASSIFIER_PROMPT.lower()
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(

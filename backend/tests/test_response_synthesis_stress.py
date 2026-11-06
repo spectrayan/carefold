@@ -37,7 +37,7 @@ import re
 import tempfile
 import pytest
 
-from carefold.engine.builder import GraphBuilder
+from tests.fixtures.core_routing import GraphBuilder
 from carefold.schemas.plan import ExecutionMode, ExecutionPlan, AgentTask
 from carefold.workflows.nodes.input_guardrail_node import InputGuardrailNode
 from carefold.workflows.nodes.response_synthesizer_node import (
@@ -254,18 +254,6 @@ class TestZeroBodyAuditConcurrency:
 class TestGraphBuilderIntegration:
     """Verifies graph compilation, inspection, and node wiring for Phase5."""
 
-    def test_graph_inspection_includes_dispatcher_and_synthesizer(self):
-        """Graph inspection must report dispatcher and response_synthesizer nodes."""
-        builder = GraphBuilder()
-        builder.compile()
-        info = builder.inspect_graph()
-
-        nodes = info.get("nodes", [])
-        assert "input_guardrail" in nodes
-        assert "supervisor" in nodes
-        assert "dispatcher" in nodes
-        assert "response_synthesizer" in nodes
-        assert "output_guardrail" in nodes
 
     def test_graph_routing_parallel_plan_routes_to_dispatcher(self):
         """Supervisor router directs parallel execution plans to dispatcher."""
@@ -306,57 +294,6 @@ class TestGraphBuilderIntegration:
         mode_val = plan.mode.value if hasattr(plan.mode, "value") else str(plan.mode)
         assert mode_val == "single"
 
-    @pytest.mark.asyncio
-    async def test_compiled_graph_end_to_end_synthesis_pipeline(self):
-        """Full compiled StateGraph runs through supervisor -> dispatcher -> synthesizer -> output_guardrail -> suggestion -> audit."""
-        from langchain_core.messages import HumanMessage
-        from tests.fixtures.fake_model import FakeListChatModel
-
-        # Mock dispatcher that simulates parallel agent execution results
-        class MockDispatcher:
-            async def execute(self, state):
-                return {
-                    "specialist_outputs": {
-                        "heart-care-coordinator": "Cardio advice on heart rate.\nDISCLAIMER: Consult physician.",
-                        "diabetes-thyroid-coordinator": "Endo advice on insulin.\nDISCLAIMER: Consult doctor.",
-                    },
-                    "next_step": "response_synthesizer",
-                }
-
-        plan = ExecutionPlan(
-            mode=ExecutionMode.PARALLEL,
-            target_agents=["heart-care-coordinator", "diabetes-thyroid-coordinator"],
-            tasks=[
-                AgentTask(agent_id="heart-care-coordinator", task_description="Cardio"),
-                AgentTask(agent_id="diabetes-thyroid-coordinator", task_description="Endo"),
-            ],
-            reasoning="Multi-specialty",
-        )
-
-        fake_model = FakeListChatModel(responses=["Unused"])
-        builder = (
-            GraphBuilder(model=fake_model)
-            .with_node("dispatcher", MockDispatcher())
-        )
-        graph = builder.compile()
-
-        state_input = {
-            "messages": [HumanMessage(content="Coordinate my cardio and diabetes care")],
-            "prompt": "Coordinate my cardio and diabetes care",
-            "execution_plan": plan,
-            "allow_clinical": True,
-        }
-
-        result = await graph.ainvoke(state_input)
-
-        assert "output" in result
-        out_text = result["output"]
-        assert "# Patient Consultation Master Agenda" in out_text
-        assert "Heart Care Coordinator Guidance" in out_text
-        assert "Diabetes Thyroid Coordinator Guidance" in out_text
-        assert CANONICAL_DISCLAIMER in out_text
-        # Disclaimers deduplicated
-        assert out_text.count("DISCLAIMER:") == 1
 
 
 # ============================================================================

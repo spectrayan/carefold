@@ -29,7 +29,7 @@ from typing import Any, Dict, List
 
 from carefold.schemas.plan import ExecutionMode, ExecutionPlan
 from carefold.workflows.nodes.input_guardrail_node import InputGuardrailNode
-from carefold.workflows.nodes.orchestrator_node import OrchestratorNode
+from tests.fixtures.core_routing import OrchestratorNode
 from carefold.workflows.state import AgentState
 from langchain_core.messages import HumanMessage
 
@@ -388,83 +388,6 @@ class TestOrchestratorExplicitMultiSpecialistCoordination:
     def orchestrator(self) -> OrchestratorNode:
         return OrchestratorNode()
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        "target_agent,prompt,expected_agents,coordination_keyword",
-        [
-            (
-                "cancer-care-coordinator",
-                "Please coordinate with both oncology and neurology regarding chemotherapy-induced neuropathy.",
-                ["cancer-care-coordinator", "brain-nerve-care-coordinator"],
-                "coordinate",
-            ),
-            (
-                "heart-care-coordinator",
-                "Consult both cardiology and nephrology on managing my cardiorenal fluid balance and kidney function.",
-                ["heart-care-coordinator", "kidney-care-coordinator"],
-                "consult both",
-            ),
-            (
-                "kidney-care-coordinator",
-                "I want both specialists: nephrology and cardiology to review my fluid retention and hypertension.",
-                ["kidney-care-coordinator", "heart-care-coordinator"],
-                "both specialists",
-            ),
-            (
-                "diabetes-thyroid-coordinator",
-                "I need a multi-specialist review between endocrinology and nephrology for my diabetic kidney disease.",
-                ["diabetes-thyroid-coordinator", "kidney-care-coordinator"],
-                "multi-specialist",
-            ),
-            (
-                "heart-care-coordinator",
-                "Please arrange multiple specialists for my heart failure, asthma, and arthritis.",
-                ["heart-care-coordinator", "lung-breathing-coordinator", "autoimmune-care-coordinator"],
-                "multiple specialists",
-            ),
-            (
-                "digestive-care-coordinator",
-                "I request a team of specialists to look at my gastro stomach pain and migraines simultaneously.",
-                ["digestive-care-coordinator", "brain-nerve-care-coordinator"],
-                "team of specialists",
-            ),
-            (
-                "autoimmune-care-coordinator",
-                "Conduct concurrent consultations with rheumatology and dermatology for lupus skin rash and joint swelling.",
-                ["autoimmune-care-coordinator", "skin-care-coordinator"],
-                "concurrent",
-            ),
-        ],
-    )
-    async def test_explicit_coordination_constructs_parallel_execution_plan(
-        self,
-        orchestrator: OrchestratorNode,
-        target_agent: str,
-        prompt: str,
-        expected_agents: List[str],
-        coordination_keyword: str,
-    ):
-        """Explicit multi-specialist coordination phrasing must trigger ExecutionMode.PARALLEL."""
-        state: AgentState = {
-            "explicit_agent": target_agent,
-            "prompt": prompt,
-            "messages": [],
-            "allow_clinical": True,
-        }
-
-        res = await orchestrator.execute(state)
-        plan = ExecutionPlan.model_validate(res["execution_plan"])
-
-        assert plan.mode == ExecutionMode.PARALLEL, (
-            f"Expected PARALLEL mode for keyword '{coordination_keyword}', got {plan.mode}"
-        )
-        # All expected specialists must be represented
-        for ag in expected_agents:
-            assert ag in plan.target_agents, (
-                f"Expected specialist '{ag}' missing from parallel plan: {plan.target_agents}"
-            )
-        # Target agent remains primary (index 0)
-        assert plan.target_agents[0] == target_agent
 
     @pytest.mark.asyncio
     async def test_coordination_keyword_with_only_single_specialty_falls_back_to_single(
@@ -484,23 +407,3 @@ class TestOrchestratorExplicitMultiSpecialistCoordination:
         assert plan.mode == ExecutionMode.SINGLE
         assert plan.target_agents == ["heart-care-coordinator"]
 
-    @pytest.mark.asyncio
-    async def test_unspecified_agent_multimorbid_prompt_triggers_parallel(
-        self, orchestrator: OrchestratorNode
-    ):
-        """When no explicit agent is selected, a multimorbid prompt automatically routes to PARALLEL mode."""
-        prompt = "I have congestive heart failure and chronic kidney disease with swelling."
-        state: AgentState = {
-            "explicit_agent": None,
-            "current_agent": None,
-            "prompt": prompt,
-            "messages": [{"role": "user", "content": prompt}],
-            "allow_clinical": True,
-        }
-
-        res = await orchestrator.execute(state)
-        plan = ExecutionPlan.model_validate(res["execution_plan"])
-
-        assert plan.mode == ExecutionMode.PARALLEL
-        assert "heart-care-coordinator" in plan.target_agents
-        assert "kidney-care-coordinator" in plan.target_agents

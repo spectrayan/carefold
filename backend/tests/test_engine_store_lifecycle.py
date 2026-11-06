@@ -36,7 +36,8 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.store.base import BaseStore, SearchItem
 from langgraph.store.memory import InMemoryStore
 
-from carefold.engine.builder import GraphBuilder, create_agent_graph
+from tests.fixtures.core_routing import GraphBuilder
+from yarvelle_core.engine.builder import create_agent_graph
 from carefold.engine.service import AgentExecutionService
 from carefold.memory.adapters.spector.store import SpectorStore
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE

@@ -43,7 +43,8 @@ from carefold.constants.api import (
     SSE_EVENT_TOOL_START,
 )
 from carefold.constants.defaults import DEFAULT_MAX_REFLECTIONS
-from carefold.engine.builder import GraphBuilder, create_agent_graph
+from tests.fixtures.core_routing import GraphBuilder, pack_orchestration
+from yarvelle_core.engine.builder import create_agent_graph
 from carefold.engine.service import AgentExecutionService
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
 from carefold.schemas.chat import ChatRequestBody
@@ -358,12 +359,17 @@ class TestReflectionRetryLimits:
 
         res = await graph.ainvoke({
             "messages": [HumanMessage(content="What medication should I take?")],
+            # The chat API always carries an agentId pick; pin the specialist loop.
+            "explicit_agent": pack_orchestration().default_agent,
         })
 
         # Must terminate at refusal node
         assert res.get("is_refusal") is True or res.get("refused") is True
         # Output should be the standard safe refusal
-        assert "doctor" in str(res.get("output", "")).lower() or "911" in str(res.get("output", ""))
+        # Production CarefoldRefusalNode wording (SAFE_REFUSAL_TEMPLATE) points to a
+        # qualified healthcare provider / emergency services.
+        out = str(res.get("output", "")).lower()
+        assert "healthcare provider" in out or "911" in out
         # reflection_count must equal max_reflections (3) and NOT exceed it
         assert res.get("reflection_count") == 3
 
@@ -403,6 +409,8 @@ class TestReflectionRetryLimits:
 
         res = await graph.ainvoke({
             "messages": [HumanMessage(content="What should I take for acid reflux?")],
+            # The chat API always carries an agentId pick; pin the specialist loop.
+            "explicit_agent": pack_orchestration().default_agent,
         })
 
         # Should recover and be compliant
@@ -442,6 +450,8 @@ class TestReflectionRetryLimits:
 
         res = await graph.ainvoke({
             "messages": [HumanMessage(content="Loop taking notes")],
+            # The chat API always carries an agentId pick; pin the specialist loop.
+            "explicit_agent": pack_orchestration().default_agent,
         })
 
         assert "messages" in res

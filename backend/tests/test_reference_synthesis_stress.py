@@ -31,7 +31,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from carefold.schemas.plan import AgentTask, ExecutionMode, ExecutionPlan
-from carefold.workflows.nodes.orchestrator_node import OrchestratorNode
+from tests.fixtures.core_routing import OrchestratorNode
 from carefold.workflows.nodes.skill_generator_node import SkillGeneratorNode
 
 
