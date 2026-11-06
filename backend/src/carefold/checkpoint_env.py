@@ -19,6 +19,9 @@ and ``CAREFOLD_CHECKPOINT_KEY_VERSION``. When a Carefold-prefixed value is
 set and valid it takes precedence: it is mirrored into the ``YARVELLE_CORE_``
 variable (so later ``Settings`` instances and CLI subprocesses agree) and
 applied to the live settings object. Blank or invalid values are ignored.
+
+Checkpoint encryption itself defaults to on in Carefold (see
+``apply_checkpoint_encryption_default``); an explicit value always wins.
 """
 
 from __future__ import annotations
@@ -84,4 +87,61 @@ def apply_checkpoint_env_aliases(
     return applied
 
 
-__all__ = ["CHECKPOINT_ALIASES", "apply_checkpoint_env_aliases"]
+def apply_checkpoint_encryption_default(
+    environ: Optional[MutableMapping[str, str]] = None,
+    settings_obj: Optional[Any] = None,
+) -> bool:
+    """Turn checkpoint encryption on unless it was configured explicitly.
+
+    Carefold keeps conversation checkpoints encrypted at rest by default. An
+    explicit ``CAREFOLD_CHECKPOINT_ENCRYPTION`` or ``YARVELLE_CORE_CHECKPOINT_ENCRYPTION``
+    value (including ``false``) is left alone; an invalid Carefold value is
+    ignored like the aliases ignore it. Plaintext reads keep their own
+    default so threads written before encryption stay readable until migrated.
+    Returns True when the default was applied.
+    """
+    env = os.environ if environ is None else environ
+    suffix = "CHECKPOINT_ENCRYPTION"
+    if _parse_bool(env.get(f"{APP_PREFIX}{suffix}") or "") is not None:
+        return False  # valid Carefold value (already applied by the aliases)
+    if (env.get(f"{CORE_PREFIX}{suffix}") or "").strip():
+        return False  # explicit core value (core settings validate it)
+    env[f"{CORE_PREFIX}{suffix}"] = "true"
+    if settings_obj is not None:
+        settings_obj.checkpoint_encryption = True
+    return True
+
+
+CHECKPOINT_KEY_MISSING_MESSAGE = (
+    "Chats are saved encrypted, but the vault key is not set up. Add the vault key to the "
+    "OS keychain, or set CAREFOLD_VAULT_KEK_FILE or CAREFOLD_VAULT_PASSPHRASE, then try again. "
+    "To save chats unencrypted instead, set CAREFOLD_CHECKPOINT_ENCRYPTION=false."
+)
+
+
+def checkpoint_key_error_event() -> Optional[Dict[str, Any]]:
+    """Error event to send instead of running a turn when the checkpoint key is missing.
+
+    Returns None when checkpoint encryption is off or the key resolves. The
+    message is fixed text (setting names only) so no key material or path from
+    the underlying error reaches the client.
+    """
+    from yarvelle_core.config import settings as core_settings
+    from yarvelle_core.vault.checkpoints import CheckpointKeyError, load_checkpoint_keyring
+
+    if not core_settings.checkpoint_encryption:
+        return None
+    try:
+        load_checkpoint_keyring()
+    except CheckpointKeyError:
+        return {"type": "error", "code": "checkpoint_key_missing", "message": CHECKPOINT_KEY_MISSING_MESSAGE}
+    return None
+
+
+__all__ = [
+    "CHECKPOINT_ALIASES",
+    "CHECKPOINT_KEY_MISSING_MESSAGE",
+    "apply_checkpoint_encryption_default",
+    "apply_checkpoint_env_aliases",
+    "checkpoint_key_error_event",
+]

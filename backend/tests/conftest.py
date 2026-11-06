@@ -16,6 +16,16 @@ import os
 from pathlib import Path
 import shutil
 import tempfile
+
+# Tests must never read the developer's real OS keychain (the vault KEK lives
+# there). Force the keyring library's null backend for this process and any
+# subprocess it starts. Checkpoint tests get throwaway keys instead.
+os.environ["PYTHON_KEYRING_BACKEND"] = "keyring.backends.null.Keyring"
+import keyring as _keyring  # noqa: E402
+import keyring.backends.null as _null_keyring  # noqa: E402
+
+_keyring.set_keyring(_null_keyring.Keyring())
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -35,6 +45,15 @@ from tests.fixtures.fake_model import (
     MockChatModel,
     MockModelClient,
 )
+
+
+@pytest.fixture(autouse=True)
+def isolate_checkpoint_keys(monkeypatch: pytest.MonkeyPatch):
+    """Checkpoints are encrypted by default; each test gets a throwaway key."""
+    from tests.fixtures.checkpoint_crypto import install_test_checkpoint_keyring
+
+    install_test_checkpoint_keyring(monkeypatch)
+    yield
 
 
 @pytest.fixture(autouse=True)

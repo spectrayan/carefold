@@ -26,6 +26,7 @@ import uuid
 
 from langchain_core.language_models.chat_models import BaseChatModel
 
+from carefold.checkpoint_env import checkpoint_key_error_event
 from carefold.engine.service import AgentExecutionService
 from carefold.model.factory import create_chat_model
 from carefold.schemas.chat import ChatMessage
@@ -68,6 +69,13 @@ async def execute_agent_run(
     eliminating monolithic pre/post safety guardrails and manual tool loops.
     """
     resolved_thread_id = thread_id or f"thread_{agent_id}_{uuid.uuid4().hex[:12]}"
+
+    # Encrypted checkpoints need the vault key: say so plainly instead of a generic error.
+    key_error = checkpoint_key_error_event()
+    if key_error is not None:
+        logger.warning("checkpoint_key_missing thread_id=%s", resolved_thread_id)
+        yield key_error
+        return
 
     # Resolve chat model if specified or use factory (respects test monkeypatching)
     chat_model = model_client if model_client is not None else create_chat_model(

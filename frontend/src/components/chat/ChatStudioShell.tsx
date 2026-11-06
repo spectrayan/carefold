@@ -45,6 +45,7 @@ import { EmergencyEscalationCard } from '@/components/chat/EmergencyEscalationCa
 import { DossierCard } from '@/components/chat/DossierCard';
 import { ApprovalCard } from '@/components/chat/ApprovalCard';
 import { ExecutionPlanCard } from '@/components/chat/ExecutionPlanCard';
+import { OrchestrationStatus } from '@/components/chat/OrchestrationStatus';
 import {
   DeliberationRoundtable,
   type DeliberationRoundtableData,
@@ -78,6 +79,7 @@ import { stripReferencePreamble, stripSuggestionLeakage } from '@/components/Cha
 import { detectProfileAmbiguity } from '@/lib/profileMentions';
 import { loadHouseholdProfiles, getHouseholdProfile, fetchHouseholdProfiles } from '@/lib/familyProfiles';
 import { profilePath } from '@/lib/routes';
+import { applyOrchestrationEvent, isOrchestrationEvent } from '@/lib/orchestrationEvents';
 import type { AgentSummary, ChatMessage, ApprovalRecord, ExecutionPlan } from '@/lib/types';
 import type { CareProfile } from '@/app/p/[profileId]/HomeDashboardClient';
 import { useI18n } from '@/i18n';
@@ -729,6 +731,12 @@ export function ChatStudioShell({
                     return { ...msg, toolTraces: traces };
                   })
                 );
+              } else if (isOrchestrationEvent(eventType)) {
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === assistantMsgId ? applyOrchestrationEvent(msg, eventType, data) : msg
+                  )
+                );
               } else if (eventType === 'approval_required') {
                 const approvalRecord: ApprovalRecord = {
                   id: data.approval_id || data.id,
@@ -1120,6 +1128,14 @@ export function ChatStudioShell({
                       : m
                   )
                 );
+              } else if (isOrchestrationEvent(eventType)) {
+                setMessages((prev) => {
+                  const lastAssistant = [...prev].reverse().find((m) => m.role === 'assistant');
+                  if (!lastAssistant) return prev;
+                  return prev.map((m) =>
+                    m.id === lastAssistant.id ? applyOrchestrationEvent(m, eventType, data) : m
+                  );
+                });
               } else if (eventType === 'done') {
                 setIsStreaming(false);
               }
@@ -1665,6 +1681,13 @@ export function ChatStudioShell({
                               handleResume(actionId);
                             }}
                           />
+                        </div>
+                      )}
+
+                      {/* Embedded orchestration status (helper tasks + notices) */}
+                      {((m.taskStatuses?.length ?? 0) > 0 || (m.orchestrationNotices?.length ?? 0) > 0) && (
+                        <div data-testid="embedded-orchestration-status" className="w-full max-w-[85%] sm:max-w-[78%] mb-3">
+                          <OrchestrationStatus tasks={m.taskStatuses} notices={m.orchestrationNotices} />
                         </div>
                       )}
 
