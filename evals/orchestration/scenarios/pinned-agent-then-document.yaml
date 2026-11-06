@@ -1,0 +1,47 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan (https://spectrayan.com)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0 and the
+# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+# Personal and household local use only. Commercial use, hosted service
+# offering, rebranding, white-labeling, and redistribution of modified
+# forks are prohibited without a written commercial license from Spectrayan.
+#
+# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+
+schema: 1
+id: pinned-agent-then-document
+title: A pinned agent answers directly; an uploaded document goes to the document extractor
+tags: [health, explicit-agent, fixed-route]
+pack: carefold-health
+backends: [fake, ollama]
+turns:
+  - user: What is the difference between a copay and coinsurance?
+    explicit_agent: benefits-coordinator
+    expect:
+      route: user_selected
+      agents_exactly: [benefits-coordinator]
+      answer:
+        must_mention: [copay, coinsurance]
+    judge:
+      rubric: health_synthesis
+      criteria: >-
+        The reply explains copay versus coinsurance correctly in plain language with a simple
+        example, without quoting a specific plan's numbers as fact.
+    fake:
+      agents:
+        benefits-coordinator:
+          - >-
+            A copay is a fixed amount you pay for a visit or prescription, like $25. Coinsurance
+            is a percentage of the cost you pay after the deductible, like 20% of the bill.
+  - user: I uploaded her visit summary. Can you pull out the follow-up instructions?
+    input:
+      attachments: [visit-summary.pdf]
+    expect:
+      route: fixed_route:document-intake
+      agents_exactly: [document-extractor]
+      model_calls_before_route: 0
+    fake:
+      agents:
+        document-extractor:
+          - Follow-up instructions found in the summary are listed for review.

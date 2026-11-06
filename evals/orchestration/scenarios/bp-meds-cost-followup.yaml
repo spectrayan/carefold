@@ -1,0 +1,76 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan (https://spectrayan.com)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0 and the
+# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+# Personal and household local use only. Commercial use, hosted service
+# offering, rebranding, white-labeling, and redistribution of modified
+# forks are prohibited without a written commercial license from Spectrayan.
+#
+# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+
+schema: 1
+id: bp-meds-cost-followup
+title: Blood pressure medicine got expensive; a follow-up on the same thread keeps context
+tags: [health, delegation, synthesis, followup]
+pack: carefold-health
+backends: [fake, ollama]
+turns:
+  - user: >-
+      My mom's blood pressure medicine got a lot more expensive this month. What should we
+      ask her cardiologist at next week's visit, and are there ways to lower the cost?
+    expect:
+      route: main_agent
+      agents_all_of: [heart-care-coordinator, prescription-cost-coordinator]
+      agents_forbidden: [triage-auditor, document-extractor]
+      max_task_calls: 4
+      task_states:
+        heart-care-coordinator: completed
+        prescription-cost-coordinator: completed
+      answer:
+        must_mention: [cardiologist, cost]
+    judge:
+      rubric: health_synthesis
+      criteria: >-
+        The reply combines visit questions for the cardiologist with concrete ways to lower the
+        medicine cost, in plain language a family caregiver can act on, without inventing doses,
+        prices or coverage facts.
+    fake:
+      main:
+        - task: [heart-care-coordinator, prescription-cost-coordinator]
+        - answer: >-
+            Here is a short plan for next week. Questions for the cardiologist: is this still the
+            right medicine and dose for her, and is there an equally good lower-cost option? Ways
+            to lower the cost: ask about a generic version, a 90-day mail-order supply, and the
+            manufacturer's savings program. Bring the new pharmacy receipt to the visit.
+      agents:
+        heart-care-coordinator:
+          - >-
+            Visit questions: is the current blood pressure medicine still the right choice and
+            dose; are there equally effective alternatives; what home readings should we bring.
+        prescription-cost-coordinator:
+          - >-
+            Cost options to check: a generic equivalent, a 90-day mail-order supply, the
+            manufacturer savings program, and whether the plan moved the drug to a higher tier.
+  - user: Thanks. Which of those cost options should I check with her insurance plan first?
+    expect:
+      route: main_agent
+      agents_any_of: [prescription-cost-coordinator, benefits-coordinator]
+      agents_forbidden: [triage-auditor, document-extractor]
+      answer:
+        must_mention: [insurance]
+    judge:
+      rubric: health_followup
+      criteria: >-
+        The reply builds on the cost options from the previous turn and says which one to check
+        with the insurance plan first, without repeating the whole earlier answer.
+    fake:
+      main:
+        - task: [prescription-cost-coordinator]
+        - answer: >-
+            Start with the insurance plan's drug list: ask whether the medicine moved to a higher
+            tier and whether the generic is covered at a lower copay. Then ask about the 90-day
+            mail-order price.
+      agents:
+        prescription-cost-coordinator:
+          - Check the formulary tier first, then generic coverage, then the mail-order price.
