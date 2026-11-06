@@ -64,6 +64,19 @@ class HealthSafetyPolicy:
             referral_message=flag.referral_message,
         )
 
+    def check_flags(
+        self, text: Optional[str], ctx: Optional[SafetyContext] = None
+    ) -> list[str]:
+        """Non-refusing flags for pack fixed routes (``red_flag`` → triage-auditor).
+
+        Reuses the health-pack emergency red-flag detector so acute clinical
+        urgency raises ``red_flag`` for orchestration before any model call.
+        """
+        del ctx  # reserved for future scoped flagging
+        if check_emergency_red_flags(text or "") is not None:
+            return ["red_flag"]
+        return []
+
     def get_preamble(self, agent: Any, skills: Sequence[Any] = ()) -> str:
         return build_safety_preamble(agent, skills)
 
