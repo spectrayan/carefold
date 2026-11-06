@@ -1,0 +1,93 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan (https://spectrayan.com)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0 and the
+# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+# Personal and household local use only. Commercial use, hosted service
+# offering, rebranding, white-labeling, and redistribution of modified
+# forks are prohibited without a written commercial license from Spectrayan.
+#
+# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+
+"""Production-configured core routing primitives for offline tests.
+
+The forked Carefold ``OrchestratorNode`` / ``GraphBuilder`` were retired in
+favour of ``yarvelle_core``'s implementations, which the live runtime
+(``carefold.engine.runtime``) configures with the health pack's orchestration
+spec and default agent. These thin wrappers apply the same defaults so routing
+tests exercise the retained runtime path instead of removed internals.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from yarvelle_core.engine.builder import GraphBuilder as CoreGraphBuilder
+from yarvelle_core.workflows.nodes.orchestrator_node import (
+    TIER1_DOMAIN_CLASSIFIER_PROMPT,
+    DomainClassification,
+    OrchestratorDecision,
+)
+from yarvelle_core.workflows.nodes.orchestrator_node import (
+    OrchestratorNode as CoreOrchestratorNode,
+)
+
+
+def pack_orchestration() -> Any:
+    """Return the health pack orchestration spec used by the live runtime."""
+    from carefold import get_pack
+
+    return get_pack().orchestration
+
+
+class OrchestratorNode(CoreOrchestratorNode):
+    """Core orchestrator defaulted to the Carefold pack orchestration spec."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        if "orchestration" not in kwargs:
+            kwargs["orchestration"] = pack_orchestration()
+        orch = kwargs["orchestration"]
+        if "default_agent" not in kwargs and orch is not None:
+            kwargs["default_agent"] = getattr(orch, "default_agent", None)
+        super().__init__(*args, **kwargs)
+
+
+async def soft_orchestration_audit(event: Any) -> None:
+    """Best-effort audit sink matching ``CarefoldAgentExecutionService``."""
+    try:
+        from yarvelle_core.engine.builder import _record_orchestration_audit
+
+        await _record_orchestration_audit(event)
+    except Exception:  # pragma: no cover - mirrors runtime soft-audit behaviour
+        pass
+
+
+class GraphBuilder(CoreGraphBuilder):
+    """Core graph builder defaulted to the Carefold pack orchestration spec."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        from carefold.engine.refusal_node import CarefoldRefusalNode
+        from carefold.safety.policy import CarefoldHealthSafetyPolicy
+
+        kwargs.setdefault("orchestration_audit_sink", soft_orchestration_audit)
+        if kwargs.get("safety_policy") is None:
+            kwargs["safety_policy"] = CarefoldHealthSafetyPolicy()
+        if "orchestration" not in kwargs:
+            kwargs["orchestration"] = pack_orchestration()
+        orch = kwargs["orchestration"]
+        if "default_agent" not in kwargs and orch is not None:
+            kwargs["default_agent"] = getattr(orch, "default_agent", None)
+        super().__init__(*args, **kwargs)
+        if "refusal" not in self._custom_nodes:
+            self.with_node("refusal", CarefoldRefusalNode())
+
+
+__all__ = [
+    "TIER1_DOMAIN_CLASSIFIER_PROMPT",
+    "DomainClassification",
+    "GraphBuilder",
+    "OrchestratorDecision",
+    "OrchestratorNode",
+    "pack_orchestration",
+    "soft_orchestration_audit",
+]

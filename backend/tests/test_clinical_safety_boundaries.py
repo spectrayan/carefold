@@ -38,10 +38,11 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from carefold.config import settings
+from yarvelle_core.engine.builder import create_agent_graph
+
 from carefold.engine.graph import (
     AgentState,
     MAX_TOOL_ITERATIONS,
-    create_agent_graph,
     create_async_sqlite_saver,
     get_thread_history,
     post_safety_node,

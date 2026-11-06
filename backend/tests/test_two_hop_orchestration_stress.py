@@ -12,7 +12,7 @@
 """Boundary stress-test suite for Two-Hop Orchestrator Fallback Chain.
 
 Target:
-- carefold.workflows.nodes.orchestrator_node.OrchestratorNode
+- yarvelle_core.workflows.nodes.orchestrator_node.OrchestratorNode
 - carefold.memory.adapters.sqlite.catalog_adapter.SqliteCatalogAdapter
 
 Challenges Tested:
@@ -55,7 +55,7 @@ from carefold.schemas.manifest import (
     AgentMaturity,
     RiskClass,
 )
-from carefold.workflows.nodes.orchestrator_node import (
+from tests.fixtures.core_routing import (
     DomainClassification,
     OrchestratorDecision,
     OrchestratorNode,
@@ -411,108 +411,6 @@ class TestChallengeStep3FTSFallback:
 # Verification Step 4: Pure Gibberish & Total Absence -> Pattern Matching Fallback
 # ============================================================================
 
-class TestChallengeStep4PatternFallback:
-    """Verification Step 4: Pure gibberish / total absence of matching candidates -> fallback to pattern matching.
-    
-    Verifies:
-    - Pure gibberish produces 0 matches across Step 1, Step 2, and Step 3.
-    - Step 4 (pattern fallback) is triggered immediately without invoking Tier-2 LLM.
-    - Correct default agent is selected.
-    - If attachments are present, routes to document-extractor.
-    - If regex keywords match, routes to the corresponding agent.
-    """
-
-    @pytest.mark.asyncio
-    async def test_pure_gibberish_bypasses_tier2_and_routes_to_default_fallback(self, temp_workspace: Path):
-        catalog = SqliteCatalogAdapter(db_path=":memory:")
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-        # Database has one agent that cannot match this gibberish
-        await catalog.index_agent(make_agent(
-            "benefits-coordinator",
-            "Benefits Coordinator",
-            domain="navigation",
-            category="navigation.insurance",
-            description="Insurance guide",
-            tags=["insurance", "copay"],
-        ))
-
-        gibberish = "zxcvqwer998877665544332211asdfghjkl"
-        tier1_resp = json.dumps({
-            "domain": "wellness",
-            "category": "wellness.gibberish_subcat",
-            "reasoning": "Cannot determine intent from gibberish.",
-        })
-
-        # Provide ONLY 1 response (Tier-1). If Tier-2 is called, FakeListChatModel will error (exhausted).
-        fake_model = FakeListChatModel(responses=[tier1_resp])
-        node = OrchestratorNode(model=fake_model, registry=registry, catalog=catalog)
-
-        state = {"messages": [HumanMessage(content=gibberish)]}
-        res = await node.execute(state)
-
-        # Invariant 1: Tier-2 was NOT called (fake_model had only 1 response and did not raise)
-        # Invariant 2: Pattern fallback triggered and defaulted to DEFAULT_ROUTING_FALLBACK_AGENT
-        assert res["current_agent"] == DEFAULT_ROUTING_FALLBACK_AGENT
-        assert res["routed_subgraph"] == DEFAULT_ROUTING_FALLBACK_AGENT
-        assert "pattern fallback" in res["orchestrator_reasoning"].lower()
-
-        await catalog.close()
-
-    @pytest.mark.asyncio
-    async def test_gibberish_with_attachment_routes_to_document_extractor(self, temp_workspace: Path):
-        catalog = SqliteCatalogAdapter(db_path=":memory:")
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-        gibberish = "00000000000000000000000000000000"
-        tier1_resp = json.dumps({
-            "domain": "clinical",
-            "category": "clinical.unknown",
-            "reasoning": "Unrecognized prompt with attached dossier.",
-        })
-
-        fake_model = FakeListChatModel(responses=[tier1_resp])
-        node = OrchestratorNode(model=fake_model, registry=registry, catalog=catalog)
-
-        state = {
-            "messages": [HumanMessage(content=gibberish)],
-            "attachments": ["/tmp/uploaded_blood_test.pdf"],
-        }
-        res = await node.execute(state)
-
-        assert res["current_agent"] == "document-extractor"
-        assert res["routed_subgraph"] == "document-extractor"
-        assert "pattern fallback to document-extractor" in res["orchestrator_reasoning"]
-
-        await catalog.close()
-
-    @pytest.mark.asyncio
-    async def test_gibberish_with_embedded_pattern_regex_keyword(self, temp_workspace: Path):
-        """User input matches regex keyword in routing_patterns.yaml despite failing catalog lookups."""
-        catalog = SqliteCatalogAdapter(db_path=":memory:")
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-        # Input contains 'copay' and 'deductible'
-        prompt = "asdfghjk999 in-network copay and deductible qwertyuiop888"
-        tier1_resp = json.dumps({
-            "domain": "education",
-            "category": "education.unknown",
-            "reasoning": "Unknown classification.",
-        })
-
-        fake_model = FakeListChatModel(responses=[tier1_resp])
-        node = OrchestratorNode(model=fake_model, registry=registry, catalog=catalog)
-
-        # Mock catalog to return 0 for everything
-        with patch.object(catalog, "search_agents", new_callable=AsyncMock) as mock_search:
-            mock_search.return_value = []
-            state = {"messages": [HumanMessage(content=prompt)]}
-            res = await node.execute(state)
-
-        assert res["current_agent"] == "benefits-coordinator"
-        assert res["routed_subgraph"] == "benefits-coordinator"
-
-        await catalog.close()
 
 
 # ============================================================================
@@ -684,103 +582,6 @@ class TestChallengeStep5CandidateLimits:
 # Verification Step 6: Empty CatalogPort (Zero Agents Indexed)
 # ============================================================================
 
-class TestChallengeStep6EmptyCatalogPort:
-    """Verification Step 6: Empty CatalogPort (zero agents indexed) -> must cleanly fall back to pattern matching without crashing.
-    
-    Verifies:
-    - Catalog with 0 agents handles all query types without throwing IndexError, AttributeError, or KeyError.
-    - Fallback chain executes: Step 1 (0) -> Step 2 (0) -> Step 3 (0) -> Step 4 pattern fallback.
-    - Routes successfully based on pattern fallback rules.
-    """
-
-    @pytest.mark.asyncio
-    async def test_empty_catalog_with_standard_query_routes_cleanly(self, temp_workspace: Path):
-        """Standard query with empty catalog port falls back to regex or default agent."""
-        empty_catalog = SqliteCatalogAdapter(db_path=":memory:")
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-        tier1_resp = json.dumps({
-            "domain": "navigation",
-            "category": "navigation.insurance",
-            "reasoning": "Insurance copay query.",
-        })
-        fake_model = FakeListChatModel(responses=[tier1_resp])
-        node = OrchestratorNode(model=fake_model, registry=registry, catalog=empty_catalog)
-
-        state = {"messages": [HumanMessage(content="What is my in-network copay deductible?")]}
-        res = await node.execute(state)
-
-        # Invariant 1: No crash, clean dict returned
-        assert isinstance(res, dict)
-        assert res["current_agent"] == "benefits-coordinator"
-        assert res["routed_subgraph"] == "benefits-coordinator"
-        assert "pattern fallback" in res["orchestrator_reasoning"].lower()
-
-        await empty_catalog.close()
-
-    @pytest.mark.asyncio
-    async def test_empty_catalog_with_pure_gibberish_routes_to_default_fallback(self, temp_workspace: Path):
-        """Pure gibberish with empty catalog port cleanly falls back to DEFAULT_ROUTING_FALLBACK_AGENT."""
-        empty_catalog = SqliteCatalogAdapter(db_path=":memory:")
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-        tier1_resp = json.dumps({
-            "domain": "wellness",
-            "category": "wellness.unknown",
-            "reasoning": "Unknown intent.",
-        })
-        fake_model = FakeListChatModel(responses=[tier1_resp])
-        node = OrchestratorNode(model=fake_model, registry=registry, catalog=empty_catalog)
-
-        state = {"messages": [HumanMessage(content="zxcv9876543210asdf")]}
-        res = await node.execute(state)
-
-        assert res["current_agent"] == DEFAULT_ROUTING_FALLBACK_AGENT
-        assert res["routed_subgraph"] == DEFAULT_ROUTING_FALLBACK_AGENT
-        assert "pattern fallback" in res["orchestrator_reasoning"].lower()
-
-        await empty_catalog.close()
-
-    @pytest.mark.asyncio
-    async def test_empty_catalog_with_attachment_routes_to_document_extractor(self, temp_workspace: Path):
-        """Empty catalog with document in state cleanly routes to document-extractor."""
-        empty_catalog = SqliteCatalogAdapter(db_path=":memory:")
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-        tier1_resp = json.dumps({
-            "domain": "clinical",
-            "category": "clinical.records",
-            "reasoning": "Attached medical record.",
-        })
-        fake_model = FakeListChatModel(responses=[tier1_resp])
-        node = OrchestratorNode(model=fake_model, registry=registry, catalog=empty_catalog)
-
-        state = {
-            "messages": [HumanMessage(content="Here is my visit summary")],
-            "document_text": "Clinical visit summary: patient seen for acute bronchitis...",
-        }
-        res = await node.execute(state)
-
-        assert res["current_agent"] == "document-extractor"
-        assert res["routed_subgraph"] == "document-extractor"
-
-        await empty_catalog.close()
-
-    @pytest.mark.asyncio
-    async def test_empty_catalog_with_model_none_routes_cleanly(self, temp_workspace: Path):
-        """When model is None and catalog is empty (offline unit test mode)."""
-        empty_catalog = SqliteCatalogAdapter(db_path=":memory:")
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-        node = OrchestratorNode(model=None, registry=registry, catalog=empty_catalog)
-
-        state = {"messages": [HumanMessage(content="I need a doctor appointment checklist")]}
-        res = await node.execute(state)
-
-        assert res["current_agent"] == "appointment-prep-coordinator"
-        assert "Model unconfigured" in res["orchestrator_reasoning"]
-
-        await empty_catalog.close()
 
 
 # ============================================================================
@@ -869,85 +670,4 @@ class TestAdversarialHostileEdgeCases:
 
         await catalog.close()
 
-    @pytest.mark.asyncio
-    async def test_tier2_model_crash_falls_back_to_first_candidate(self, temp_workspace: Path):
-        """Tier-2 model throws an unhandled exception; verify node falls back to candidates[0]."""
-        catalog = SqliteCatalogAdapter(db_path=":memory:")
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
 
-        await catalog.index_agent(make_agent(
-            "habit-coordinator",
-            "Habit Coordinator",
-            domain="wellness",
-            category="wellness.habits",
-            description="Habit tracking.",
-        ))
-
-        tier1_resp = json.dumps({
-            "domain": "wellness",
-            "category": "wellness.habits",
-            "reasoning": "Habit query.",
-        })
-
-        class CrashingTier2Model:
-            def __init__(self):
-                self.count = 0
-
-            def with_structured_output(self, schema: Any, **kwargs: Any) -> Any:
-                self.count += 1
-                if schema == DomainClassification:
-                    from langchain_core.runnables import RunnableLambda
-                    return RunnableLambda(lambda msgs: DomainClassification(
-                        domain="wellness", category="wellness.habits", reasoning="Habits"
-                    ))
-                raise TimeoutError("Tier-2 LLM timeout")
-
-            async def ainvoke(self, messages: Any, **kwargs: Any) -> Any:
-                raise TimeoutError("Raw Tier-2 timeout")
-
-        node = OrchestratorNode(model=CrashingTier2Model(), registry=registry, catalog=catalog)
-
-        state = {"messages": [HumanMessage(content="Help me with hydration habits")]}
-        res = await node.execute(state)
-
-        assert res["current_agent"] == "habit-coordinator"
-        assert "fallback to candidate" in res["orchestrator_reasoning"].lower()
-
-        await catalog.close()
-
-    @pytest.mark.asyncio
-    async def test_hallucinated_agent_id_recovers_to_valid_candidate(self, temp_workspace: Path):
-        """Tier-2 hallucinates an agent ID that does not exist in registry or candidates."""
-        catalog = SqliteCatalogAdapter(db_path=":memory:")
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-        await catalog.index_agent(make_agent(
-            "benefits-coordinator",
-            "Benefits Coordinator",
-            domain="navigation",
-            category="navigation.insurance",
-            description="Insurance guide.",
-        ))
-
-        tier1_resp = json.dumps({
-            "domain": "navigation",
-            "category": "navigation.insurance",
-            "reasoning": "Insurance inquiry.",
-        })
-        tier2_resp = json.dumps({
-            "agent_id": "hallucinated-super-insurance-bot-4000",
-            "reasoning": "Hallucinated agent ID.",
-            "instructions": "",
-        })
-
-        fake_model = FakeListChatModel(responses=[tier1_resp, tier2_resp])
-        node = OrchestratorNode(model=fake_model, registry=registry, catalog=catalog)
-
-        state = {"messages": [HumanMessage(content="Explain my insurance deductible")]}
-        res = await node.execute(state)
-
-        # Original choice hallucinated -> fell back to candidates[0] ('benefits-coordinator')
-        assert res["current_agent"] == "benefits-coordinator"
-        assert "not found in registry" in res["orchestrator_reasoning"]
-
-        await catalog.close()

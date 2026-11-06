@@ -841,7 +841,7 @@ async def test_stream_never_leaks_internal_suggestion_or_orchestrator_tokens(tem
     from langchain_core.language_models.chat_models import BaseChatModel
     from langchain_core.messages import AIMessageChunk
     from langchain_core.outputs import ChatGeneration, ChatResult
-    from carefold.engine.builder import GraphBuilder
+    from tests.fixtures.core_routing import GraphBuilder
     from carefold.engine.service import AgentExecutionService
 
     class StreamingLeakageTestModel(BaseChatModel):

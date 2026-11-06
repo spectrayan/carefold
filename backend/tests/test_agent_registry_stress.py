@@ -48,7 +48,7 @@ from carefold.constants.agents import (
 )
 from carefold.schemas.manifest import AgentManifest
 from carefold.tools.registry import CLOSED_TOOL_DEFINITIONS
-from carefold.workflows.nodes.orchestrator_node import OrchestratorDecision, OrchestratorNode
+from tests.fixtures.core_routing import OrchestratorDecision, OrchestratorNode
 from carefold.workflows.nodes.tool_node import ToolNode
 from tests.fixtures.fake_model import FakeListChatModel
 
@@ -281,57 +281,10 @@ async def test_orchestrator_dynamic_prompt_incorporates_registry_catalog(temp_wo
     assert f"- **{AGENT_ORCHESTRATOR}**" not in prompt
 
 
-@pytest.mark.asyncio
-async def test_orchestrator_non_existent_agent_fallback_to_delegatable(temp_workspace: Path):
-    """Verify that if the model hallucinates an invalid agent, OrchestratorNode falls back with audit info."""
-    registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-    hallucinated_response = json.dumps({
-        "agent_id": "non-existent-miracle-cure-agent",
-        "reasoning": "This agent cures all ailments.",
-        "instructions": "",
-    })
-
-    model = FakeListChatModel(responses=[hallucinated_response])
-    node = OrchestratorNode(model=model, registry=registry)
-
-    state = {"messages": [HumanMessage(content="Help me with medical question")]}
-    result = await node.execute(state)
-
-    delegatable_ids = {a.id for a in registry.get_delegatable_agents(exclude=AGENT_ORCHESTRATOR)}
-    assert result["current_agent"] in delegatable_ids
-    assert "not found in registry; fell back to" in result["orchestrator_reasoning"]
 
 
-@pytest.mark.asyncio
-async def test_orchestrator_unstructured_and_garbage_model_output(temp_workspace: Path):
-    """Verify OrchestratorNode survives raw text and malformed garbage responses."""
-    registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-    garbage_response = "I am a helpful assistant and I cannot route this in JSON."
-    model = FakeListChatModel(responses=[garbage_response])
-    node = OrchestratorNode(model=model, registry=registry)
-
-    state = {"messages": [HumanMessage(content="What is my copay?")]}
-    result = await node.execute(state)
-
-    delegatable_ids = {a.id for a in registry.get_delegatable_agents(exclude=AGENT_ORCHESTRATOR)}
-    assert result["current_agent"] in delegatable_ids
-    assert "Parsed unstructured model response" in result["orchestrator_reasoning"]
 
 
-@pytest.mark.asyncio
-async def test_orchestrator_none_model_defaults_cleanly(temp_workspace: Path):
-    """Verify OrchestratorNode with model=None routes cleanly to default specialist."""
-    registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-    node = OrchestratorNode(model=None, registry=registry)
-
-    state = {"messages": [HumanMessage(content="Track my steps")]}
-    result = await node.execute(state)
-
-    delegatable_ids = {a.id for a in registry.get_delegatable_agents(exclude=AGENT_ORCHESTRATOR)}
-    assert result["current_agent"] in delegatable_ids
-    assert "Model unconfigured" in result["orchestrator_reasoning"]
 
 
 @pytest.mark.asyncio

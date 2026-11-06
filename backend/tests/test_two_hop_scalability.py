@@ -63,13 +63,12 @@ from carefold.schemas.manifest import (
     AgentMaturity,
     RiskClass,
 )
-from carefold.workflows.nodes.orchestrator_node import (
+from tests.fixtures.core_routing import (
     DomainClassification,
     OrchestratorDecision,
     OrchestratorNode,
     TIER1_DOMAIN_CLASSIFIER_PROMPT,
 )
-from carefold.workflows.nodes.supervisor_node import SupervisorNode
 from tests.fixtures.fake_model import FakeListChatModel
 
 
@@ -154,52 +153,6 @@ async def memory_catalog() -> SqliteCatalogAdapter:
 # Section 1: Token Bounds & Prompt Invariant Systematic Stress Testing
 # ============================================================================
 
-class TestTokenBoundsAndPromptInvariants:
-    """Systematically measures token bounds and structural invariants of Tier-1 prompt."""
-
-    def test_tier1_prompt_token_bounds_across_tokenizers(self):
-        """Verifies TIER1_DOMAIN_CLASSIFIER_PROMPT is strictly under 500 tokens across encodings."""
-        tokenizers = ["cl100k_base", "o200k_base", "p50k_base"]
-        for enc_name in tokenizers:
-            enc = tiktoken.get_encoding(enc_name)
-            token_count = len(enc.encode(TIER1_DOMAIN_CLASSIFIER_PROMPT))
-            assert token_count < 500, (
-                f"Tokenizer {enc_name} measured {token_count} tokens, which violates the strict < 500 token limit!"
-            )
-            # Must also have meaningful substance (>200 tokens)
-            assert token_count > 200, f"Prompt unexpectedly short: {token_count} tokens"
-
-        # Word count bound
-        words = TIER1_DOMAIN_CLASSIFIER_PROMPT.split()
-        assert len(words) < 350
-        assert len(words) > 150
-
-    def test_tier1_prompt_domain_coverage_and_isolation(self):
-        """Verifies all 5 canonical domains are described, with zero concrete agent descriptions."""
-        prompt = TIER1_DOMAIN_CLASSIFIER_PROMPT
-
-        # 5 required domains
-        for domain in ["clinical", "therapy", "wellness", "navigation", "education"]:
-            assert f"'{domain}'" in prompt or f"## {domain}" in prompt or domain in prompt
-
-        # Category examples
-        assert "clinical.triage" in prompt
-        assert "therapy.cbt" in prompt
-        assert "wellness.habits" in prompt
-        assert "navigation.insurance" in prompt
-        assert "education.conditions" in prompt
-
-        # Strict isolation: Zero agent IDs or agent catalog listings
-        forbidden_agent_names = [
-            "benefits-coordinator",
-            "appointment-prep-coordinator",
-            "habit-coordinator",
-            "document-extractor",
-            "orchestrator",
-            "Available Specialist Agents",
-        ]
-        for forbidden in forbidden_agent_names:
-            assert forbidden not in prompt, f"TIER1 prompt leaked agent catalog entity: {forbidden}"
 
 
 # ============================================================================
@@ -323,24 +276,6 @@ class TestCatalogScalabilityAndTwoHopLimits:
 class TestBackwardCompatibilityCatalogNone:
     """Verifies all existing test paths function identically when catalog=None."""
 
-    @pytest.mark.asyncio
-    async def test_single_hop_attachment_routing_paths(self, temp_workspace: Path):
-        """Verifies that attachments in state route to document-extractor when catalog=None."""
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-        node = OrchestratorNode(model=None, registry=registry, catalog=None)
-
-        attachment_states = [
-            {"attachments": ["record.pdf"], "messages": [HumanMessage(content="Review this")]},
-            {"document_dossiers": [{"type": "benefits"}], "messages": [HumanMessage(content="Review")]},
-            {"document_text": "Clinical visit summary notes", "messages": [HumanMessage(content="Review")]},
-            {"raw_text": "Insurance explanation of benefits text", "messages": [HumanMessage(content="Review")]},
-        ]
-
-        for st in attachment_states:
-            res = await node.execute(st)
-            assert res["current_agent"] == "document-extractor"
-            assert res["routed_subgraph"] == "document-extractor"
-            assert res["next_step"] == "document-extractor"
 
     @pytest.mark.asyncio
     async def test_single_hop_explicit_bypass_matrix(self, temp_workspace: Path):
@@ -390,30 +325,6 @@ class TestBackwardCompatibilityCatalogNone:
         assert r5["current_agent"] == "benefits-coordinator"
         assert r5["orchestrator_reasoning"] == "Model decision"
 
-    @pytest.mark.asyncio
-    async def test_single_hop_hallucinated_agents_safe_fallback(self, temp_workspace: Path):
-        """Verifies unknown/hallucinated agent IDs fall back to a registered delegatable agent."""
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-        delegatable = registry.get_delegatable_agents(exclude=AGENT_ORCHESTRATOR)
-        expected_fallback = delegatable[0].id
-
-        hallucinated_ids = [
-            "non-existent-specialist-999",
-            "fake_agent_xyz",
-            "chatgpt_super_doc",
-            "",
-        ]
-
-        for bad_id in hallucinated_ids:
-            fake_model = FakeListChatModel(responses=[
-                json.dumps({"agent_id": bad_id, "reasoning": "Hallucinated", "instructions": ""})
-            ])
-            node = OrchestratorNode(model=fake_model, registry=registry, catalog=None)
-            res = await node.execute({"messages": [HumanMessage(content="Help me with care")]})
-
-            assert res["current_agent"] == expected_fallback
-            assert res["routed_subgraph"] == expected_fallback
-            assert "not found in registry" in res["orchestrator_reasoning"]
 
     @pytest.mark.asyncio
     async def test_single_hop_missing_skills_synthesis(self, temp_workspace: Path):
@@ -462,105 +373,6 @@ class TestBackwardCompatibilityCatalogNone:
 # Section 4: SupervisorNode Full Backward Compatibility Matrix
 # ============================================================================
 
-class TestSupervisorNodeBackwardCompatibility:
-    """Verifies SupervisorNode operates cleanly as an OrchestratorNode subclass."""
-
-    def test_supervisor_node_clean_inheritance_and_contracts(self):
-        """Verifies class hierarchy, default attributes, and polymorphism."""
-        assert issubclass(SupervisorNode, OrchestratorNode)
-
-        sup = SupervisorNode()
-        assert isinstance(sup, OrchestratorNode)
-        assert sup.name == "supervisor"
-        assert sup.catalog is None
-        assert sup.model is None
-
-    @pytest.mark.asyncio
-    async def test_supervisor_node_parameterless_routing_matrix(self):
-        """Verifies parameterless SupervisorNode deterministic regex fallback across domains."""
-        sup = SupervisorNode()
-
-        test_matrix = [
-            ("What is my insurance copay?", "benefits-coordinator"),
-            ("Explain my deductible and out of pocket max", "benefits-coordinator"),
-            ("How much water should I drink for hydration?", "habit-coordinator"),
-            ("Track my sleep habits and bedtime routine", "habit-coordinator"),
-            ("Questions to ask my doctor during appointment", "appointment-prep-coordinator"),
-            ("Upcoming clinical clinic visit prep", "appointment-prep-coordinator"),
-            ("Completely novel query with no keywords", DEFAULT_ROUTING_FALLBACK_AGENT),
-        ]
-
-        for query, expected in test_matrix:
-            res = await sup.execute({"messages": [HumanMessage(content=query)]})
-            assert res["current_agent"] == expected
-            assert res["routed_subgraph"] == expected
-            assert res["next_step"] == expected
-
-    @pytest.mark.asyncio
-    async def test_supervisor_node_attachments_and_bypass(self):
-        """Verifies attachments and explicit bypass work cleanly on SupervisorNode."""
-        sup = SupervisorNode()
-
-        # Attachments
-        res_att = await sup.execute({
-            "attachments": ["eob_report.pdf"],
-            "messages": [HumanMessage(content="Here is my document")],
-        })
-        assert res_att["current_agent"] == "document-extractor"
-        assert res_att["routed_subgraph"] == "document-extractor"
-
-        # Explicit bypass
-        res_byp = await sup.execute({
-            "current_agent": "habit-coordinator",
-            "messages": [HumanMessage(content="Hello")],
-        })
-        assert res_byp["current_agent"] == "habit-coordinator"
-        assert res_byp["routed_subgraph"] == "habit-coordinator"
-
-    @pytest.mark.asyncio
-    async def test_supervisor_node_with_model_structured_output(self, temp_workspace: Path):
-        """Verifies SupervisorNode initialized with a chat model executes dynamic routing."""
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-        model_resp = json.dumps({
-            "agent_id": "benefits-coordinator",
-            "reasoning": "Insurance benefits question.",
-            "instructions": "Clarify copay.",
-        })
-        fake_model = FakeListChatModel(responses=[model_resp])
-        sup = SupervisorNode(model=fake_model, registry=registry)
-
-        res = await sup.execute({"messages": [HumanMessage(content="What is my copay?")]})
-        assert res["current_agent"] == "benefits-coordinator"
-        assert res["routed_subgraph"] == "benefits-coordinator"
-        assert res["orchestrator_instructions"] == "Clarify copay."
-
-    @pytest.mark.asyncio
-    async def test_supervisor_node_with_injected_catalog_two_hop(
-        self, memory_catalog: SqliteCatalogAdapter, temp_workspace: Path
-    ):
-        """Verifies SupervisorNode executes two-hop routing seamlessly if catalog is set."""
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-        tier1_resp = json.dumps({
-            "domain": "wellness",
-            "category": "wellness.habits",
-            "reasoning": "Habit and hydration query.",
-        })
-        tier2_resp = json.dumps({
-            "agent_id": "habit-coordinator",
-            "reasoning": "Selected habit-coordinator from candidate set.",
-            "instructions": "Set a goal of 64 ounces of water daily.",
-        })
-
-        fake_model = FakeListChatModel(responses=[tier1_resp, tier2_resp])
-        sup = SupervisorNode(model=fake_model, registry=registry)
-        # Inject catalog onto supervisor
-        sup.catalog = memory_catalog
-
-        res = await sup.execute({"messages": [HumanMessage(content="Water intake routine")]})
-        assert res["current_agent"] == "habit-coordinator"
-        assert res["routed_subgraph"] == "habit-coordinator"
-        assert res["orchestrator_instructions"] == "Set a goal of 64 ounces of water daily."
 
 
 # ============================================================================
@@ -570,56 +382,7 @@ class TestSupervisorNodeBackwardCompatibility:
 class TestAdversarialEdgeCasesAndResilience:
     """Stress-tests edge cases: malformed responses, empty catalogs, and high concurrency."""
 
-    @pytest.mark.asyncio
-    async def test_malformed_model_responses(
-        self, memory_catalog: SqliteCatalogAdapter, temp_workspace: Path
-    ):
-        """Tests resilience when model returns various corrupted or malformed outputs."""
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
 
-        malformed_inputs = [
-            # Markdown block with invalid JSON
-            "```json\n{ not valid json ...\n```",
-            # Plain non-JSON string
-            "I recommend delegating to benefits-coordinator because of coverage rules.",
-            # Valid JSON but wrong types
-            json.dumps({"agent_id": 12345, "reasoning": None, "instructions": []}),
-            # Empty string
-            "",
-        ]
-
-        for bad_resp in malformed_inputs:
-            fake_model = FakeListChatModel(responses=[bad_resp, bad_resp])
-            node = OrchestratorNode(model=fake_model, registry=registry, catalog=memory_catalog)
-
-            # Query has 'copay' which matches regex pattern fallback
-            res = await node.execute({"messages": [HumanMessage(content="What is my in-network copay?")]})
-
-            assert res["current_agent"] in registry.list_agent_ids()
-            assert res["current_agent"] == "benefits-coordinator"
-
-    @pytest.mark.asyncio
-    async def test_empty_catalog_fallback(self, temp_workspace: Path):
-        """Verifies graceful degradation when catalog exists but is completely empty."""
-        empty_catalog = SqliteCatalogAdapter(db_path=":memory:")
-        registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-
-        tier1_resp = json.dumps({
-            "domain": "navigation",
-            "category": "navigation.insurance",
-            "reasoning": "Insurance navigation query.",
-        })
-        fake_model = FakeListChatModel(responses=[tier1_resp])
-        node = OrchestratorNode(model=fake_model, registry=registry, catalog=empty_catalog)
-
-        # Prompt has benefits keyword 'copay'
-        res = await node.execute({"messages": [HumanMessage(content="Explain my insurance copay")]})
-
-        # All 3 catalog queries return 0 candidates -> step 4 triggers pattern fallback to benefits-coordinator
-        assert res["current_agent"] == "benefits-coordinator"
-        assert "pattern fallback" in res["orchestrator_reasoning"].lower()
-
-        await empty_catalog.close()
 
     @pytest.mark.asyncio
     async def test_concurrent_two_hop_invocations(

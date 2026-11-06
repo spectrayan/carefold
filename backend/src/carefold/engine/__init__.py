@@ -11,7 +11,7 @@
 
 """Carefold engine package.
 
-Streamlined execution engine exposing GraphBuilder, AgentExecutionService,
+Streamlined execution engine exposing AgentExecutionService,
 prompt assembly, and runtime execution facade.
 """
 
@@ -22,7 +22,6 @@ from carefold.engine.agent_factory import (
     load_all_subagents,
     load_subagent_from_yaml,
 )
-from carefold.engine.builder import GraphBuilder, create_agent_graph
 from carefold.engine.prompt_builder import build_system_prompt
 from carefold.engine.runner import ExecutionContext, execute_agent_run
 from carefold.engine.service import AgentExecutionService
@@ -30,9 +29,7 @@ from carefold.engine.service import AgentExecutionService
 __all__ = [
     "AgentExecutionService",
     "ExecutionContext",
-    "GraphBuilder",
     "build_system_prompt",
-    "create_agent_graph",
     "create_carefold_agent",
     "execute_agent_run",
     "load_all_subagents",

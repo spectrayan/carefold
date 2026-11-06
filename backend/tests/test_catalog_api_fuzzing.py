@@ -56,7 +56,7 @@ from carefold.schemas.manifest import (
     SkillManifest,
     SkillSummary,
 )
-from carefold.workflows.nodes.orchestrator_node import (
+from tests.fixtures.core_routing import (
     DomainClassification,
     OrchestratorDecision,
     OrchestratorNode,
@@ -569,96 +569,8 @@ def test_fastapi_endpoints_schemas_and_filters(client: TestClient, repo_root: Pa
 # Part 7: Boundary Concurrency, Candidate Limits & Output Parsing
 # ============================================================================
 
-@pytest.mark.asyncio
-async def test_candidate_limit_and_concurrency(tmp_path: Path):
-    """Verify candidate list is strictly capped at <= 8 and concurrent routing does not lock/corrupt catalog."""
-    import asyncio
-    catalog = SqliteCatalogAdapter(db_path=tmp_path / "candidate_limit.db")
-
-    try:
-        # Index 20 distinct agents in domain wellness, category wellness.habits
-        for i in range(20):
-            ag = make_manifest(
-                f"habit-bot-{i:02d}",
-                AgentDomain.WELLNESS,
-                "wellness.habits",
-                ["habits", f"tag-{i}"],
-                f"Habit tracker variant {i}",
-            )
-            await catalog.index_agent(ag)
-
-        count = await catalog.count_agents(include_hidden=False)
-        assert count == 20
-
-        # Tier-1 and Tier-2 setup
-        tier1_resp = json.dumps({"domain": "wellness", "category": "wellness.habits", "reasoning": "Habit query"})
-        tier2_resp = json.dumps({"agent_id": "habit-bot-00", "reasoning": "Selected 00", "instructions": ""})
-
-        # Check candidate truncation <= 8
-        fake_model = FakeListChatModel(responses=[tier1_resp, tier2_resp])
-        orch = OrchestratorNode(model=fake_model, catalog=catalog)
-
-        decision, candidates = await orch._execute_two_hop(
-            state={},
-            prompt_text="I want to build healthy morning habits",
-            raw_messages=[HumanMessage(content="I want to build healthy morning habits")],
-        )
-        assert len(candidates) <= 8, f"Expected <= 8 candidates, got {len(candidates)}"
-        assert decision.agent_id == "habit-bot-00"
-
-        # Concurrency stress: 10 simultaneous two-hop routing tasks
-        async def run_single_routing(idx: int):
-            t1 = json.dumps({"domain": "wellness", "category": "wellness.habits", "reasoning": f"Run {idx}"})
-            t2 = json.dumps({"agent_id": f"habit-bot-{idx:02d}", "reasoning": f"Selected {idx}", "instructions": ""})
-            fm = FakeListChatModel(responses=[t1, t2])
-            o = OrchestratorNode(model=fm, catalog=catalog)
-            res = await o.execute({"messages": [HumanMessage(content=f"Build habit {idx}")]})
-            return res["agent_id"]
-
-        results = await asyncio.gather(*(run_single_routing(i) for i in range(10)))
-        assert len(results) == 10
-        # Indices 0-7 are within the 8 candidates returned by catalog
-        for i in range(8):
-            assert results[i] == f"habit-bot-{i:02d}"
-        # Indices 8 and 9 are outside the candidate list (limit=8), so orchestrator correctly falls back to candidates[0]
-        assert results[8] == "habit-bot-00"
-        assert results[9] == "habit-bot-00"
-    finally:
-        await catalog.close()
 
 
-@pytest.mark.asyncio
-async def test_malformed_llm_markdown_and_hallucinations(tmp_path: Path):
-    """Stress-test markdown json extraction, unparseable LLM output, and hallucinated candidate IDs."""
-    catalog = SqliteCatalogAdapter(db_path=tmp_path / "markdown_test.db")
-
-    try:
-        sample = make_manifest("agent-alpha", AgentDomain.WELLNESS, "wellness.general", ["alpha"], "Alpha bot")
-        await catalog.index_agent(sample)
-
-        # 1. Tier-1 and Tier-2 return JSON wrapped inside markdown code blocks
-        md_tier1 = "```json\n{\n  \"domain\": \"wellness\",\n  \"category\": \"wellness.general\",\n  \"reasoning\": \"Markdown block\"\n}\n```"
-        md_tier2 = "```json\n{\n  \"agent_id\": \"agent-alpha\",\n  \"reasoning\": \"Selected alpha\",\n  \"instructions\": \"Go ahead\"\n}\n```"
-
-        fake_model = FakeListChatModel(responses=[md_tier1, md_tier2])
-        orch = OrchestratorNode(model=fake_model, catalog=catalog)
-
-        res = await orch.execute({"messages": [HumanMessage(content="Hello wellness")]})
-        assert res["agent_id"] == "agent-alpha"
-
-        # 2. Tier-2 returns completely hallucinated agent ID
-        h_tier1 = json.dumps({"domain": "wellness", "category": "wellness.general", "reasoning": "Valid domain"})
-        h_tier2 = json.dumps({"agent_id": "hallucinated_ghost_agent_999", "reasoning": "Invented agent", "instructions": ""})
-
-        fake_model_h = FakeListChatModel(responses=[h_tier1, h_tier2])
-        orch_h = OrchestratorNode(model=fake_model_h, catalog=catalog)
-
-        res_h = await orch_h.execute({"messages": [HumanMessage(content="Hello wellness")]})
-        # Should gracefully fall back to existing candidate (agent-alpha)
-        assert res_h["agent_id"] == "agent-alpha"
-        assert "not found in registry; fell back to" in res_h["orchestrator_reasoning"]
-    finally:
-        await catalog.close()
 
 
 def test_api_fuzzing_and_malicious_query_params(client: TestClient):

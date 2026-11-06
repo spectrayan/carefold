@@ -45,15 +45,8 @@ from carefold.workflows.nodes import (
     ReflectionNode,
     RefusalNode,
     SuggestionNode,
-    SupervisorNode,
     ToolNode,
     ToolValidatorNode,
-)
-from carefold.workflows.subgraphs import (
-    build_supervisor_subgraph,
-    create_supervisor_subgraph,
-    route_specialist_return,
-    route_supervisor,
 )
 from tests.fixtures.fake_model import FakeListChatModel
 
@@ -176,25 +169,6 @@ async def test_input_guardrail_node_safe_and_unsafe():
     assert "diagnose" in unsafe_out["refusal_reason"]
 
 
-@pytest.mark.asyncio
-async def test_supervisor_node_intent_classification():
-    node = SupervisorNode()
-
-    # Benefits
-    out_b = await node.execute({"messages": [HumanMessage(content="What is my in-network deductible?")]})
-    assert out_b["routed_subgraph"] == "benefits-coordinator"
-
-    # Visit
-    out_v = await node.execute({"messages": [HumanMessage(content="Help me prepare a checklist for my doctor appointment")]})
-    assert out_v["routed_subgraph"] == "appointment-prep-coordinator"
-
-    # Habit
-    out_h = await node.execute({"messages": [HumanMessage(content="Track my water intake habit")]})
-    assert out_h["routed_subgraph"] == "habit-coordinator"
-
-    # Extraction
-    out_e = await node.execute({"messages": [HumanMessage(content="Extract this uploaded pdf dossier")]})
-    assert out_e["routed_subgraph"] == "document-extractor"
 
 
 @pytest.mark.asyncio
@@ -347,19 +321,3 @@ async def test_error_node_cleanses_paths():
 # 4. Supervisor Subgraph Tests
 # ============================================================================
 
-def test_supervisor_subgraph_compilation_and_routing():
-    fake = FakeListChatModel(responses=["Benefits guidance", "Visit prep advice"])
-    subgraph = build_supervisor_subgraph(model=fake)
-    assert subgraph is not None
-
-    # Routing helpers
-    assert route_supervisor({"routed_subgraph": "benefits-coordinator"}) == "benefits_coordinator"
-    assert route_supervisor({"routed_subgraph": "appointment-prep-coordinator"}) == "appointment_prep_coordinator"
-    assert route_supervisor({"routed_subgraph": "document-extractor"}) == "document_extractor"
-    assert route_supervisor({"routed_subgraph": "habit-coordinator"}) == "habit_coordinator"
-    assert route_supervisor({"routed_subgraph": "unknown-specialist"}) == "generalist"
-
-    # Return transition
-    assert route_specialist_return({"next_step": "supervisor"}) == "supervisor_node"
-    assert route_specialist_return({"requires_supervisor": True}) == "supervisor_node"
-    assert route_specialist_return({"next_step": "done"}) == "__end__"

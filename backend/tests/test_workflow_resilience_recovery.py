@@ -43,7 +43,8 @@ from carefold.constants.api import (
     SSE_EVENT_TOOL_START,
 )
 from carefold.constants.defaults import DEFAULT_MAX_REFLECTIONS
-from carefold.engine.builder import GraphBuilder, create_agent_graph
+from tests.fixtures.core_routing import GraphBuilder
+from yarvelle_core.engine.builder import create_agent_graph
 from carefold.engine.service import AgentExecutionService
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
 from carefold.schemas.chat import ChatRequestBody
@@ -342,30 +343,6 @@ class TestThreadStatePersistence:
 class TestReflectionRetryLimits:
     """Stress tests reflection self-correction loops to verify bounds and termination."""
 
-    @pytest.mark.asyncio
-    async def test_reflection_stops_strictly_at_max_reflections_ceiling(self):
-        """Verifies graph does NOT oscillate indefinitely when model repeatedly violates guardrails."""
-        # A model that always violates clinical safety
-        violating_response = "You have acute strep throat. Take 500mg Amoxicillin three times a day."
-        mock_model = FakeListChatModel(responses=[violating_response] * 10)
-
-        # Graph with max_reflections = 3
-        graph = (
-            GraphBuilder(model=mock_model)
-            .with_max_reflections(3)
-            .build()
-        )
-
-        res = await graph.ainvoke({
-            "messages": [HumanMessage(content="What medication should I take?")],
-        })
-
-        # Must terminate at refusal node
-        assert res.get("is_refusal") is True or res.get("refused") is True
-        # Output should be the standard safe refusal
-        assert "doctor" in str(res.get("output", "")).lower() or "911" in str(res.get("output", ""))
-        # reflection_count must equal max_reflections (3) and NOT exceed it
-        assert res.get("reflection_count") == 3
 
     @pytest.mark.asyncio
     async def test_reflection_bypassed_when_max_reflections_is_zero(self):

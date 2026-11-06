@@ -35,7 +35,7 @@ from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.store.memory import InMemoryStore
 
-from carefold.engine.builder import GraphBuilder
+from tests.fixtures.core_routing import GraphBuilder
 from carefold.engine.service import AgentExecutionService
 from carefold.memory.adapters.spector.store import SpectorStore
 from carefold.model.factory import create_chat_model

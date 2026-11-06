@@ -50,7 +50,8 @@ from carefold.constants.agents import (
     AGENT_VISIT_PREP_COORDINATOR,
     DEFAULT_ROUTING_FALLBACK_AGENT,
 )
-from carefold.engine.builder import GraphBuilder, create_agent_graph
+from tests.fixtures.core_routing import GraphBuilder
+from yarvelle_core.engine.builder import create_agent_graph
 from carefold.engine.graph import create_sqlite_saver
 from carefold.engine.service import AgentExecutionService
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
@@ -61,8 +62,6 @@ from carefold.workflows.nodes import (
     AuditNode,
     ErrorNode,
     InputGuardrailNode,
-    OrchestratorDecision,
-    OrchestratorNode,
     OutputGuardrailNode,
     ReflectionNode,
     RefusalNode,
@@ -71,6 +70,7 @@ from carefold.workflows.nodes import (
     ToolValidatorNode,
 )
 from carefold.workflows.state import AgentState, create_initial_state
+from tests.fixtures.core_routing import OrchestratorDecision, OrchestratorNode
 from tests.fixtures.fake_model import FakeListChatModel, MockChatModel, MockModelClient
 
 

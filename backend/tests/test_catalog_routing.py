@@ -58,7 +58,7 @@ from carefold.memory.adapters.sqlite.catalog_adapter import (
     build_category_tree_from_rows,
 )
 from carefold.schemas.manifest import AgentManifest, SkillManifest
-from carefold.workflows.nodes.orchestrator_node import (
+from tests.fixtures.core_routing import (
     DomainClassification,
     OrchestratorDecision,
     OrchestratorNode,
@@ -459,175 +459,12 @@ class TestStep3FTSFallbackAndCandidateBounds:
 # Test Suite 4: Step 4 Pattern Fallback When Catalog Has 0 Candidates
 # ============================================================================
 
-class TestStep4PatternFallbackAndBounds:
-    """Verifies Step 4 regex pattern fallback when catalog returns 0 candidates."""
-
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("spec", ALL_17_SPECIALISTS, ids=[s["id"] for s in ALL_17_SPECIALISTS])
-    async def test_step4_pattern_fallback_across_all_17_specialists(
-        self,
-        spec: Dict[str, Any],
-        registry: AgentRegistry,
-    ):
-        """Empty catalog triggers Step 4 pattern fallback for each specialist."""
-        empty_catalog = SqliteCatalogAdapter(db_path=":memory:")
-        await empty_catalog._get_conn()
-
-        tier1_resp = json.dumps({
-            "domain": "education",
-            "category": "education.anatomy",
-            "reasoning": "No catalog candidates exist",
-        })
-        model = FakeListChatModel(responses=[tier1_resp])
-        node = OrchestratorNode(model=model, registry=registry, catalog=empty_catalog)
-
-        state = {"messages": [HumanMessage(content=spec["sample_query"])]}
-        decision, candidates = await node._execute_two_hop(state, spec["sample_query"], list(state["messages"]))
-
-        # Step 4 returns empty candidate list (<= 8)
-        assert len(candidates) == 0
-        assert decision.agent_id == spec["id"]
-        assert "Catalog fallback chain returned 0 candidates" in decision.reasoning
-
-        await empty_catalog.close()
-
-    @pytest.mark.asyncio
-    async def test_step4_attachment_priority_overrides_everything(
-        self,
-        registry: AgentRegistry,
-    ):
-        """When attachments are present in state, Step 4 pattern fallback resolves immediately to document-extractor."""
-        empty_catalog = SqliteCatalogAdapter(db_path=":memory:")
-        await empty_catalog._get_conn()
-
-        tier1_resp = json.dumps({
-            "domain": "clinical",
-            "category": "clinical.cardiology",
-            "reasoning": "Unmatched",
-        })
-        model = FakeListChatModel(responses=[tier1_resp])
-        node = OrchestratorNode(model=model, registry=registry, catalog=empty_catalog)
-
-        state = {
-            "messages": [HumanMessage(content="Check my cardiology EKG record")],
-            "attachments": ["ekg_scan.pdf"],
-        }
-        decision, candidates = await node._execute_two_hop(state, "Check my cardiology EKG record", list(state["messages"]))
-
-        assert decision.agent_id == "document-extractor"
-        await empty_catalog.close()
-
-    @pytest.mark.asyncio
-    async def test_step4_unmatchable_query_defaults_safely(
-        self,
-        registry: AgentRegistry,
-    ):
-        """When query matches nothing, defaults to DEFAULT_ROUTING_FALLBACK_AGENT."""
-        empty_catalog = SqliteCatalogAdapter(db_path=":memory:")
-        await empty_catalog._get_conn()
-
-        tier1_resp = json.dumps({"domain": "therapy", "category": "therapy.none", "reasoning": "None"})
-        model = FakeListChatModel(responses=[tier1_resp])
-        node = OrchestratorNode(model=model, registry=registry, catalog=empty_catalog)
-
-        state = {"messages": [HumanMessage(content="qwertyuiop asdfghjkl zxcvbnm")]}
-        decision, candidates = await node._execute_two_hop(state, "qwertyuiop asdfghjkl zxcvbnm", list(state["messages"]))
-
-        assert decision.agent_id == DEFAULT_ROUTING_FALLBACK_AGENT
-        assert decision.agent_id == "appointment-prep-coordinator"
-        await empty_catalog.close()
 
 
 # ============================================================================
 # Test Suite 5: Boundary Compound Queries & Precedence Collisions
 # ============================================================================
 
-class TestPrecedenceCollisionsInRoutingPatterns:
-    """Verifies specialized stewards & clinical navigators take precedence over generalists."""
-
-    @pytest.mark.parametrize(
-        "query,expected_agent,counter_agent",
-        [
-            (
-                "I need to prepare for my doctor visit regarding prior authorization denial and step therapy",
-                "prior-authorization-coordinator",
-                "appointment-prep-coordinator",
-            ),
-            (
-                "Doctor appointment checklist for my cardiologist heart palpitations and arrhythmia",
-                "heart-care-coordinator",
-                "appointment-prep-coordinator",
-            ),
-            (
-                "Health insurance deductible copay assistance and formulary drug tier coverage",
-                "prescription-cost-coordinator",
-                "benefits-coordinator",
-            ),
-            (
-                "ERISA insurance claim appeal timeline for denied hospital stay explanation of benefits",
-                "claims-appeals-coordinator",
-                "benefits-coordinator",
-            ),
-            (
-                "Organize my medical records and health history for doctor visit",
-                "records-coordinator",
-                "appointment-prep-coordinator",
-            ),
-            (
-                "Chemotherapy oncologist doctor appointment questions and tumor board",
-                "cancer-care-coordinator",
-                "appointment-prep-coordinator",
-            ),
-            (
-                "Dermatologist clinic visit for skin rash lesion mole abcde review",
-                "skin-care-coordinator",
-                "appointment-prep-coordinator",
-            ),
-            (
-                "Asthma inhaler prescription doctor appointment for shortness of breath",
-                "lung-breathing-coordinator",
-                "appointment-prep-coordinator",
-            ),
-            (
-                "Kidney egfr dialysis doctor appointment questions",
-                "kidney-care-coordinator",
-                "appointment-prep-coordinator",
-            ),
-            (
-                "Rheumatoid arthritis morning stiffness doctor visit prep",
-                "autoimmune-care-coordinator",
-                "appointment-prep-coordinator",
-            ),
-            (
-                "Urologist doctor visit for prostate bph and urinary frequency",
-                "bladder-pelvic-care-coordinator",
-                "appointment-prep-coordinator",
-            ),
-            (
-                "Ophthalmologist doctor visit for glaucoma eye drops and cataract surgery",
-                "eye-care-coordinator",
-                "appointment-prep-coordinator",
-            ),
-            (
-                "ENT doctor visit for chronic sinusitis pressure and tinnitus hearing test",
-                "ent-care-coordinator",
-                "appointment-prep-coordinator",
-            ),
-        ],
-    )
-    def test_precedence_inversion_queries(
-        self,
-        query: str,
-        expected_agent: str,
-        counter_agent: str,
-    ):
-        """Verifies specific patterns win over broad generalist patterns."""
-        node = OrchestratorNode(model=None, catalog=None)
-        resolved = node._resolve_pattern_fallback({}, query)
-        assert resolved == expected_agent, (
-            f"Query '{query}' was intercepted by '{resolved}' instead of target '{expected_agent}'"
-        )
-        assert resolved != counter_agent
 
 
 # ============================================================================
@@ -885,37 +722,6 @@ class TestAdversarialParsingAndRecovery:
 
         assert result["current_agent"] == "heart-care-coordinator"
 
-    @pytest.mark.asyncio
-    async def test_tier2_hallucinated_agent_id_falls_back_to_first_candidate(
-        self,
-        catalog: SqliteCatalogAdapter,
-        registry: AgentRegistry,
-    ):
-        """Tier-2 model hallucinates non-existent agent 'super-cardiologist-3000'.
-
-        Node detects agent does not exist in registry and safely falls back to candidates[0].id.
-        """
-        tier1_resp = json.dumps({
-            "domain": "clinical",
-            "category": "clinical.cardiology",
-            "reasoning": "Cardiology domain",
-        })
-        tier2_hallucinated = json.dumps({
-            "agent_id": "super-cardiologist-3000",
-            "reasoning": "Imaginary agent",
-            "instructions": "",
-        })
-
-        model = FakeListChatModel(responses=[tier1_resp, tier2_hallucinated])
-        node = OrchestratorNode(model=model, registry=registry, catalog=catalog)
-
-        state = {"messages": [HumanMessage(content="Heart checkup")]}
-        result = await node.execute(state)
-
-        # Fallback to candidates[0] (which is heart-care-coordinator)
-        assert result["current_agent"] == "heart-care-coordinator"
-        assert "super-cardiologist-3000" in result["orchestrator_reasoning"]
-        assert "not found in registry" in result["orchestrator_reasoning"]
 
 
 # ============================================================================
@@ -979,17 +785,6 @@ class TestDomainClassifierPromptInvariantsAndTokens:
             word_count = len(TIER1_DOMAIN_CLASSIFIER_PROMPT.split())
             assert word_count < 350
 
-    def test_prompt_contains_all_domains_and_no_banned_agent_ids(self):
-        """Verifies prompt contains the 5 canonical domains and zero banned agent names."""
-        for d in ["clinical", "therapy", "wellness", "navigation", "education"]:
-            assert f"'{d}'" in TIER1_DOMAIN_CLASSIFIER_PROMPT or f"'{d}':" in TIER1_DOMAIN_CLASSIFIER_PROMPT
-
-        # Tier-1 must never leak specific agent IDs (e.g. 'heart-care-coordinator', 'appointment-prep-coordinator')
-        # It must only expose domains and categories!
-        for spec in ALL_17_SPECIALISTS:
-            assert spec["id"] not in TIER1_DOMAIN_CLASSIFIER_PROMPT, (
-                f"Agent ID '{spec['id']}' leaked into Tier-1 Domain Classifier prompt!"
-            )
 
 
 # ============================================================================

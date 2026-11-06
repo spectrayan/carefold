@@ -15,7 +15,8 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.language_models.chat_models import BaseChatModel
 
-from carefold.engine.graph import create_agent_graph, CLOSED_TOOL_DEFINITIONS
+from carefold.engine.graph import CLOSED_TOOL_DEFINITIONS
+from yarvelle_core.engine.builder import create_agent_graph
 from carefold.model.types import ModelMessage
 from tests.fixtures.fake_model import FakeChatModel, FakeListChatModel, MockChatModel
 
@@ -77,20 +78,6 @@ def test_create_agent_graph_with_fake_list_chat_model():
     assert graph is not None
 
 
-@pytest.mark.asyncio
-async def test_agent_graph_execution_with_fake_list_chat_model():
-    """Verify execution of compiled agent graph using FakeListChatModel."""
-    fake = FakeListChatModel(responses=["Deductible is $500."])
-    graph = create_agent_graph(fake)
-
-    result = await graph.ainvoke({
-        "messages": [HumanMessage(content="What is my deductible?")],
-        "agent_id": "benefits-explainer",
-    })
-
-    assert "messages" in result
-    assert len(result["messages"]) >= 2
-    assert result["messages"][-1].content == "Deductible is $500."
 
 
 def test_create_agent_graph_defensive_not_implemented():

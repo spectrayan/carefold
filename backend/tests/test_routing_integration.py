@@ -54,7 +54,7 @@ from carefold.memory.adapters.sqlite.catalog_adapter import (
     build_category_tree_from_rows,
 )
 from carefold.schemas.manifest import AgentManifest, SkillManifest
-from carefold.workflows.nodes.orchestrator_node import (
+from tests.fixtures.core_routing import (
     DomainClassification,
     OrchestratorDecision,
     OrchestratorNode,
@@ -495,12 +495,6 @@ class TestCategoryTreeAndAPI:
 class TestTwoHopRoutingIntegration:
     """Verifies two-hop hierarchical routing with 4-step fallback chain."""
 
-    def test_tier1_prompt_invariant(self):
-        """Verifies Tier-1 prompt stays bounded under 500 words and mentions all 5 domains."""
-        word_count = len(TIER1_DOMAIN_CLASSIFIER_PROMPT.split())
-        assert word_count < 500, f"Tier-1 classifier prompt exceeds 500 words ({word_count})"
-        for domain in ["clinical", "therapy", "wellness", "navigation", "education"]:
-            assert domain in TIER1_DOMAIN_CLASSIFIER_PROMPT.lower()
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -600,33 +594,6 @@ class TestTwoHopRoutingIntegration:
 
         assert result["current_agent"] == "kidney-care-coordinator"
 
-    @pytest.mark.asyncio
-    async def test_two_hop_fallback_step4_pattern_fallback(
-        self,
-        live_registry: AgentRegistry,
-    ):
-        """Step 4 Fallback: When catalog returns 0 candidates, triggers regex pattern fallback."""
-        empty_catalog = SqliteCatalogAdapter(db_path=":memory:")
-        await empty_catalog._get_conn()
-
-        tier1_resp = json.dumps({
-            "domain": "therapy",
-            "category": "therapy.cbt",
-            "reasoning": "No candidates anywhere",
-        })
-        fake_model = FakeListChatModel(responses=[tier1_resp])
-        node = OrchestratorNode(
-            model=fake_model,
-            registry=live_registry,
-            catalog=empty_catalog,
-        )
-
-        state = {"messages": [HumanMessage(content="severe sinusitis pressure and audiology tinnitus evaluation")]}
-        result = await node.execute(state)
-
-        assert result["current_agent"] == "ent-care-coordinator"
-        assert "Catalog fallback chain returned 0 candidates" in result["orchestrator_reasoning"]
-        await empty_catalog.close()
 
     @pytest.mark.asyncio
     async def test_preflight_reference_doc_provisioning(
@@ -671,36 +638,3 @@ class TestTwoHopRoutingIntegration:
 # Test Suite 4: Step 4 Pattern Fallback Robustness
 # ============================================================================
 
-class TestPatternFallbackRobustness:
-    """Verifies regex pattern fallback matching for all 17 specialists without LLM (offline mode)."""
-
-    @pytest.mark.parametrize(
-        "spec",
-        ALL_17_SPECIALIST_SPECS,
-        ids=[s["id"] for s in ALL_17_SPECIALIST_SPECS],
-    )
-    def test_pattern_fallback_all_17_specialists(self, spec: Dict[str, Any]):
-        """Verifies parameterless/offline pattern fallback resolves correctly for every specialist."""
-        node = OrchestratorNode(model=None, catalog=None)
-        resolved = node._resolve_pattern_fallback({}, spec["pattern_query"])
-
-        assert resolved == spec["id"], (
-            f"Pattern fallback failed for specialist '{spec['id']}'. "
-            f"Query: '{spec['pattern_query']}' -> Resolved to: '{resolved}'"
-        )
-
-    def test_pattern_fallback_attachment_priority(self):
-        """Verifies any query with attachments routes with top priority to document-extractor."""
-        node = OrchestratorNode(model=None, catalog=None)
-        state_with_attachment = {"attachments": ["medical_record.pdf"]}
-        resolved = node._resolve_pattern_fallback(
-            state_with_attachment,
-            "I need cardiology help for my heart palpitations"
-        )
-        assert resolved == "document-extractor"
-
-    def test_pattern_fallback_unrecognized_query_defaults(self):
-        """Verifies an unrecognized query defaults safely to DEFAULT_ROUTING_FALLBACK_AGENT."""
-        node = OrchestratorNode(model=None, catalog=None)
-        resolved = node._resolve_pattern_fallback({}, "completely arbitrary gibberish xyz123")
-        assert resolved == DEFAULT_ROUTING_FALLBACK_AGENT

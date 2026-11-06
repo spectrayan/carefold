@@ -43,7 +43,7 @@ from carefold.schemas.manifest import (
     AgentMaturity,
     AgentSummary,
 )
-from carefold.workflows.nodes.orchestrator_node import (
+from tests.fixtures.core_routing import (
     DomainClassification,
     OrchestratorDecision,
     OrchestratorNode,

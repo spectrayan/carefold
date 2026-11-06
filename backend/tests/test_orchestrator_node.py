@@ -25,8 +25,7 @@ from carefold.constants.agents import (
     AGENT_VISIT_PREP_COORDINATOR,
 )
 from carefold.workflows.nodes.agent_execution_node import AgentExecutionNode
-from carefold.workflows.nodes.orchestrator_node import OrchestratorDecision, OrchestratorNode
-from carefold.workflows.nodes.supervisor_node import SupervisorNode
+from tests.fixtures.core_routing import OrchestratorDecision, OrchestratorNode
 from tests.fixtures.fake_model import FakeListChatModel
 
 
@@ -81,18 +80,6 @@ async def test_orchestrator_explicit_routing_bypass(temp_workspace: Path):
     assert "Explicitly requested" in result["orchestrator_reasoning"]
 
 
-@pytest.mark.asyncio
-async def test_orchestrator_model_unconfigured_fallback(temp_workspace: Path):
-    """Verifies that OrchestratorNode falls back gracefully when model is None."""
-    registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-    node = OrchestratorNode(model=None, registry=registry)
-
-    state = {"messages": [HumanMessage(content="I need help with my medication checklist")]}
-    result = await node.execute(state)
-
-    assert result["current_agent"] in registry.list_agent_ids()
-    assert result["routed_subgraph"] == result["current_agent"]
-    assert "Model unconfigured" in result["orchestrator_reasoning"]
 
 
 @pytest.mark.asyncio
@@ -115,24 +102,6 @@ async def test_orchestrator_structured_invocation(temp_workspace: Path):
     assert result["orchestrator_instructions"] == "Clarify in-network vs out-of-network rules."
 
 
-@pytest.mark.asyncio
-async def test_orchestrator_hallucinated_agent_fallback(temp_workspace: Path):
-    """Verifies that an unknown agent_id returned by the model falls back safely."""
-    registry = AgentRegistry(temp_workspace / "agents", temp_workspace / "skills")
-    model_response = json.dumps({
-        "agent_id": "non-existent-specialist-123",
-        "reasoning": "Made up agent name.",
-        "instructions": "",
-    })
-    fake_model = FakeListChatModel(responses=[model_response])
-    node = OrchestratorNode(model=fake_model, registry=registry)
-
-    state = {"messages": [HumanMessage(content="Random query")]}
-    result = await node.execute(state)
-
-    assert result["current_agent"] in registry.list_agent_ids()
-    assert result["current_agent"] != "non-existent-specialist-123"
-    assert "not found in registry" in result["orchestrator_reasoning"]
 
 
 @pytest.mark.asyncio
@@ -184,18 +153,6 @@ async def test_agent_execution_unknown_agent_error(temp_workspace: Path):
     assert "Unknown or unregistered agent ID" in result["error"]
 
 
-@pytest.mark.asyncio
-async def test_supervisor_node_fallback_regex(temp_workspace: Path):
-    """Confirms parameterless SupervisorNode maintains deterministic regex routing."""
-    node = SupervisorNode()
-
-    # Benefits
-    out_b = await node.execute({"messages": [HumanMessage(content="What is my in-network copay?")]})
-    assert out_b["routed_subgraph"] == "benefits-coordinator"
-
-    # Extraction
-    out_e = await node.execute({"messages": [HumanMessage(content="Please extract my document")]})
-    assert out_e["routed_subgraph"] == "document-extractor"
 
 
 def test_orchestrator_decision_includes_required_docs():

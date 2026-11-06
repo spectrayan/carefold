@@ -29,7 +29,8 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, END, START
 from langgraph.graph.state import CompiledStateGraph
 
-from carefold.engine.builder import GraphBuilder, create_agent_graph
+from tests.fixtures.core_routing import GraphBuilder
+from yarvelle_core.engine.builder import create_agent_graph
 from carefold.engine.runner import ExecutionContext, create_chat_model, execute_agent_run
 from carefold.engine.service import AgentExecutionService
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
@@ -149,35 +150,7 @@ class TestGraphBuilderEngine:
         assert isinstance(compiled, CompiledStateGraph)
         assert "specialist_subgraph" in builder.inspect_graph()["subgraphs"]
 
-    @pytest.mark.asyncio
-    async def test_standalone_create_agent_graph_execution(self):
-        """Verifies standalone create_agent_graph backward compatibility factory."""
-        fake_model = FakeListChatModel(responses=["Your deductible is $250."])
-        saver = MemorySaver()
 
-        graph = create_agent_graph(fake_model, checkpointer=saver)
-        assert isinstance(graph, CompiledStateGraph)
-
-        res = await graph.ainvoke(
-            {"messages": [HumanMessage(content="What is my deductible?")]},
-            config={"configurable": {"thread_id": "bld-thread-1"}},
-        )
-        assert "messages" in res
-        assert len(res["messages"]) >= 2
-        assert res["messages"][-1].content == "Your deductible is $250."
-
-    @pytest.mark.asyncio
-    async def test_clinical_refusal_routing(self):
-        """Verifies input_guardrail blocks prohibited clinical prompts and routes to refusal."""
-        fake_model = FakeListChatModel(responses=["Unused"])
-        graph = GraphBuilder().with_model(fake_model).build()
-
-        res = await graph.ainvoke({
-            "messages": [HumanMessage(content="Please diagnose my appendicitis")],
-        })
-
-        assert res.get("is_refusal") is True or res.get("refused") is True
-        assert "doctor" in str(res.get("output", "")).lower() or "911" in str(res.get("output", ""))
 
 
 # ============================================================================

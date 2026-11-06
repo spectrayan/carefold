@@ -204,14 +204,6 @@ class TestGenericProvisioningFeatureCoverage:
                     violations.append(expr)
         assert len(violations) >= 2, "AST scanner must detect hardcoded specialty branches in sample"
 
-    def test_orchestrator_ast_zero_hardcoded_specialty_branches(self, e2e_repo_root: Path):
-        """Invariant check ensuring orchestrator_node.py has 0 hardcoded specialty branches."""
-        orchestrator_file = e2e_repo_root / "backend" / "src" / "carefold" / "workflows" / "nodes" / "orchestrator_node.py"
-        assert orchestrator_file.is_file(), "orchestrator_node.py must exist"
-
-        violations = scan_ast_for_hardcoded_specialties(orchestrator_file)
-
-        assert len(violations) == 0, f"Found hardcoded specialty AST violations: {violations}"
 
     def test_execution_plan_pydantic_schema_validation(self):
         """Verifies ExecutionPlan validates single, parallel, and pipeline topologies."""
