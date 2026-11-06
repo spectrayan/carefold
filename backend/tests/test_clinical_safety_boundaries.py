@@ -113,16 +113,35 @@ class TestToolAllowListEnforcement:
             ("habit-coordinator", "skill-docs"),
             # benefits-coordinator declares attach-read and skill-docs, but NOT workspace-note
             ("benefits-coordinator", "workspace-note"),
-            # _template declares [] (zero tools)
-            ("_template", "attach-read"),
-            ("_template", "workspace-note"),
-            ("_template", "skill-docs"),
+            # Public zero-tool agent (underscore templates are hidden by core)
+            ("zero-tools-agent", "attach-read"),
+            ("zero-tools-agent", "workspace-note"),
+            ("zero-tools-agent", "skill-docs"),
         ],
     )
     async def test_agent_tool_allowlist_boundaries_strictly_enforced(
         self, temp_workspace: Path, agent_id: str, unauthorized_tool: str
     ):
         """Verifies that an agent cannot invoke any tool outside its effective allow-list."""
+        if agent_id == "zero-tools-agent":
+            agent_dir = temp_workspace / "agents" / "zero-tools-agent"
+            agent_dir.mkdir(parents=True, exist_ok=True)
+            (agent_dir / "agent.yaml").write_text(
+                "id: zero-tools-agent\n"
+                "title: Zero Tools Agent\n"
+                "version: 0.1.0\n"
+                "domain: clinical\n"
+                "category: health.test\n"
+                "hidden: false\n"
+                "can_delegate: false\n"
+                "description: Public zero-tool agent for allowlist regression\n"
+                "tools: []\n"
+                "skills: []\n",
+                encoding="utf-8",
+            )
+            (agent_dir / "persona.md").write_text(
+                "You are a zero-tool test agent.\n", encoding="utf-8"
+            )
         mock = MockModelClient()
         mock.queue_response({
             "type": "tool_call",

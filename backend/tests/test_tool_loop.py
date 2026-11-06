@@ -294,30 +294,47 @@ class TestAllowlistBoundaryEnforcement:
 
     @pytest.mark.asyncio
     async def test_template_zero_tool_agent_strictly_denies_all_tools(self, temp_workspace: Path):
-        """Verifies that an agent declaring zero tools (effective_tools: [], e.g. `_template`)
+        """Zero-tool public agents deny undeclared tool calls (allowed=False, status='denied').
 
-        strictly denies tool calls with allowed=False, status='denied', output=None, and audit recording.
+        `_template` is underscore-prefixed and treated as an internal/hidden agent by
+        yarvelle-core, so this regression uses a public zero-tool agent instead.
         """
+        agent_dir = temp_workspace / "agents" / "zero-tools-agent"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "agent.yaml").write_text(
+            "id: zero-tools-agent\n"
+            "title: Zero Tools Agent\n"
+            "version: 0.1.0\n"
+            "domain: clinical\n"
+            "category: health.test\n"
+            "hidden: false\n"
+            "can_delegate: false\n"
+            "description: Public zero-tool agent for allowlist regression\n"
+            "tools: []\n"
+            "skills: []\n",
+            encoding="utf-8",
+        )
+        (agent_dir / "persona.md").write_text("You are a zero-tool test agent.\n", encoding="utf-8")
+
         audit_file = temp_workspace / "logs" / "audit.jsonl"
         if audit_file.exists():
             audit_file.unlink()
 
         model = MockChatModel()
-        # Attempt to call closed tool attach-read
         model.queue_response({"name": "attach-read", "arguments": {"path": "unauthorized.txt"}})
         model.queue_response("Handled refusal.")
 
         events: List[Dict[str, Any]] = []
         async for ev in execute_agent_run(
-            agent_id="_template",
-            prompt="Hello Template, please check unauthorized.txt",
+            agent_id="zero-tools-agent",
+            prompt="Hello, please check unauthorized.txt",
             model_client=model,
             workspace_root=temp_workspace,
         ):
             events.append(ev)
 
         tool_ends = [e for e in events if e.get("type") == SSE_EVENT_TOOL_END]
-        assert len(tool_ends) == 1, f"Expected 1 tool_end, got {len(tool_ends)}"
+        assert len(tool_ends) == 1, f"Expected 1 tool_end, got {len(tool_ends)}; types={[e.get('type') for e in events]}"
 
         te = tool_ends[0]
         assert te.get("tool") == "attach-read"
@@ -325,9 +342,10 @@ class TestAllowlistBoundaryEnforcement:
         assert te.get("status") == "denied"
         assert te.get("result", {}).get("success") is False
         assert te.get("result", {}).get("output") is None
-        assert "execution denied: undeclared tool for agent '_template'" in str(te.get("result", {}).get("error"))
+        assert "execution denied: undeclared tool for agent 'zero-tools-agent'" in str(
+            te.get("result", {}).get("error")
+        )
 
-        # Verify audit log recorded rejection
         assert audit_file.exists()
         audit_lines = [json.loads(l) for l in audit_file.read_text(encoding="utf-8").splitlines() if l.strip()]
         tool_audits = [al for al in audit_lines if al.get("event") == "tool"]
@@ -339,21 +357,53 @@ class TestAllowlistBoundaryEnforcement:
 
     @pytest.mark.asyncio
     async def test_document_extractor_zero_tool_boundary(self, temp_workspace: Path):
-        """Verifies supervisor routing to document-extractor also strictly denies undeclared tools."""
+        """Hidden document-extractor cannot be picked directly; zero-tool public agents still deny tools."""
+        # Direct pick of the hidden system document-extractor is rejected.
         model = MockChatModel()
-        model.queue_response({"name": "attach-read", "arguments": {"path": "medical_summary.pdf"}})
-        model.queue_response("Done extraction.")
-
         events: List[Dict[str, Any]] = []
         async for ev in execute_agent_run(
-            agent_id="_template",
+            agent_id="document-extractor",
             prompt="Please read and extract medical_summary.pdf",
             model_client=model,
             workspace_root=temp_workspace,
         ):
             events.append(ev)
+        assert any(e.get("type") == "error" for e in events)
+        err = next(e for e in events if e.get("type") == "error")
+        assert "internal agent" in str(err.get("message", "")).lower() or "cannot be picked" in str(
+            err.get("message", "")
+        ).lower()
 
-        tool_ends = [e for e in events if e.get("type") == SSE_EVENT_TOOL_END]
+        # Zero-tool public agent still denies undeclared tools under orchestration.
+        agent_dir = temp_workspace / "agents" / "zero-tools-extractor"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "agent.yaml").write_text(
+            "id: zero-tools-extractor\n"
+            "title: Zero Tools Extractor\n"
+            "version: 0.1.0\n"
+            "domain: clinical\n"
+            "category: health.test\n"
+            "hidden: false\n"
+            "can_delegate: false\n"
+            "description: Public zero-tool extractor stand-in\n"
+            "tools: []\n"
+            "skills: []\n",
+            encoding="utf-8",
+        )
+        (agent_dir / "persona.md").write_text("You are a zero-tool extractor stand-in.\n", encoding="utf-8")
+
+        model2 = MockChatModel()
+        model2.queue_response({"name": "attach-read", "arguments": {"path": "medical_summary.pdf"}})
+        model2.queue_response("Done extraction.")
+        events2: List[Dict[str, Any]] = []
+        async for ev in execute_agent_run(
+            agent_id="zero-tools-extractor",
+            prompt="Please read and extract medical_summary.pdf",
+            model_client=model2,
+            workspace_root=temp_workspace,
+        ):
+            events2.append(ev)
+        tool_ends = [e for e in events2 if e.get("type") == SSE_EVENT_TOOL_END]
         assert len(tool_ends) == 1
         assert tool_ends[0]["allowed"] is False
         assert tool_ends[0]["status"] == "denied"

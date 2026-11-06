@@ -61,6 +61,8 @@ BASELINE_ALLOWLIST: Dict[str, int] = {
     "engine/builder.py": 1,
     "engine/graph.py": 3,
     "engine/service.py": 3,
+    "engine/runtime.py": 0,
+    "engine/refusal_node.py": 0,
     "engine/tool_registry.py": 34,
     "i18n/catalog.py": 2,
     "loaders/agent_loader.py": 1,

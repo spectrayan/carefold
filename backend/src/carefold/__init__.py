@@ -20,6 +20,7 @@ _os.environ.setdefault("YARVELLE_PACK_PACKAGES", "carefold")
 _os.environ.setdefault("YARVELLE_APP_SLUG", "carefold")
 _os.environ.setdefault("YARVELLE_LOCAL_DOMAIN", "carefold.local")
 _os.environ.setdefault("YARVELLE_HOME_DIR_NAME", ".carefold")
+_os.environ.setdefault("YARVELLE_ENV_PREFIX", "CAREFOLD")
 
 # Align yarvelle-core settings brand with Carefold (skill-docs / ICS / prompts).
 try:
@@ -32,6 +33,10 @@ try:
         home_dir_name=".carefold",
         default_agent="appointment-prep-coordinator",
     )
+    # CAREFOLD_CHECKPOINT_* aliases for core checkpoint encryption settings.
+    from carefold.checkpoint_env import apply_checkpoint_env_aliases as _apply_cp_aliases
+
+    _apply_cp_aliases(_os.environ, _yc_settings)
 except Exception:
     pass
 
