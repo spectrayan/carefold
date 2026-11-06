@@ -343,6 +343,33 @@ class TestThreadStatePersistence:
 class TestReflectionRetryLimits:
     """Stress tests reflection self-correction loops to verify bounds and termination."""
 
+    @pytest.mark.asyncio
+    async def test_reflection_stops_strictly_at_max_reflections_ceiling(self):
+        """Verifies graph does NOT oscillate indefinitely when model repeatedly violates guardrails."""
+        # A model that always violates clinical safety
+        violating_response = "You have acute strep throat. Take 500mg Amoxicillin three times a day."
+        mock_model = FakeListChatModel(responses=[violating_response] * 10)
+
+        # Graph with max_reflections = 3
+        graph = (
+            GraphBuilder(model=mock_model)
+            .with_max_reflections(3)
+            .build()
+        )
+
+        res = await graph.ainvoke({
+            "messages": [HumanMessage(content="What medication should I take?")],
+        })
+
+        # Must terminate at refusal node
+        assert res.get("is_refusal") is True or res.get("refused") is True
+        # Output should be the standard safe refusal
+        # Production CarefoldRefusalNode wording (SAFE_REFUSAL_TEMPLATE) points to a
+        # qualified healthcare provider / emergency services.
+        out = str(res.get("output", "")).lower()
+        assert "healthcare provider" in out or "911" in out
+        # reflection_count must equal max_reflections (3) and NOT exceed it
+        assert res.get("reflection_count") == 3
 
     @pytest.mark.asyncio
     async def test_reflection_bypassed_when_max_reflections_is_zero(self):

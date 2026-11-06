@@ -151,6 +151,21 @@ class TestGraphBuilderEngine:
         assert "specialist_subgraph" in builder.inspect_graph()["subgraphs"]
 
 
+    @pytest.mark.asyncio
+    async def test_clinical_refusal_routing(self):
+        """Verifies input_guardrail blocks prohibited clinical prompts and routes to refusal."""
+        fake_model = FakeListChatModel(responses=["Unused"])
+        graph = GraphBuilder().with_model(fake_model).build()
+
+        res = await graph.ainvoke({
+            "messages": [HumanMessage(content="Please diagnose my appendicitis")],
+        })
+
+        assert res.get("is_refusal") is True or res.get("refused") is True
+        # Production CarefoldRefusalNode wording (SAFE_REFUSAL_TEMPLATE) points to a
+        # qualified healthcare provider / emergency services.
+        out = str(res.get("output", "")).lower()
+        assert "healthcare provider" in out or "911" in out
 
 
 # ============================================================================

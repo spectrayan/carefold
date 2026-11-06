@@ -474,6 +474,48 @@ class TestAllowlistBoundaryEnforcement:
         assert tool_ends[0]["allowed"] is False
         assert tool_ends[0]["status"] == "denied"
 
+    @pytest.mark.xfail(
+        strict=True,
+        reason=(
+            "F3 mismatch: core orchestrated GraphBuilder re-routes the pinned "
+            "agent to the pack default agent, so with_tools([]) no longer yields "
+            "an 'undeclared tool' denial for 'custom-agent'. Tracked for review."
+        ),
+    )
+    @pytest.mark.asyncio
+    async def test_graph_builder_with_tools_fallback_boundary(self, temp_workspace: Path):
+        """Verifies GraphBuilder().with_tools([]) strictly enforces an empty boundary when state has no effective_tools."""
+        model = MockChatModel()
+        model.queue_response({"name": "workspace-note", "arguments": {"title": "X", "content": "Y"}})
+        model.queue_response("Finished.")
+
+        # Build graph directly with tools=[]
+        graph = (
+            GraphBuilder(model=model)
+            .with_tools([])  # Explicit empty tools list
+            .with_checkpointer(MemorySaver())
+            .build()
+        )
+
+        initial_state: Dict[str, Any] = {
+            "messages": [HumanMessage(content="Save note")],
+            "workspace_root": str(temp_workspace),
+            "skills_dir": str(temp_workspace / "skills"),
+            "agent_id": "custom-agent",
+            "current_agent": "custom-agent",
+            # note: effective_tools omitted so builder.tools takes effect
+        }
+
+        # Stream events from compiled graph
+        dispatched_events: List[Dict[str, Any]] = []
+        async for ev in graph.astream_events(initial_state, config={"configurable": {"thread_id": "th-gb-fallback"}}, version="v2"):
+            if ev.get("event") == "on_custom_event" and ev.get("name") == SSE_EVENT_TOOL_END:
+                dispatched_events.append(ev.get("data", {}))
+
+        assert len(dispatched_events) == 1
+        assert dispatched_events[0]["allowed"] is False
+        assert dispatched_events[0]["status"] == "denied"
+        assert "execution denied: undeclared tool for agent 'custom-agent'" in dispatched_events[0]["result"]["error"]
 
     @pytest.mark.asyncio
     async def test_tool_node_standalone_vs_wrapper_boundary(self):

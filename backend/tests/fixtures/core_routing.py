@@ -14,8 +14,11 @@
 The forked Carefold ``OrchestratorNode`` / ``GraphBuilder`` were retired in
 favour of ``yarvelle_core``'s implementations, which the live runtime
 (``carefold.engine.runtime``) configures with the health pack's orchestration
-spec and default agent. These thin wrappers apply the same defaults so routing
-tests exercise the retained runtime path instead of removed internals.
+spec and default agent. These thin wrappers mirror
+``CarefoldAgentExecutionService._build_orchestrated_graph``: pack orchestration,
+default agent, ``CarefoldHealthSafetyPolicy``, soft orchestration audit, and
+Carefold's refusal and response-synthesizer nodes. They are test-only; no
+compatibility shim is added under ``backend/src``.
 """
 
 from __future__ import annotations
@@ -80,6 +83,20 @@ class GraphBuilder(CoreGraphBuilder):
         super().__init__(*args, **kwargs)
         if "refusal" not in self._custom_nodes:
             self.with_node("refusal", CarefoldRefusalNode())
+
+    def build(self, *args: Any, **kwargs: Any) -> Any:
+        """Attach Carefold's synthesizer exactly as ``_build_orchestrated_graph`` does."""
+        from carefold.engine.response_synthesizer import CarefoldResponseSynthesizerNode
+
+        if "response_synthesizer" not in self._custom_nodes:
+            self.with_node(
+                "response_synthesizer",
+                CarefoldResponseSynthesizerNode(
+                    model=self.model,
+                    agent_titles=self._agent_titles(),
+                ),
+            )
+        return super().build(*args, **kwargs)
 
 
 __all__ = [
