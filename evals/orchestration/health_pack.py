@@ -1,0 +1,111 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan (https://spectrayan.com)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0 and the
+# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+# Personal and household local use only. Commercial use, hosted service
+# offering, rebranding, white-labeling, and redistribution of modified
+# forks are prohibited without a written commercial license from Spectrayan.
+#
+# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+
+"""Builds the health eval pack from the shipped health pack.
+
+The eval pack is written to a scratch directory at run time: ``pack.yaml``
+carries the production ``orchestration`` section unchanged, and ``agents/``
+holds copies of the real agents the scenarios use. Routing under eval is
+therefore the routing users get. Only the guardrail flags are eval-specific:
+the harness raises ``red_flag`` from a short list of words, standing in for
+the production safety policy. Skills the copied agents declare are copied to
+``skills/`` (without their own eval folders) so the agents load unchanged.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+import shutil
+from typing import Iterable, Optional
+
+import yaml
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PRODUCTION_PACK_FILE = REPO_ROOT / "backend" / "src" / "carefold" / "pack.yaml"
+AGENTS_ROOT = REPO_ROOT / "agents"
+SYSTEM_AGENTS_ROOT = AGENTS_ROOT / "_system"
+SKILLS_ROOT = REPO_ROOT / "skills"
+
+HEALTH_EVAL_PACK_ID = "carefold-health"
+
+EVAL_AGENT_IDS: tuple[str, ...] = (
+    "appointment-prep-coordinator",
+    "benefits-coordinator",
+    "document-extractor",
+    "heart-care-coordinator",
+    "prescription-cost-coordinator",
+    "records-coordinator",
+    "triage-auditor",
+)
+"""Agents the health scenarios use, plus every agent the pack routes name."""
+
+RED_FLAG_WORDS: tuple[str, ...] = (
+    "chest pain",
+    "can't breathe",
+    "cannot breathe",
+    "trouble breathing",
+    "stroke",
+    "unconscious",
+    "overdose",
+    "suicidal",
+)
+
+_AGENT_FILES = ("agent.yaml", "persona.md", "metadata.yaml")
+
+
+def _agent_source(agent_id: str) -> Path:
+    for root in (AGENTS_ROOT, SYSTEM_AGENTS_ROOT):
+        candidate = root / agent_id
+        if (candidate / "agent.yaml").is_file():
+            return candidate
+    raise FileNotFoundError(f"agent {agent_id!r} not found under {AGENTS_ROOT}")
+
+
+def materialize_health_pack(dest: Path, agent_ids: Optional[Iterable[str]] = None) -> Path:
+    """Writes the health eval pack into ``dest`` and returns its directory."""
+    ids = tuple(agent_ids) if agent_ids is not None else EVAL_AGENT_IDS
+    production = yaml.safe_load(PRODUCTION_PACK_FILE.read_text(encoding="utf-8"))
+    pack = {
+        "schema": 1,
+        "id": HEALTH_EVAL_PACK_ID,
+        "title": "Carefold health pack (eval)",
+        "orchestration": production["orchestration"],
+        "guardrail_flags": {"red_flag": list(RED_FLAG_WORDS)},
+    }
+    dest = Path(dest)
+    agents_dir = dest / "agents"
+    agents_dir.mkdir(parents=True, exist_ok=True)
+    (dest / "pack.yaml").write_text(yaml.safe_dump(pack, sort_keys=False), encoding="utf-8")
+    skills: set[str] = set()
+    for agent_id in ids:
+        source = _agent_source(agent_id)
+        target = agents_dir / agent_id
+        target.mkdir(exist_ok=True)
+        for name in _AGENT_FILES:
+            if (source / name).is_file():
+                shutil.copyfile(source / name, target / name)
+        manifest = yaml.safe_load((source / "agent.yaml").read_text(encoding="utf-8")) or {}
+        skills.update(str(s) for s in manifest.get("skills") or [])
+    for skill_id in sorted(skills):
+        source = SKILLS_ROOT / skill_id
+        if not source.is_dir():
+            raise FileNotFoundError(f"skill {skill_id!r} not found under {SKILLS_ROOT}")
+        shutil.copytree(source, dest / "skills" / skill_id, ignore=shutil.ignore_patterns("evals"), dirs_exist_ok=True)
+    return dest
+
+
+__all__ = [
+    "EVAL_AGENT_IDS",
+    "HEALTH_EVAL_PACK_ID",
+    "PRODUCTION_PACK_FILE",
+    "RED_FLAG_WORDS",
+    "materialize_health_pack",
+]

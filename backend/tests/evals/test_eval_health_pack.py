@@ -1,0 +1,63 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan (https://spectrayan.com)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0 and the
+# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+# Personal and household local use only. Commercial use, hosted service
+# offering, rebranding, white-labeling, and redistribution of modified
+# forks are prohibited without a written commercial license from Spectrayan.
+#
+# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+
+"""The Carefold health eval pack mirrors the production pack and loads cleanly."""
+
+from __future__ import annotations
+
+from pathlib import Path
+import sys
+
+import yaml
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from evals.orchestration.health_pack import (  # noqa: E402
+    EVAL_AGENT_IDS,
+    HEALTH_EVAL_PACK_ID,
+    PRODUCTION_PACK_FILE,
+    materialize_health_pack,
+)
+
+
+def test_materialized_pack_loads_through_core_eval_pack_loader(tmp_path: Path) -> None:
+    from yarvelle_core.testing.orch_eval.pack import load_eval_pack
+
+    root = materialize_health_pack(tmp_path / "pack")
+    pack = load_eval_pack(root)
+
+    assert pack.id == HEALTH_EVAL_PACK_ID
+    assert set(pack.agent_ids) == set(EVAL_AGENT_IDS)
+    assert "triage-auditor" in pack.hidden_ids
+    assert pack.route_ids == ["document-intake", "red-flag-escalation"]
+    assert pack.route_flags == ["red_flag"]
+    assert pack.flags_for("She has crushing chest pain right now") == ["red_flag"]
+    assert pack.flags_for("What should I ask about her blood pressure meds?") == []
+
+
+def test_eval_pack_orchestration_matches_production_pack(tmp_path: Path) -> None:
+    """No drift: the eval pack routes exactly like the shipped health pack."""
+    root = materialize_health_pack(tmp_path / "pack")
+    eval_spec = yaml.safe_load((root / "pack.yaml").read_text(encoding="utf-8"))["orchestration"]
+    production = yaml.safe_load(PRODUCTION_PACK_FILE.read_text(encoding="utf-8"))["orchestration"]
+    assert eval_spec == production
+
+
+def test_eval_agents_are_copies_of_the_real_agents(tmp_path: Path) -> None:
+    root = materialize_health_pack(tmp_path / "pack")
+    for agent_id in EVAL_AGENT_IDS:
+        copied = root / "agents" / agent_id / "agent.yaml"
+        assert copied.is_file(), agent_id
+        originals = [REPO_ROOT / "agents" / agent_id, REPO_ROOT / "agents" / "_system" / agent_id]
+        original = next(p for p in originals if (p / "agent.yaml").is_file())
+        assert copied.read_text(encoding="utf-8") == (original / "agent.yaml").read_text(encoding="utf-8")
