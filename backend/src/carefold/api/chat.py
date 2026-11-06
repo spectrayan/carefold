@@ -27,6 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from carefold.api.deps import get_current_user, resolve_owner_user_id
 from carefold.api.profiles import auto_provision_primary_me_profile, get_user_profile_access
 from carefold.auth.ports import UserProfile
+from carefold.checkpoint_env import checkpoint_key_error_event
 from carefold.config import settings
 from carefold.db.models import Agent, ChatThread, Profile
 from carefold.db.session import get_db
@@ -341,6 +342,10 @@ async def chat_resume_stream(
     service = AgentExecutionService()
 
     async def sse_resume_generator() -> AsyncIterator[str]:
+        key_error = checkpoint_key_error_event()
+        if key_error is not None:
+            yield f"event: {SSE_EVENT_ERROR}\ndata: {json.dumps(key_error)}\n\n"
+            return
         try:
             async for event in service.execute_resume_turn(
                 thread_id=request.thread_id,

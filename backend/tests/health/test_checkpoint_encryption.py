@@ -156,9 +156,39 @@ async def test_turn_without_vault_key_fails_closed_and_writes_no_plaintext(
 
     events = await _run_turn(temp_workspace, "f4-no-key-thread")
 
-    assert any(e["type"] == "error" for e in events)
+    errors = [e for e in events if e["type"] == "error"]
+    assert errors
+    # The user is told what to do: configure the vault key or turn encryption off.
+    assert any("vault key" in str(e.get("message", "")) for e in errors), errors
     assert not any(e["type"] == "done" and not e.get("error") and e.get("fullText") for e in events)
     db = temp_workspace / "chats" / "checkpoints.db"
     rows = raw_checkpoint_rows(db) if db.is_file() else []
     assert not any(not t.endswith("+aes256gcm") for _, t, _ in rows)
     assert not any(PROMPT.encode() in blob for _, _, blob in rows)
+
+
+def test_resume_without_vault_key_reports_missing_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Resuming with encryption on and no vault key returns the setup message, not a generic error."""
+    from yarvelle_core.config import settings
+    from yarvelle_core.vault import checkpoints as cp
+    from yarvelle_core.vault import kek as core_kek
+
+    from carefold.checkpoint_env import CHECKPOINT_KEY_MISSING_MESSAGE
+
+    monkeypatch.setattr(settings, "checkpoint_encryption", True)
+    use_real_checkpoint_key_loader(monkeypatch)
+    monkeypatch.setattr(core_kek, "HAS_KEYRING", False)  # never the real OS keychain
+    for name in ("VAULT_KEK_FILE", "VAULT_PASSPHRASE"):
+        monkeypatch.delenv(f"CAREFOLD_{name}", raising=False)
+        monkeypatch.delenv(f"YARVELLE_{name}", raising=False)
+    cp.reset_checkpoint_keyring_cache()
+
+    res = TestClient(app).post(
+        "/api/chat/resume",
+        json={"thread_id": "f4-resume-no-key", "approval_id": "app-1", "decision": "approved"},
+    )
+    assert res.status_code == 200, res.text
+    assert "event: error" in res.text
+    assert "checkpoint_key_missing" in res.text
+    assert CHECKPOINT_KEY_MISSING_MESSAGE in res.text
+    assert "KEK is unavailable" not in res.text  # no internal error detail

@@ -112,8 +112,36 @@ def apply_checkpoint_encryption_default(
     return True
 
 
+CHECKPOINT_KEY_MISSING_MESSAGE = (
+    "Chats are saved encrypted, but the vault key is not set up. Add the vault key to the "
+    "OS keychain, or set CAREFOLD_VAULT_KEK_FILE or CAREFOLD_VAULT_PASSPHRASE, then try again. "
+    "To save chats unencrypted instead, set CAREFOLD_CHECKPOINT_ENCRYPTION=false."
+)
+
+
+def checkpoint_key_error_event() -> Optional[Dict[str, Any]]:
+    """Error event to send instead of running a turn when the checkpoint key is missing.
+
+    Returns None when checkpoint encryption is off or the key resolves. The
+    message is fixed text (setting names only) so no key material or path from
+    the underlying error reaches the client.
+    """
+    from yarvelle_core.config import settings as core_settings
+    from yarvelle_core.vault.checkpoints import CheckpointKeyError, load_checkpoint_keyring
+
+    if not core_settings.checkpoint_encryption:
+        return None
+    try:
+        load_checkpoint_keyring()
+    except CheckpointKeyError:
+        return {"type": "error", "code": "checkpoint_key_missing", "message": CHECKPOINT_KEY_MISSING_MESSAGE}
+    return None
+
+
 __all__ = [
     "CHECKPOINT_ALIASES",
+    "CHECKPOINT_KEY_MISSING_MESSAGE",
     "apply_checkpoint_encryption_default",
     "apply_checkpoint_env_aliases",
+    "checkpoint_key_error_event",
 ]
