@@ -43,7 +43,7 @@ from carefold.constants.api import (
     SSE_EVENT_TOOL_START,
 )
 from carefold.constants.defaults import DEFAULT_MAX_REFLECTIONS
-from tests.fixtures.core_routing import GraphBuilder
+from tests.fixtures.core_routing import GraphBuilder, pack_orchestration
 from yarvelle_core.engine.builder import create_agent_graph
 from carefold.engine.service import AgentExecutionService
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
@@ -359,6 +359,8 @@ class TestReflectionRetryLimits:
 
         res = await graph.ainvoke({
             "messages": [HumanMessage(content="What medication should I take?")],
+            # The chat API always carries an agentId pick; pin the specialist loop.
+            "explicit_agent": pack_orchestration().default_agent,
         })
 
         # Must terminate at refusal node
@@ -407,6 +409,8 @@ class TestReflectionRetryLimits:
 
         res = await graph.ainvoke({
             "messages": [HumanMessage(content="What should I take for acid reflux?")],
+            # The chat API always carries an agentId pick; pin the specialist loop.
+            "explicit_agent": pack_orchestration().default_agent,
         })
 
         # Should recover and be compliant
@@ -446,6 +450,8 @@ class TestReflectionRetryLimits:
 
         res = await graph.ainvoke({
             "messages": [HumanMessage(content="Loop taking notes")],
+            # The chat API always carries an agentId pick; pin the specialist loop.
+            "explicit_agent": pack_orchestration().default_agent,
         })
 
         assert "messages" in res

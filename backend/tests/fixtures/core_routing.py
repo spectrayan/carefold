@@ -73,6 +73,18 @@ class GraphBuilder(CoreGraphBuilder):
         from carefold.safety.policy import CarefoldHealthSafetyPolicy
 
         kwargs.setdefault("orchestration_audit_sink", soft_orchestration_audit)
+        if kwargs.get("registry") is None:
+            # The service always injects a workspace AgentRegistry
+            # (core ``AgentExecutionService._agent_registry``, inherited by
+            # ``CarefoldAgentExecutionService``); do the same.
+            from yarvelle_core.agents.registry import AgentRegistry
+            from yarvelle_core.config import settings
+
+            skills_dir = settings.get_skills_dir()
+            kwargs["registry"] = AgentRegistry(
+                agents_dir=settings.get_agents_dir(),
+                skills_dir=skills_dir if skills_dir.is_dir() else None,
+            )
         if kwargs.get("safety_policy") is None:
             kwargs["safety_policy"] = CarefoldHealthSafetyPolicy()
         if "orchestration" not in kwargs:

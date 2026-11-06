@@ -474,48 +474,100 @@ class TestAllowlistBoundaryEnforcement:
         assert tool_ends[0]["allowed"] is False
         assert tool_ends[0]["status"] == "denied"
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason=(
-            "F3 mismatch: core orchestrated GraphBuilder re-routes the pinned "
-            "agent to the pack default agent, so with_tools([]) no longer yields "
-            "an 'undeclared tool' denial for 'custom-agent'. Tracked for review."
-        ),
-    )
+    @staticmethod
+    async def _graph_tool_ends(graph: Any, state: Dict[str, Any], thread_id: str) -> tuple:
+        """Runs a compiled graph; returns (tool_end payloads, final state)."""
+        tool_ends: List[Dict[str, Any]] = []
+        final: Dict[str, Any] = {}
+        async for ev in graph.astream_events(state, config={"configurable": {"thread_id": thread_id}}, version="v2"):
+            if ev.get("event") == "on_custom_event" and ev.get("name") == SSE_EVENT_TOOL_END:
+                tool_ends.append(ev.get("data", {}))
+            if ev.get("event") == "on_chain_end" and ev.get("name") == "LangGraph":
+                final = ev.get("data", {}).get("output") or {}
+        return tool_ends, final
+
     @pytest.mark.asyncio
-    async def test_graph_builder_with_tools_fallback_boundary(self, temp_workspace: Path):
-        """Verifies GraphBuilder().with_tools([]) strictly enforces an empty boundary when state has no effective_tools."""
+    async def test_graph_stale_agent_state_is_not_a_pick_and_fails_closed(self, temp_workspace: Path):
+        """A leftover ``agent_id``/``current_agent`` is not a caller pick in the core runtime.
+
+        Core resets ``current_agent`` to ``explicit_agent`` at turn start, so the
+        unpinned turn goes to the main agent, whose only tool is ``task``
+        delegation. Specialist and system tools the model asks for are refused
+        and nothing executes; the builder-level ``with_tools([])`` is irrelevant.
+        """
+        from langchain_core.messages import ToolMessage as LCToolMessage
+
+        model = MockChatModel()
+        model.queue_response({"name": "bash", "arguments": {"command": "ls -la"}})
+        model.queue_response({"name": "workspace-note", "arguments": {"title": "X", "content": "Y"}})
+        model.queue_response("Done.")
+        graph = GraphBuilder(model=model).with_tools([]).with_checkpointer(MemorySaver()).build()
+
+        tool_ends, final = await self._graph_tool_ends(
+            graph,
+            {
+                "messages": [HumanMessage(content="Execute shell command")],
+                "workspace_root": str(temp_workspace),
+                "skills_dir": str(temp_workspace / "skills"),
+                "agent_id": "custom-agent",
+                "current_agent": "custom-agent",
+            },
+            "th-gb-stale-pin",
+        )
+
+        assert final.get("current_agent") == "main-agent"
+        assert (final.get("route_decision") or {}).get("source") == "main_agent"
+        assert final.get("effective_tools") is None
+        assert tool_ends == []
+        refusals = [
+            str(m.content) for m in final.get("messages", []) if isinstance(m, LCToolMessage)
+        ]
+        assert any("bash is not a valid tool" in r for r in refusals), refusals
+        assert all("try one of [task]" in r for r in refusals), refusals
+        assert not list((temp_workspace / "workspace" / "notes").glob("*.md"))
+
+    @pytest.mark.asyncio
+    async def test_graph_explicit_unknown_agent_pick_fails_closed(self, temp_workspace: Path):
+        """An explicit pick of an unregistered agent never executes a tool."""
+        model = MockChatModel()
+        model.queue_response({"name": "workspace-note", "arguments": {"title": "X", "content": "Y"}})
+        model.queue_response("Finished.")
+        graph = GraphBuilder(model=model).with_tools([]).with_checkpointer(MemorySaver()).build()
+
+        tool_ends, final = await self._graph_tool_ends(
+            graph,
+            {
+                "messages": [HumanMessage(content="Save note")],
+                "workspace_root": str(temp_workspace),
+                "skills_dir": str(temp_workspace / "skills"),
+                "explicit_agent": "custom-agent",
+            },
+            "th-gb-explicit-unknown",
+        )
+
+        assert tool_ends == []
+        assert not list((temp_workspace / "workspace" / "notes").glob("*.md"))
+        assert final.get("effective_tools") is None
+
+    @pytest.mark.asyncio
+    async def test_live_runtime_rejects_unknown_agent_before_any_tool(self, temp_workspace: Path):
+        """The live chat runtime refuses an unregistered agent id before building a graph."""
         model = MockChatModel()
         model.queue_response({"name": "workspace-note", "arguments": {"title": "X", "content": "Y"}})
         model.queue_response("Finished.")
 
-        # Build graph directly with tools=[]
-        graph = (
-            GraphBuilder(model=model)
-            .with_tools([])  # Explicit empty tools list
-            .with_checkpointer(MemorySaver())
-            .build()
-        )
+        events: List[Dict[str, Any]] = []
+        async for ev in execute_agent_run(
+            agent_id="custom-agent",
+            prompt="Save note",
+            model_client=model,
+            workspace_root=temp_workspace,
+        ):
+            events.append(ev)
 
-        initial_state: Dict[str, Any] = {
-            "messages": [HumanMessage(content="Save note")],
-            "workspace_root": str(temp_workspace),
-            "skills_dir": str(temp_workspace / "skills"),
-            "agent_id": "custom-agent",
-            "current_agent": "custom-agent",
-            # note: effective_tools omitted so builder.tools takes effect
-        }
-
-        # Stream events from compiled graph
-        dispatched_events: List[Dict[str, Any]] = []
-        async for ev in graph.astream_events(initial_state, config={"configurable": {"thread_id": "th-gb-fallback"}}, version="v2"):
-            if ev.get("event") == "on_custom_event" and ev.get("name") == SSE_EVENT_TOOL_END:
-                dispatched_events.append(ev.get("data", {}))
-
-        assert len(dispatched_events) == 1
-        assert dispatched_events[0]["allowed"] is False
-        assert dispatched_events[0]["status"] == "denied"
-        assert "execution denied: undeclared tool for agent 'custom-agent'" in dispatched_events[0]["result"]["error"]
+        assert not [e for e in events if e.get("type") in (SSE_EVENT_TOOL_START, SSE_EVENT_TOOL_END)]
+        assert any("Unknown or unregistered agent ID: 'custom-agent'" in json.dumps(e) for e in events)
+        assert not list((temp_workspace / "workspace" / "notes").glob("*.md"))
 
     @pytest.mark.asyncio
     async def test_tool_node_standalone_vs_wrapper_boundary(self):
