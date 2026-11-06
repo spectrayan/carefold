@@ -18,6 +18,15 @@ therefore the routing users get. Only the guardrail flags are eval-specific:
 the harness raises ``red_flag`` from a short list of words, standing in for
 the production safety policy. Skills the copied agents declare are copied to
 ``skills/`` (without their own eval folders) so the agents load unchanged.
+
+Two eval adaptations are applied to the copied manifests:
+
+* the pinned ``model`` is dropped, so the eval backend supplies every model
+  (otherwise a "fake" run would call the agent's real local model);
+* fixed-route targets are made visible. The production pack routes red flags
+  and documents to hidden system agents, which core's eval checks treat as
+  "hidden agents never answer"; making them visible lets scenarios script and
+  expect them. Normal turns forbid them so live runs catch stray delegation.
 """
 
 from __future__ import annotations
@@ -58,7 +67,7 @@ RED_FLAG_WORDS: tuple[str, ...] = (
     "suicidal",
 )
 
-_AGENT_FILES = ("agent.yaml", "persona.md", "metadata.yaml")
+_AGENT_FILES = ("persona.md", "metadata.yaml")
 
 
 def _agent_source(agent_id: str) -> Path:
@@ -67,6 +76,18 @@ def _agent_source(agent_id: str) -> Path:
         if (candidate / "agent.yaml").is_file():
             return candidate
     raise FileNotFoundError(f"agent {agent_id!r} not found under {AGENTS_ROOT}")
+
+
+def fixed_route_targets(orchestration: dict) -> set[str]:
+    """Agent ids the pack's fixed routes send turns to."""
+    return {str(r["agent_id"]) for r in orchestration.get("fixed_routes") or [] if r.get("agent_id")}
+
+
+def _eval_manifest(agent_id: str, manifest: dict, route_targets: set[str]) -> dict:
+    out = {k: v for k, v in manifest.items() if k != "model"}
+    if agent_id in route_targets and out.get("hidden"):
+        out["hidden"] = False
+    return out
 
 
 def materialize_health_pack(dest: Path, agent_ids: Optional[Iterable[str]] = None) -> Path:
@@ -84,6 +105,7 @@ def materialize_health_pack(dest: Path, agent_ids: Optional[Iterable[str]] = Non
     agents_dir = dest / "agents"
     agents_dir.mkdir(parents=True, exist_ok=True)
     (dest / "pack.yaml").write_text(yaml.safe_dump(pack, sort_keys=False), encoding="utf-8")
+    route_targets = fixed_route_targets(production["orchestration"])
     skills: set[str] = set()
     for agent_id in ids:
         source = _agent_source(agent_id)
@@ -94,6 +116,10 @@ def materialize_health_pack(dest: Path, agent_ids: Optional[Iterable[str]] = Non
                 shutil.copyfile(source / name, target / name)
         manifest = yaml.safe_load((source / "agent.yaml").read_text(encoding="utf-8")) or {}
         skills.update(str(s) for s in manifest.get("skills") or [])
+        (target / "agent.yaml").write_text(
+            yaml.safe_dump(_eval_manifest(agent_id, manifest, route_targets), sort_keys=False),
+            encoding="utf-8",
+        )
     for skill_id in sorted(skills):
         source = SKILLS_ROOT / skill_id
         if not source.is_dir():
@@ -107,5 +133,6 @@ __all__ = [
     "HEALTH_EVAL_PACK_ID",
     "PRODUCTION_PACK_FILE",
     "RED_FLAG_WORDS",
+    "fixed_route_targets",
     "materialize_health_pack",
 ]

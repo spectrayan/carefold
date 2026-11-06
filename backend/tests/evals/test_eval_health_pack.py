@@ -38,7 +38,7 @@ def test_materialized_pack_loads_through_core_eval_pack_loader(tmp_path: Path) -
 
     assert pack.id == HEALTH_EVAL_PACK_ID
     assert set(pack.agent_ids) == set(EVAL_AGENT_IDS)
-    assert "triage-auditor" in pack.hidden_ids
+    assert pack.hidden_ids == []
     assert pack.route_ids == ["document-intake", "red-flag-escalation"]
     assert pack.route_flags == ["red_flag"]
     assert pack.flags_for("She has crushing chest pain right now") == ["red_flag"]
@@ -53,11 +53,23 @@ def test_eval_pack_orchestration_matches_production_pack(tmp_path: Path) -> None
     assert eval_spec == production
 
 
-def test_eval_agents_are_copies_of_the_real_agents(tmp_path: Path) -> None:
+def test_eval_agents_are_the_real_agents_with_two_eval_adaptations(tmp_path: Path) -> None:
+    """Agent manifests are copied as shipped except: no pinned model (the eval
+    backend supplies every model, so a fake run never calls a real one), and
+    fixed-route targets are visible so scenarios can script and expect them."""
     root = materialize_health_pack(tmp_path / "pack")
+    route_targets = {"document-extractor", "triage-auditor"}
     for agent_id in EVAL_AGENT_IDS:
-        copied = root / "agents" / agent_id / "agent.yaml"
-        assert copied.is_file(), agent_id
+        copied = yaml.safe_load((root / "agents" / agent_id / "agent.yaml").read_text(encoding="utf-8"))
         originals = [REPO_ROOT / "agents" / agent_id, REPO_ROOT / "agents" / "_system" / agent_id]
-        original = next(p for p in originals if (p / "agent.yaml").is_file())
-        assert copied.read_text(encoding="utf-8") == (original / "agent.yaml").read_text(encoding="utf-8")
+        source = next(p for p in originals if (p / "agent.yaml").is_file())
+        original = yaml.safe_load((source / "agent.yaml").read_text(encoding="utf-8"))
+        assert "model" not in copied, agent_id
+        expected = {k: v for k, v in original.items() if k != "model"}
+        if agent_id in route_targets:
+            assert original.get("hidden") is True
+            expected["hidden"] = False
+        assert copied == expected, agent_id
+        assert (root / "agents" / agent_id / "persona.md").read_text(encoding="utf-8") == (
+            source / "persona.md"
+        ).read_text(encoding="utf-8")
