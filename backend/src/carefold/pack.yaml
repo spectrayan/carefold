@@ -158,6 +158,10 @@ orchestration:
     max_agents: 4
     agent_timeout_s: 60
     turn_timeout_s: 120
+  # A fixed route targets a visible agent, or an internal (hidden) agent
+  # approved in backend/tests/test_fixed_route_targets.py. Hidden agents are
+  # never listed, picked by the user, or delegated to by the main agent; only
+  # these routes reach them.
   fixed_routes:
     - route_id: document-intake
       when:
