@@ -34,6 +34,7 @@ SYNTHESIS_MD = (
     / "orchestrator"
     / "synthesis.md"
 )
+DELEGATION_MD = SYNTHESIS_MD.with_name("delegation.md")
 AGENTS_ROOT = REPO_ROOT / "agents"
 
 
@@ -63,6 +64,7 @@ def test_pack_yaml_orchestration_validates_as_manifest() -> None:
     # vetted referral before routing, and triage-auditor output is internal.
     assert not [r for r in orch.fixed_routes if isinstance(r.when, GuardrailFlagTrigger)]
     assert orch.synthesis.instructions.strip() == SYNTHESIS_MD.read_text(encoding="utf-8").strip()
+    assert orch.delegation.instructions.strip() == DELEGATION_MD.read_text(encoding="utf-8").strip()
 
 
 def test_get_pack_orchestration_and_core_compat() -> None:
@@ -92,3 +94,25 @@ def test_synthesis_prompt_file_exists_and_is_bounded() -> None:
     text = SYNTHESIS_MD.read_text(encoding="utf-8").strip()
     assert text
     assert len(text) <= 4000
+
+
+def test_delegation_prompt_file_exists_and_is_bounded() -> None:
+    text = DELEGATION_MD.read_text(encoding="utf-8").strip()
+    assert text
+    assert len(text) <= 4000
+
+
+def test_python_twin_delegation_matches_pack_yaml() -> None:
+    import carefold
+
+    orch = carefold.get_pack().orchestration
+    assert orch is not None
+    assert orch.delegation.instructions.strip() == DELEGATION_MD.read_text(encoding="utf-8").strip()
+
+
+def test_specialist_choice_lives_in_delegation_not_synthesis() -> None:
+    synthesis = SYNTHESIS_MD.read_text(encoding="utf-8").lower()
+    delegation = DELEGATION_MD.read_text(encoding="utf-8").lower()
+    for phrase in ("on a follow-up", "condition's care coordinator"):
+        assert phrase in delegation
+        assert phrase not in synthesis

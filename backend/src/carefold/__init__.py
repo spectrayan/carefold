@@ -132,6 +132,7 @@ from typing import List
 
 from yarvelle_core.pack.spec import PackEvalsSpec, PackSpec, RouterContribution
 from yarvelle_core.schemas.orchestration import (
+    DelegationSpec,
     FixedRoute,
     HasAttachmentsTrigger,
     OrchestrationLimits,
@@ -329,6 +330,7 @@ def get_pack() -> PackSpec:
     # 7. Orchestration (pack.yaml orchestration twin)
     synthesis_path = Path(__file__).resolve().parent / "resources" / "prompts" / "orchestrator" / "synthesis.md"
     synthesis_instructions = synthesis_path.read_text(encoding="utf-8").strip()
+    delegation_instructions = (synthesis_path.parent / "delegation.md").read_text(encoding="utf-8").strip()
     orchestration = PackOrchestrationSpec(
         default_agent="appointment-prep-coordinator",
         limits=OrchestrationLimits(
@@ -349,6 +351,7 @@ def get_pack() -> PackSpec:
             # the vetted referral before routing, and triage-auditor output is
             # internal audit text that must never reach the user.
         ],
+        delegation=DelegationSpec(instructions=delegation_instructions),
         synthesis=SynthesisSpec(instructions=synthesis_instructions),
     )
 

@@ -80,7 +80,7 @@ def _main_agent_prompt() -> str:
 
     orch = carefold.get_pack().orchestration
     assert orch is not None
-    return compose_main_prompt(None, orch.synthesis)
+    return compose_main_prompt(None, orch.synthesis, orch.delegation)
 
 
 def test_main_agent_is_told_to_send_condition_medicine_questions_to_that_condition_coordinator() -> None:
@@ -94,3 +94,11 @@ def test_main_agent_is_told_to_delegate_again_on_follow_ups() -> None:
     prompt = _main_agent_prompt().lower()
     assert "on a follow-up" in prompt
     assert "ask that specialist again" in prompt
+
+
+def test_follow_up_guidance_sits_under_the_delegation_heading() -> None:
+    prompt = _main_agent_prompt().lower()
+    start = prompt.index("when to hand work to specialists:")
+    end = prompt.index("how to compose the reply:")
+    assert start < prompt.index("ask that specialist again") < end
+    assert start < prompt.index("condition's care coordinator") < end
