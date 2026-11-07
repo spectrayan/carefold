@@ -48,38 +48,6 @@ try:
 except Exception:
     pass
 
-# Inject Carefold routing dossier_types into yarvelle-core ResourceLoader so
-# extraction subgraph auto-inference sees insurance/clinical patterns (core's
-# packaged routing_patterns.yaml only knows generic; pack patterns_path is
-# consumed for orchestrator hints, not the extraction loader).
-try:
-    from yarvelle_core.resources.loader import get_resource_loader as _yc_get_resource_loader
-
-    from carefold.resources.loader import get_resource_loader as _cf_get_resource_loader
-
-    _yc_loader = _yc_get_resource_loader()
-    _cf_patterns = _cf_get_resource_loader().get_routing_patterns()
-    # Read core's raw routing_patterns.yaml, not get_routing_patterns(): since
-    # yarvelle-core 0.2.1 that call also fills a separate merged-patterns cache.
-    _merged = dict(_yc_loader.load_yaml("routing_patterns.yaml"))
-    if isinstance(_cf_patterns.get("dossier_types"), dict):
-        _merged["dossier_types"] = dict(_cf_patterns["dossier_types"])
-    # Prefer Carefold agent routing keys when present
-    for _k, _v in _cf_patterns.items():
-        if _k == "dossier_types":
-            continue
-        if _k not in _merged or not _merged.get(_k):
-            _merged[_k] = _v
-    with _yc_loader._lock:
-        _yc_loader._cache["routing_patterns.yaml"] = _merged
-        # yarvelle-core 0.2.1 serves get_routing_patterns() from this merged
-        # cache. Drop it so the next call rebuilds from the patterns above,
-        # even if core built it before Carefold loaded. Core has no public call
-        # that clears only this entry (clear_cache() would also drop the
-        # patterns set above). Removed by the switch to native pack resources.
-        _yc_loader._cache.pop("merged_routing_patterns", None)
-except Exception:
-    pass
 
 import importlib as _importlib
 import importlib.abc as _importlib_abc
@@ -397,7 +365,7 @@ def get_pack() -> PackSpec:
         name="Carefold Health Pack",
         version=__version__,
         domain="health",
-        requires_core=">=0.2.0,<0.3.0",
+        requires_core=">=0.2.2,<0.3.0",
         owned_scopes=["health.*", "health.clinical", "health.paperwork"],
         declared_reads=[],
         risk_tier_max="T4",
@@ -410,10 +378,26 @@ def get_pack() -> PackSpec:
         license="PolyForm-Noncommercial-1.0.0 + Carefold Additional Terms",
         maintainers=["spectrayan/carefold-maintainers"],
         routing_hints=routing_hints,
+        manifest_path=str(Path(__file__).resolve().parent / "pack.yaml"),
         scoped_models=scoped_models,
         orchestration=orchestration,
     )
     return spec
 
+
+def _register_native_pack_resources() -> None:
+    """Register Carefold's routing patterns with core through the pack API.
+
+    Core's ``ResourceLoader.register_pack`` resolves the pack root from
+    ``manifest_path``, loads the declared ``routing_hints.patterns_resource``
+    and merges its ``dossier_types`` into ``get_routing_patterns()``, matching
+    pack types before core's generic fallback type (yarvelle-core >= 0.2.2).
+    """
+    from yarvelle_core.resources.loader import get_resource_loader as _yc_get_resource_loader
+
+    _yc_get_resource_loader().register_pack(get_pack())
+
+
+_register_native_pack_resources()
 
 __all__ = ["get_pack", "__version__"]
