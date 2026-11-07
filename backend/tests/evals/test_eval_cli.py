@@ -136,7 +136,7 @@ def test_live_local_ollama_pass(tmp_path: Path) -> None:
     out = tmp_path / "live"
     proc = subprocess.run(
         [sys.executable, "-m", "evals.orchestration", "--backend", "ollama", "--scenario",
-         "red-flag-escalation-then-routine", "--judge-samples", "1", "--out", str(out)],
+         "routine-then-red-flag-referral", "--judge-samples", "1", "--out", str(out)],
         cwd=REPO_ROOT, env=env, capture_output=True, text=True, timeout=1800,
     )
     if proc.returncode == 2:

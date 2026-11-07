@@ -29,16 +29,21 @@ except the offline fake-model tests.
 ### Eval adaptations to the shipped pack
 
 The pack is copied from the shipped one; `backend/tests/evals/test_eval_health_pack.py`
-fails if it drifts. Three documented changes:
+fails if it drifts. Four documented changes:
 
 1. **No pinned agent model.** Shipped agents no longer pin a model (they
    inherit the main model). The copies still drop any `model:` so a future
    per-agent override can never make a "fake" run call a real local model.
-2. **Fixed-route targets are visible.** The red-flag and document routes go to
-   `triage-auditor` and `document-extractor`, which are `hidden: true`. Core's
-   eval checks treat hidden agents as "never answer", so the copies are
-   visible; main-agent turns forbid them so a live run catches stray delegation.
-3. **Persona markers (fake runs only).** The scripted fake model finds an agent
+2. **Fixed-route targets are visible.** The document route goes to
+   `document-extractor`, which is `hidden: true`. Core's eval checks treat
+   hidden agents as "never answer", so that copy is visible; main-agent turns
+   forbid it so a live run catches stray delegation. `triage-auditor` stays
+   hidden so scenarios can forbid it.
+3. **Carefold's production safety policy.** Runs use
+   `CarefoldHealthSafetyPolicy`, so a red-flag turn gets the same vetted
+   emergency referral (from the input guardrail, before any model call) a user
+   gets in the app.
+4. **Persona markers (fake runs only).** The scripted fake model finds an agent
    by "You are the <id> agent."; live runs keep the shipped personas.
 
 ## Running

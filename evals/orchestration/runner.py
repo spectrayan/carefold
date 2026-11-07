@@ -44,7 +44,28 @@ def build_pack(workdir: Path, *, persona_markers: bool = False) -> Any:
     """
     from yarvelle_core.testing.orch_eval.pack import load_eval_pack
 
-    return load_eval_pack(materialize_health_pack(Path(workdir) / "pack", persona_markers=persona_markers))
+    pack = load_eval_pack(materialize_health_pack(Path(workdir) / "pack", persona_markers=persona_markers))
+    return _with_production_safety_policy(pack)
+
+
+def _with_production_safety_policy(pack: Any) -> Any:
+    """The loaded pack, but guarded by Carefold's production safety policy.
+
+    Core's harness policy only raises keyword flags and never refuses, so an
+    emergency would reach an agent under eval when it never does for users.
+    """
+    import dataclasses
+
+    from carefold.safety.policy import CarefoldHealthSafetyPolicy
+
+    base = type(pack)
+
+    @dataclasses.dataclass(frozen=True)
+    class CarefoldHealthEvalPack(base):  # type: ignore[valid-type, misc]
+        def safety_policy(self) -> Any:
+            return CarefoldHealthSafetyPolicy()
+
+    return CarefoldHealthEvalPack(**{f.name: getattr(pack, f.name) for f in dataclasses.fields(pack)})
 
 
 def lint_health_scenarios(loaded: Sequence[Tuple[Path, Any]], pack: Any) -> List[str]:

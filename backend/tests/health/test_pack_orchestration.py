@@ -55,17 +55,13 @@ def test_pack_yaml_orchestration_validates_as_manifest() -> None:
     orch = manifest.orchestration
     assert orch.default_agent == "appointment-prep-coordinator"
     assert orch.limits.max_agents == 4
-    assert {r.route_id for r in orch.fixed_routes} == {
-        "document-intake",
-        "red-flag-escalation",
-    }
+    assert {r.route_id for r in orch.fixed_routes} == {"document-intake"}
     doc = next(r for r in orch.fixed_routes if r.route_id == "document-intake")
     assert isinstance(doc.when, HasAttachmentsTrigger)
     assert doc.agent_id == "document-extractor"
-    red = next(r for r in orch.fixed_routes if r.route_id == "red-flag-escalation")
-    assert isinstance(red.when, GuardrailFlagTrigger)
-    assert red.when.flag == "red_flag"
-    assert red.agent_id == "triage-auditor"
+    # Red flags have no fixed route: the input guardrail answers them with the
+    # vetted referral before routing, and triage-auditor output is internal.
+    assert not [r for r in orch.fixed_routes if isinstance(r.when, GuardrailFlagTrigger)]
     assert orch.synthesis.instructions.strip() == SYNTHESIS_MD.read_text(encoding="utf-8").strip()
 
 

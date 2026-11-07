@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Production runtime uses core orchestration; red_flag and attachments route first."""
+"""Production runtime uses core orchestration; red flags refuse first, attachments route first."""
 
 from __future__ import annotations
 
@@ -103,7 +103,7 @@ def test_health_policy_raises_red_flag_for_emergency_text() -> None:
 
 @pytest.mark.asyncio
 async def test_routing_guardrail_refuses_emergency_with_red_flag() -> None:
-    """Live emergencies hard-refuse; red_flag is still raised for pack routing."""
+    """Live emergencies hard-refuse with the vetted referral; red_flag is still raised for audit."""
     node = InputGuardrailNode(safety_policy=CarefoldHealthSafetyPolicy())
     state = {
         "messages": [
@@ -120,45 +120,14 @@ async def test_routing_guardrail_refuses_emergency_with_red_flag() -> None:
     assert out.get("refusal_message")
 
 
-def test_red_flag_fixed_route_selects_triage_auditor_without_model() -> None:
+def test_red_flag_has_no_fixed_route_to_triage_auditor() -> None:
+    """A red flag never routes to triage-auditor, whose audit text is internal."""
     from carefold import get_pack
 
     orch = get_pack().orchestration
     assert orch is not None
     state = {"guardrail_flags": ["red_flag"], "messages": []}
-    decision = select_fixed_route(orch, state)
-    assert decision is not None
-    assert decision.agent_id == "triage-auditor"
-    assert decision.route_id == "red-flag-escalation"
-
-
-@pytest.mark.asyncio
-async def test_red_flag_orchestrator_routes_before_model_call() -> None:
-    from carefold import get_pack
-    from carefold.agents.registry import AgentRegistry
-
-    orch = get_pack().orchestration
-    model = _CountingChatModel()
-    registry = AgentRegistry(AGENTS_ROOT, REPO_ROOT / "skills")
-
-    node = OrchestratorNode(
-        model=model,
-        registry=registry,
-        orchestration=orch,
-        default_agent=orch.default_agent,
-    )
-    state = {
-        "messages": [
-            HumanMessage(
-                content="I have crushing chest pain radiating to my left arm and cold sweat"
-            )
-        ],
-        "guardrail_flags": ["red_flag"],
-    }
-    result = await node.execute(state)
-    assert result.get("current_agent") == "triage-auditor"
-    assert result.get("routed_subgraph") == "triage-auditor"
-    assert model.calls == 0
+    assert select_fixed_route(orch, state) is None
 
 
 def test_document_attachment_fixed_route() -> None:
@@ -321,7 +290,7 @@ async def test_existing_thread_resume_state_keeps_orchestration_defaults() -> No
     svc = create_execution_service()
     assert svc.orchestration is not None
     assert svc.orchestration.default_agent == "appointment-prep-coordinator"
-    assert any(r.route_id == "red-flag-escalation" for r in svc.orchestration.fixed_routes)
+    assert [r.route_id for r in svc.orchestration.fixed_routes] == ["document-intake"]
     assert svc.routes_turns is True
 
 

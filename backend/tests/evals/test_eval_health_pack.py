@@ -38,11 +38,17 @@ def test_materialized_pack_loads_through_core_eval_pack_loader(tmp_path: Path) -
 
     assert pack.id == HEALTH_EVAL_PACK_ID
     assert set(pack.agent_ids) == set(EVAL_AGENT_IDS)
-    assert pack.hidden_ids == []
-    assert pack.route_ids == ["document-intake", "red-flag-escalation"]
-    assert pack.route_flags == ["red_flag"]
-    assert pack.flags_for("She has crushing chest pain right now") == ["red_flag"]
-    assert pack.flags_for("What should I ask about her blood pressure meds?") == []
+    assert pack.hidden_ids == ["triage-auditor"]
+    assert pack.route_ids == ["document-intake"]
+
+
+def test_eval_runs_use_carefolds_production_safety_policy(tmp_path: Path) -> None:
+    from carefold.safety.policy import CarefoldHealthSafetyPolicy
+    from evals.orchestration.runner import build_pack
+
+    pack = build_pack(tmp_path)
+    assert isinstance(pack.safety_policy(), CarefoldHealthSafetyPolicy)
+    assert pack.route_ids == ["document-intake"]
 
 
 def test_eval_pack_orchestration_matches_production_pack(tmp_path: Path) -> None:
@@ -58,7 +64,7 @@ def test_eval_agents_are_the_real_agents_with_two_eval_adaptations(tmp_path: Pat
     backend supplies every model, so a fake run never calls a real one), and
     fixed-route targets are visible so scenarios can script and expect them."""
     root = materialize_health_pack(tmp_path / "pack")
-    route_targets = {"document-extractor", "triage-auditor"}
+    route_targets = {"document-extractor"}
     for agent_id in EVAL_AGENT_IDS:
         copied = yaml.safe_load((root / "agents" / agent_id / "agent.yaml").read_text(encoding="utf-8"))
         originals = [REPO_ROOT / "agents" / agent_id, REPO_ROOT / "agents" / "_system" / agent_id]

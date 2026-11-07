@@ -12,11 +12,10 @@
 """Carefold production execution service on yarvelle-core's Deep Agents runtime.
 
 Constructs core ``AgentExecutionService`` with the pack's orchestration
-spec and ``HealthSafetyPolicy``. Core's input guardrail reads the policy's
-``check_flags`` so ``red_flag`` (→ triage-auditor) and document intake
-(→ document-extractor) fixed routes resolve before any model router call;
-acute emergencies still hard-refuse first. There is no legacy runtime
-feature flag.
+spec and ``HealthSafetyPolicy``. Acute emergencies hard-refuse first in the
+input guardrail with the vetted referral (no agent, no model call); the
+pack's document-intake fixed route resolves before any model router call.
+There is no legacy runtime feature flag.
 """
 
 from __future__ import annotations
