@@ -168,12 +168,6 @@ orchestration:
           - text/plain
       agent_id: document-extractor
       description: Uploaded documents go to the document extractor.
-    - route_id: red-flag-escalation
-      when:
-        kind: guardrail_flag
-        flag: red_flag
-      agent_id: triage-auditor
-      description: Guardrail red-flag signals go to the triage auditor.
   synthesis:
     instructions: |-
       When composing the family-facing reply from specialist outputs:

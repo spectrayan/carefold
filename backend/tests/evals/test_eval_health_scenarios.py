@@ -50,7 +50,7 @@ EXPECTED_SCENARIOS = {
     "bp-meds-cost-followup",
     "partial-failure-honesty",
     "pinned-agent-then-document",
-    "red-flag-escalation-then-routine",
+    "routine-then-red-flag-referral",
 }
 
 

@@ -156,7 +156,6 @@ from typing import List
 from yarvelle_core.pack.spec import PackEvalsSpec, PackSpec, RouterContribution
 from yarvelle_core.schemas.orchestration import (
     FixedRoute,
-    GuardrailFlagTrigger,
     HasAttachmentsTrigger,
     OrchestrationLimits,
     PackOrchestrationSpec,
@@ -369,12 +368,9 @@ def get_pack() -> PackSpec:
                 agent_id="document-extractor",
                 description="Uploaded documents go to the document extractor.",
             ),
-            FixedRoute(
-                route_id="red-flag-escalation",
-                when=GuardrailFlagTrigger(flag="red_flag"),
-                agent_id="triage-auditor",
-                description="Guardrail red-flag signals go to the triage auditor.",
-            ),
+            # No red-flag route: the input guardrail answers an emergency with
+            # the vetted referral before routing, and triage-auditor output is
+            # internal audit text that must never reach the user.
         ],
         synthesis=SynthesisSpec(instructions=synthesis_instructions),
     )

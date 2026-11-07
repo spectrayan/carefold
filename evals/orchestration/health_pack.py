@@ -14,17 +14,17 @@
 The eval pack is written to a scratch directory at run time: ``pack.yaml``
 carries the production ``orchestration`` section unchanged, and ``agents/``
 holds copies of the real agents the scenarios use. Routing under eval is
-therefore the routing users get. Only the guardrail flags are eval-specific:
-the harness raises ``red_flag`` from a short list of words, standing in for
-the production safety policy. Skills the copied agents declare are copied to
+therefore the routing users get, and the runner swaps in Carefold's
+production safety policy (emergency referrals included) for the harness's
+keyword policy. Skills the copied agents declare are copied to
 ``skills/`` (without their own eval folders) so the agents load unchanged.
 
 Two eval adaptations are applied to the copied manifests:
 
 * the pinned ``model`` is dropped, so the eval backend supplies every model
   (otherwise a "fake" run would call the agent's real local model);
-* fixed-route targets are made visible. The production pack routes red flags
-  and documents to hidden system agents, which core's eval checks treat as
+* fixed-route targets are made visible. The production pack routes documents
+  to a hidden system agent, which core's eval checks treat as
   "hidden agents never answer"; making them visible lets scenarios script and
   expect them. Normal turns forbid them so live runs catch stray delegation.
 """
@@ -54,18 +54,9 @@ EVAL_AGENT_IDS: tuple[str, ...] = (
     "records-coordinator",
     "triage-auditor",
 )
-"""Agents the health scenarios use, plus every agent the pack routes name."""
+"""Agents the health scenarios use, plus every agent the pack routes name.
 
-RED_FLAG_WORDS: tuple[str, ...] = (
-    "chest pain",
-    "can't breathe",
-    "cannot breathe",
-    "trouble breathing",
-    "stroke",
-    "unconscious",
-    "overdose",
-    "suicidal",
-)
+``triage-auditor`` stays in (hidden) so scenarios can forbid it."""
 
 _AGENT_FILES = ("persona.md", "metadata.yaml")
 
@@ -105,7 +96,6 @@ def materialize_health_pack(
         "id": HEALTH_EVAL_PACK_ID,
         "title": "Carefold health pack (eval)",
         "orchestration": production["orchestration"],
-        "guardrail_flags": {"red_flag": list(RED_FLAG_WORDS)},
     }
     dest = Path(dest)
     agents_dir = dest / "agents"
@@ -143,7 +133,6 @@ __all__ = [
     "EVAL_AGENT_IDS",
     "HEALTH_EVAL_PACK_ID",
     "PRODUCTION_PACK_FILE",
-    "RED_FLAG_WORDS",
     "fixed_route_targets",
     "materialize_health_pack",
 ]
