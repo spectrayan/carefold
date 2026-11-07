@@ -391,7 +391,7 @@ def get_pack() -> PackSpec:
         name="Carefold Health Pack",
         version=__version__,
         domain="health",
-        requires_core=">=0.2.0,<0.3.0",
+        requires_core=">=0.2.1,<0.3.0",
         owned_scopes=["health.*", "health.clinical", "health.paperwork"],
         declared_reads=[],
         risk_tier_max="T4",
