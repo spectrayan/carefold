@@ -18,7 +18,6 @@ description: >-
   Assists patients in preparing fever and symptom timelines, antibiotic history 
   logs, travel and exposure histories, and question agendas for infectious 
   disease and travel medicine appointments.
-model: ollama:llama3.2
 skills:
   - infectious-disease-prep
   - emergency-red-flags

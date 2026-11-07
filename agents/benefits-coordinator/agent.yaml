@@ -17,7 +17,6 @@ name: benefits-coordinator
 description: >-
   Healthcare benefits and insurance navigation coordinator assisting patients with deductible
   tracking, copays, out-of-pocket maximums, and explanation of benefits (EOB) analysis.
-model: ollama:llama3.2
 skills:
   - benefits-explainer
 tools:

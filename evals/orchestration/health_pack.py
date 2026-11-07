@@ -21,8 +21,8 @@ keyword policy. Skills the copied agents declare are copied to
 
 Two eval adaptations are applied to the copied manifests:
 
-* the pinned ``model`` is dropped, so the eval backend supplies every model
-  (otherwise a "fake" run would call the agent's real local model);
+* any per-agent ``model`` override is dropped, so the eval backend supplies
+  every model (otherwise a "fake" run would call that real local model);
 * fixed-route targets are made visible. The production pack routes documents
   to a hidden system agent, which core's eval checks treat as
   "hidden agents never answer"; making them visible lets scenarios script and

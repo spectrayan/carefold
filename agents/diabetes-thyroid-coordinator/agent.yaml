@@ -18,7 +18,6 @@ description: >-
   Endocrine and metabolic care coordinator helping patients organize continuous glucose
   monitor (CGM) logs, A1C trends, thyroid panel questions, and daily metabolic symptom
   journals.
-model: ollama:llama3.2
 skills:
   - endocrinology-prep
 tools:

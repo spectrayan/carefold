@@ -18,7 +18,6 @@ description: >-
   Dermatological wellness coordinator assisting patients with skin lesion ABCDE tracking
   documentation, rash onset journals, topical medication routines, and dermatology
   visit agendas.
-model: ollama:llama3.2
 skills:
   - derma-prep
 tools:

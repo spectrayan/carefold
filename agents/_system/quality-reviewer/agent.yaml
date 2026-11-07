@@ -17,7 +17,6 @@ tags:
   - empathy
   - plain-language
 icon: CheckCheck
-model: llama3.2
 can_delegate: false
 max_iterations: 3
 hidden: true

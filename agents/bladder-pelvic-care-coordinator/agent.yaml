@@ -17,7 +17,6 @@ name: bladder-pelvic-care-coordinator
 description: >-
   Urological health coordinator assisting individuals with urinary symptoms, bladder
   tracking, prostate health and PSA discussion prep, and urology appointment agendas.
-model: ollama:llama3.2
 skills:
   - urology-prep
 tools:

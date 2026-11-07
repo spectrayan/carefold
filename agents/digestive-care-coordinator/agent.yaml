@@ -18,7 +18,6 @@ description: >-
   Digestive health care coordinator assisting patients with IBS/IBD food and symptom
   journals, colonoscopy/endoscopy preparation checklists, and gastroenterology visit
   agendas.
-model: ollama:llama3.2
 skills:
   - gastro-prep
 tools:
