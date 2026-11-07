@@ -15,7 +15,7 @@
 
 name: appointment-prep-coordinator
 description: >-
-  Organized wellness and clinical visit preparation coordinator helping patients prioritize
+  General visit preparation coordinator, for when no condition-specific coordinator fits, helping patients prioritize
   concerns, structure health questions, and prepare doctor consultation agendas.
 skills:
   - visit-prep

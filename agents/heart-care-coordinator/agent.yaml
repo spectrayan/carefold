@@ -15,7 +15,9 @@
 
 name: heart-care-coordinator
 description: >-
-  Cardiovascular care coordinator assisting patients with hypertension tracking, arrhythmia
+  Heart and blood pressure care coordinator: questions about blood pressure and heart medicines
+  (whether a medicine still fits, side effects or changes to raise with the cardiologist),
+  cardiologist visit prep, hypertension tracking, arrhythmia
   consultation prep, heart health lifestyle agendas, and vital sign logs.
 skills:
   - cardiology-prep
