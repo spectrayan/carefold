@@ -3,7 +3,7 @@ id: health
 name: Carefold Health Pack
 version: 0.5.0b1
 domain: health
-requires_core: ">=0.2.2,<0.3.0"
+requires_core: ">=0.2.3,<0.3.0"
 requires_packs: []
 license: "PolyForm Noncommercial License 1.0.0 and Carefold Additional Terms"
 maintainers:
@@ -179,6 +179,12 @@ orchestration:
       - On a follow-up, when the new question needs facts or options from a specialist's area (for example insurance coverage or cost), ask that specialist again instead of answering from the earlier reply alone. A follow-up that starts with "thanks" but asks something is still a new question.
       - Before you reply to a question about medicine prices, copays, insurance coverage, or which cost option to check with a plan, make at least one task call to the prescription cost coordinator or the benefits coordinator. Give it the earlier options and the new question.
       - Reply without a task call only when the whole message is a greeting or a thank-you with no question, or asks you to repeat or clarify your own wording.
+    # Read with the latest user message on follow-up turns (model input only,
+    # never saved). Twin of resources/prompts/orchestrator/delegation_reminder.md.
+    reminder:
+      when: follow_up
+      text: |-
+        (Follow-up in an ongoing conversation. Apply the rules under "When to hand work to specialists" to this new message: if it asks for facts, options or advice in a specialist's area, call the task tool for that specialist again and give it the earlier context, even if an earlier reply already covered the topic. Reply without a task call only if the message is just thanks or a greeting, or asks you to repeat or clarify your own wording.)
   synthesis:
     instructions: |-
       When composing the family-facing reply from specialist outputs:

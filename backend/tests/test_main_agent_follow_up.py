@@ -9,48 +9,68 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""The main agent is reminded to delegate again on follow-up turns (fake model, no network)."""
+"""The main agent is reminded to delegate again on follow-up turns (fake model, no network).
+
+Carefold sets the reminder in pack.yaml (``orchestration.delegation.reminder``);
+yarvelle-core >= 0.2.3 adds it to the model's copy of the latest user message.
+"""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, List
 
+import yaml
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 import pytest
+from yarvelle_core.engine.orchestration.reminder import main_agent_messages, reminder_from_spec
 
-from carefold.workflows.nodes.main_agent_node import (
-    FOLLOW_UP_REMINDER,
-    CarefoldMainAgentNode,
-    follow_up_messages,
-    is_follow_up,
-)
+PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "src" / "carefold"
+REMINDER_MD = PACKAGE_ROOT / "resources" / "prompts" / "orchestrator" / "delegation_reminder.md"
+FOLLOW_UP_REMINDER = REMINDER_MD.read_text(encoding="utf-8").strip()
 
 T1 = "Synthetic question: what should we ask about the new medicine at the visit?"
 T2 = "Synthetic follow-up: which cost options should we check with the plan first?"
 
 
-def test_first_turn_is_not_a_follow_up() -> None:
+def _pack_reminder() -> Any:
+    import carefold
+
+    orch = carefold.get_pack().orchestration
+    assert orch is not None and orch.delegation is not None
+    return orch.delegation.reminder
+
+
+def test_pack_sets_a_follow_up_reminder_in_both_twins() -> None:
+    reminder = _pack_reminder()
+    assert reminder is not None
+    assert reminder.when == "follow_up"
+    assert reminder.text.strip() == FOLLOW_UP_REMINDER
+    assert 0 < len(FOLLOW_UP_REMINDER) <= 2000
+    data = yaml.safe_load((PACKAGE_ROOT / "pack.yaml").read_text(encoding="utf-8"))
+    yaml_reminder = data["orchestration"]["delegation"]["reminder"]
+    assert yaml_reminder["when"] == "follow_up"
+    assert yaml_reminder["text"].strip() == FOLLOW_UP_REMINDER
+
+
+def _model_view(messages: List[Any]) -> List[Any]:
+    return main_agent_messages(messages, {}, reminder_from_spec(_pack_reminder()))
+
+
+def test_first_turn_gets_no_reminder() -> None:
     messages = [HumanMessage(content=T1)]
-    assert not is_follow_up(messages)
-    assert follow_up_messages(messages) == messages
+    assert _model_view(messages) == messages
 
 
 def test_follow_up_gets_the_reminder_on_a_copy() -> None:
     last = HumanMessage(content=T2, id="h2")
     messages = [HumanMessage(content=T1), AIMessage(content="Earlier answer."), last]
-    out = follow_up_messages(messages)
+    out = _model_view(messages)
     assert out[-1].content == f"{T2}\n\n{FOLLOW_UP_REMINDER}"
     assert out[-1].id == "h2"
     assert out[:-1] == messages[:-1]
     assert last.content == T2 and messages[-1] is last
-
-
-def test_reminder_is_added_as_a_text_block_to_multipart_content() -> None:
-    parts = [{"type": "text", "text": T2}, {"type": "image_url", "image_url": {"url": "data:image/png;base64,AA"}}]
-    out = follow_up_messages([HumanMessage(content=T1), AIMessage(content="ok"), HumanMessage(content=list(parts))])
-    assert out[-1].content == [*parts, {"type": "text", "text": FOLLOW_UP_REMINDER}]
 
 
 @pytest.mark.parametrize(
@@ -65,8 +85,7 @@ def test_reminder_is_added_as_a_text_block_to_multipart_content() -> None:
     ids=["empty", "first-turn", "ends-with-ai", "ends-with-tool"],
 )
 def test_no_reminder_unless_the_user_spoke_last_after_a_reply(messages: List[Any]) -> None:
-    assert not is_follow_up(messages)
-    assert follow_up_messages(messages) == messages
+    assert _model_view(messages) == messages
 
 
 def _service(tmp_path: Path, workspace: Path) -> Any:
@@ -74,20 +93,6 @@ def _service(tmp_path: Path, workspace: Path) -> Any:
     from carefold.engine.runtime import create_execution_service
 
     return create_execution_service(db_path=str(tmp_path / "checkpoints.db"), workspace_root=workspace)
-
-
-def test_production_graph_uses_the_carefold_main_agent_node(tmp_path: Path, temp_workspace: Path) -> None:
-    from yarvelle_core.engine.builder import GraphBuilder
-    from yarvelle_core.testing.orch_eval.fake import ScriptedFakeChatModel
-
-    svc = _service(tmp_path, temp_workspace)
-    model = ScriptedFakeChatModel()
-    registry = svc._agent_registry()
-    builder = GraphBuilder(model=model, registry=registry, orchestration=svc.orchestration)
-    assert isinstance(svc._main_agent_node(builder), CarefoldMainAgentNode)
-    builder.include_main_agent = False
-    assert svc._main_agent_node(builder) is None
-    assert svc._main_agent_node(GraphBuilder(model=None, registry=registry)) is None
 
 
 @pytest.mark.asyncio

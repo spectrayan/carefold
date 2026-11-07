@@ -132,6 +132,7 @@ from typing import List
 
 from yarvelle_core.pack.spec import PackEvalsSpec, PackSpec, RouterContribution
 from yarvelle_core.schemas.orchestration import (
+    DelegationReminderSpec,
     DelegationSpec,
     FixedRoute,
     HasAttachmentsTrigger,
@@ -331,6 +332,7 @@ def get_pack() -> PackSpec:
     synthesis_path = Path(__file__).resolve().parent / "resources" / "prompts" / "orchestrator" / "synthesis.md"
     synthesis_instructions = synthesis_path.read_text(encoding="utf-8").strip()
     delegation_instructions = (synthesis_path.parent / "delegation.md").read_text(encoding="utf-8").strip()
+    delegation_reminder = (synthesis_path.parent / "delegation_reminder.md").read_text(encoding="utf-8").strip()
     orchestration = PackOrchestrationSpec(
         default_agent="appointment-prep-coordinator",
         limits=OrchestrationLimits(
@@ -351,7 +353,12 @@ def get_pack() -> PackSpec:
             # the vetted referral before routing, and triage-auditor output is
             # internal audit text that must never reach the user.
         ],
-        delegation=DelegationSpec(instructions=delegation_instructions),
+        # Follow-up reminder: local models stop delegating once the chat has
+        # history; core adds this to the model's copy of the latest user message.
+        delegation=DelegationSpec(
+            instructions=delegation_instructions,
+            reminder=DelegationReminderSpec(when="follow_up", text=delegation_reminder),
+        ),
         synthesis=SynthesisSpec(instructions=synthesis_instructions),
     )
 
@@ -368,7 +375,7 @@ def get_pack() -> PackSpec:
         name="Carefold Health Pack",
         version=__version__,
         domain="health",
-        requires_core=">=0.2.2,<0.3.0",
+        requires_core=">=0.2.3,<0.3.0",
         owned_scopes=["health.*", "health.clinical", "health.paperwork"],
         declared_reads=[],
         risk_tier_max="T4",
