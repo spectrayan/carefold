@@ -45,7 +45,7 @@ COPY skills/ ./skills/
 
 ENV CAREFOLD_WORKSPACE_ROOT=/app \
     CAREFOLD_WORKSPACE=/app \
-    CAREFOLD_DATA=/data \
+    CAREFOLD_HOME=/data \
     PORT=8000 \
     PYTHONPATH=/app/backend/src \
     PYTHONUNBUFFERED=1
@@ -155,7 +155,7 @@ COPY --from=web-builder /app/frontend/public ./frontend/public
 
 ENV CAREFOLD_WORKSPACE_ROOT=/app \
     CAREFOLD_WORKSPACE=/app \
-    CAREFOLD_DATA=/data \
+    CAREFOLD_HOME=/data \
     NODE_ENV=production \
     PORT=3000 \
     BACKEND_PORT=8000 \

@@ -27,18 +27,21 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: {{ .Values.container.port }}
+            {{- if .Values.container.webPort }}
+            - name: web
+              containerPort: {{ .Values.container.webPort }}
+            {{- end }}
           env:
             - name: CAREFOLD_HOST
               value: {{ .Values.config.host | default "0.0.0.0" | quote }}
-            - name: CAREFOLD_DATA
+            # Carefold's home (carefold.db, saved chats, uploads, logs) on the volume.
+            - name: CAREFOLD_HOME
               value: /data
-            - name: CAREFOLD_MODEL_BASE_URL
+            - name: CAREFOLD_OLLAMA_URL
               value: {{ .Values.model.baseUrl | quote }}
-            - name: CAREFOLD_MODEL
+            - name: CAREFOLD_DEFAULT_MODEL
               value: {{ .Values.model.name | quote }}
-            - name: CAREFOLD_ALLOW_CLINICAL
-              value: {{ .Values.config.allowClinical | quote }}
             - name: CAREFOLD_AUDIT_STORE_BODIES
               value: {{ .Values.config.auditStoreBodies | quote }}
             - name: CAREFOLD_CHECKPOINT_ENCRYPTION

@@ -28,6 +28,8 @@ services:
     environment:
       - CAREFOLD_HOST=0.0.0.0
       - CAREFOLD_WORKSPACE_ROOT=/app
+      # Carefold's home (carefold.db, uploads, notes, logs) on the data volume.
+      - CAREFOLD_HOME=/data
       - CAREFOLD_AUDIT_LOG_PATH=${CAREFOLD_AUDIT_LOG_PATH:-/data/audit.jsonl}
       - PYTHONPATH=/app/backend/src
       - CAREFOLD_OLLAMA_URL=${CAREFOLD_OLLAMA_URL:-http://ollama:11434/v1}
