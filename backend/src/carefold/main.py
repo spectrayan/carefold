@@ -25,6 +25,7 @@ from yarvelle_core.api.http_security import build_cors_options, enforce_bind_saf
 
 from carefold import __version__
 from carefold.api.router import api_router
+from carefold.checkpoint_env import check_checkpoint_key_at_startup
 from carefold.config import settings
 from carefold.db import close_db, init_db
 from carefold.db.seeding import sync_bundled_assets_to_db
@@ -77,6 +78,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         path=str(settings.get_audit_log_path()),
         store_bodies=settings.audit_store_bodies,
     )
+    # Fail fast in server mode when encrypted checkpoints have no vault key.
+    check_checkpoint_key_at_startup()
     try:
         migrated = run_first_launch_migration(
             home_dir=settings.home_dir,

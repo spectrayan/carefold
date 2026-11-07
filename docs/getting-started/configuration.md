@@ -73,6 +73,38 @@ order: the OS keychain entry, `CAREFOLD_VAULT_KEK_FILE`, then
 `CAREFOLD_VAULT_PASSPHRASE` (with `CAREFOLD_VAULT_SALT`). With encryption on and
 no vault key, a chat turn fails with an error instead of saving plaintext.
 
+### Containers (Docker Compose, Helm)
+
+Containers run with `CAREFOLD_MODE=server`: the vault key is read only from the
+file in `CAREFOLD_VAULT_KEK_FILE` (64 hex characters or 32 raw bytes), and with
+encryption on the backend refuses to start without it, with a message naming
+these settings. Generate the key once with `openssl rand -hex 32` and back it up;
+if it is lost or replaced, saved chats can no longer be read.
+
+- **Docker Compose:** put `CAREFOLD_VAULT_KEK=<64 hex characters>` in
+  `deploy/docker/.env` (start from `deploy/docker/.env.example`). Compose mounts
+  it as the secret file `/run/secrets/carefold_vault_kek`, so it never appears in
+  the container environment. Without it, `docker compose up` stops with
+  `environment variable "CAREFOLD_VAULT_KEK" required by secret ... is not set`.
+- **Helm:** create a Secret once and pass its name; the chart refuses to render
+  without it (see `deploy/helm/carefold/README.md`):
+
+  ```bash
+  kubectl -n carefold create secret generic carefold-vault-kek \
+    --from-literal=kek="$(openssl rand -hex 32)"
+  helm install carefold deploy/helm/carefold -n carefold \
+    --set vault.existingSecret=carefold-vault-kek
+  ```
+
+- **Single container (`docker run`):** mount a key file and point at it:
+  `-v "$PWD/carefold-vault.kek:/run/secrets/carefold_vault_kek:ro"
+  -e CAREFOLD_MODE=server -e CAREFOLD_VAULT_KEK_FILE=/run/secrets/carefold_vault_kek`.
+
+To store chats unencrypted instead, set `CAREFOLD_CHECKPOINT_ENCRYPTION=false`
+(Helm: `--set checkpoints.encryption=false`). Nothing turns encryption off for you.
+
+### Migrating existing chats
+
 To encrypt threads saved before encryption was on, back up `checkpoints.db`, then run:
 
 ```bash
@@ -81,9 +113,12 @@ python -m carefold.checkpoints encrypt   # writes checkpoints.db.bak-<time> firs
 python -m carefold.checkpoints verify    # every thread loads; same messages
 ```
 
-`encrypt` checks that every thread has the same messages before and after, and
-keeps the plaintext `.bak-<time>` copy. Delete that copy yourself once `verify`
-passes. `decrypt` reverses the migration. Pass `--db <path>` for a non-default
+`encrypt` checks that every thread has the same messages before and after. When
+that check passes and no plaintext rows are left, it deletes the plaintext
+`.bak-<time>` copy it wrote and reports `backup_deleted: true`. If the check
+fails, the command exits with an error and keeps the copy so you can restore it.
+Pass `--keep-backup` to keep the copy anyway, and delete it yourself later: it
+holds your chats unencrypted. `decrypt` reverses the migration. Pass `--db <path>` for a non-default
 database and `--json` for a machine-readable report. Checkpoint metadata is not
 encrypted.
 

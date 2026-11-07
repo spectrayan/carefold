@@ -1,7 +1,19 @@
 # Local-first Carefold. No cloud services on the default path.
 #
+# Chats are saved encrypted, so the backend needs the vault key (KEK) before
+# it starts. Create deploy/docker/.env once and keep it (losing the key makes
+# saved chats unreadable):
+#
+#   cp deploy/docker/.env.example deploy/docker/.env
+#   echo "CAREFOLD_VAULT_KEK=$(openssl rand -hex 32)" >> deploy/docker/.env
+#
 #   docker compose -f deploy/docker/docker-compose.yml up
 #   docker compose -f deploy/docker/docker-compose.yml --profile ollama up
+#
+# Without CAREFOLD_VAULT_KEK, `up` stops with: environment variable
+# "CAREFOLD_VAULT_KEK" required by secret ... is not set. The key reaches the
+# container only as the file /run/secrets/carefold_vault_kek, never as an
+# environment variable.
 
 name: carefold
 
@@ -25,6 +37,12 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - CUSTOM_API_KEY=${CUSTOM_API_KEY:-}
       - CAREFOLD_DB_PATH=${CAREFOLD_DB_PATH:-/data/checkpoints.sqlite}
+      # Server mode reads the vault key only from the mounted secret and
+      # refuses to start without it while checkpoint encryption is on.
+      - CAREFOLD_MODE=server
+      - CAREFOLD_VAULT_KEK_FILE=/run/secrets/carefold_vault_kek
+    secrets:
+      - carefold_vault_kek
     volumes:
       - carefold-data:/data
     restart: unless-stopped
@@ -65,6 +83,11 @@ services:
     volumes:
       - ollama-data:/root/.ollama
     restart: unless-stopped
+
+secrets:
+  carefold_vault_kek:
+    # 64 hex characters from deploy/docker/.env (or the shell environment).
+    environment: CAREFOLD_VAULT_KEK
 
 volumes:
   carefold-data:

@@ -64,3 +64,21 @@ variable "ingress_host" {
   type    = string
   default = ""
 }
+
+variable "checkpoint_encryption" {
+  type        = bool
+  default     = true
+  description = "Encrypt saved chats at rest. false stores them unencrypted (explicit opt-out)."
+}
+
+variable "vault_kek_secret_name" {
+  type        = string
+  default     = ""
+  description = "Existing Secret in the namespace holding the vault key (64 hex chars). Empty: the module generates one and keeps it in Terraform state."
+}
+
+variable "vault_kek_secret_key" {
+  type        = string
+  default     = "kek"
+  description = "Key inside vault_kek_secret_name that holds the vault key."
+}

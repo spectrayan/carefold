@@ -13,3 +13,7 @@ __pycache__
 .mypy_cache
 .ruff_cache
 *.tsbuildinfo
+
+# Local secrets (vault key, provider keys) never go into an image
+.env
+**/.env
