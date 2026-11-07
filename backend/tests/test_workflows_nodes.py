@@ -161,8 +161,9 @@ async def test_input_guardrail_node_safe_and_unsafe():
     assert safe_out["is_refusal"] is False
     assert safe_out["next_step"] == "supervisor"
 
-    # Unsafe prompt (clinical diagnosis)
-    unsafe_out = await node.execute({"messages": [HumanMessage(content="Diagnose my chest pain and shortness of breath.")]})
+    # Unsafe prompt (clinical diagnosis). Current chest pain would take the
+    # emergency path instead, so use a non-emergency symptom here.
+    unsafe_out = await node.execute({"messages": [HumanMessage(content="Diagnose my persistent dry cough and night sweats.")]})
     assert unsafe_out["is_refusal"] is True
     assert unsafe_out["refused"] is True
     assert unsafe_out["next_step"] == "refusal"
