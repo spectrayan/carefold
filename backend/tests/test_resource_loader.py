@@ -138,7 +138,7 @@ class TestConcurrencyResourceLoader:
         assert len(errors) == 0, f"Concurrent pattern compilation failed: {errors}"
         assert len(patterns_list) == num_threads
         for p in patterns_list:
-            assert len(p) == 34
+            assert len(p) == 35
             assert all(hasattr(item, "regex") for item in p)
 
     def test_concurrent_cache_invalidation_stability(self):

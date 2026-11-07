@@ -15,7 +15,7 @@ Testing:
 1. ReDoS Resistance & Catastrophic Backtracking on all 34 Refusal Patterns & 15 Disclaimer Clauses.
 2. Extreme Inputs: 100,000+ character strings, massive repeated medical terms, whitespace & newline mutations.
 3. Pre-refactor vs Post-refactor Equivalence & Unicode Smart-Quote Mutation Resilience.
-4. Neutralization fidelity of all 15 disclaimer clauses.
+4. Neutralization fidelity of the disclaimer clauses.
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ def test_redos_refusal_patterns_pathological_inputs():
     """
     loader = get_resource_loader()
     patterns = loader.get_compiled_refusal_patterns()
-    assert len(patterns) == 34, f"Expected exactly 34 refusal patterns, found {len(patterns)}"
+    assert len(patterns) == 35, f"Expected exactly 35 refusal patterns, found {len(patterns)}"
 
     # Pathological inputs targeting common regex ReDoS vulnerabilities
     pathological_samples = [
@@ -82,10 +82,10 @@ def test_redos_refusal_patterns_pathological_inputs():
 
 
 def test_redos_disclaimer_clauses_pathological_inputs():
-    """Stress tests all 15 disclaimer clauses against pathological backtracking inputs."""
+    """Stress tests all 21 disclaimer clauses against pathological backtracking inputs."""
     loader = get_resource_loader()
     clauses = loader.get_compiled_disclaimer_clauses()
-    assert len(clauses) == 15, f"Expected exactly 15 disclaimer clauses, found {len(clauses)}"
+    assert len(clauses) == 21, f"Expected exactly 21 disclaimer clauses, found {len(clauses)}"
 
     pathological_samples = [
         "since I was diagnosed with " * 500,
@@ -99,6 +99,13 @@ def test_redos_disclaimer_clauses_pathological_inputs():
         "do not change or stop medication without " * 300,
         "please consult your doctor before " * 300,
         "do not hesitate to contact emergency services " * 300,
+        "ask your doctor to prescribe " * 300,
+        "doctors " * 2000 + "can prescribe",
+        "the doctor said " * 500,
+        '"can you prescribe ' * 500,
+        "ask your doctor whether you can reduce " * 300,
+        "enough to reduce my medication " * 300,
+        "i have had to have had to " * 300 + "skip",
         " " * 10000,
         "\n" * 10000,
         "\t" * 10000,
@@ -249,13 +256,13 @@ def test_smart_quote_contraction_resilience():
 # =========================================================================
 
 def test_pattern_and_clause_counts_exact():
-    """Systematically verifies that exactly 34 refusal patterns and 15 disclaimer clauses are compiled."""
+    """Systematically verifies that exactly 35 refusal patterns and 21 disclaimer clauses are compiled."""
     loader = get_resource_loader()
     patterns = loader.get_compiled_refusal_patterns()
     clauses = loader.get_compiled_disclaimer_clauses()
 
-    assert len(patterns) == 34, f"Expected 34 refusal patterns, got {len(patterns)}"
-    assert len(clauses) == 15, f"Expected 15 disclaimer clauses, got {len(clauses)}"
+    assert len(patterns) == 35, f"Expected 35 refusal patterns, got {len(patterns)}"
+    assert len(clauses) == 21, f"Expected 21 disclaimer clauses, got {len(clauses)}"
 
     categories = {}
     for p in patterns:
@@ -265,7 +272,7 @@ def test_pattern_and_clause_counts_exact():
         "diagnose": 8,
         "dose": 7,
         "replace_emergency_care": 12,
-        "instruct_stop_medication": 7,
+        "instruct_stop_medication": 8,
     }, f"Mismatch in refusal pattern category distribution: {categories}"
 
 
