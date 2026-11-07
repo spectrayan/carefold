@@ -42,6 +42,7 @@ from carefold.engine.refusal_node import CarefoldRefusalNode
 from carefold.engine.response_synthesizer import CarefoldResponseSynthesizerNode
 from carefold.safety.policy import CarefoldHealthSafetyPolicy
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
+from carefold.workflows.nodes.reflection_node import ReflectionNode
 
 logger = logging.getLogger(__name__)
 
@@ -223,6 +224,9 @@ class CarefoldAgentExecutionService(CoreAgentExecutionService):
             checkpointer=checkpointer,
             orchestration_audit_sink=self._soft_orchestration_audit,
         )
+        # Carefold's reflection node ends a refused main-agent answer with the
+        # safe refusal instead of retrying it on the single-agent node.
+        builder = builder.with_node("reflection", ReflectionNode(max_reflections=builder.max_reflections))
         builder = builder.with_node("refusal", CarefoldRefusalNode()).with_node(
             "response_synthesizer",
             CarefoldResponseSynthesizerNode(

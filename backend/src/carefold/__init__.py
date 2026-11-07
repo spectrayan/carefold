@@ -59,7 +59,9 @@ try:
 
     _yc_loader = _yc_get_resource_loader()
     _cf_patterns = _cf_get_resource_loader().get_routing_patterns()
-    _merged = dict(_yc_loader.get_routing_patterns())
+    # Read core's raw routing_patterns.yaml, not get_routing_patterns(): since
+    # yarvelle-core 0.2.1 that call also fills a separate merged-patterns cache.
+    _merged = dict(_yc_loader.load_yaml("routing_patterns.yaml"))
     if isinstance(_cf_patterns.get("dossier_types"), dict):
         _merged["dossier_types"] = dict(_cf_patterns["dossier_types"])
     # Prefer Carefold agent routing keys when present
@@ -68,7 +70,14 @@ try:
             continue
         if _k not in _merged or not _merged.get(_k):
             _merged[_k] = _v
-    _yc_loader._cache["routing_patterns.yaml"] = _merged
+    with _yc_loader._lock:
+        _yc_loader._cache["routing_patterns.yaml"] = _merged
+        # yarvelle-core 0.2.1 serves get_routing_patterns() from this merged
+        # cache. Drop it so the next call rebuilds from the patterns above,
+        # even if core built it before Carefold loaded. Core has no public call
+        # that clears only this entry (clear_cache() would also drop the
+        # patterns set above). Removed by the switch to native pack resources.
+        _yc_loader._cache.pop("merged_routing_patterns", None)
 except Exception:
     pass
 
