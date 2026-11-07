@@ -20,7 +20,7 @@ except the offline fake-model tests.
 | Path | What |
 | --- | --- |
 | `health_pack.py` | Builds the eval pack from the shipped pack (`backend/src/carefold/pack.yaml`, `agents/`, `skills/`). |
-| `scenarios/*.yaml` | Four two-turn health scenarios (scripted fake replies included). |
+| `scenarios/*.yaml` | Four two-turn health scenarios (scripted fake replies included). `partial-failure-honesty` is fake-only: its helper failure is scripted and a live model cannot be made to fail on cue. |
 | `runner.py` | Loads, lints and runs scenarios through the core driver. |
 | `judge.py`, `rubrics/` | Separate-model LLM judge (Spector style) and four health rubrics. |
 | `ollama_backend.py` | Free local Ollama backend (loopback URLs only). |

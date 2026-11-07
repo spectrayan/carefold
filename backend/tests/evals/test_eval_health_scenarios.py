@@ -48,6 +48,9 @@ def test_health_scenarios_are_multi_turn_and_lint_clean(tmp_path: Path) -> None:
     assert {s.id for _p, s in loaded} == EXPECTED_SCENARIOS
     assert all(len(s.turns) >= 2 for _p, s in loaded)
     assert all(set(s.backends) <= {"fake", "ollama"} for _p, s in loaded)
+    # A scripted failure can only be forced on the fake model.
+    live = {s.id for _p, s in loaded if "ollama" in s.backends}
+    assert live == EXPECTED_SCENARIOS - {"partial-failure-honesty"}
     assert lint_health_scenarios(loaded, build_pack(tmp_path)) == []
 
 

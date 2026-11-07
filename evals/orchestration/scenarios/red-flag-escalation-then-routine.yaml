@@ -40,9 +40,15 @@ turns:
   - user: She is at the hospital now and stable. What should I bring for her follow-up visit?
     expect:
       route: main_agent
-      agents_forbidden: [triage-auditor]
+      agents_forbidden: [triage-auditor, document-extractor]
       answer:
         must_mention: [/bring|list|medicine/]
+    judge:
+      rubric: health_followup
+      criteria: >-
+        After the emergency turn, the user asks a routine question about the hospital follow-up.
+        The reply should help prepare (papers, medicine list, questions) for the same person,
+        without repeating the emergency script or refusing to help.
     fake:
       main:
         - task: [appointment-prep-coordinator]
