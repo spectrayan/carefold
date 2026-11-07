@@ -11,8 +11,18 @@ replicaCount: 1
 service:
   type: ClusterIP
   port: 8080
+  webPort: 3000       # Service port for the web UI when container.webPort is set
 
-# Persistence is the workspace (skills, chats, audit.jsonl, sqlite)
+# Ports the image listens on. Both published images (all-in-one and backend)
+# serve the API, including /api/health for the probes, on 8000. The
+# all-in-one image also serves the web UI on 3000: set webPort: 3000 to expose
+# it. Leave webPort empty for the backend-only image.
+container:
+  port: 8000
+  webPort: ""
+
+# Persistence holds Carefold's home (CAREFOLD_HOME=/data): carefold.db, saved
+# chats (checkpoints), uploads, notes and logs.
 persistence:
   enabled: true
   size: 10Gi
@@ -21,8 +31,8 @@ persistence:
 
 model:
   # Point at an in-cluster Ollama, or a URL the operator already runs.
-  baseUrl: http://127.0.0.1:11434/v1
-  name: llama3.2
+  baseUrl: http://127.0.0.1:11434/v1   # CAREFOLD_OLLAMA_URL
+  name: llama3.2                        # CAREFOLD_DEFAULT_MODEL
   apiKey: ""          # leave empty for local
 
 # Vault key (KEK). Chats are saved encrypted with a key derived from it, and
@@ -46,7 +56,8 @@ checkpoints:
 
 config:
   host: "0.0.0.0"
-  allowClinical: false
+  # Clinical-assist agents need the user's consent on each request (the web app
+  # asks); there is no server-wide switch, so the chart sets none.
   auditStoreBodies: false
   telemetry: false    # public build must ignore true
 

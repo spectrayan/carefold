@@ -12,3 +12,8 @@ spec:
     - name: http
       port: {{ .Values.service.port }}
       targetPort: http
+    {{- if .Values.container.webPort }}
+    - name: web
+      port: {{ .Values.service.webPort }}
+      targetPort: web
+    {{- end }}

@@ -84,9 +84,8 @@ resource "helm_release" "carefold" {
         secretKey      = var.checkpoint_encryption && var.vault_kek_secret_name != "" ? var.vault_kek_secret_key : "kek"
       }
       config = {
-        allowClinical     = false
-        auditStoreBodies  = false
-        telemetry         = false
+        auditStoreBodies = false
+        telemetry        = false
       }
     })
   ]

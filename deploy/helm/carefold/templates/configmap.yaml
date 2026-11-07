@@ -11,7 +11,6 @@ data:
         "baseUrl": {{ .Values.model.baseUrl | quote }},
         "model": {{ .Values.model.name | quote }}
       },
-      "allow_clinical": {{ .Values.config.allowClinical }},
       "audit": { "store_bodies": {{ .Values.config.auditStoreBodies }} },
       "telemetry": false
     }

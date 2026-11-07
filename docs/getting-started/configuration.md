@@ -103,6 +103,13 @@ if it is lost or replaced, saved chats can no longer be read.
 To store chats unencrypted instead, set `CAREFOLD_CHECKPOINT_ENCRYPTION=false`
 (Helm: `--set checkpoints.encryption=false`). Nothing turns encryption off for you.
 
+The images set `CAREFOLD_HOME=/data`, so `carefold.db` (accounts, profiles,
+notes), saved chats, uploads and logs live on the `/data` volume. Earlier images
+left `carefold.db` in the container's own home (`/root/.carefold`), where it is
+lost whenever the container is recreated. To keep it, copy it onto the volume
+before you pull the new image:
+`docker compose exec backend cp -an /root/.carefold/. /data/`.
+
 ### Migrating existing chats
 
 To encrypt threads saved before encryption was on, back up `checkpoints.db`, then run:
