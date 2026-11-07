@@ -18,8 +18,6 @@ preserves previous output attempts, and enforces strict max_reflections retry ce
 from __future__ import annotations
 
 from typing import Any, Dict, List
-from yarvelle_core.engine.orchestration.runtime import MAIN_AGENT_ID
-
 from carefold.constants.defaults import DEFAULT_MAX_REFLECTIONS
 from carefold.workflows.nodes.base import BaseNode
 
@@ -40,16 +38,6 @@ class ReflectionNode(BaseNode):
         raw_count = state.get("reflection_count", 0)
         current_count = max(0, int(raw_count))
         max_refl = int(state.get("max_reflections", self.max_reflections))
-
-        # A main-agent answer cannot be retried here: the retry edge goes to the
-        # single-agent node, which has no "main-agent" to run. Refuse safely.
-        if state.get("current_agent") == MAIN_AGENT_ID:
-            return {
-                "reflection_count": current_count,
-                "next_step": "refusal",
-                "critique": "The coordinated answer was refused; returning the safe refusal.",
-                "previous_attempts": list(state.get("previous_attempts", [])),
-            }
 
         # Ceiling check: if max_reflections is 0 or current count reached ceiling
         if max_refl <= 0 or current_count >= max_refl:

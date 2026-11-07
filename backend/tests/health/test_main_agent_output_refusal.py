@@ -13,7 +13,10 @@
 
 Regression: the reflection retry sent the turn to the agent node with
 ``current_agent="main-agent"``, which is not a registered agent, so the user
-saw "Unknown or unregistered agent ID: 'main-agent'".
+saw "Unknown or unregistered agent ID: 'main-agent'". yarvelle-core 0.2.3
+ends a refused main-agent answer on the refusal path itself, so Carefold no
+longer overrides the reflection node; Carefold's refusal node still writes
+the reply.
 """
 
 from __future__ import annotations
@@ -26,8 +29,8 @@ from langchain_core.messages import AIMessage, HumanMessage
 import carefold.schemas.manifest  # noqa: F401  registers clinical AgentDomain
 from carefold.engine.runtime import create_execution_service
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
-from carefold.workflows.nodes.reflection_node import ReflectionNode
 from yarvelle_core.engine.orchestration.runtime import MAIN_AGENT_ID
+from yarvelle_core.workflows.nodes.reflection_node import ReflectionNode as CoreReflectionNode
 from yarvelle_core.testing.orch_eval.fake import ScriptedFakeChatModel
 from yarvelle_core.testing.orch_eval.schema import FakeMainStep, FakeScript
 
@@ -68,11 +71,24 @@ async def test_refused_main_agent_answer_gets_the_safe_refusal() -> None:
     reply = _reply_text(result)
     assert UNSAFE_ANSWER not in reply
     assert SAFE_REFUSAL_TEMPLATE in reply
+    assert result.get("is_refusal")
+
+
+def _graph_node(graph: Any, name: str) -> Any:
+    return graph.builder.nodes[name].runnable.afunc
+
+
+def test_production_graph_uses_core_reflection_and_carefold_refusal() -> None:
+    from carefold.engine.refusal_node import CarefoldRefusalNode
+
+    graph = create_execution_service()._build_orchestrated_graph(ScriptedFakeChatModel(), None, None)
+    assert isinstance(_graph_node(graph, "reflection"), CoreReflectionNode)
+    assert isinstance(_graph_node(graph, "refusal"), CarefoldRefusalNode)
 
 
 @pytest.mark.asyncio
 async def test_reflection_does_not_retry_a_main_agent_answer() -> None:
-    out = await ReflectionNode(max_reflections=2).execute(
+    out = await CoreReflectionNode(max_reflections=2).execute(
         {"current_agent": MAIN_AGENT_ID, "refusal_reason": "forbidden_intent:medical_prohibited", "output": UNSAFE_ANSWER}
     )
     assert out["next_step"] == "refusal"
@@ -81,7 +97,7 @@ async def test_reflection_does_not_retry_a_main_agent_answer() -> None:
 
 @pytest.mark.asyncio
 async def test_reflection_still_retries_a_specialist_answer() -> None:
-    out = await ReflectionNode(max_reflections=2).execute(
+    out = await CoreReflectionNode(max_reflections=2).execute(
         {"current_agent": "heart-care-coordinator", "refusal_reason": "forbidden_intent:medical_prohibited", "output": UNSAFE_ANSWER}
     )
     assert out["next_step"] == "agent"
