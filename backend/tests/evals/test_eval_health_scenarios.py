@@ -35,6 +35,17 @@ from evals.orchestration.runner import (  # noqa: E402
     run_health_scenarios,
 )
 
+@pytest.fixture(autouse=True)
+def _offline_fake_runs_allowed_on_ci(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Core's scenario loader refuses CI. These tests only load files and run the
+    scripted fake model offline, so CI variables are cleared for them (the same
+    pattern core's own tests use). Live runs stay CI-refused in the CLI."""
+    from yarvelle_core.testing.orch_eval.guard import CI_ENV_VARS
+
+    for name in CI_ENV_VARS:
+        monkeypatch.delenv(name, raising=False)
+
+
 EXPECTED_SCENARIOS = {
     "bp-meds-cost-followup",
     "partial-failure-honesty",
@@ -54,7 +65,7 @@ def test_health_scenarios_are_multi_turn_and_lint_clean(tmp_path: Path) -> None:
     assert lint_health_scenarios(loaded, build_pack(tmp_path)) == []
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def no_network(monkeypatch: pytest.MonkeyPatch) -> None:
     """Any outbound socket (e.g. a real local Ollama call) fails the test."""
     import socket

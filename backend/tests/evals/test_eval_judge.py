@@ -27,6 +27,17 @@ from evals.orchestration import judge as J  # noqa: E402
 from evals.orchestration.runner import build_pack, load_health_scenarios, run_health_scenarios  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def _offline_fake_runs_allowed_on_ci(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Core's scenario loader refuses CI. These tests only load files and run the
+    scripted fake model offline, so CI variables are cleared for them (the same
+    pattern core's own tests use). Live runs stay CI-refused in the CLI."""
+    from yarvelle_core.testing.orch_eval.guard import CI_ENV_VARS
+
+    for name in CI_ENV_VARS:
+        monkeypatch.delenv(name, raising=False)
+
+
 class _ScriptedJudge:
     """Stands in for a judge chat model; returns canned replies in order."""
 
