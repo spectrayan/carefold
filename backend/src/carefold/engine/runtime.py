@@ -42,6 +42,7 @@ from carefold.engine.refusal_node import CarefoldRefusalNode
 from carefold.engine.response_synthesizer import CarefoldResponseSynthesizerNode
 from carefold.safety.policy import CarefoldHealthSafetyPolicy
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
+from carefold.workflows.nodes.main_agent_node import CarefoldMainAgentNode
 from carefold.workflows.nodes.reflection_node import ReflectionNode
 
 logger = logging.getLogger(__name__)
@@ -207,6 +208,26 @@ class CarefoldAgentExecutionService(CoreAgentExecutionService):
         except Exception as err:
             logger.warning("orchestration audit skipped: %s", err)
 
+    @staticmethod
+    def _main_agent_node(builder: GraphBuilder) -> Optional[CarefoldMainAgentNode]:
+        """Carefold's main agent node, built the way core builds its own (None when core would skip it)."""
+        from yarvelle_core.engine.builder import _record_orchestration_audit, _store_turn_tasks
+
+        if not (builder.use_dynamic_orchestrator and builder.include_main_agent):
+            return None
+        if builder.model is None or builder.registry is None:
+            return None
+        if not builder.registry.get_delegatable_agents(exclude=""):
+            return None
+        return CarefoldMainAgentNode(
+            model=builder.model,
+            registry=builder.registry,
+            orchestration=builder.orchestration,
+            default_agent=builder.default_agent,
+            audit_sink=builder.orchestration_audit_sink or _record_orchestration_audit,
+            task_sink=builder.turn_task_sink or _store_turn_tasks,
+        )
+
     def _build_orchestrated_graph(
         self,
         active_model: BaseChatModel,
@@ -224,6 +245,11 @@ class CarefoldAgentExecutionService(CoreAgentExecutionService):
             checkpointer=checkpointer,
             orchestration_audit_sink=self._soft_orchestration_audit,
         )
+        # Carefold's main agent node reminds the model to delegate again on
+        # follow-up turns.
+        main_agent = self._main_agent_node(builder)
+        if main_agent is not None:
+            builder = builder.with_node("main_agent", main_agent)
         # Carefold's reflection node ends a refused main-agent answer with the
         # safe refusal instead of retrying it on the single-agent node.
         builder = builder.with_node("reflection", ReflectionNode(max_reflections=builder.max_reflections))
