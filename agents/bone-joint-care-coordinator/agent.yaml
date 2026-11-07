@@ -17,7 +17,6 @@ name: bone-joint-care-coordinator
 description: >-
   Musculoskeletal care coordinator assisting patients with joint pain and functional
   mobility logs, physical therapy tracking, and orthopedic surgery consultation preparation.
-model: ollama:llama3.2
 skills:
   - ortho-prep
 tools:

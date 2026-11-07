@@ -231,7 +231,7 @@ class TestAgentFactoryFuzzingAndStressHarness:
         assert sub["name"] == "blank-agent"
         assert sub["description"] == ""
         assert sub["system_prompt"] == ""
-        assert sub["model"] == "ollama:llama3.2"
+        assert "model" not in sub  # no pin: the sub-agent inherits the main model
         assert sub["skills"] == []
         assert sub["tools"] == []
 

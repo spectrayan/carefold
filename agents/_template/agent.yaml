@@ -17,7 +17,8 @@ name: _template
 description: >-
   Foundational starter template for developers creating new Carefold health and wellness
   agents.
-model: ollama:llama3.2
+# model: leave unset so the agent runs on the model the user configured.
+# Set it only for a deliberate per-agent override (for example ollama:qwen3:8b).
 skills:
   - _template
 tools: []

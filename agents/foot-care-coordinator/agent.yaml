@@ -18,7 +18,6 @@ description: >-
   Podiatry and foot health coordinator assisting patients with diabetic foot exam
   tracking, wound and ulcer logs, gait and mobility agendas, orthotic and
   footwear preparation, and nail or callus care follow-up.
-model: ollama:llama3.2
 skills:
   - podiatry-prep
   - emergency-red-flags

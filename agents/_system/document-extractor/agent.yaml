@@ -3,7 +3,6 @@ title: Document Extractor
 version: 0.1.0
 license: Apache-2.0
 risk_class: admin
-model: llama3.2
 can_delegate: false
 max_iterations: 3
 hidden: true

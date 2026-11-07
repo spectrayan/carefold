@@ -18,7 +18,6 @@ description: >-
   Healthcare records coordinator assisting patients and caregivers in organizing multi-provider
   clinical dossiers, compiling longitudinal lab trends, and exercising HIPAA record
   request rights.
-model: ollama:llama3.2
 skills:
   - records-management
 tools:

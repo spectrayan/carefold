@@ -18,7 +18,6 @@ description: >-
   Renal care coordinator helping individuals prepare for nephrology visits, organize
   kidney lab trends (eGFR, creatinine, BUN, UACR), track daily fluid and sodium habits,
   and structure renal diet questions.
-model: ollama:llama3.2
 skills:
   - nephrology-prep
 tools:

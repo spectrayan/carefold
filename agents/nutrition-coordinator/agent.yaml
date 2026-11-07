@@ -18,7 +18,6 @@ description: >-
   Assists patients in preparing 7-day food, fluid, and GI symptom journals, 
   macronutrient goal tracking, and question agendas for Medical Nutrition Therapy 
   (MNT) appointments.
-model: ollama:llama3.2
 skills:
   - nutrition-prep
   - emergency-red-flags

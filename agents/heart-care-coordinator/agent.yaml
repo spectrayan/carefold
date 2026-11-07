@@ -17,7 +17,6 @@ name: heart-care-coordinator
 description: >-
   Cardiovascular care coordinator assisting patients with hypertension tracking, arrhythmia
   consultation prep, heart health lifestyle agendas, and vital sign logs.
-model: ollama:llama3.2
 skills:
   - cardiology-prep
 tools:

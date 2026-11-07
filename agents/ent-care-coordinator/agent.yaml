@@ -18,7 +18,6 @@ description: >-
   Otolaryngology and ear, nose, and throat coordinator assisting individuals with chronic
   sinusitis, tinnitus and hearing loss evaluation prep, vertigo episodes, and ENT
   visit agendas.
-model: ollama:llama3.2
 skills:
   - ent-prep
 tools:

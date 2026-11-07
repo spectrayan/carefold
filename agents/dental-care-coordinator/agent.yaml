@@ -18,7 +18,6 @@ description: >-
   Dental and oral health coordinator assisting patients with periodontal appointment
   prep, daily oral care tracking, tooth pain and gum symptom logs, and
   post-extraction follow-up agendas.
-model: ollama:llama3.2
 skills:
   - oral-health-prep
   - emergency-red-flags
