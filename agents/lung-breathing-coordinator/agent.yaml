@@ -17,7 +17,6 @@ name: lung-breathing-coordinator
 description: >-
   Respiratory health coordinator assisting patients with asthma/COPD action plan preparation,
   inhaler adherence, dyspnea tracking, and pulmonology consultation agendas.
-model: ollama:llama3.2
 skills:
   - pulmonology-prep
 tools:

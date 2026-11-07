@@ -31,9 +31,9 @@ except the offline fake-model tests.
 The pack is copied from the shipped one; `backend/tests/evals/test_eval_health_pack.py`
 fails if it drifts. Three documented changes:
 
-1. **No pinned agent model.** Agent manifests pin `model: ollama:llama3.2`;
-   the copies drop it so the eval backend supplies every model. Without this a
-   "fake" run quietly calls the real local llama3.2 for every sub-agent.
+1. **No pinned agent model.** Shipped agents no longer pin a model (they
+   inherit the main model). The copies still drop any `model:` so a future
+   per-agent override can never make a "fake" run call a real local model.
 2. **Fixed-route targets are visible.** The red-flag and document routes go to
    `triage-auditor` and `document-extractor`, which are `hidden: true`. Core's
    eval checks treat hidden agents as "never answer", so the copies are

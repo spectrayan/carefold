@@ -499,11 +499,15 @@ def load_subagent_from_yaml(
     if not isinstance(skills, list):
         skills = []
 
-    return {
+    spec: Dict[str, Any] = {
         "name": raw.get("name") or raw.get("id", agent_path.name),
         "description": raw.get("description", ""),
         "system_prompt": system_prompt,
-        "model": raw.get("model", "ollama:llama3.2"),
         "skills": skills,
         "tools": tools_payload,
     }
+    # Only a deliberate per-agent override pins a model; otherwise the sub-agent
+    # inherits the main model the user configured.
+    if raw.get("model"):
+        spec["model"] = raw["model"]
+    return spec

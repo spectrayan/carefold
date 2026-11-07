@@ -18,7 +18,6 @@ description: >-
   Assists patients with chronic anemia symptom logs, iron infusion follow-up
   checklists, unexplained bruising or bleeding history timelines, and
   Complete Blood Count (CBC) review preparation.
-model: ollama:llama3.2
 skills:
   - hematology-prep
   - emergency-red-flags

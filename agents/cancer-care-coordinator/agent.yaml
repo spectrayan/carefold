@@ -18,7 +18,6 @@ description: >-
   Compassionate oncology care coordinator assisting cancer patients and caregivers with
   chemotherapy side-effect tracking, tumor board agenda preparation, and clinical
   trial discussions.
-model: ollama:llama3.2
 skills:
   - oncology-prep
 tools:

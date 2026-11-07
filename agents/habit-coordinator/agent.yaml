@@ -17,7 +17,6 @@ name: habit-coordinator
 description: >-
   Daily wellness and lifestyle coordinator supporting hydration, sleep hygiene, activity
   goals, and positive chronic health habit check-ins.
-model: ollama:llama3.2
 skills:
   - habit-checkin
 tools:

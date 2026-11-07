@@ -18,7 +18,6 @@ description: >-
   Prescription medication and formulary coordinator helping patients understand drug tiers,
   discover manufacturer copay cards and patient assistance programs, and structure
   generic substitution questions.
-model: ollama:llama3.2
 skills:
   - formulary-navigation
 tools:
