@@ -267,6 +267,7 @@ class ResourceLoader:
             "fraction_or_num",
             "numeric_quantity",
             "provider_role",
+            "prescriber_role",
             "disclaimer_med_target",
             "all_cessation_drugs",
             "all_kinships",
@@ -292,7 +293,7 @@ class ResourceLoader:
         return resolved
 
     def get_compiled_disclaimer_clauses(self) -> List[re.Pattern]:
-        """Compiles and returns the 15 disclaimer neutralization regexes."""
+        """Compiles and returns the disclaimer neutralization regexes."""
         if self._compiled_disclaimer_clauses is not None:
             return self._compiled_disclaimer_clauses
 
@@ -315,7 +316,7 @@ class ResourceLoader:
             return self._compiled_disclaimer_clauses
 
     def get_compiled_refusal_patterns(self) -> List[RefusalPattern]:
-        """Compiles and returns the 34 RefusalPattern tuples."""
+        """Compiles and returns the compiled RefusalPattern tuples."""
         if self._compiled_refusal_patterns is not None:
             return self._compiled_refusal_patterns
 
