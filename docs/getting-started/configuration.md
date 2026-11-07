@@ -160,6 +160,25 @@ export CAREFOLD_DEFAULT_MODEL="gpt-4o"
 
 ---
 
+## Safety Guards & Buffered Answer Release
+
+Carefold's `pack.yaml` configures `safety.guards` (`yarvelle-core>=0.2.4`):
+
+- **`release: buffered`**: Answers are held until the final output check passes; a refused answer never leaves the service.
+- **`granite-guardian` model check (`preset: granite_guardian`, `mode: shadow`, `when_unconfigured: allow`)**: Runs after `CarefoldHealthSafetyPolicy` on the output stage when configured via environment variables. Carefold ships no guard model.
+
+| Variable | Default | Description |
+|---|---|---|
+| `CAREFOLD_SAFETY_GUARD_GRANITE_GUARDIAN_PROVIDER` | *(unset)* | Guard model provider (`ollama`, `openai`, `anthropic`, `google`, `custom`). |
+| `CAREFOLD_SAFETY_GUARD_GRANITE_GUARDIAN_MODEL` | *(unset)* | Model identifier at the provider (for example `granite3-guardian:2b`). |
+| `CAREFOLD_SAFETY_GUARD_GRANITE_GUARDIAN_BASE_URL` | *(unset)* | Optional endpoint URL for `ollama` or `custom` providers. |
+| `CAREFOLD_SAFETY_GUARD_GRANITE_GUARDIAN_MODE` | `shadow` | `shadow` (audit only), `enforce` (blocks unsafe answers), or `off`. |
+| `CAREFOLD_SAFETY_GUARD_GRANITE_GUARDIAN_TIMEOUT_S` | `10` | Per-call timeout in seconds. |
+
+The corresponding `YARVELLE_SAFETY_GUARD_GRANITE_GUARDIAN_*` names are also accepted as a fallback when `CAREFOLD_SAFETY_GUARD_GRANITE_GUARDIAN_*` is unset.
+
+---
+
 ## Web App Environment Variables (`frontend/`)
 
 The Next.js web application (`frontend/`) reads the following environment variables:

@@ -62,6 +62,26 @@ flowchart TD
 
 ---
 
+## Buffered Answer Release & Safety Guards (`safety.guards`)
+
+Carefold configures `safety.guards` in `backend/src/carefold/pack.yaml` (requires `yarvelle-core>=0.2.4,<0.3.0`):
+
+- **Buffered release (`release: buffered`)**: Answer tokens are held in the service until the final output check passes, then emitted as a single `token` event before `suggestions` and `done`. If an answer is refused, its text is never sent to the client.
+- **Deterministic policy first (`CarefoldHealthSafetyPolicy`)**: Carefold's deterministic clinical classifier (`resources/refusal_patterns.yaml`) and emergency red-flag detector always run first and enforce all hard clinical refusals (`forbidden_intent:dose`, `forbidden_intent:prescribe`, `forbidden_intent:instruct_stop_medication`, `forbidden_intent:replace_emergency_care`, `emergency_red_flag`) and soft diagnosis boundary warnings (`forbidden_intent:diagnose`).
+- **Optional Granite Guardian shadow check (`id: granite-guardian`)**: After `CarefoldHealthSafetyPolicy` allows an output, Carefold declares a model guard check with `preset: granite_guardian`, `mode: shadow`, and `when_unconfigured: allow`. Carefold ships no guard model; when unconfigured, the check logs `safety_guard_model_not_configured` once at startup and skips without blocking. Configure a model via environment variables (`CAREFOLD_` prefix, or `YARVELLE_` fallback):
+
+```bash
+export CAREFOLD_SAFETY_GUARD_GRANITE_GUARDIAN_PROVIDER=ollama
+export CAREFOLD_SAFETY_GUARD_GRANITE_GUARDIAN_MODEL=granite3-guardian:2b
+export CAREFOLD_SAFETY_GUARD_GRANITE_GUARDIAN_BASE_URL=http://127.0.0.1:11434
+# Optional: shadow (default) | enforce | off
+export CAREFOLD_SAFETY_GUARD_GRANITE_GUARDIAN_MODE=shadow
+```
+
+Every guard evaluation emits a zero-body `safety_guard_evaluated` audit record (stage, decision, mode, latency, model label, text length; never the prompt or answer text).
+
+---
+
 ## Canonical Legal Disclaimer
 
 To eliminate repetitive, robotic disclaimers from constituent agents, `ResponseSynthesizerNode` strips constituent disclaimers and appends a single canonical disclaimer footer to every synthesized response:

@@ -141,6 +141,7 @@ from yarvelle_core.schemas.orchestration import (
     SynthesisSpec,
 )
 from yarvelle_core.schemas.routing import RoutingHints
+from yarvelle_core.schemas.safety import GuardCheckSpec, PackSafetySpec, SafetyGuardsSpec
 from yarvelle_core.workflows.subgraphs.extraction.dossiers import register_dossier_type
 
 try:
@@ -362,7 +363,24 @@ def get_pack() -> PackSpec:
         synthesis=SynthesisSpec(instructions=synthesis_instructions),
     )
 
-    # 8. Evals spec
+    # 8. Safety guards (pack.yaml safety.guards twin)
+    safety = PackSafetySpec(
+        guards=SafetyGuardsSpec(
+            release="buffered",
+            checks=[
+                GuardCheckSpec(
+                    id="granite-guardian",
+                    type="model",
+                    preset="granite_guardian",
+                    stages=["output"],
+                    mode="shadow",
+                    when_unconfigured="allow",
+                ),
+            ],
+        ),
+    )
+
+    # 9. Evals spec
     evals = PackEvalsSpec(
         golden_path="evals/golden.jsonl",
         min_pass_rate=0.95,
@@ -375,7 +393,7 @@ def get_pack() -> PackSpec:
         name="Carefold Health Pack",
         version=__version__,
         domain="health",
-        requires_core=">=0.2.3,<0.3.0",
+        requires_core=">=0.2.4,<0.3.0",
         owned_scopes=["health.*", "health.clinical", "health.paperwork"],
         declared_reads=[],
         risk_tier_max="T4",
@@ -391,6 +409,7 @@ def get_pack() -> PackSpec:
         manifest_path=str(Path(__file__).resolve().parent / "pack.yaml"),
         scoped_models=scoped_models,
         orchestration=orchestration,
+        safety=safety,
     )
     return spec
 
