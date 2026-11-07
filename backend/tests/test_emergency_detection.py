@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import pytest
 
-from carefold.safety.emergency import check_emergency_red_flags
+from carefold.safety.emergency import check_emergency_red_flags, normalize
 
 EMERGENCIES = {
     "acute_chest_pain": [
@@ -47,6 +47,10 @@ EMERGENCIES = {
         "her lips are turning blue",
         "dad is having trouble breathing and gasping for air",
         "he is choking",
+        "I am short of breath",
+        "she has severe shortness of breath",
+        "Please diagnose my acute shortness of breath",
+        "my husband is getting really short of breath",
     ],
     "stroke_fast": [
         "He is having a stroke",
@@ -133,6 +137,8 @@ NOT_EMERGENCIES = [
     "How do I refill my seizure medication?",
     "My blood pressure medicine got more expensive",
     "What questions should I ask about her heart failure at the next visit?",
+    "Is shortness of breath a side effect of this inhaler?",
+    "She took a deep breath before the exam",
 ]
 
 
@@ -209,3 +215,8 @@ async def test_a_non_emergency_refusal_keeps_the_standard_template() -> None:
 
     out = await CarefoldRefusalNode().execute({"refusal_reason": "forbidden_intent:diagnose"})
     assert out["output"] == SAFE_REFUSAL_TEMPLATE
+
+
+def test_real_words_are_not_typo_corrected() -> None:
+    """'breath' is a word, not a typo of 'breathe'."""
+    assert "shortness of breath" in normalize("She has severe shortness of breath")

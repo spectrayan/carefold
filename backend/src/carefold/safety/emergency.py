@@ -106,7 +106,7 @@ _CONTRACTIONS: Tuple[Tuple[str, str], ...] = (
 
 # Key symptom words; a token one edit away (same first letter) is read as the word.
 _VOCABULARY: Tuple[str, ...] = (
-    "anaphylactic", "anaphylaxis", "bleeding", "breathe", "breathing", "chest",
+    "anaphylactic", "anaphylaxis", "bleeding", "breath", "breathe", "breathing", "chest",
     "choking", "collapsed", "convulsing", "drooping", "overdose", "overdosed",
     "overdosing", "seizing", "seizure", "seizures", "slurred", "slurring",
     "stroke", "suicidal", "suicide", "swelling", "swollen", "unconscious",
@@ -231,6 +231,9 @@ RESPIRATORY_PATTERNS: List[str] = [
     r"\b(?:trouble|difficulty|struggling)\s+breathing\b",
     r"\b(?:not|isn't|stopped|wasn't)\s+breathing\b",
     r"\b(?:severe|sudden|extreme|very|really\s+bad)\s+short(?:ness)?\s+of\s+breath\b",
+    r"\b(?:acute|severe|sudden|extreme|bad|worsening)\s+short(?:ness)?\s+of\s+breath\b",
+    r"\b(?:i'm|i\s+am|he's|she's|they're|is|are|am|getting|feels?|feeling)\s+(?:very\s+|really\s+|so\s+|too\s+)?short\s+of\s+breath\b",
+    r"\b(?:i|he|she|they|we|you)\s+(?:have|has|am\s+having|is\s+having|are\s+having)\s+(?:\w+\s+){0,2}?short(?:ness)?\s+of\s+breath\b",
     r"\bgasping\b",
     r"\bchoking\b(?!\s+(?:hazard|risk))",
     r"\b(?:lips|face|skin|fingers?)\s+(?:are\s+|is\s+)?(?:turning\s+)?blue\b",
