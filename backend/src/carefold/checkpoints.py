@@ -23,6 +23,8 @@ core's neutral identity and a different key).
 ``encrypt`` checks every thread before and after the migration: the same
 threads must load with the same message counts and message digests, or the
 command fails and the plaintext backup written next to the database is kept.
+When the check passes and no plaintext rows are left, that pre-migration
+backup is deleted automatically (pass ``--keep-backup`` to keep it).
 ``verify`` reports per thread only counts and digests, never message content.
 Settings: CAREFOLD_CHECKPOINT_ENCRYPTION, CAREFOLD_CHECKPOINT_PLAINTEXT_READS,
 CAREFOLD_CHECKPOINT_KEY_VERSION (vault key: OS keyring, CAREFOLD_VAULT_KEK_FILE
@@ -137,6 +139,15 @@ def verify_checkpoint_threads(db_path: Path) -> VerifyReport:
     return report
 
 
+def delete_backup(backup: Path) -> None:
+    """Delete a pre-migration backup copy and any SQLite side files next to it."""
+    for suffix in ("-wal", "-shm", "-journal"):
+        side = backup.with_name(backup.name + suffix)
+        if side.exists():
+            side.unlink()
+    backup.unlink()
+
+
 def _print(payload: Dict[str, Any], as_json: bool) -> None:
     if as_json:
         print(json.dumps(payload, indent=2))
@@ -185,14 +196,32 @@ def _run(args: argparse.Namespace) -> int:
         after = verify_checkpoint_threads(db_path)
         payload["after"] = after.as_dict()
         payload["history_preserved"] = after.ok and after.summary() == before.summary()
-        _print(payload, args.json)
         if not payload["history_preserved"]:
+            _print(payload, args.json)
             print(
                 "Error: threads differ after migration; keep the backup "
                 f"({result.backup_path}) and restore it before using the database.",
                 file=sys.stderr,
             )
             return 1
+        if result.backup_path:
+            payload["backup_deleted"] = False
+            if args.keep_backup:
+                payload["backup_kept"] = "--keep-backup"
+            elif checkpoint_db_status(db_path, keyring).plaintext_rows:
+                payload["backup_kept"] = "plaintext rows remain"
+            else:
+                try:
+                    delete_backup(Path(result.backup_path))
+                    payload["backup_deleted"] = True
+                except OSError as err:
+                    payload["backup_kept"] = f"delete failed: {type(err).__name__}"
+                    print(
+                        f"Warning: could not delete the plaintext backup ({result.backup_path}): {err}. "
+                        "Delete it yourself; the migration itself succeeded.",
+                        file=sys.stderr,
+                    )
+        _print(payload, args.json)
         return 0
     except (VaultError, FileNotFoundError) as err:
         print(f"Error: {err}", file=sys.stderr)
@@ -208,12 +237,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--db", default=None, help="Checkpoint database (default: the chat runtime's)")
     parser.add_argument("--dry-run", action="store_true", help="Report what would change without writing")
     parser.add_argument("--no-backup", action="store_true", help="Skip the backup copy written before changes")
+    parser.add_argument(
+        "--keep-backup",
+        action="store_true",
+        help="Keep the plaintext pre-migration backup after a verified encrypt (deleted by default)",
+    )
     parser.add_argument("--key-version", type=int, default=None, help="Active key version")
     parser.add_argument("--json", action="store_true", help="Print a JSON report")
     return _run(parser.parse_args(list(argv) if argv is not None else None))
 
 
-__all__ = ["ThreadCheck", "VerifyReport", "default_checkpoint_db", "main", "verify_checkpoint_threads"]
+__all__ = ["ThreadCheck", "VerifyReport", "default_checkpoint_db", "delete_backup", "main", "verify_checkpoint_threads"]
 
 
 if __name__ == "__main__":  # pragma: no cover

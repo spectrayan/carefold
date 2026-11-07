@@ -136,8 +136,10 @@ def test_encrypt_migrates_legacy_db_without_losing_history(
     assert report["migration"]["rows_changed"] == report["migration"]["plaintext_rows"]
     assert report["after"]["threads"] == before["threads"]  # same threads, counts, digests
     assert report["active_key_id"] == keyring.active.key_id
-    backup = Path(report["migration"]["backup_path"])
-    assert backup.is_file() and LEGACY_PROMPT.encode() in backup.read_bytes()  # plaintext pre-migration copy
+    # The plaintext pre-migration copy is deleted once the check passed.
+    assert report["backup_deleted"] is True
+    assert not Path(report["migration"]["backup_path"]).exists()
+    assert not list(golden_db.parent.glob("*.bak-*"))
     rows = raw_checkpoint_rows(golden_db)
     assert rows and all(t.endswith("+aes256gcm") for _, t, _ in rows)
     assert LEGACY_PROMPT.encode() not in golden_db.read_bytes()
@@ -148,6 +150,134 @@ def test_encrypt_migrates_legacy_db_without_losing_history(
     monkeypatch.setattr(settings, "checkpoint_plaintext_reads", False)
     code, after = _cli(["verify", "--db", str(golden_db)], capsys)
     assert code == 0 and after["threads"] == before["threads"]
+
+
+def test_keep_backup_keeps_the_plaintext_copy(
+    golden_db: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    use_test_checkpoint_keyring(monkeypatch)
+    code, report = _cli(["encrypt", "--db", str(golden_db), "--keep-backup"], capsys)
+
+    assert code == 0, report
+    assert report["backup_deleted"] is False and report["backup_kept"] == "--keep-backup"
+    backup = Path(report["migration"]["backup_path"])
+    assert backup.is_file() and LEGACY_PROMPT.encode() in backup.read_bytes()
+
+
+def test_backup_is_kept_when_history_check_fails(
+    golden_db: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """A failed before/after check keeps the plaintext copy so it can be restored."""
+    import carefold.checkpoints as cli
+
+    use_test_checkpoint_keyring(monkeypatch)
+    real_verify = cli.verify_checkpoint_threads
+    calls = {"n": 0}
+
+    def _verify(db_path: Path):  # second call (after the migration) sees a changed thread
+        report = real_verify(db_path)
+        calls["n"] += 1
+        if calls["n"] == 2:
+            report.threads[LEGACY_THREAD].messages += 1
+        return report
+
+    monkeypatch.setattr(cli, "verify_checkpoint_threads", _verify)
+    code, report = _cli(["encrypt", "--db", str(golden_db)], capsys)
+
+    assert code == 1
+    assert report["history_preserved"] is False and "backup_deleted" not in report
+    backup = Path(report["migration"]["backup_path"])
+    assert backup.is_file() and LEGACY_PROMPT.encode() in backup.read_bytes()
+
+
+def test_delete_backup_removes_sqlite_side_files(tmp_path: Path) -> None:
+    from carefold.checkpoints import delete_backup
+
+    backup = tmp_path / "checkpoints.db.bak-20260101T000000Z"
+    sides = [backup.with_name(backup.name + s) for s in ("-wal", "-shm")]
+    for f in [backup, *sides]:
+        f.write_bytes(b"synthetic")
+    delete_backup(backup)
+    assert not any(f.exists() for f in [backup, *sides])
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("migrate", [False, True], ids=["plaintext", "migrated"])
+async def test_legacy_thread_resumes_on_routed_main_agent_turn(
+    golden_db: Path, temp_workspace: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture, migrate: bool
+) -> None:
+    """A thread saved by the pre-orchestration graph takes an unpinned turn with routing on.
+
+    The legacy state still says ``current_agent=benefits-coordinator``; the turn
+    must route to the main agent (not stay pinned), the main agent must see the
+    old messages, delegate, and the thread must keep its history.
+    """
+    import carefold.schemas.manifest  # noqa: F401  registers clinical AgentDomain
+    from carefold.checkpoints import main
+    from carefold.engine.runtime import create_execution_service
+    from yarvelle_core.config import settings
+    from yarvelle_core.engine.graph import create_sqlite_saver
+    from yarvelle_core.testing.orch_eval.fake import ScriptedFakeChatModel
+    from yarvelle_core.testing.orch_eval.schema import FakeMainStep, FakeScript
+    from langchain_core.callbacks import BaseCallbackHandler
+
+    use_test_checkpoint_keyring(monkeypatch)
+    if migrate:
+        assert main(["encrypt", "--db", str(golden_db), "--json"]) == 0
+        capsys.readouterr()
+        monkeypatch.setattr(settings, "checkpoint_plaintext_reads", False)
+
+    seen: list = []
+
+    class _Inputs(BaseCallbackHandler):
+        def on_chat_model_start(self, serialized, messages, **kwargs):  # type: ignore[override]
+            seen.append([m.type for m in messages[0]])
+
+    model = ScriptedFakeChatModel()
+    # Shipped personas carry no fake persona marker, so every call takes the
+    # main script in order: hand-off, the specialist's reply, the final answer.
+    model.load_turn(
+        1,
+        FakeScript(
+            main=[
+                FakeMainStep(task=["benefits-coordinator"]),
+                FakeMainStep(answer="Synthetic benefits note: check the deductible first."),
+                FakeMainStep(answer="Synthetic resumed answer after routing."),
+            ]
+        ),
+    )
+    model.callbacks = [_Inputs()]
+    svc = create_execution_service(db_path=str(golden_db), workspace_root=temp_workspace)
+    events = [
+        ev
+        async for ev in svc.execute_turn(
+            thread_id=LEGACY_THREAD, prompt="Synthetic follow-up with routing on", agent_id=None, model=model
+        )
+    ]
+    types = [e.get("type") for e in events]
+    assert "error" not in types, events
+    done = next(e for e in events if e.get("type") == "done")
+    assert done["fullText"] == "Synthetic resumed answer after routing."
+    assert {(e["agent_id"], e["state"]) for e in events if e.get("type") == "task_status"} >= {
+        ("benefits-coordinator", "completed")
+    }
+    # The main agent's first call saw the legacy question and answer before the new one.
+    assert seen and seen[0][:4] == ["system", "human", "ai", "human"]
+
+    saver = create_sqlite_saver(golden_db)
+    try:
+        values = saver.get_tuple({"configurable": {"thread_id": LEGACY_THREAD, "checkpoint_ns": ""}}).checkpoint[
+            "channel_values"
+        ]
+    finally:
+        saver.conn.close()
+    messages = values["messages"]
+    assert [m.id for m in messages[:2]] == ["legacy-h1", "legacy-a1"]
+    assert messages[-1].content == "Synthetic resumed answer after routing."
+    assert values["route_decision"]["source"] == "main_agent"
+    assert [p["agent_id"] for p in values["provenance"]] == ["benefits-coordinator"]
+    if migrate:
+        assert all(t.endswith("+aes256gcm") for _, t, _ in raw_checkpoint_rows(golden_db))
 
 
 @pytest.mark.asyncio
