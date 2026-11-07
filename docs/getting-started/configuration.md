@@ -81,9 +81,12 @@ python -m carefold.checkpoints encrypt   # writes checkpoints.db.bak-<time> firs
 python -m carefold.checkpoints verify    # every thread loads; same messages
 ```
 
-`encrypt` checks that every thread has the same messages before and after, and
-keeps the plaintext `.bak-<time>` copy. Delete that copy yourself once `verify`
-passes. `decrypt` reverses the migration. Pass `--db <path>` for a non-default
+`encrypt` checks that every thread has the same messages before and after. When
+that check passes and no plaintext rows are left, it deletes the plaintext
+`.bak-<time>` copy it wrote and reports `backup_deleted: true`. If the check
+fails, the command exits with an error and keeps the copy so you can restore it.
+Pass `--keep-backup` to keep the copy anyway, and delete it yourself later: it
+holds your chats unencrypted. `decrypt` reverses the migration. Pass `--db <path>` for a non-default
 database and `--json` for a machine-readable report. Checkpoint metadata is not
 encrypted.
 
