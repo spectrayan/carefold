@@ -121,24 +121,6 @@ class TestEmergencyRedFlagsNegations:
         "Patient denies crushing chest pain.",
         "Negative for severe chest pain.",
     ])
-    def test_reproduce_qualified_negation_false_positive_defect(self, prompt: str):
-        """When a user negates an emergency with a qualifying adjective (e.g. 'crushing', 'severe'),
-        the current regex in NEGATION_PATTERNS fails to match due to rigid whitespace/phrase structure.
-        The subsequent CHEST_PATTERNS then catches the adjective+noun and incorrectly generates
-        a FALSE POSITIVE emergency red flag for an explicitly negated symptom.
-        """
-        flag = check_emergency_red_flags(prompt)
-        # Document current limitation: flag is unexpectedly NOT None
-        assert flag is not None, "Demonstrates current flaw: qualified negation fails to suppress red flag"
-        assert flag.category == "acute_chest_pain"
-
-    @pytest.mark.xfail(reason="Qualified negations currently cause false-positive emergency red flags")
-    @pytest.mark.parametrize("prompt", [
-        "I do not have crushing chest pain.",
-        "I don't have severe chest tightness.",
-        "Patient denies crushing chest pain.",
-        "Negative for severe chest pain.",
-    ])
     def test_ideal_qualified_negations_should_return_none(self, prompt: str):
         """Ideal contract: qualified negations should return None."""
         flag = check_emergency_red_flags(prompt)
@@ -152,43 +134,6 @@ class TestEmergencyRedFlagsNegations:
 class TestEmergencyRedFlagsMaskingVulnerabilities:
     """Stress tests interactions where benign phrases inadvertently suppress acute emergencies."""
 
-    @pytest.mark.parametrize("prompt, expected_emergency_category", [
-        (
-            "Patient has no chest pain, but has slurred speech and facial droop.",
-            "stroke_fast",
-        ),
-        (
-            "No shortness of breath, but experiencing severe crushing chest pain radiating to jaw.",
-            "acute_chest_pain",
-        ),
-        (
-            "Negative for chest pain, but throat is closing up and lips are swollen.",
-            "anaphylaxis",
-        ),
-        (
-            "I had a stroke 10 years ago, but right now I have severe crushing chest pain radiating to my arm.",
-            "acute_chest_pain",
-        ),
-        (
-            "3 months ago I had knee surgery, but today my face is drooping and speech is slurred.",
-            "stroke_fast",
-        ),
-        (
-            "2 years ago my father died of a heart attack, and right now I have crushing chest pain radiating to my neck.",
-            "acute_chest_pain",
-        ),
-    ])
-    def test_reproduce_global_masking_false_negative_defect(self, prompt: str, expected_emergency_category: str):
-        """`check_emergency_red_flags` evaluates NEGATION_PATTERNS globally across the entire string.
-        If a negation pattern matches ANY symptom (e.g. 'no chest pain') or ANY temporal phrase
-        ('years ago', 'months ago') anywhere in the prompt, Step 1 returns None immediately.
-        This completely MASKS an acute, life-threatening emergency in the same prompt.
-        """
-        flag = check_emergency_red_flags(prompt)
-        # Document current limitation: returns None despite active emergency
-        assert flag is None, "Demonstrates current flaw: global negation suppresses acute emergency detection"
-
-    @pytest.mark.xfail(reason="Global negation/temporal matching masks real co-occurring acute emergencies")
     @pytest.mark.parametrize("prompt, expected_emergency_category", [
         (
             "Patient has no chest pain, but has slurred speech and facial droop.",
@@ -229,22 +174,6 @@ class TestEmergencyRedFlagsMaskingVulnerabilities:
 class TestEmergencyRedFlagsTerminologyGaps:
     """Tests direct emergency phrasing that is missing from regex lists."""
 
-    @pytest.mark.parametrize("prompt", [
-        "I am having a stroke",
-        "Help, my husband is having a stroke",
-        "Call an ambulance, acute stroke",
-        "I think I'm having a stroke right now",
-    ])
-    def test_reproduce_direct_stroke_keyword_gap(self, prompt: str):
-        """The keyword 'stroke' appears only in NEGATION_PATTERNS to suppress historical mentions.
-        It is completely absent from STROKE_PATTERNS. Thus, a direct statement like
-        'I am having a stroke' is not caught by `check_emergency_red_flags`.
-        """
-        flag = check_emergency_red_flags(prompt)
-        # Document current limitation: returns None
-        assert flag is None, "Demonstrates current flaw: affirmative 'stroke' keyword is not detected"
-
-    @pytest.mark.xfail(reason="Direct affirmative 'stroke' keyword is omitted from STROKE_PATTERNS")
     @pytest.mark.parametrize("prompt", [
         "I am having a stroke",
         "Help, my husband is having a stroke",

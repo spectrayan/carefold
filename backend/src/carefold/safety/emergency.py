@@ -9,22 +9,38 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Acute clinical emergency red-flag detection rules and triggers.
+"""Acute emergency red-flag detection.
 
-Provides pre-execution detection of acute life-threatening medical emergencies:
-1. Cardiovascular emergencies (crushing chest pain, radiation to jaw/arm, cold sweat).
-2. Neurological emergencies (stroke FAST: facial droop, slurred speech, arm weakness).
-3. Airway and allergic emergencies (anaphylaxis, airway closing, tongue/lip swelling).
-4. Suicidal crisis and acute self-harm emergencies (active suicidal ideation, intent to end life).
+Runs before any routing, agent or model call. A hit makes the input guardrail
+answer with the emergency referral, which names 911 and the 988 Suicide &
+Crisis Lifeline.
 
-Enforces immediate diversion to 911 / 988 and emergency room services before any downstream
-orchestration, planning, or model generation occurs.
+How it decides:
+
+1. Normalize the text: lower case, straight apostrophes, collapsed spacing,
+   common contractions typed without the apostrophe ("cant", "hes"), and
+   one-edit typos of the key symptom words ("stroek", "siezure", "chets").
+2. Split it into clauses (sentences, commas, "but", "and now"), so an acute
+   clause is judged on its own: "had a stroke in 2019, and now his face is
+   drooping" still triggers.
+3. Match symptom patterns per category: cardiac, respiratory, stroke,
+   anaphylaxis, overdose/poisoning, severe bleeding, unconsciousness,
+   seizure, suicide/self-harm. Patterns describe the symptom in any person
+   or tense users actually write ("I have chest pain", "he's not breathing",
+   "she's having a seizure").
+4. Skip a match only when its own clause clearly makes it non-acute: the
+   symptom is negated just before it ("no chest pain", "denies"), the clause
+   is historical with no "now"/"today" ("in 2019", "years ago", "history
+   of"), or it is a general question or hypothetical about someone else
+   ("what are signs of a stroke?", "what to do if someone is choking").
+
+When in doubt it errs toward safety: a bare symptom statement triggers.
 """
 
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Pattern, Sequence, Tuple
 
 
 class EmergencyFlag(dict):
@@ -67,118 +83,318 @@ class EmergencyFlag(dict):
         }
 
 
-# Negation guards: symptoms explicitly denied or qualified as past historical events
-NEGATION_PATTERNS: List[str] = [
-    r"\b(?:no|not|without|never|denies|negative for)\s+(?:chest\s+pain|shortness of breath|difficulty breathing|facial droop|arm weakness|slurred speech|stroke|anaphylaxis|swelling)\b",
-    r"\bdenies\s+(?:any\s+)?(?:chest\s+pain|shortness of breath|difficulty breathing)\b",
-    r"\b(?:years?|months?)\s+ago\b",
-    r"\b(?:history\s+of|past)\s+(?:heart\s+attack|stroke|cardiac\s+arrest|myocardial infarction)\b",
-]
+# --------------------------------------------------------------- normalizing
 
-# 1. Acute chest pain patterns
+_APOSTROPHES = str.maketrans({"\u2019": "'", "\u2018": "'", "\u02bc": "'", "`": "'"})
+
+_CONTRACTIONS: Tuple[Tuple[str, str], ...] = (
+    (r"\bcan\s+not\b", "cannot"),
+    (r"\bcant\b", "can't"),
+    (r"\bwont\b", "won't"),
+    (r"\bisnt\b", "isn't"),
+    (r"\bdoesnt\b", "doesn't"),
+    (r"\bdont\b", "don't"),
+    (r"\bcouldnt\b", "couldn't"),
+    (r"\bhes\b", "he's"),
+    (r"\bshes\b", "she's"),
+    (r"\bim\b", "i'm"),
+    (r"\bive\b", "i've"),
+    (r"\bhav\b", "have"),
+    (r"\bod(?:'?d|'?ed)\b", "overdosed"),
+    (r"\bepi\s+pen\b", "epipen"),
+)
+
+# Key symptom words; a token one edit away (same first letter) is read as the word.
+_VOCABULARY: Tuple[str, ...] = (
+    "anaphylactic", "anaphylaxis", "bleeding", "breath", "breathe", "breathing", "chest",
+    "choking", "collapsed", "convulsing", "drooping", "overdose", "overdosed",
+    "overdosing", "seizing", "seizure", "seizures", "slurred", "slurring",
+    "stroke", "suicidal", "suicide", "swelling", "swollen", "unconscious",
+    "unresponsive",
+)
+_VOCAB_SET = frozenset(_VOCABULARY)
+_TOKEN_RE = re.compile(r"[a-z]+")
+
+
+def _one_edit_apart(a: str, b: str) -> bool:
+    """Optimal string alignment distance of at most one (incl. one transposition)."""
+    if a == b:
+        return True
+    la, lb = len(a), len(b)
+    if abs(la - lb) > 1:
+        return False
+    if la == lb:
+        diff = [i for i in range(la) if a[i] != b[i]]
+        if len(diff) == 1:
+            return True
+        return len(diff) == 2 and diff[1] == diff[0] + 1 and a[diff[0]] == b[diff[1]] and a[diff[1]] == b[diff[0]]
+    if la > lb:
+        a, b = b, a
+    i = 0
+    while i < len(a) and a[i] == b[i]:
+        i += 1
+    return a[i:] == b[i + 1:]
+
+
+def _correct_token(token: str) -> str:
+    if len(token) < 5 or token in _VOCAB_SET:
+        return token
+    for word in _VOCABULARY:
+        if word[0] == token[0] and _one_edit_apart(token, word):
+            return word
+    return token
+
+
+def normalize(text: str) -> str:
+    """Lower-cased text with straight apostrophes, contractions and key typos fixed."""
+    out = (text or "").translate(_APOSTROPHES).lower()
+    out = re.sub(r"\s+", " ", out).strip()
+    for pattern, repl in _CONTRACTIONS:
+        out = re.sub(pattern, repl, out)
+    return _TOKEN_RE.sub(lambda m: _correct_token(m.group(0)), out)
+
+
+_CLAUSE_SPLIT = re.compile(r"[.!?;,\n]+|\b(?:but|however|although|though|yet)\b|\band\s+(?=now\b)")
+
+
+def _clauses(text: str) -> List[str]:
+    return [c.strip() for c in _CLAUSE_SPLIT.split(text) if c and c.strip()]
+
+
+# ------------------------------------------------------------------- guards
+
+_NEGATOR_BEFORE = re.compile(
+    r"\b(?:no|not|without|never|denies|denied|deny|negative\s+for|free\s+of|isn't|is\s+not|"
+    r"doesn't|does\s+not|don't|do\s+not|didn't|did\s+not|no\s+longer|hasn't|has\s+not|haven't|"
+    r"have\s+not|wasn't|was\s+not|aren't|are\s+not|i'm\s+not|am\s+not)\b(?:\s+\S+){0,3}\s*$"
+)
+
+_HISTORICAL = re.compile(
+    r"\b(?:in|since|back\s+in|during)\s+(?:19|20)\d{2}\b"
+    r"|\b(?:\d+|a|an|one|two|three|four|five|six|seven|eight|nine|ten|a\s+few|few|several|many|a\s+couple\s+of)?\s*"
+    r"(?:years?|months?|weeks?)\s+ago\b"
+    r"|\blast\s+(?:year|month|week|spring|summer|fall|autumn|winter)\b"
+    r"|\bhistory\s+of\b|\bused\s+to\b|\bin\s+the\s+past\b|\bpreviously\b|\bprior\b"
+    r"|\brecover(?:ing|ed)?\s+from\b|\bsurvivor\b"
+)
+
+_ACUTE_TIME = re.compile(
+    r"\b(?:right\s+now|now|today|tonight|currently|at\s+the\s+moment|this\s+(?:morning|afternoon|evening)|"
+    r"suddenly|sudden|just|again)\b"
+)
+
+_QUESTION_START = re.compile(
+    r"^(?:what|how|why|which|when|where|who|can\s+you|could\s+you|tell\s+me|explain|is\s+it|are\s+there|"
+    r"does|do|should|is|are|can)\b"
+)
+
+_PERSON_CUE = re.compile(
+    r"\b(?:i|i'm|i've|me|my|we|our|us|he|she|they|he's|she's|they're|his|her|their|him|them|"
+    r"mom|mum|mother|dad|father|son|daughter|husband|wife|baby|child|kid|toddler|grandma|grandpa|"
+    r"grandmother|grandfather|friend|brother|sister|partner|patient)\b"
+)
+
+_GENERIC_HYPOTHETICAL = re.compile(
+    r"\b(?:if|in\s+case|when|whether)\s+(?:someone|somebody|a\s+person|people|you|anyone|a\s+child|a\s+loved\s+one)\b"
+)
+
+
+def _negated(clause: str, start: int) -> bool:
+    return bool(_NEGATOR_BEFORE.search(clause[:start]))
+
+
+def _non_acute_clause(clause: str) -> bool:
+    if _HISTORICAL.search(clause) and not _ACUTE_TIME.search(clause):
+        return True
+    if _GENERIC_HYPOTHETICAL.search(clause):
+        return True
+    return bool(_QUESTION_START.search(clause) and not _PERSON_CUE.search(clause))
+
+
+# ------------------------------------------------------------------ patterns
+
+_POSS = r"(?:my|his|her|their|the|our|your)"
+_SELF = r"(?:my|him|her|them|your|our)sel(?:f|ves)"
+
 CHEST_PATTERNS: List[str] = [
-    r"\b(?:crushing|squeezing|radiating|severe|acute)\s+chest\s+(?:pain|pressure|tightness)\b",
-    r"\bchest\s+(?:pain|pressure|tightness)\s+(?:radiating|spreading)\s+to\s+(?:my\s+)?(?:arm|jaw|neck|back)\b",
-    r"\bpressure\s+in\s+(?:my\s+)?chest\b.*\bcold\s+sweat\b",
-    r"\bcold\s+sweat\b.*\bpressure\s+in\s+(?:my\s+)?chest\b",
-    r"\bcrushing\s+(?:retrosternal\s+)?chest\s+pain\b",
+    r"\bchest\s+(?:pains?|pressure|tightness|discomfort|heaviness)\b",
+    rf"\b(?:pain|pressure|tightness|heaviness)\s+in\s+{_POSS}\s+chest\b",
+    r"\bchest\s+(?:hurts?|is\s+hurting|feels\s+(?:tight|heavy))\b",
+    r"\bhaving\s+(?:a\s+)?heart\s+attack\b",
+    r"\b(?:just|recently)\s+had\s+(?:a\s+)?heart\s+attack\b",
+    r"\bcardiac\s+arrest\b",
+    r"\b(?:no|doesn't\s+have\s+a|does\s+not\s+have\s+a|can't\s+find\s+a)\s+pulse\b",
 ]
 
-# 2. Stroke FAST patterns
+RESPIRATORY_PATTERNS: List[str] = [
+    r"\b(?:can't|cannot|couldn't|unable\s+to|struggling\s+to|hard\s+to|difficult\s+to)\s+breath(?:e|ing)?\b",
+    r"\b(?:trouble|difficulty|struggling)\s+breathing\b",
+    r"\b(?:not|isn't|stopped|wasn't)\s+breathing\b",
+    r"\b(?:severe|sudden|extreme|very|really\s+bad)\s+short(?:ness)?\s+of\s+breath\b",
+    r"\b(?:acute|severe|sudden|extreme|bad|worsening)\s+short(?:ness)?\s+of\s+breath\b",
+    r"\b(?:i'm|i\s+am|he's|she's|they're|is|are|am|getting|feels?|feeling)\s+(?:very\s+|really\s+|so\s+|too\s+)?short\s+of\s+breath\b",
+    r"\b(?:i|he|she|they|we|you)\s+(?:have|has|am\s+having|is\s+having|are\s+having)\s+(?:\w+\s+){0,2}?short(?:ness)?\s+of\s+breath\b",
+    r"\bgasping\b",
+    r"\bchoking\b(?!\s+(?:hazard|risk))",
+    r"\b(?:lips|face|skin|fingers?)\s+(?:are\s+|is\s+)?(?:turning\s+)?blue\b",
+    r"\bturning\s+blue\b",
+]
+
 STROKE_PATTERNS: List[str] = [
-    r"\b(?:facial\s+droop|face\s+drooping|facial\s+drooping|slurred\s+speech|arm\s+weakness|sudden\s+numbness\s+on\s+one\s+side)\b",
-    r"\b(?:sudden\s+loss\s+of\s+vision|sudden\s+confusion|cannot\s+speak|unable\s+to\s+speak|unable\s+to\s+move\s+arm|can't\s+raise\s+(?:her\s+|his\s+|my\s+)?arm|cannot\s+raise\s+(?:her\s+|his\s+|my\s+)?arm)\b",
-    r"\b(?:asymmetrical\s+smile|sudden\s+unilateral\s+weakness|worst\s+headache\s+of\s+life|thunderclap\s+headache)\b",
+    r"\bhaving\s+(?:a\s+)?stroke\b",
+    r"\b(?:acute|massive)\s+stroke\b",
+    r"\b(?:just|recently)\s+had\s+(?:a\s+)?stroke\b",
+    r"\bstroke\s+(?:right\s+now|symptoms\s+(?:right\s+)?now)\b",
+    r"\b(?:face|mouth|smile)\s+(?:is\s+|looks\s+)?(?:drooping|droopy|crooked|lopsided)\b",
+    r"\b(?:facial|face)\s+droop\w*\b",
+    r"\bslurr(?:ed|ing)\b",
+    rf"\b(?:can't|cannot|unable\s+to|couldn't)\s+(?:lift|raise|move)\s+(?:{_POSS}|one)\s+(?:arm|leg)\b",
+    r"\barm\s+weakness\b",
+    r"\b(?:weakness|numbness)\s+on\s+one\s+side\b",
+    rf"\bone\s+side\s+of\s+{_POSS}\s+(?:body|face)\b",
+    r"\bsudden(?:ly)?\b.*\b(?:numb(?:ness)?|weak(?:ness)?|confus(?:ed|ion)|trouble\s+speaking|can't\s+speak|vision\s+loss|loss\s+of\s+vision|can't\s+see)\b",
+    r"\b(?:cannot|can't|unable\s+to)\s+speak\b",
+    r"\b(?:worst\s+headache\s+of\s+(?:my|his|her|their)?\s*life|thunderclap\s+headache|asymmetrical\s+smile)\b",
 ]
 
-# 3. Anaphylaxis and airway patterns
 ANAPHYLAXIS_PATTERNS: List[str] = [
-    r"\b(?:throat\s+(?:is\s+)?closing(?:\s+up)?|(?:swollen\s+lips?|lips?\s+(?:are\s+)?swollen)|lip\s+edema|tongue\s+swelling|swollen\s+tongue|difficulty\s+swallowing\s+and\s+breathing)\b",
-    r"\b(?:anaphylaxis|anaphylactic\s+reaction|hives\s+and\s+(?:wheezing|shortness\s+of\s+breath))\b",
-    r"\b(?:respiratory\s+stridor|upper\s+airway\s+obstruction|wheezing\s+with\s+cyanosis)\b",
+    r"\bthroat\s+(?:is\s+|feels\s+)?(?:closing|swelling|swollen|tight(?:ening)?)\b",
+    r"\b(?:tongue|lips?|face|mouth)\s+(?:is\s+|are\s+)?(?:swelling|swollen)\b",
+    r"\b(?:swollen\s+(?:lips?|tongue)|lip\s+edema)\b",
+    r"\banaphyla(?:xis|ctic)\b",
+    r"\ballergic\s+reaction\b.*\b(?:can't\s+breathe|trouble\s+breathing|throat|swelling|swollen|hives)\b",
+    r"\b(?:need|needs|needed|used|use)\s+(?:an?\s+|my\s+|his\s+|her\s+|their\s+)?epipen\b",
+    r"\b(?:hives\s+and\s+(?:wheezing|shortness\s+of\s+breath)|respiratory\s+stridor|upper\s+airway\s+obstruction)\b",
 ]
 
-# 4. Suicidal crisis and acute self-harm patterns
+OVERDOSE_PATTERNS: List[str] = [
+    r"\boverdos(?:ed|ing|e)\b",
+    r"\btook\s+(?:a\s+(?:whole|full)\s+bottle|an\s+entire\s+bottle|too\s+many|too\s+much|all\s+(?:of\s+)?(?:my|his|her|their|the))\b",
+    r"\b(?:swallowed|ate|drank|ingested|chugged)\s+(?:a\s+|an\s+|some\s+|the\s+)?(?:button\s+batter(?:y|ies)|batter(?:y|ies)|bleach|poison|antifreeze|detergent|laundry\s+pods?|drain\s+cleaner|rat\s+poison|pesticide|lighter\s+fluid|gasoline|a\s+handful\s+of\s+pills|handful\s+of\s+pills|bunch\s+of\s+pills)\b",
+    r"\bpoisoned\b",
+]
+
+BLEEDING_PATTERNS: List[str] = [
+    r"\b(?:won't|will\s+not|can't|cannot|doesn't|does\s+not|isn't)\s+stop(?:ping)?\s+(?:the\s+)?bleeding\b",
+    r"\bbleeding\s+(?:won't|will\s+not|doesn't|does\s+not|isn't|hasn't)\s+stop(?:ping|ped)?\b",
+    r"\bbleeding\s+(?:heavily|badly|profusely|a\s+lot|everywhere|nonstop|non-stop|so\s+much)\b",
+    r"\b(?:heavy|severe|uncontrolled|massive)\s+bleeding\b",
+    r"\b(?:vomiting|throwing\s+up|coughing\s+up)\s+blood\b",
+    r"\bblood\s+(?:is\s+)?(?:spurting|gushing|pouring)\b",
+    r"\b(?:spurting|gushing|pouring)\s+blood\b",
+    r"\blosing\s+(?:a\s+lot\s+of|lots\s+of|so\s+much)\s+blood\b",
+]
+
 SUICIDE_PATTERNS: List[str] = [
-    r"\b(?:want\s+to|going\s+to|planning\s+to)\s+(?:kill|end)\s+(?:my|one)self\b",
-    r"\b(?:want\s+to|going\s+to|planning\s+to)\s+die\b",
-    r"\b(?:end\s+my\s+life|take\s+my\s+(?:own\s+)?life)\b",
-    r"\b(?:feel|feeling|am|have)\s+suicidal\b",
+    rf"\b(?:want|wants|wanted|going|planning|plans|trying|tried|threatening|threatened)\s+to\s+(?:kill|end|hurt|harm)\s+{_SELF}\b",
+    r"\b(?:want|wants)\s+to\s+die\b",
+    r"\b(?:don't|do\s+not|doesn't|does\s+not)\s+want\s+to\s+(?:live|be\s+alive|wake\s+up)\b",
+    rf"\b(?:end|take|ending|taking)\s+(?:my|his|her|their)\s+(?:own\s+)?life\b",
+    r"\bend\s+it\s+all\b",
+    r"\bbetter\s+off\s+(?:dead|without\s+me)\b",
+    rf"\b(?:thinking|thought|thoughts)\s+(?:about|of)\s+(?:suicide|killing\s+{_SELF}|ending\s+(?:my|his|her|their)\s+life)\b",
+    r"\bsuicidal\b",
     r"\b(?:commit|committing)\s+suicide\b",
-    r"\b(?:suicidal\s+thoughts?|suicidal\s+ideation|suicide\s+plan)\b",
-    r"\b(?:hang|shoot|poison|cut|harm)\s+myself\b",
+    r"\bsuicide\s+(?:plan|note|attempt)\b",
+    rf"\b(?:kill|killing|hurt|hurting|harm|harming|cut|cutting|hang|hanging|shoot|shooting|poison|poisoning)\s+{_SELF}\b",
     r"\boverdose\s+on\s+(?:pills|medications?|drugs?)\b",
 ]
 
+UNCONSCIOUS_PATTERNS: List[str] = [
+    r"\bunconscious\b",
+    r"\bunresponsive\b",
+    r"\b(?:won't|will\s+not|isn't|is\s+not|not|can't|cannot)\s+(?:wake|waking)\s+(?:him\s+|her\s+|them\s+)?up\b",
+    r"\b(?:isn't|is\s+not|not)\s+responding\b",
+    r"\bcollapsed\b",
+]
+
+SEIZURE_PATTERNS: List[str] = [
+    r"\bhaving\s+(?:a\s+)?seizures?\b",
+    r"\bseizing\b",
+    r"\bconvuls(?:ing|ions?)\b",
+    r"\b(?:just|recently)\s+had\s+(?:a\s+)?seizure\b",
+    r"\bseizures?\s+(?:right\s+now|won't\s+stop|lasting|for\s+\w+\s+minutes)\b",
+    r"\bhad\s+a\s+seizure\s+(?:just\s+now|today|tonight|this\s+morning|an?\s+(?:hour|few\s+minutes)\s+ago|\w+\s+minutes\s+ago)\b",
+]
+
+# The emergency reply always names 911 and the 988 Suicide & Crisis Lifeline.
+_CALL_911 = "Call 911 now (US) or your local emergency number, or go to the nearest emergency room."
+_CALL_988 = "If anyone may be thinking about suicide or self-harm, call or text 988 (Suicide & Crisis Lifeline, US)."
+
+# Checked in this order; the first category with an acute match wins.
+_CATEGORIES: Tuple[Tuple[str, str, Sequence[str], str], ...] = (
+    ("acute_chest_pain", "acute chest pain/pressure", CHEST_PATTERNS,
+     f"EMERGENCY WARNING: Possible heart emergency. {_CALL_911} {_CALL_988}"),
+    ("anaphylaxis", "acute allergic airway reaction", ANAPHYLAXIS_PATTERNS,
+     f"EMERGENCY WARNING: Possible severe allergic reaction. Use epinephrine (an EpiPen) if one is prescribed. {_CALL_911} {_CALL_988}"),
+    ("stroke_fast", "FAST neurological symptoms", STROKE_PATTERNS,
+     f"EMERGENCY WARNING: Possible stroke. Note the time symptoms started. {_CALL_911} {_CALL_988}"),
+    ("respiratory_distress", "severe breathing difficulty", RESPIRATORY_PATTERNS,
+     f"EMERGENCY WARNING: Severe breathing trouble. {_CALL_911} {_CALL_988}"),
+    ("seizure", "active seizure", SEIZURE_PATTERNS,
+     f"EMERGENCY WARNING: Possible seizure emergency. Keep the person safe from injury and do not put anything in their mouth. {_CALL_911} {_CALL_988}"),
+    ("unconscious", "unresponsive person", UNCONSCIOUS_PATTERNS,
+     f"EMERGENCY WARNING: Someone may be unconscious. {_CALL_911} {_CALL_988}"),
+    ("overdose_poisoning", "overdose or poisoning", OVERDOSE_PATTERNS,
+     f"EMERGENCY WARNING: Possible overdose or poisoning. {_CALL_911} You can also call Poison Control at 1-800-222-1222 (US). {_CALL_988}"),
+    ("severe_bleeding", "severe bleeding", BLEEDING_PATTERNS,
+     f"EMERGENCY WARNING: Severe bleeding. Press firmly on the wound. {_CALL_911} {_CALL_988}"),
+    ("suicide_crisis", "suicide or self-harm crisis", SUICIDE_PATTERNS,
+     "EMERGENCY WARNING: Acute crisis. If you or someone else may act on thoughts of suicide or self-harm, "
+     "call or text 988 now (Suicide & Crisis Lifeline, US). If anyone is in immediate danger, call 911 now "
+     "or go to the nearest emergency room."),
+)
+
+_COMPILED: Tuple[Tuple[str, str, Tuple[Pattern[str], ...], str], ...] = tuple(
+    (cat, trig, tuple(re.compile(p) for p in pats), msg) for cat, trig, pats, msg in _CATEGORIES
+)
+
+EMERGENCY_REFERRAL_MESSAGE = (
+    f"EMERGENCY WARNING: This may be an emergency. {_CALL_911} {_CALL_988}"
+)
+"""Fallback referral when a refusal is an emergency but carries no message."""
+
+
+def _acute_match(clause: str, patterns: Iterable[Pattern[str]]) -> Optional[str]:
+    if _non_acute_clause(clause):
+        return None
+    for pattern in patterns:
+        for m in pattern.finditer(clause):
+            if not _negated(clause, m.start()):
+                return m.group(0)
+    return None
+
 
 def check_emergency_red_flags(prompt: str) -> Optional[EmergencyFlag]:
-    """Evaluates user prompt against acute clinical emergency red-flag patterns.
-
-    Detects acute crushing chest pain, stroke symptoms (FAST: facial droop, arm weakness,
-    speech impairment), severe anaphylaxis / upper airway closure, and acute suicidal
-    ideation / self-harm crisis.
-
-    Args:
-        prompt: Raw user input text.
-
-    Returns:
-        EmergencyFlag if acute emergency red flag detected, else None.
-    """
+    """Returns an EmergencyFlag when ``prompt`` describes an acute emergency, else None."""
     if not prompt or not isinstance(prompt, str):
         return None
-
-    p_lower = prompt.lower()
-
-    # Step 1: Check negation guards and historical event references
-    for neg_pat in NEGATION_PATTERNS:
-        if re.search(neg_pat, p_lower):
-            return None
-
-    # Step 2: Check acute chest pain / cardiac emergency
-    for cp in CHEST_PATTERNS:
-        if re.search(cp, p_lower):
-            return EmergencyFlag(
-                detected=True,
-                category="acute_chest_pain",
-                trigger_phrase="acute chest pain/pressure",
-                referral_message="EMERGENCY WARNING: Acute chest pain detected. Call 911 or visit the nearest emergency room immediately.",
-            )
-
-    # Step 3: Check stroke FAST symptoms
-    for sp in STROKE_PATTERNS:
-        if re.search(sp, p_lower):
-            return EmergencyFlag(
-                detected=True,
-                category="stroke_fast",
-                trigger_phrase="FAST neurological symptoms",
-                referral_message="EMERGENCY WARNING: Possible stroke symptoms detected. Call 911 immediately.",
-            )
-
-    # Step 4: Check acute anaphylaxis / airway obstruction
-    for ap in ANAPHYLAXIS_PATTERNS:
-        if re.search(ap, p_lower):
-            return EmergencyFlag(
-                detected=True,
-                category="anaphylaxis",
-                trigger_phrase="acute allergic airway reaction",
-                referral_message="EMERGENCY WARNING: Severe allergic reaction detected. Administer epinephrine if prescribed and call 911 immediately.",
-            )
-
-    # Step 5: Check acute suicidal crisis / self-harm emergency
-    for pattern in SUICIDE_PATTERNS:
-        if re.search(pattern, p_lower):
-            return EmergencyFlag(
-                detected=True,
-                category="suicide_crisis",
-                trigger_phrase=pattern,
-                referral_message="EMERGENCY WARNING: Acute crisis symptoms detected. If you are experiencing thoughts of suicide or self-harm, call or text 988 immediately to connect with the Suicide & Crisis Lifeline, or visit the nearest emergency room.",
-            )
-
+    clauses = _clauses(normalize(prompt))
+    for category, trigger, patterns, message in _COMPILED:
+        for clause in clauses:
+            hit = _acute_match(clause, patterns)
+            if hit is not None:
+                return EmergencyFlag(
+                    detected=True,
+                    category=category,
+                    trigger_phrase=f"{trigger}: {hit}",
+                    referral_message=message,
+                )
     return None
 
 
 __all__ = [
+    "ANAPHYLAXIS_PATTERNS",
+    "BLEEDING_PATTERNS",
+    "CHEST_PATTERNS",
+    "EMERGENCY_REFERRAL_MESSAGE",
     "EmergencyFlag",
-    "check_emergency_red_flags",
+    "OVERDOSE_PATTERNS",
+    "RESPIRATORY_PATTERNS",
+    "SEIZURE_PATTERNS",
+    "STROKE_PATTERNS",
     "SUICIDE_PATTERNS",
+    "UNCONSCIOUS_PATTERNS",
+    "check_emergency_red_flags",
+    "normalize",
 ]

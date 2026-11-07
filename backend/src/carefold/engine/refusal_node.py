@@ -17,8 +17,13 @@ from typing import Any, Dict, Optional
 
 from langchain_core.messages import AIMessage
 
+from carefold.safety.emergency import EMERGENCY_REFERRAL_MESSAGE
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
 from yarvelle_core.workflows.nodes.base import BaseNode
+
+
+def _is_emergency(state: Dict[str, Any], reason: str) -> bool:
+    return bool(state.get("emergency_red_flags")) or str(reason).startswith("emergency_red_flag")
 
 
 class CarefoldRefusalNode(BaseNode):
@@ -33,14 +38,18 @@ class CarefoldRefusalNode(BaseNode):
     async def execute(self, state: Dict[str, Any], **kwargs: Any) -> Dict[str, Any]:
         del kwargs
         refusal_reason = state.get("refusal_reason") or "safety_policy"
-        refusal_text = (
-            state.get("refusal_message")
-            or SAFE_REFUSAL_TEMPLATE
-        )
-        # Prefer the Carefold template for API/eval compatibility even when a
-        # shorter emergency referral was attached upstream.
-        if SAFE_REFUSAL_TEMPLATE not in refusal_text:
-            refusal_text = SAFE_REFUSAL_TEMPLATE
+        if _is_emergency(state, refusal_reason):
+            # The emergency referral leads (it names 911 and 988), followed by
+            # the standard template so clients still find it.
+            referral = state.get("refusal_message") or EMERGENCY_REFERRAL_MESSAGE
+            if "911" not in referral or "988" not in referral:
+                referral = EMERGENCY_REFERRAL_MESSAGE
+            refusal_text = f"{referral}\n\n{SAFE_REFUSAL_TEMPLATE}"
+        else:
+            refusal_text = state.get("refusal_message") or SAFE_REFUSAL_TEMPLATE
+            # Prefer the Carefold template for API/eval compatibility.
+            if SAFE_REFUSAL_TEMPLATE not in refusal_text:
+                refusal_text = SAFE_REFUSAL_TEMPLATE
         ai_message = AIMessage(content=refusal_text)
         return {
             "messages": [ai_message],
