@@ -51,7 +51,7 @@ def test_pack_yaml_orchestration_validates_as_manifest() -> None:
     data = yaml.safe_load(PACK_YAML.read_text(encoding="utf-8"))
     assert isinstance(data, dict)
     manifest = PackManifest.model_validate(data)
-    assert manifest.requires_core == ">=0.2.1,<0.3.0"
+    assert manifest.requires_core == ">=0.2.2,<0.3.0"
     assert manifest.orchestration is not None
     orch = manifest.orchestration
     assert orch.default_agent == "appointment-prep-coordinator"
@@ -71,13 +71,13 @@ def test_get_pack_orchestration_and_core_compat() -> None:
     import carefold
 
     pack = carefold.get_pack()
-    assert pack.requires_core == ">=0.2.1,<0.3.0"
+    assert pack.requires_core == ">=0.2.2,<0.3.0"
     assert pack.routing_hints is not None
     assert pack.routing_hints.patterns_resource == "resources/routing_patterns.yaml"
     assert getattr(pack.routing_hints, "patterns_path", None) is None
     assert pack.orchestration is not None
     validate_pack_spec(pack, core_version=core_version)
-    assert Version(core_version) >= Version("0.2.1")
+    assert Version(core_version) >= Version("0.2.2")
 
 
 def test_orchestration_referenced_agents_exist_on_disk() -> None:
