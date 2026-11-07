@@ -25,6 +25,25 @@ model:
   name: llama3.2
   apiKey: ""          # leave empty for local
 
+# Vault key (KEK). Chats are saved encrypted with a key derived from it, and
+# the pod does not start without it. Create the Secret yourself, once, and back
+# the key up: if it is lost or replaced, saved chats can no longer be read.
+#
+#   kubectl -n <namespace> create secret generic carefold-vault-kek \
+#     --from-literal=kek="$(openssl rand -hex 32)"
+#
+# then install with --set vault.existingSecret=carefold-vault-kek. The chart
+# never generates this key (a generated key can be silently replaced by
+# `helm template`, GitOps renders or an uninstall).
+vault:
+  existingSecret: ""   # required while checkpoints.encryption is true
+  secretKey: kek       # key inside the Secret: 64 hex characters (or 32 raw bytes)
+
+checkpoints:
+  # Encrypt saved chats at rest. Setting false stores chats unencrypted; it is
+  # an explicit opt-out and needs no vault key.
+  encryption: true
+
 config:
   host: "0.0.0.0"
   allowClinical: false

@@ -26,15 +26,26 @@ If you want to run Carefold without configuring local Python and Node.js environ
 # Pull multi-arch image (Apple Silicon arm64 & Intel/AMD amd64)
 docker pull ghcr.io/spectrayan/carefold:latest
 
+# Vault key for encrypted chats: create it once and back it up
+# (if it is lost or replaced, saved chats can no longer be read)
+openssl rand -hex 32 > carefold-vault.kek && chmod 600 carefold-vault.kek
+
 # Start all-in-one container (:3000 web UI, :8000 backend API)
 docker run -d \
   --name carefold \
   -p 127.0.0.1:3000:3000 \
   -p 127.0.0.1:8000:8000 \
   -e OLLAMA_URL=http://host.docker.internal:11434/v1 \
+  -e CAREFOLD_MODE=server \
+  -e CAREFOLD_VAULT_KEK_FILE=/run/secrets/carefold_vault_kek \
+  -v "$PWD/carefold-vault.kek:/run/secrets/carefold_vault_kek:ro" \
   -v carefold-data:/data \
   ghcr.io/spectrayan/carefold:latest
 ```
+
+Without the key file the container stops at startup and says which setting is
+missing. Docker Compose and Helm setups are in
+[Configuration: Containers](configuration.md#containers-docker-compose-helm).
 
 Access the UI at `http://localhost:3000`.
 

@@ -41,6 +41,16 @@ spec:
               value: {{ .Values.config.allowClinical | quote }}
             - name: CAREFOLD_AUDIT_STORE_BODIES
               value: {{ .Values.config.auditStoreBodies | quote }}
+            - name: CAREFOLD_CHECKPOINT_ENCRYPTION
+              value: {{ .Values.checkpoints.encryption | quote }}
+            {{- if .Values.checkpoints.encryption }}
+            # Server mode reads the vault key only from the mounted Secret and
+            # refuses to start without it.
+            - name: CAREFOLD_MODE
+              value: server
+            - name: CAREFOLD_VAULT_KEK_FILE
+              value: /var/run/secrets/carefold-vault/{{ .Values.vault.secretKey }}
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /api/health
@@ -58,7 +68,22 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            {{- if .Values.checkpoints.encryption }}
+            - name: vault-kek
+              mountPath: /var/run/secrets/carefold-vault
+              readOnly: true
+            {{- end }}
       volumes:
+        {{- if .Values.checkpoints.encryption }}
+        - name: vault-kek
+          secret:
+            secretName: {{ include "carefold.vaultSecretName" . }}
+            # Owner root, group fsGroup: readable by the non-root app user only.
+            defaultMode: 0440
+            items:
+              - key: {{ .Values.vault.secretKey }}
+                path: {{ .Values.vault.secretKey }}
+        {{- end }}
         - name: data
           {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:

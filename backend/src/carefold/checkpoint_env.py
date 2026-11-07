@@ -119,6 +119,48 @@ CHECKPOINT_KEY_MISSING_MESSAGE = (
 )
 
 
+CHECKPOINT_KEY_STARTUP_MESSAGE = (
+    "Checkpoint encryption is on, but the vault key could not be loaded. Mount a file with "
+    "64 hex characters and point CAREFOLD_VAULT_KEK_FILE at it (generate one with "
+    "`openssl rand -hex 32` and keep it: losing it makes saved chats unreadable). "
+    "To store chats unencrypted instead, set CAREFOLD_CHECKPOINT_ENCRYPTION=false."
+)
+
+
+class CheckpointKeyStartupError(RuntimeError):
+    """Server mode with encrypted checkpoints and no usable vault key."""
+
+
+def _server_mode(env: MutableMapping[str, str]) -> bool:
+    return (env.get(f"{APP_PREFIX}MODE") or "").strip().lower() in ("server", "s")
+
+
+def check_checkpoint_key_at_startup(environ: Optional[MutableMapping[str, str]] = None) -> Optional[str]:
+    """Check at startup that encrypted checkpoints have a vault key.
+
+    Returns None when encryption is off or the key loads. Without a key, server
+    mode (``CAREFOLD_MODE=server``, set by the Docker and Helm deploys) raises
+    ``CheckpointKeyStartupError`` so the container stops with a clear message
+    instead of starting and failing every chat. Local mode logs the problem and
+    returns the message: a desktop install can still add the key to the OS
+    keychain later. The message is fixed text with no key material or path.
+    """
+    from yarvelle_core.config import settings as core_settings
+    from yarvelle_core.vault.checkpoints import CheckpointKeyError, load_checkpoint_keyring
+
+    env = os.environ if environ is None else environ
+    if not core_settings.checkpoint_encryption:
+        return None
+    try:
+        load_checkpoint_keyring()
+    except CheckpointKeyError:
+        if _server_mode(env):
+            raise CheckpointKeyStartupError(CHECKPOINT_KEY_STARTUP_MESSAGE) from None
+        logger.error("checkpoint_key_missing: %s", CHECKPOINT_KEY_MISSING_MESSAGE)
+        return CHECKPOINT_KEY_MISSING_MESSAGE
+    return None
+
+
 def checkpoint_key_error_event() -> Optional[Dict[str, Any]]:
     """Error event to send instead of running a turn when the checkpoint key is missing.
 
@@ -141,6 +183,9 @@ def checkpoint_key_error_event() -> Optional[Dict[str, Any]]:
 __all__ = [
     "CHECKPOINT_ALIASES",
     "CHECKPOINT_KEY_MISSING_MESSAGE",
+    "CHECKPOINT_KEY_STARTUP_MESSAGE",
+    "CheckpointKeyStartupError",
+    "check_checkpoint_key_at_startup",
     "apply_checkpoint_encryption_default",
     "apply_checkpoint_env_aliases",
     "checkpoint_key_error_event",
