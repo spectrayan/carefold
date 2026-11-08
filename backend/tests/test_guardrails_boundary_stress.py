@@ -120,11 +120,28 @@ class TestEmergencyRedFlagsNegations:
         "I don't have severe chest tightness.",
         "Patient denies crushing chest pain.",
         "Negative for severe chest pain.",
+        "I do not have any sudden severe crushing chest pain.",
+        "Patient denies any acute severe crushing chest pain.",
+        "Negative for any acute or severe chest pain.",
+        "She does not have any trouble or difficulty breathing.",
+        "He is not having any stroke or seizure symptoms.",
+        "Ruled out chest pain and stroke.",
+        "Denies chest pain, trouble breathing, or dizziness.",
+        "No chest pain, difficulty breathing, or facial droop.",
+        "Negative for fever, chills, or chest pain.",
+        "Patient denies nausea, vomiting, or chest pain.",
+        "No headache, slurred speech, or arm weakness.",
+        # Historical / past-tense mentions without acute recurrence
+        "I had chest pain 2 years ago and feel fine now.",
+        "My grandfather had a stroke 10 years ago.",
+        "Patient has a family history of stroke and heart attack.",
+        "She had a seizure when she was a child.",
+        "He was formerly diagnosed with asthma in 2018.",
     ])
     def test_ideal_qualified_negations_should_return_none(self, prompt: str):
-        """Ideal contract: qualified negations should return None."""
+        """Ideal contract: qualified negations, negated lists, and historical clauses should return None."""
         flag = check_emergency_red_flags(prompt)
-        assert flag is None
+        assert flag is None, f"Unexpected flag {flag} for: {prompt!r}"
 
 
 # ============================================================================
@@ -158,6 +175,82 @@ class TestEmergencyRedFlagsMaskingVulnerabilities:
         (
             "2 years ago my father died of a heart attack, and right now I have crushing chest pain radiating to my neck.",
             "acute_chest_pain",
+        ),
+        (
+            "no chest pain but my face is drooping right now",
+            "stroke_fast",
+        ),
+        (
+            "no chest pain except my face is drooping right now",
+            "stroke_fast",
+        ),
+        (
+            "No headache except chest pain",
+            "acute_chest_pain",
+        ),
+        (
+            "Patient has no cough and is having a stroke",
+            "stroke_fast",
+        ),
+        (
+            "Patient has no headache or dizziness and is having a stroke",
+            "stroke_fast",
+        ),
+        (
+            "Denies fever or chills and is having a seizure right now",
+            "seizure",
+        ),
+        (
+            "I have no fever and have chest pain",
+            "acute_chest_pain",
+        ),
+        (
+            "I have no fever and severe chest pain",
+            "acute_chest_pain",
+        ),
+        (
+            "No nausea and my chest hurts",
+            "acute_chest_pain",
+        ),
+        (
+            "Denies nausea or vomiting with crushing chest pain",
+            "acute_chest_pain",
+        ),
+        (
+            "No chest pain (my face is drooping right now)",
+            "stroke_fast",
+        ),
+        (
+            "I had a stroke 10 years ago except my face is drooping",
+            "stroke_fast",
+        ),
+        (
+            "I had a stroke 10 years ago and my chest hurts",
+            "acute_chest_pain",
+        ),
+        (
+            "I had a heart attack in 2019 and I cannot breathe",
+            "respiratory_distress",
+        ),
+        (
+            "History of asthma: she cannot breathe",
+            "respiratory_distress",
+        ),
+        (
+            "Had a seizure 5 years ago — he is unconscious",
+            "unconscious",
+        ),
+        (
+            "Had a stroke last year (my face is drooping)",
+            "stroke_fast",
+        ),
+        (
+            "While I had a stroke 5 years ago, I have severe chest pain",
+            "acute_chest_pain",
+        ),
+        (
+            "Even though I have no chest pain, my throat is closing up",
+            "anaphylaxis",
         ),
     ])
     def test_ideal_co_occurring_emergencies_should_be_detected(self, prompt: str, expected_emergency_category: str):
