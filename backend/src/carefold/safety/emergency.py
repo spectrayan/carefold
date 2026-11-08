@@ -240,11 +240,31 @@ RESPIRATORY_PATTERNS: List[str] = [
     r"\bturning\s+blue\b",
 ]
 
+_STROKE_MOD = (
+    r"(?:mini[-\s]+|(?:minor|major|massive|acute|ischemic|hemorrhagic|embolic|cerebellar|"
+    r"brain\s*stem|suspected|possible|another|second)\s+)?"
+)
+_NON_CV_STROKE_BEFORE = (
+    r"(?<!heat\s)(?<!sun\s)(?<!swimming\s)(?<!swim\s)(?<!breast\s)(?<!back\s)"
+    r"(?<!butterfly\s)(?<!freestyle\s)(?<!golf\s)(?<!putting\s)(?<!brush\s)"
+    r"(?<!paint\s)(?<!key\s)(?<!pedal\s)(?<!piston\s)(?<!two\s)(?<!two-)"
+    r"(?<!four\s)(?<!four-)(?<!2-)(?<!4-)"
+)
+_NON_CV_STROKE_AFTER = r"(?!\s+of\s+(?:luck|genius|midnight|a\s+pen|the\s+pen|the\s+brush|bad\s+luck))"
+_STROKE_WORD = rf"{_NON_CV_STROKE_BEFORE}stroke{_NON_CV_STROKE_AFTER}"
+
 STROKE_PATTERNS: List[str] = [
-    r"\bhaving\s+(?:a\s+)?stroke\b",
-    r"\b(?:acute|massive)\s+stroke\b",
-    r"\b(?:just|recently)\s+had\s+(?:a\s+)?stroke\b",
-    r"\bstroke\s+(?:right\s+now|symptoms\s+(?:right\s+)?now)\b",
+    rf"(?<!of\s)(?<!about\s)(?<!from\s)(?<!prevent\s)(?<!avoid\s)\b(?:having|experiencing|suffering(?:\s+from)?|going\s+through)\s+(?:a\s+|an\s+)?{_STROKE_MOD}{_STROKE_WORD}\b",
+    r"(?<!of\s)(?<!about\s)(?<!from\s)(?<!prevent\s)(?<!avoid\s)\b(?:having|experiencing|suffering(?:\s+from)?)\s+(?:a\s+|an\s+)?(?:tia|transient\s+ischemic\s+attack|cerebrovascular\s+accident|brain\s+attack)\b",
+    rf"(?<!of\s)(?<!for\s)(?<!prevent\s)\b(?:acute|massive|suspected|possible)\s+(?:(?:ischemic|hemorrhagic|embolic|cerebellar|brain\s*stem)\s+)?{_STROKE_WORD}\b(?!\s+(?:risk|prevention|history|workup|rehab|recovery|scale|unit|center|protocol|guidelines?))",
+    r"\b(?:acute|suspected)\s+(?:tia|transient\s+ischemic\s+attack|cerebrovascular\s+accident)\b",
+    rf"\b(?:just|recently)\s+had\s+(?:a\s+|an\s+)?{_STROKE_MOD}{_STROKE_WORD}\b",
+    r"\b(?:just|recently)\s+had\s+(?:a\s+|an\s+)?(?:tia|transient\s+ischemic\s+attack)\b",
+    rf"\bhad\s+(?:a\s+|an\s+)?{_STROKE_MOD}{_STROKE_WORD}\s+(?:just\s+now|right\s+now|today|tonight|this\s+(?:morning|afternoon|evening)|an?\s+(?:hour|few\s+minutes)\s+ago|\w+\s+minutes?\s+ago|\d+\s+hours?\s+ago)\b",
+    rf"\b{_STROKE_WORD}\s+(?:right\s+now|symptoms\s+(?:right\s+)?now|emergency|alert)\b",
+    rf"(?<!of\s)(?<!about\s)\b(?:have|has|having|experiencing|showing|getting|developed)\s+(?:\w+\s+){{0,2}}?(?:{_STROKE_WORD}\s+symptoms|signs\s+of\s+(?:a\s+|an\s+)?{_STROKE_WORD})\b",
+    rf"\b(?:think|thinks|suspect|suspects|looks\s+like|acting\s+like|might\s+be|could\s+be)\s+(?:(?:it's|it\s+is|this\s+is|that's|that\s+is|(?:i'm|he's|she's|they're)\s+having|(?:i|he|she|they|mom|mother|dad|father|husband|wife|my\s+\w+)\s+(?:am\s+having|is\s+having|are\s+having|just\s+had|had))\s+)?(?:a\s+|an\s+)?{_STROKE_MOD}{_STROKE_WORD}\b",
+    r"\bcode\s+stroke\b",
     r"\b(?:face|mouth|smile)\s+(?:is\s+|looks\s+)?(?:drooping|droopy|crooked|lopsided)\b",
     r"\b(?:facial|face)\s+droop\w*\b",
     r"\bslurr(?:ed|ing)\b",
