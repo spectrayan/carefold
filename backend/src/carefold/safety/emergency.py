@@ -154,28 +154,86 @@ def normalize(text: str) -> str:
     return _TOKEN_RE.sub(lambda m: _correct_token(m.group(0)), out)
 
 
-_CLAUSE_SPLIT = re.compile(r"[.!?;,\n]+|\b(?:but|however|although|though|yet)\b|\band\s+(?=now\b)")
+_AND_CLAUSE_STARTER = (
+    r"(?:right\s+now|now|today|tonight|currently|at\s+the\s+moment|"
+    r"this\s+(?:morning|afternoon|evening)|suddenly|sudden|just|again|still|also|then|"
+    r"i|i'm|i've|he|he's|she|she's|they|they're|we|my|his|her|their|"
+    r"mom|mum|mother|dad|father|husband|wife|son|daughter|baby|child|kid|toddler|patient|"
+    r"is|am|are|was|were|has|have|had|feels?|feeling|hurts?|started|began|collapsed|passed|"
+    r"can't|cannot|couldn't|won't|stopped|unable|struggling|experiencing|suffering|having|"
+    r"vomiting|throwing|coughing|bleeding|choking|gasping|seizing|convulsing|"
+    r"no|not|without|denies|denied|negative)"
+)
+
+_CLAUSE_SPLIT = re.compile(
+    r"[.!?;:\n()\u2014\u2013]+|--+"
+    r"|\b(?:but|however|although|though|even\s+though|yet|except|whereas|while)\b"
+    rf"|\band\s+(?={_AND_CLAUSE_STARTER}\b)"
+)
+
+_LIST_NEGATOR = re.compile(
+    r"\b(?:no|not|without|neither|denies|denied|deny|negative\s+for|free\s+of|ruled\s+out|rules\s+out|absence\s+of|"
+    r"do\s+not\s+have|does\s+not\s+have|did\s+not\s+have|don't\s+have|doesn't\s+have|didn't\s+have|"
+    r"has\s+no|have\s+no|had\s+no)\b"
+)
+
+_CLAUSE_VERB_OR_SUBJ = re.compile(
+    r"\b(?:i|i'm|i've|me|my|we|our|he|he's|his|she|she's|her|they|they're|their|"
+    r"mom|mum|mother|dad|father|husband|wife|son|daughter|baby|child|kid|toddler|patient|"
+    r"is|am|are|was|were|has|have|had|can't|cannot|couldn't|won't|stopped|feels?|feeling|hurts?|"
+    r"started|began|collapsed|passed|wants?|took|swallowed|drank|having|experiencing|suffering|"
+    r"call|help|please|right\s+now|now|today|tonight|currently|suddenly|just)\b"
+)
 
 
 def _clauses(text: str) -> List[str]:
-    return [c.strip() for c in _CLAUSE_SPLIT.split(text) if c and c.strip()]
+    result: List[str] = []
+    for primary in _CLAUSE_SPLIT.split(text):
+        primary = primary.strip()
+        if not primary:
+            continue
+        comma_parts = [p.strip() for p in primary.split(",") if p and p.strip()]
+        if not comma_parts:
+            continue
+        acc = [comma_parts[0]]
+        for part in comma_parts[1:]:
+            if _LIST_NEGATOR.search(acc[-1]) and not _CLAUSE_VERB_OR_SUBJ.search(part):
+                acc[-1] = f"{acc[-1]}, {part}"
+            else:
+                acc.append(part)
+        result.extend(acc)
+    return result
 
 
 # ------------------------------------------------------------------- guards
 
 _NEGATOR_BEFORE = re.compile(
-    r"\b(?:no|not|without|never|denies|denied|deny|negative\s+for|free\s+of|isn't|is\s+not|"
-    r"doesn't|does\s+not|don't|do\s+not|didn't|did\s+not|no\s+longer|hasn't|has\s+not|haven't|"
-    r"have\s+not|wasn't|was\s+not|aren't|are\s+not|i'm\s+not|am\s+not)\b(?:\s+\S+){0,3}\s*$"
+    r"\b(?:"
+    r"no\s+longer|negative\s+for|free\s+of|ruled\s+out|rules\s+out|ruling\s+out|absence\s+of|"
+    r"do\s+not\s+have|does\s+not\s+have|did\s+not\s+have|don't\s+have|doesn't\s+have|didn't\s+have|"
+    r"has\s+not\s+had|have\s+not\s+had|hasn't\s+had|haven't\s+had|had\s+no|has\s+no|have\s+no|"
+    r"no|not|without|never|neither|nor|denies|denied|deny|"
+    r"isn't|is\s+not|doesn't|does\s+not|don't|do\s+not|didn't|did\s+not|"
+    r"hasn't|has\s+not|haven't|have\s+not|wasn't|was\s+not|weren't|were\s+not|"
+    r"aren't|are\s+not|i'm\s+not|am\s+not"
+    r")\b"
 )
+
+_AND_COMPOUND_NEGATOR = re.compile(
+    r"^(?:denies|denied|deny|negative\s+for|without|free\s+of|ruled\s+out|rules\s+out|ruling\s+out|absence\s+of|"
+    r"do\s+not\s+have|does\s+not\s+have|did\s+not\s+have|don't\s+have|doesn't\s+have|didn't\s+have)$"
+)
+
+_NEG_BREAK = re.compile(r"\b(?:but|however|although|though|yet|except|with|while|whereas)\b")
 
 _HISTORICAL = re.compile(
     r"\b(?:in|since|back\s+in|during)\s+(?:19|20)\d{2}\b"
     r"|\b(?:\d+|a|an|one|two|three|four|five|six|seven|eight|nine|ten|a\s+few|few|several|many|a\s+couple\s+of)?\s*"
     r"(?:years?|months?|weeks?)\s+ago\b"
     r"|\blast\s+(?:year|month|week|spring|summer|fall|autumn|winter)\b"
-    r"|\bhistory\s+of\b|\bused\s+to\b|\bin\s+the\s+past\b|\bpreviously\b|\bprior\b"
+    r"|\b(?:family\s+)?history\s+of\b|\bused\s+to\b|\bin\s+the\s+past\b|\bpreviously\b|\bprior\b|\bformerly\b"
     r"|\brecover(?:ing|ed)?\s+from\b|\bsurvivor\b"
+    r"|\bwhen\s+(?:i|he|she|they)\s+(?:was|were)\s+(?:a\s+(?:child|kid|baby|teen(?:ager)?)|young(?:er)?|\d+)\b"
 )
 
 _ACUTE_TIME = re.compile(
@@ -185,7 +243,9 @@ _ACUTE_TIME = re.compile(
 
 _QUESTION_START = re.compile(
     r"^(?:what|how|why|which|when|where|who|can\s+you|could\s+you|tell\s+me|explain|is\s+it|are\s+there|"
-    r"does|do|should|is|are|can)\b"
+    r"does|do|should|can|"
+    r"(?:is|are)(?!\s+(?:having|experiencing|suffering|bleeding|choking|gasping|seizing|convulsing|struggling|"
+    r"unconscious|unresponsive|not\b|unable|turning|drooping|slurring|swelling|swollen|closing|vomiting|coughing|losing)))\b"
 )
 
 _PERSON_CUE = re.compile(
@@ -200,7 +260,20 @@ _GENERIC_HYPOTHETICAL = re.compile(
 
 
 def _negated(clause: str, start: int) -> bool:
-    return bool(_NEGATOR_BEFORE.search(clause[:start]))
+    prefix = clause[:start]
+    matches = list(_NEGATOR_BEFORE.finditer(prefix))
+    if not matches:
+        return False
+    last = matches[-1]
+    neg_word = last.group(0).strip()
+    tail = prefix[last.end():]
+    if _NEG_BREAK.search(tail):
+        return False
+    if re.search(r"\band\b", tail):
+        if not _AND_COMPOUND_NEGATOR.match(neg_word):
+            return False
+    tokens = [t for t in re.split(r"[\s,]+", tail.strip()) if t]
+    return len(tokens) <= 8
 
 
 def _non_acute_clause(clause: str) -> bool:
