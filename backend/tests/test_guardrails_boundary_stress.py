@@ -179,12 +179,74 @@ class TestEmergencyRedFlagsTerminologyGaps:
         "Help, my husband is having a stroke",
         "Call an ambulance, acute stroke",
         "I think I'm having a stroke right now",
+        "I am having a mini-stroke",
+        "My husband is having a mini stroke",
+        "She is having an ischemic stroke",
+        "He is having a hemorrhagic stroke",
+        "I am having stroke symptoms",
+        "My mom has stroke symptoms",
+        "My dad is experiencing a stroke",
+        "My grandmother is suffering a stroke",
+        "My father is suffering from a stroke",
+        "My mom had a stroke this morning",
+        "He had a stroke today",
+        "She had a stroke an hour ago",
+        "My dad had a stroke 15 minutes ago",
+        "He had a stroke just now",
+        "My wife just had a stroke",
+        "I think my wife is having a TIA",
+        "He is experiencing a transient ischemic attack",
+        "Help, I think it's a stroke",
+        "My dad cannot talk right, I think it is a stroke",
+        "I think my mom had a stroke",
+        "My mom is showing signs of a stroke",
+        "Emergency, possible stroke",
+        "Suspected stroke in my father",
+        "Code stroke in room 4",
+        "Stroke emergency, please help",
     ])
     def test_ideal_direct_stroke_keyword_should_trigger(self, prompt: str):
-        """Ideal contract: direct acute stroke statements should trigger stroke_fast."""
+        """Ideal contract: direct acute stroke statements should trigger stroke_fast and name 911/988."""
         flag = check_emergency_red_flags(prompt)
-        assert flag is not None
+        assert flag is not None, f"Expected stroke_fast emergency for: {prompt!r}"
         assert flag.category == "stroke_fast"
+        assert "911" in flag.referral_message
+        assert "988" in flag.referral_message
+
+    @pytest.mark.parametrize("prompt", [
+        # Historical mentions
+        "I had a stroke 10 years ago",
+        "My dad had a stroke in 2019",
+        "Mom is recovering well from her stroke last year and starts rehab Monday",
+        "She is a stroke survivor",
+        "Family history of stroke",
+        "Patient has a history of ischemic stroke",
+        # Negated mentions
+        "I am not having a stroke",
+        "Patient denies stroke symptoms",
+        "Negative for acute stroke",
+        "No signs of a stroke",
+        # Educational / risk / prevention questions
+        "What are signs of a stroke?",
+        "How can we lower her risk of stroke?",
+        "How can I reduce my risk of having a stroke?",
+        "I am worried about having a stroke",
+        "What is the difference between a TIA and a stroke?",
+        # Non-cerebrovascular usages of "stroke"
+        "He has heat stroke right now",
+        "I am having a heat stroke",
+        "How do I treat sun stroke?",
+        "What is the best swimming stroke right now?",
+        "I changed my freestyle swimming stroke today",
+        "That was a stroke of luck right now",
+        "A bold brush stroke on the canvas",
+        "My lawnmower has a two-stroke engine",
+        "He improved his golf stroke this morning",
+    ])
+    def test_non_acute_and_non_cerebrovascular_stroke_phrases_do_not_trigger(self, prompt: str):
+        """Historical, negated, educational, and non-cerebrovascular 'stroke' uses must not false-positive."""
+        flag = check_emergency_red_flags(prompt)
+        assert flag is None, f"Unexpected emergency flag {flag} for: {prompt!r}"
 
 
 # ============================================================================
