@@ -156,6 +156,13 @@ try:
 except Exception:
     pass
 
+try:
+    from carefold.auth_reset import install_atomic_password_reset as _install_atomic_password_reset
+
+    _install_atomic_password_reset()
+except Exception:
+    pass
+
 logger = logging.getLogger("carefold_health")
 
 __version__ = "0.5.0b2"

@@ -210,7 +210,6 @@ class TestConcurrencyProbes:
         assert len(errors) == 4
         assert all("already registered" in str(e[1]).lower() or "unique" in str(e[1]).lower() for e in errors)
 
-    @pytest.mark.xfail(strict=False, reason="Single-use token race condition under concurrent redemption")
     @pytest.mark.asyncio
     async def test_concurrent_password_reset_token_redemption(self, security_env):
         """A single-use password reset token must only succeed once under concurrent redemption."""
@@ -231,14 +230,59 @@ class TestConcurrencyProbes:
         async def attempt_redeem(idx: int):
             try:
                 ok = await auth.reset_password(token, f"NewPassword{idx}123!")
-                return ("success", ok)
+                return ("success", ok, idx)
             except Exception as err:
-                return ("error", str(err))
+                return ("error", str(err), idx)
 
         # Launch 5 concurrent reset attempts with the exact same token
         results = await asyncio.gather(*(attempt_redeem(i) for i in range(5)))
         successes = [r for r in results if r[0] == "success" and r[1] is True]
+        rejections = [r for r in results if r[0] == "success" and r[1] is False]
         assert len(successes) == 1, f"Token redeemed {len(successes)} times, must be strictly 1"
+        assert len(rejections) == 4, f"Expected 4 failed-closed attempts, got {len(rejections)}"
+
+        # Verify only the single winning password authenticates
+        winning_idx = successes[0][2]
+        assert await auth.authenticate("reset_target", f"NewPassword{winning_idx}123!") is not None
+        for idx in range(5):
+            if idx != winning_idx:
+                assert await auth.authenticate("reset_target", f"NewPassword{idx}123!") is None
+
+    @pytest.mark.asyncio
+    async def test_concurrent_password_reset_http_endpoint_redemption(self, security_env):
+        """Concurrent HTTP POST /api/auth/reset-password requests must yield 1 x 200 and N-1 x 400."""
+        from httpx import ASGITransport, AsyncClient
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as aclient:
+            reg_res = await aclient.post(
+                "/api/auth/register",
+                json={
+                    "email": "http_reset_race@carefold.test",
+                    "username": "http_reset_race",
+                    "password": "InitialPassword123!",
+                    "full_name": "HTTP Reset Race",
+                },
+            )
+            assert reg_res.status_code == 201
+
+            forgot_res = await aclient.post(
+                "/api/auth/forgot-password",
+                json={"email": "http_reset_race@carefold.test"},
+            )
+            assert forgot_res.status_code == 200
+            token = forgot_res.json()["token"]
+            assert token is not None
+
+            async def post_reset(idx: int):
+                return await aclient.post(
+                    "/api/auth/reset-password",
+                    json={"token": token, "new_password": f"HttpNewPass{idx}123!"},
+                )
+
+            responses = await asyncio.gather(*(post_reset(i) for i in range(8)))
+            codes = [r.status_code for r in responses]
+            assert codes.count(200) == 1, f"Expected exactly one 200 OK, got {codes}"
+            assert codes.count(400) == 7, f"Expected seven 400 Bad Request, got {codes}"
 
     @pytest.mark.asyncio
     async def test_concurrent_note_creation_colliding_slugs(self, security_env):
