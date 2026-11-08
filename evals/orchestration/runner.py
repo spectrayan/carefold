@@ -56,6 +56,9 @@ def _with_production_safety_policy(pack: Any) -> Any:
     """
     import dataclasses
 
+    from yarvelle_core.engine.guards import build_guarded_policy
+
+    from carefold import get_pack
     from carefold.safety.policy import CarefoldHealthSafetyPolicy
 
     base = type(pack)
@@ -63,7 +66,11 @@ def _with_production_safety_policy(pack: Any) -> Any:
     @dataclasses.dataclass(frozen=True)
     class CarefoldHealthEvalPack(base):  # type: ignore[valid-type, misc]
         def safety_policy(self) -> Any:
-            return CarefoldHealthSafetyPolicy()
+            prod_pack = get_pack()
+            return build_guarded_policy(
+                prod_pack.safety_policy or CarefoldHealthSafetyPolicy(),
+                pack=prod_pack,
+            )
 
     return CarefoldHealthEvalPack(**{f.name: getattr(pack, f.name) for f in dataclasses.fields(pack)})
 

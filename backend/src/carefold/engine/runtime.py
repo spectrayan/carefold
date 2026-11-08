@@ -52,6 +52,16 @@ def _load_pack_orchestration() -> Any:
     return get_pack().orchestration
 
 
+def _load_pack_safety_policy() -> SafetyPolicy:
+    from yarvelle_core.engine.guards import build_guarded_policy
+
+    from carefold import get_pack
+
+    pack = get_pack()
+    base = pack.safety_policy or CarefoldHealthSafetyPolicy()
+    return build_guarded_policy(base, pack=pack)
+
+
 # Per event loop, per checkpoint file: one asyncio lock that queues in-process
 # checkpoint writes. Concurrent turns each open their own SQLite connection;
 # queueing their commits here is fair (FIFO) instead of leaving them to race
@@ -117,7 +127,7 @@ class CarefoldAgentExecutionService(CoreAgentExecutionService):
         if orchestration is None and graph is None and graph_builder is None:
             orchestration = _load_pack_orchestration()
         if safety_policy is None:
-            safety_policy = CarefoldHealthSafetyPolicy()
+            safety_policy = _load_pack_safety_policy()
         if default_agent_id is None and orchestration is not None:
             default_agent_id = getattr(orchestration, "default_agent", None)
         super().__init__(
@@ -169,19 +179,54 @@ class CarefoldAgentExecutionService(CoreAgentExecutionService):
             logger.debug("write-queued checkpointer unavailable, using core default: %s", err)
             return None
 
+    async def _order_buffered_events(
+        self, stream: AsyncGenerator[Dict[str, Any], None]
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """Keep suggestions after the buffered answer token (and drop them on refusal)."""
+        try:
+            if not getattr(self, "_buffer_answer", False):
+                async for event in stream:
+                    yield event
+                return
+            held_suggestions: list[Dict[str, Any]] = []
+            refused = False
+            async for event in stream:
+                ev_type = event.get("type")
+                if ev_type == "suggestions":
+                    held_suggestions.append(event)
+                    continue
+                if ev_type == "refusal":
+                    refused = True
+                    held_suggestions.clear()
+                if ev_type == "token":
+                    yield event
+                    for sug in held_suggestions:
+                        yield sug
+                    held_suggestions.clear()
+                    continue
+                if ev_type == "done" and not refused and not event.get("refused"):
+                    for sug in held_suggestions:
+                        yield sug
+                    held_suggestions.clear()
+                yield event
+        finally:
+            await stream.aclose()
+
     async def execute_turn(self, *args: Any, **kwargs: Any) -> AsyncGenerator[Dict[str, Any], None]:
         """Run core's turn with a write-queued checkpointer when none was injected."""
         async with AsyncExitStack() as stack:
             saver = None if self.checkpointer is not None else await self._open_serialized_saver(stack)
             if saver is None:
-                async for event in super().execute_turn(*args, **kwargs):
+                async for event in self._order_buffered_events(super().execute_turn(*args, **kwargs)):
                     yield event
                 return
             # Shallow per-turn copy so concurrent turns on one service never
             # share or overwrite each other's checkpointer.
             turn_service = copy.copy(self)
             turn_service.checkpointer = saver
-            async for event in CoreAgentExecutionService.execute_turn(turn_service, *args, **kwargs):
+            async for event in self._order_buffered_events(
+                CoreAgentExecutionService.execute_turn(turn_service, *args, **kwargs)
+            ):
                 yield event
 
     async def execute_resume_turn(

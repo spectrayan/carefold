@@ -3,7 +3,7 @@ id: health
 name: Carefold Health Pack
 version: 0.5.0b1
 domain: health
-requires_core: ">=0.2.3,<0.3.0"
+requires_core: ">=0.2.4,<0.3.0"
 requires_packs: []
 license: "PolyForm Noncommercial License 1.0.0 and Carefold Additional Terms"
 maintainers:
@@ -193,6 +193,23 @@ orchestration:
       - When specialist recommendations conflict, turn the conflict into questions to raise with the clinician rather than choosing a side.
       - Never invent clinical facts, coverage details, or vitals that specialists did not provide.
       - Keep emergency and red-flag referral language intact; do not soften or rephrase diversion guidance.
+
+safety:
+  guards:
+    release: buffered
+    checks:
+      # CarefoldHealthSafetyPolicy runs first and enforces all hard clinical
+      # refusals (dosing, prescribing, stopping medication, emergency-care
+      # replacement, and acute red-flag diversion) plus soft diagnosis boundary
+      # warnings. The Granite Guardian check below runs after it in shadow mode
+      # when configured via CAREFOLD_SAFETY_GUARD_GRANITE_GUARDIAN_* (or
+      # YARVELLE_SAFETY_GUARD_GRANITE_GUARDIAN_*); Carefold ships no guard model.
+      - id: granite-guardian
+        type: model
+        preset: granite_guardian
+        stages: [output]
+        mode: shadow
+        when_unconfigured: allow
 
 migrations:
   branch: health

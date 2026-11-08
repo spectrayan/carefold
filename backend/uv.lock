@@ -290,7 +290,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "fhir-resources", specifier = ">=8.0.0" },
     { name = "hatchling", marker = "extra == 'dev'", specifier = ">=1.25.0" },
-    { name = "httpx", specifier = ">=0.27.0" },
+    { name = "httpx", specifier = ">=0.27.0,<1" },
     { name = "import-linter", marker = "extra == 'dev'", specifier = ">=2.0" },
     { name = "jinja2", specifier = ">=3.1.0" },
     { name = "keyring", specifier = ">=24.0.0" },
@@ -322,7 +322,7 @@ requires-dist = [
     { name = "sse-starlette", specifier = ">=2.1.0" },
     { name = "structlog", specifier = ">=24.1.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30.0" },
-    { name = "yarvelle-core", specifier = ">=0.1.2" },
+    { name = "yarvelle-core", specifier = ">=0.2.4,<0.3.0" },
 ]
 provides-extras = ["dev", "ocr"]
 
@@ -3036,7 +3036,7 @@ wheels = [
 
 [[package]]
 name = "yarvelle-core"
-version = "0.1.2"
+version = "0.2.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -3050,6 +3050,7 @@ dependencies = [
     { name = "httpx" },
     { name = "jinja2" },
     { name = "keyring" },
+    { name = "langchain" },
     { name = "langchain-anthropic" },
     { name = "langchain-core" },
     { name = "langchain-google-genai" },
@@ -3072,9 +3073,9 @@ dependencies = [
     { name = "structlog" },
     { name = "uvicorn", extra = ["standard"] },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0b/57/e4cb52132a2c01283e17b66d526afb9e41bbe0a542d65b958ac2cadecd21/yarvelle_core-0.1.2.tar.gz", hash = "sha256:9e5fc6818594a865f659b7a3ecbbbf5b5f868a454d13020c0738b508f30c5d71", size = 726660, upload-time = "2026-10-29T23:42:39.265Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/9a/5710333987416002c9196e79602a21103ccfeb568ce17998b908037824d6/yarvelle_core-0.2.4.tar.gz", hash = "sha256:59b05c3a94b5512cb6efdfd4a90cb1383929b0879b637593165b4b5108c794fb", size = 951466, upload-time = "2026-11-07T21:17:23.909Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a4/9d/bd9e9cf8e813fdf26a9f6a2e56898959cd92dccf7258b00b129f0a71735b/yarvelle_core-0.1.2-py3-none-any.whl", hash = "sha256:afb0fbee5d34ac60f7db7663d90949173b087205bab8a06089498032f2029ab3", size = 859095, upload-time = "2026-10-29T23:42:37.626Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/06/1672db4d995e1508fa9a94a830800e3812e13a1d770afca5f02f0a404eef/yarvelle_core-0.2.4-py3-none-any.whl", hash = "sha256:64614b46a326c2cdeb154e258960e28d5f00250cd25939806b146081497481e9", size = 1043830, upload-time = "2026-11-07T21:17:22.205Z" },
 ]
 
 [[package]]

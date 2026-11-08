@@ -28,7 +28,17 @@ from carefold.safety.prompt import build_safety_preamble
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
 
 
-class HealthSafetyPolicy:
+class _HealthSafetyPolicyMeta(type):
+    """Recognizes a GuardedSafetyPolicy wrapping HealthSafetyPolicy as an instance."""
+
+    def __instancecheck__(cls, instance: Any) -> bool:
+        if super().__instancecheck__(instance):
+            return True
+        base = getattr(instance, "__dict__", {}).get("base") if hasattr(instance, "__dict__") else None
+        return base is not None and super().__instancecheck__(base)
+
+
+class HealthSafetyPolicy(metaclass=_HealthSafetyPolicyMeta):
     """Adapts Carefold clinical safety classifiers to the domain-neutral SafetyPolicy protocol."""
 
     def check_input(
