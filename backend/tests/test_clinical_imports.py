@@ -272,6 +272,97 @@ def test_parse_fhir_bundle_extracts_resources_and_provenance():
     for rec in records:
         assert rec["trust"] == "untrusted"
         assert rec["source_display"].startswith("From City General FHIR, ")
+        assert rec["scope"] == "health.clinical"
+
+
+@pytest.mark.asyncio
+async def test_fhir_bundle_expanded_types_scope_mapping_and_taint_propagation(import_db_env):
+    """Verifies expanded R4 resource types (#281), clinical vs paperwork scope routing, and TaintFlag propagation."""
+    factory = import_db_env["factory"]
+    profile_id = import_db_env["profile_id"]
+    user_id = import_db_env["user_id"]
+
+    expanded_bundle = json.dumps({
+        "resourceType": "Bundle",
+        "id": "bundle-expanded-281",
+        "type": "collection",
+        "entry": [
+            {
+                "fullUrl": "urn:uuid:11111111-1111-4111-8111-111111111111",
+                "resource": {
+                    "resourceType": "Patient",
+                    "id": "pat-maya",
+                    "name": [{"family": "Patel", "given": ["Maya"]}],
+                    "birthDate": "1988-11-23",
+                },
+            },
+            {
+                "resource": {
+                    "resourceType": "DiagnosticReport",
+                    "id": "diag-cmp-1",
+                    "status": "final",
+                    "code": {
+                        "coding": [{"system": "http://loinc.org", "code": "24323-8", "display": "Comprehensive metabolic panel"}],
+                        "text": "Comprehensive metabolic panel",
+                    },
+                    "subject": {"reference": "urn:uuid:11111111-1111-4111-8111-111111111111"},
+                    "effectiveDateTime": "2026-03-12T08:00:00Z",
+                },
+            },
+            {
+                "resource": {
+                    "resourceType": "Coverage",
+                    "id": "cov-blue-1",
+                    "status": "active",
+                    "type": {
+                        "coding": [{"system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "HIP", "display": "health insurance plan policy"}]
+                    },
+                    "beneficiary": {"reference": "Patient/pat-maya"},
+                    "payor": [{"display": "BlueCross Shield"}],
+                },
+            },
+            {
+                "resource": {
+                    "resourceType": "ExplanationOfBenefit",
+                    "id": "eob-101",
+                    "status": "active",
+                    "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "institutional"}]},
+                    "use": "claim",
+                    "patient": {"reference": "Patient/pat-maya"},
+                    "created": "2026-03-14T10:00:00Z",
+                    "insurer": {"display": "BlueCross Shield"},
+                    "provider": {"display": "City General"},
+                    "outcome": "complete",
+                    "insurance": [{"focal": True, "coverage": {"reference": "Coverage/cov-blue-1"}}],
+                },
+            },
+        ],
+    })
+
+    ctx = ToolContext(
+        user_id=user_id,
+        profile_id=profile_id,
+        taint=TaintFlag(False),
+        extra={"session_factory": factory},
+    )
+    staged_out = await execute_stage_clinical_import(
+        {
+            "filename": "expanded_r4_bundle.json",
+            "content": expanded_bundle,
+            "source_name": "City General EHR",
+        },
+        ctx=ctx,
+    )
+    assert staged_out["status"] == "staged"
+    assert staged_out["format"] == "fhir_r4"
+    assert bool(ctx.taint) is True
+
+    parsed = parse_fhir_bundle(expanded_bundle, source_name="City General EHR", profile_id=profile_id)
+    by_type = {r["resource_type"]: r for r in parsed["records"]}
+    assert by_type["DiagnosticReport"]["scope"] == "health.clinical"
+    assert by_type["Coverage"]["scope"] == "health.paperwork"
+    assert by_type["ExplanationOfBenefit"]["scope"] == "health.paperwork"
+    assert by_type["DiagnosticReport"]["data"]["subject"]["reference"] == f"Patient/{profile_id}"
 
 
 def test_parse_ccda_xml_extracts_sections_and_blocks_xxe():
