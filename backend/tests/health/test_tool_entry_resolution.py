@@ -46,13 +46,13 @@ def pack_manifest() -> Dict[str, Any]:
 
 def test_manifest_declares_exact_17_tools(pack_manifest: Dict[str, Any]):
     tools = pack_manifest.get("provides", {}).get("tools", [])
-    assert len(tools) == 17, f"Expected exactly 17 tools declared in pack.yaml, found {len(tools)}"
+    assert len(tools) == 20, f"Expected exactly 20 tools declared in pack.yaml, found {len(tools)}"
     assert "ui" not in pack_manifest, "Backend pack.yaml must not contain frontend 'ui' definitions"
 
 
 def test_all_17_manifest_tool_entries_resolve(pack_manifest: Dict[str, Any]):
     tools = pack_manifest.get("provides", {}).get("tools", [])
-    assert len(tools) == 17
+    assert len(tools) == 20
 
     failures: List[str] = []
     resolved_specs: Dict[str, ToolSpec] = {}
@@ -122,7 +122,7 @@ def test_all_17_manifest_tool_entries_resolve(pack_manifest: Dict[str, Any]):
         resolved_specs[tool_id] = spec
 
     assert not failures, "Tool entry resolution failures:\n" + "\n".join(f"  - {f}" for f in failures)
-    assert len(resolved_specs) == 17, f"Expected 17 resolved tools, got {len(resolved_specs)}"
+    assert len(resolved_specs) == 20, f"Expected 20 resolved tools, got {len(resolved_specs)}"
 
 
 def test_native_get_health_tool_specs_factory():
@@ -130,7 +130,7 @@ def test_native_get_health_tool_specs_factory():
 
     specs = get_health_tool_specs()
     assert isinstance(specs, list)
-    assert len(specs) == 17, f"Expected 17 ToolSpecs from get_health_tool_specs(), got {len(specs)}"
+    assert len(specs) == 20, f"Expected 20 ToolSpecs from get_health_tool_specs(), got {len(specs)}"
 
     spec_names = {s.name for s in specs}
     expected_names = {
@@ -151,6 +151,9 @@ def test_native_get_health_tool_specs_factory():
         "sync_school_ics",
         "zocdoc_book_appointment",
         "verify_smart_health_card",
+        "fhir_search_resources",
+        "fhir_get_patient_summary",
+        "fhir_get_observation_trends",
     }
     assert spec_names == expected_names, f"Name mismatch: {spec_names ^ expected_names}"
 
@@ -172,7 +175,7 @@ def test_isolated_resolution_without_app_main():
     try:
         import carefold.tools as cht
         tools = cht.get_health_tool_specs()
-        assert len(tools) == 17
+        assert len(tools) == 20
         for t in tools:
             assert isinstance(t, ToolSpec)
     finally:
