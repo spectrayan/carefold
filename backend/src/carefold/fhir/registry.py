@@ -1500,7 +1500,12 @@ def validate_and_normalize_fhir_resource(
         )
 
     candidate = copy.deepcopy(resource)
-    candidate.pop("_carefold_provenance", None)
+    for k in list(candidate.keys()):
+        if k.startswith("_carefold") or k == "aggregation":
+            candidate.pop(k, None)
+    raw_meta_trust = None
+    if isinstance(candidate.get("meta"), dict) and "trust" in candidate["meta"]:
+        raw_meta_trust = candidate["meta"].pop("trust", None)
     synthesized_defaults: List[str] = []
 
     defaults_for_type = _MINIMAL_R4_DEFAULTS.get(resolved_type, {})
@@ -1521,6 +1526,10 @@ def validate_and_normalize_fhir_resource(
         # Preserve original fields alongside validated canonical fields
         merged = copy.deepcopy(resource)
         merged.update(normalized)
+        if raw_meta_trust is not None:
+            merged.setdefault("meta", {})
+            if isinstance(merged["meta"], dict):
+                merged["meta"]["trust"] = raw_meta_trust
         return FhirValidationResult(
             is_valid=True,
             resource_type=resolved_type,
