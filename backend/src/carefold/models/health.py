@@ -29,6 +29,7 @@ import json
 import uuid
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     ForeignKey,
     Index,
@@ -833,6 +834,367 @@ class CompanionDevice(Base):
         )
 
 
+class HealthResourceVersion(Base, ScopedMixin):
+    """Immutable FHIR R4 version snapshot for a HealthResource (#282)."""
+
+    __tablename__ = "health_resource_versions"
+    __table_args__ = (
+        UniqueConstraint(
+            "resource_id",
+            "version_id",
+            name="uq_health_resource_versions_resource_version",
+        ),
+        Index(
+            "ix_health_resource_versions_profile_scope_type",
+            "profile_id",
+            "scope",
+            "resource_type",
+        ),
+        Index(
+            "ix_health_resource_versions_resource_version",
+            "resource_id",
+            "version_id",
+        ),
+        {"extend_existing": True},
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique version snapshot identifier (UUID v4 string)",
+    )
+    resource_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("health_resources.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced current HealthResource identifier",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    resource_type: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        index=True,
+        doc="FHIR R4 resourceType for this snapshot",
+    )
+    version_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        doc="Monotonically increasing integer version number (1, 2, ...)",
+    )
+    operation: Mapped[str] = mapped_column(
+        String(16),
+        default="create",
+        server_default="create",
+        nullable=False,
+        doc="Lifecycle operation: create, update, or delete",
+    )
+    content_hash: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        doc="Deterministic SHA-256 hex digest of canonical clinical JSON content",
+    )
+    fhir_json: Mapped[Dict[str, Any]] = mapped_column(
+        JSON,
+        nullable=False,
+        doc="Immutable versioned FHIR R4 JSON payload with meta.versionId and meta.lastUpdated",
+    )
+    source_batch_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("import_batches.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        doc="Optional ImportBatch identifier that produced this version",
+    )
+    actor_user_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        nullable=True,
+        doc="Optional user ID of the actor that committed this version",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="UTC timestamp when this version snapshot was recorded",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="UTC timestamp of last record metadata update",
+    )
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "operation" not in kwargs:
+            kwargs["operation"] = "create"
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return (
+            f"<HealthResourceVersion id={self.id!r} resource_id={self.resource_id!r} "
+            f"version_id={self.version_id!r} operation={self.operation!r}>"
+        )
+
+
+class HealthResourceCoding(Base, ScopedMixin):
+    """Multi-coding terminology index entry for a HealthResource (#282).
+
+    Indexes structured `(element_path, system, code, display)` tuples (LOINC, SNOMED CT,
+    RxNorm, ICD-10-CM, CVX, CPT, HL7 CodeSystems) without exposing free-text narratives.
+    """
+
+    __tablename__ = "health_resource_codings"
+    __table_args__ = (
+        UniqueConstraint(
+            "resource_id",
+            "element_path",
+            "system",
+            "code",
+            name="uq_health_resource_codings_res_path_sys_code",
+        ),
+        Index(
+            "ix_health_resource_codings_profile_sys_code",
+            "profile_id",
+            "system",
+            "code",
+        ),
+        Index(
+            "ix_health_resource_codings_profile_scope_code",
+            "profile_id",
+            "scope",
+            "code",
+        ),
+        Index(
+            "ix_health_resource_codings_profile_type_code",
+            "profile_id",
+            "resource_type",
+            "code",
+        ),
+        {"extend_existing": True},
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique coding index row identifier (UUID v4 string)",
+    )
+    resource_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("health_resources.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced HealthResource identifier",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    resource_type: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        index=True,
+        doc="FHIR R4 resourceType of the owning resource",
+    )
+    element_path: Mapped[str] = mapped_column(
+        String(128),
+        default="code",
+        server_default="code",
+        nullable=False,
+        doc="FHIR element path of the CodeableConcept/Coding (e.g. code, component.code, category)",
+    )
+    system: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="Terminology system URI (e.g. http://loinc.org, http://snomed.info/sct)",
+    )
+    code: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        doc="Terminology code string",
+    )
+    display: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="Standardized coding display label (never free-text narrative)",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="UTC timestamp when coding index row was created",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="UTC timestamp when coding index row was last updated",
+    )
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "element_path" not in kwargs:
+            kwargs["element_path"] = "code"
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return (
+            f"<HealthResourceCoding id={self.id!r} resource_id={self.resource_id!r} "
+            f"path={self.element_path!r} system={self.system!r} code={self.code!r}>"
+        )
+
+
+class HealthResourceReference(Base, ScopedMixin):
+    """Directed FHIR R4 resource reference graph edge (#282).
+
+    Captures outbound references (`subject`, `patient`, `encounter`, `performer`, `result`,
+    `reasonReference`, etc.) between resources within a profile's clinical/paperwork graph.
+    """
+
+    __tablename__ = "health_resource_references"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_resource_id",
+            "reference_field",
+            "target_type",
+            "target_id",
+            "raw_reference",
+            name="uq_health_resource_references_edge",
+        ),
+        Index(
+            "ix_health_resource_refs_profile_target",
+            "profile_id",
+            "target_type",
+            "target_id",
+        ),
+        Index(
+            "ix_health_resource_refs_profile_scope_source",
+            "profile_id",
+            "scope",
+            "source_resource_id",
+        ),
+        Index(
+            "ix_health_resource_refs_target_resource_id",
+            "target_resource_id",
+        ),
+        {"extend_existing": True},
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique reference edge identifier (UUID v4 string)",
+    )
+    source_resource_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("health_resources.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Source HealthResource identifier",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    source_type: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        index=True,
+        doc="FHIR R4 resourceType of the source resource",
+    )
+    reference_field: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        doc="FHIR element path holding the reference (e.g. subject, encounter, result, performer)",
+    )
+    target_type: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        index=True,
+        doc="Target FHIR R4 resourceType (e.g. Patient, Encounter, Observation, Practitioner)",
+    )
+    target_id: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        index=True,
+        doc="Target logical FHIR ID or canonical profile ID",
+    )
+    target_resource_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("health_resources.id", ondelete="SET NULL"),
+        nullable=True,
+        doc="Resolved local HealthResource.id when the target resource exists in the same profile",
+    )
+    raw_reference: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Normalized or raw FHIR reference string (never free-text display)",
+    )
+    is_external: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="True when referencing an unresolved external URI or logical identifier",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        doc="UTC timestamp when reference edge was created",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        doc="UTC timestamp when reference edge was last updated",
+    )
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "id" not in kwargs:
+            kwargs["id"] = str(uuid.uuid4())
+        if "is_external" not in kwargs:
+            kwargs["is_external"] = False
+        if "created_at" not in kwargs:
+            kwargs["created_at"] = utc_now()
+        if "updated_at" not in kwargs:
+            kwargs["updated_at"] = utc_now()
+        super().__init__(**kwargs)
+
+    def __repr__(self) -> str:
+        return (
+            f"<HealthResourceReference id={self.id!r} source_resource_id={self.source_resource_id!r} "
+            f"field={self.reference_field!r} target='{self.target_type}/{self.target_id}'>"
+        )
+
+
 from yarvelle_core.db.models import Note
 from sqlalchemy.orm import synonym
 
@@ -847,6 +1209,9 @@ if not hasattr(Note, "appointment"):
 
 __all__ = [
     "HealthResource",
+    "HealthResourceVersion",
+    "HealthResourceCoding",
+    "HealthResourceReference",
     "Appointment",
     "PreventiveRecord",
     "ImportBatch",

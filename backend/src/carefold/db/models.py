@@ -33,6 +33,9 @@ import yarvelle_core.db.models as _core_models
 try:
     from carefold.models.health import (
         HealthResource,
+        HealthResourceVersion,
+        HealthResourceCoding,
+        HealthResourceReference,
         Appointment,
         PreventiveRecord,
         ImportBatch,

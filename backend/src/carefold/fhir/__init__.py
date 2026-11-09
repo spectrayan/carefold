@@ -44,6 +44,17 @@ from carefold.fhir.registry import (
     resolve_resource_scope,
     validate_and_normalize_fhir_resource,
 )
+from carefold.fhir.repository import (
+    compute_canonical_fhir_content_hash,
+    delete_fhir_resource_with_history,
+    ensure_canonical_patient_resource,
+    get_inbound_references,
+    get_outbound_references,
+    get_resource_version_history,
+    link_intra_batch_references,
+    search_resources_by_coding,
+    upsert_fhir_resource_with_history,
+)
 
 __all__ = [
     "CARE_PLAN_AND_ADMIN_RESOURCE_TYPES",
@@ -68,13 +79,22 @@ __all__ = [
     "FhirDiagnostic",
     "FhirValidationResult",
     "classify_fhir_reference",
+    "compute_canonical_fhir_content_hash",
+    "delete_fhir_resource_with_history",
+    "ensure_canonical_patient_resource",
     "evaluate_fhirpath",
     "extract_codings",
     "extract_effective_iso",
     "extract_patient_subject_references",
     "extract_primary_coding_and_display",
     "extract_references",
+    "get_inbound_references",
+    "get_outbound_references",
     "get_r4_model_class",
+    "get_resource_version_history",
+    "link_intra_batch_references",
     "resolve_resource_scope",
+    "search_resources_by_coding",
+    "upsert_fhir_resource_with_history",
     "validate_and_normalize_fhir_resource",
 ]
