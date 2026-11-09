@@ -59,6 +59,7 @@ from carefold.fhir.registry import (
     resolve_resource_scope,
     validate_and_normalize_fhir_resource,
 )
+from carefold.fhir.terminology import normalize_fhir_terminology_and_units
 
 # Backward-compatible model registry mapping all 33 allowlisted FHIR R4 resource types
 _FHIR_MODEL_REGISTRY: Dict[str, Any] = {
@@ -928,6 +929,15 @@ def parse_fhir_bundle(
         if rewrite_map:
             _rewrite_reference_values_in_node(fhir_copy, rewrite_map)
 
+        term_res = normalize_fhir_terminology_and_units(fhir_copy, rtype=rtype)
+        fhir_copy = term_res.normalized
+        for td in term_res.diagnostics:
+            d_dict = td.to_dict()
+            d_dict["entry_index"] = idx
+            d_dict["resource_type"] = rtype
+            d_dict["source_id"] = source_id
+            diagnostics.append(d_dict)
+
         effective_iso, date_str = extract_effective_iso(fhir_copy, rtype=rtype)
         dates.append(date_str)
         code_val, display_val = extract_primary_coding_and_display(fhir_copy, rtype=rtype)
@@ -952,6 +962,8 @@ def parse_fhir_bundle(
             "synthesized_defaults": val_res.synthesized_defaults,
             "source_identity_mappings": source_identity_mappings,
             "reference_resolutions": reference_resolutions,
+            "unit_conversions": list(term_res.unit_conversions),
+            "terminology_diagnostics": [d.to_dict() for d in term_res.diagnostics],
         }
 
         staged_records.append({

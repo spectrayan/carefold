@@ -34,6 +34,11 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from carefold.db.scoped_session import register_scope_listeners
+from carefold.fhir.dedup import (
+    find_dedup_matches_in_repository,
+    merge_fhir_resource_payloads,
+    reverse_dedup_merge,
+)
 from carefold.fhir.registry import (
     RESOURCE_PATIENT_SUBJECT_PATHS,
     SUPPORTED_FHIR_RESOURCE_TYPES,
@@ -43,6 +48,10 @@ from carefold.fhir.registry import (
     extract_references,
     resolve_resource_scope,
     validate_and_normalize_fhir_resource,
+)
+from carefold.fhir.terminology import (
+    normalize_code_system_uri,
+    normalize_fhir_terminology_and_units,
 )
 from carefold.models.health import (
     HealthResource,
@@ -277,8 +286,9 @@ async def upsert_fhir_resource_with_history(
     verified_source_patient_ids: Optional[Sequence[str]] = None,
     strict_patient_matching: bool = True,
     strict_fhir_validation: bool = True,
+    enable_dedup: bool = True,
 ) -> Tuple[HealthResource, HealthResourceVersion, bool]:
-    """Atomically creates or updates a `HealthResource` and writes its version snapshot, codings, and references.
+    """Atomically creates, updates, or merges a `HealthResource` and writes its version snapshot, codings, and references.
 
     Returns:
         `(health_resource, resource_version, is_created)` within the caller's database transaction.
@@ -311,6 +321,14 @@ async def upsert_fhir_resource_with_history(
     if "_carefold_provenance" in bound_data and isinstance(bound_data["_carefold_provenance"], dict):
         normalized_data["_carefold_provenance"] = copy.deepcopy(bound_data["_carefold_provenance"])
 
+    # 2b. Normalize terminology CodeSystem OIDs/URIs and curated UCUM units via Pint (#283)
+    term_res = normalize_fhir_terminology_and_units(
+        normalized_data,
+        rtype=rtype,
+        source_id=source_id,
+    )
+    normalized_data = term_res.normalized
+
     resolved_scope = (scope or resolve_resource_scope(rtype, normalized_data)).strip()
     clean_source_type = (source_type or "file").strip()
     clean_source_id = (
@@ -328,7 +346,7 @@ async def upsert_fhir_resource_with_history(
     now = utc_now()
     now_iso = now.isoformat()
 
-    # 3. Check for existing HealthResource row (across scopes for same source key in profile)
+    # 3. Check for existing HealthResource row by exact source key
     existing_stmt = (
         select(HealthResource)
         .where(
@@ -342,6 +360,54 @@ async def upsert_fhir_resource_with_history(
     existing_res = await session.execute(existing_stmt)
     hr = existing_res.scalar_one_or_none()
     is_created = hr is None
+    version_operation = "create" if is_created else "update"
+    was_dedup_merged = False
+    near_duplicate_edges: List[Dict[str, Any]] = []
+
+    # 3b. Cross-source clinical deduplication & near-duplicate review linking (#283)
+    if hr is None and enable_dedup:
+        dedup_match = await find_dedup_matches_in_repository(
+            session,
+            profile_id=clean_profile_id,
+            scope=resolved_scope,
+            resource_type=rtype,
+            fhir_data=normalized_data,
+        )
+        if dedup_match.decision == "strong_merge" and dedup_match.matched_resource is not None:
+            hr = dedup_match.matched_resource
+            is_created = False
+            was_dedup_merged = True
+            version_operation = "merge"
+        elif dedup_match.decision == "near_duplicate_review" and dedup_match.near_duplicate_candidates:
+            prov = (
+                normalized_data.setdefault("_carefold_provenance", {})
+                if isinstance(normalized_data.get("_carefold_provenance"), dict)
+                else {}
+            )
+            if not isinstance(prov, dict):
+                prov = {}
+                normalized_data["_carefold_provenance"] = prov
+            prov.setdefault("trust", "untrusted")
+            prov["dedup"] = {
+                "status": "near_duplicate_needs_review",
+                "review_required": True,
+                "reason": dedup_match.near_duplicate_reason,
+                "candidate_resource_ids": [c.id for c in dedup_match.near_duplicate_candidates],
+                "near_fingerprint": (
+                    dedup_match.fingerprint.near_fingerprint if dedup_match.fingerprint else None
+                ),
+            }
+            for cand_hr in dedup_match.near_duplicate_candidates:
+                near_duplicate_edges.append({
+                    "field": "near_duplicate_of",
+                    "target_type": cand_hr.resource_type,
+                    "target_id": cand_hr.id,
+                    "target_resource_id": cand_hr.id,
+                    "resolved_reference": f"{cand_hr.resource_type}/{cand_hr.id}",
+                    "raw_reference": f"{cand_hr.resource_type}/{cand_hr.id}",
+                    "is_external": False,
+                    "resolution_scope": "repository_dedup",
+                })
 
     if hr is not None:
         max_ver_stmt = (
@@ -359,6 +425,22 @@ async def upsert_fhir_resource_with_history(
             except (ValueError, TypeError):
                 prev_max_ver = 1
         next_version_id = prev_max_ver + 1
+
+        if was_dedup_merged:
+            existing_hr_data = hr.data if isinstance(hr.data, dict) else {"resourceType": rtype, "id": hr.id}
+            normalized_data, _merge_entry = merge_fhir_resource_payloads(
+                existing_hr_data,
+                normalized_data,
+                match_kind=dedup_match.match_kind or "strong_fingerprint",
+                fingerprint_hash=(
+                    dedup_match.fingerprint.strong_fingerprint if dedup_match.fingerprint else None
+                ),
+                pre_merge_version_id=prev_max_ver,
+                incoming_source_type=clean_source_type,
+                incoming_source_ref=source_ref,
+                incoming_source_id=clean_source_id,
+                incoming_source_batch_id=source_batch_id,
+            )
     else:
         next_version_id = 1
 
@@ -368,6 +450,14 @@ async def upsert_fhir_resource_with_history(
         normalized_data["meta"] = {}
     normalized_data["meta"]["versionId"] = str(next_version_id)
     normalized_data["meta"]["lastUpdated"] = now_iso
+    if (
+        isinstance(normalized_data.get("_carefold_provenance"), dict)
+        and normalized_data["_carefold_provenance"].get("trust") == "untrusted"
+    ) or (
+        isinstance(bound_data.get("meta"), dict)
+        and bound_data["meta"].get("trust") == "untrusted"
+    ):
+        normalized_data["meta"]["trust"] = "untrusted"
 
     content_hash = compute_canonical_fhir_content_hash(normalized_data)
 
@@ -411,7 +501,7 @@ async def upsert_fhir_resource_with_history(
         scope=resolved_scope,
         resource_type=rtype,
         version_id=next_version_id,
-        operation="create" if is_created else "update",
+        operation=version_operation,
         content_hash=content_hash,
         fhir_json=copy.deepcopy(normalized_data),
         source_batch_id=source_batch_id,
@@ -429,7 +519,7 @@ async def upsert_fhir_resource_with_history(
 
     codings_to_index = (
         list(codings)
-        if codings is not None
+        if (codings is not None and not was_dedup_merged)
         else extract_codings(normalized_data, rtype=rtype)
     )
     seen_coding_keys: Set[Tuple[str, str, str]] = set()
@@ -441,7 +531,8 @@ async def upsert_fhir_resource_with_history(
             continue
         c_path = str(c_item.get("element_path") or "code").strip()[:128]
         c_sys_raw = c_item.get("system")
-        c_sys = str(c_sys_raw).strip()[:255] if c_sys_raw and str(c_sys_raw).strip() else None
+        norm_sys = normalize_code_system_uri(c_sys_raw, code=c_code, resource_type=rtype).canonical_system
+        c_sys = str(norm_sys).strip()[:255] if norm_sys and str(norm_sys).strip() else None
         c_disp_raw = c_item.get("display")
         c_disp = str(c_disp_raw).strip()[:255] if c_disp_raw and str(c_disp_raw).strip() else None
 
@@ -474,9 +565,11 @@ async def upsert_fhir_resource_with_history(
 
     refs_to_index = (
         list(references)
-        if references is not None
+        if (references is not None and not was_dedup_merged)
         else extract_references(normalized_data, rtype=rtype)
     )
+    if near_duplicate_edges:
+        refs_to_index.extend(near_duplicate_edges)
     seen_ref_keys: Set[Tuple[str, str, str, str]] = set()
     for r_item in refs_to_index:
         if not isinstance(r_item, dict):
@@ -505,7 +598,7 @@ async def upsert_fhir_resource_with_history(
             continue
         seen_ref_keys.add(edge_key)
 
-        target_res_id = await _resolve_local_target_resource_id(
+        target_res_id = r_item.get("target_resource_id") or await _resolve_local_target_resource_id(
             session,
             profile_id=clean_profile_id,
             target_type=t_type,
@@ -718,7 +811,8 @@ async def search_resources_by_coding(
     if code and code.strip():
         coding_stmt = coding_stmt.where(HealthResourceCoding.code == code.strip())
     if system and system.strip():
-        coding_stmt = coding_stmt.where(HealthResourceCoding.system == system.strip())
+        norm_sys = normalize_code_system_uri(system.strip(), code=code, resource_type=resource_type).canonical_system
+        coding_stmt = coding_stmt.where(HealthResourceCoding.system == (norm_sys or system.strip()))
     if resource_type and resource_type.strip():
         coding_stmt = coding_stmt.where(HealthResourceCoding.resource_type == resource_type.strip())
     if element_path and element_path.strip():
@@ -786,6 +880,7 @@ __all__ = [
     "get_outbound_references",
     "get_resource_version_history",
     "link_intra_batch_references",
+    "reverse_dedup_merge",
     "search_resources_by_coding",
     "upsert_fhir_resource_with_history",
 ]

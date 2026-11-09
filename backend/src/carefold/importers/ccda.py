@@ -21,6 +21,7 @@ Enforces:
 
 from __future__ import annotations
 
+import copy
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -29,6 +30,12 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from defusedxml import ElementTree as DET
 from defusedxml.common import DefusedXmlException
+
+from carefold.fhir.registry import extract_codings, resolve_resource_scope
+from carefold.fhir.terminology import (
+    normalize_code_system_uri,
+    normalize_fhir_terminology_and_units,
+)
 
 # C-CDA Section templateId OIDs -> FHIR resourceType
 _TEMPLATE_OID_MAP: Dict[str, Tuple[str, str]] = {
@@ -182,7 +189,7 @@ def _extract_entry_details(
             elif sname == "code":
                 c = sub.attrib.get("code")
                 d = sub.attrib.get("displayName")
-                sys_oid = sub.attrib.get("codeSystemName") or sub.attrib.get("codeSystem")
+                sys_oid = sub.attrib.get("codeSystem") or sub.attrib.get("codeSystemName")
                 # Prefer specific clinical codes over generic section/act wrapper codes
                 if d or (c and not code_val):
                     if c:
@@ -194,6 +201,7 @@ def _extract_entry_details(
             elif sname == "value":
                 v_code = sub.attrib.get("code")
                 v_disp = sub.attrib.get("displayName")
+                v_sys = sub.attrib.get("codeSystem") or sub.attrib.get("codeSystemName")
                 v_val = sub.attrib.get("value")
                 v_unit = sub.attrib.get("unit")
                 if v_val is not None:
@@ -202,13 +210,20 @@ def _extract_entry_details(
                     except ValueError:
                         value_text = v_val
                     value_unit = v_unit
-                elif v_disp:
-                    # For conditions/allergies where <code code="ASSERTION"> and <value displayName="Asthma">
-                    if not display_val or display_val.lower() in ("assertion", "problem", "condition", "allergy"):
-                        display_val = v_disp
+                elif v_disp or v_code:
+                    # For conditions/allergies where <code code="ASSERTION"> and <value code="..." displayName="Asthma">
+                    if (
+                        not display_val
+                        or display_val.lower() in ("assertion", "problem", "condition", "allergy", "finding", "complaint")
+                        or (code_val and code_val.upper() in ("ASSERTION", "55607006", "404684003", "416098002"))
+                    ):
+                        if v_disp:
+                            display_val = v_disp
                         if v_code:
                             code_val = v_code
-                    else:
+                        if v_sys:
+                            system_val = v_sys
+                    elif v_disp:
                         value_text = v_disp
                 elif sub.text and sub.text.strip():
                     value_text = sub.text.strip()
@@ -301,6 +316,7 @@ def parse_ccda_xml(
     staged_records: List[Dict[str, Any]] = []
     counts_by_type: Dict[str, int] = {}
     dates: List[str] = [doc_date]
+    diagnostics: List[Dict[str, Any]] = []
 
     for elem in root.iter():
         if _local_name(elem.tag) != "section":
@@ -345,19 +361,30 @@ def parse_ccda_xml(
             dates.append(eff_date)
             source_display = f"From {clean_source}, {eff_date}"
 
+            raw_sys = item["system"] or "urn:oid:ccda"
+            sys_out = normalize_code_system_uri(raw_sys, code=item["code"], resource_type=rtype)
+            code_concept: Dict[str, Any] = {
+                "coding": [
+                    {
+                        "system": sys_out.canonical_system or raw_sys,
+                        "code": item["code"] or "unknown",
+                        "display": item["raw_display"],
+                    }
+                ],
+                "text": item["display"],
+            }
+
+            if rtype == "Observation":
+                status_val = "final"
+            elif rtype == "Immunization":
+                status_val = "completed"
+            else:
+                status_val = "active"
+
             fhir_data: Dict[str, Any] = {
                 "resourceType": rtype,
-                "status": "final" if rtype == "Observation" else "active",
-                "code": {
-                    "coding": [
-                        {
-                            "system": item["system"] or "urn:oid:ccda",
-                            "code": item["code"] or "unknown",
-                            "display": item["raw_display"],
-                        }
-                    ],
-                    "text": item["display"],
-                },
+                "status": status_val,
+                "code": code_concept,
                 "effectiveDateTime": eff_iso,
                 "meta": {
                     "source": clean_source,
@@ -370,6 +397,31 @@ def parse_ccda_xml(
                     "trust": "untrusted",
                 },
             }
+            if rtype == "MedicationStatement":
+                fhir_data["medicationCodeableConcept"] = copy.deepcopy(code_concept)
+            elif rtype == "Immunization":
+                fhir_data["vaccineCode"] = copy.deepcopy(code_concept)
+                fhir_data["occurrenceDateTime"] = eff_iso
+            elif rtype == "Condition":
+                fhir_data["onsetDateTime"] = eff_iso
+                fhir_data["clinicalStatus"] = {
+                    "coding": [
+                        {
+                            "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+                            "code": "active",
+                        }
+                    ]
+                }
+            elif rtype == "AllergyIntolerance":
+                fhir_data["clinicalStatus"] = {
+                    "coding": [
+                        {
+                            "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            "code": "active",
+                        }
+                    ]
+                }
+
             if item["value_num"] is not None:
                 fhir_data["valueQuantity"] = {
                     "value": item["value_num"],
@@ -378,17 +430,43 @@ def parse_ccda_xml(
             elif item["value_text"]:
                 fhir_data["valueString"] = item["value_text"]
 
+            term_res = normalize_fhir_terminology_and_units(fhir_data, rtype=rtype)
+            fhir_data = term_res.normalized
+            if isinstance(fhir_data.get("_carefold_provenance"), dict):
+                fhir_data["_carefold_provenance"]["unit_conversions"] = list(term_res.unit_conversions)
+                fhir_data["_carefold_provenance"]["terminology_diagnostics"] = [
+                    d.to_dict() for d in term_res.diagnostics
+                ]
+
+            record_display = item["display"]
+            vq = fhir_data.get("valueQuantity")
+            if isinstance(vq, dict) and vq.get("value") is not None and any(c.get("converted") for c in term_res.unit_conversions):
+                conv_u = vq.get("unit") or vq.get("code") or ""
+                u_str = f" {conv_u}" if conv_u else ""
+                record_display = f"{item['raw_display']}: {vq['value']}{u_str}"
+
             digest = hashlib.sha256(
                 json.dumps(fhir_data, sort_keys=True, default=str).encode("utf-8")
             ).hexdigest()[:16]
             source_id = item["entry_id"] or f"ccda:{rtype}:{section_cat}:{idx}:{digest}"
 
+            for td in term_res.diagnostics:
+                d_dict = td.to_dict()
+                d_dict["resource_type"] = rtype
+                d_dict["source_id"] = source_id
+                diagnostics.append(d_dict)
+
+            codings_list = extract_codings(fhir_data, rtype=rtype)
+            rec_scope = resolve_resource_scope(rtype, fhir_data)
+
             staged_records.append({
                 "resource_type": rtype,
                 "source_id": source_id,
+                "scope": rec_scope,
                 "effective_at": eff_iso,
-                "display": item["display"],
+                "display": record_display,
                 "code": item["code"],
+                "codings": codings_list,
                 "data": fhir_data,
                 "source_display": source_display,
                 "trust": "untrusted",
@@ -425,10 +503,12 @@ def parse_ccda_xml(
         "format": "ccda",
         "source_name": clean_source,
         "records": staged_records,
+        "diagnostics": diagnostics,
         "provenance": provenance_record,
         "summary": {
             "total_records": len(staged_records),
             "counts_by_type": counts_by_type,
+            "diagnostics_count": len(diagnostics),
             "date_range": date_range,
             "source_name": clean_source,
         },

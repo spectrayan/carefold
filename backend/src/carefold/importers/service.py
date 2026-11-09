@@ -36,6 +36,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from yarvelle_core.config import settings
+from carefold.fhir.dedup import evaluate_staged_records_dedup_preview
 from carefold.fhir.repository import (
     compute_canonical_fhir_content_hash,
     delete_fhir_resource_with_history,
@@ -44,6 +45,7 @@ from carefold.fhir.repository import (
     get_outbound_references,
     get_resource_version_history,
     link_intra_batch_references,
+    reverse_dedup_merge,
     search_resources_by_coding,
     upsert_fhir_resource_with_history,
 )
@@ -288,12 +290,18 @@ async def stage_import(
         await session.flush()
 
     records = parsed.get("records") or []
+    dedup_preview = await evaluate_staged_records_dedup_preview(
+        session,
+        profile_id=clean_profile_id,
+        staged_records=records,
+    )
     summary = parsed.get("summary") or {}
     summary.setdefault("total_records", len(records))
     summary.setdefault("counts_by_type", {})
     summary.setdefault("aggregated_raw_sample_count", summary.get("raw_sample_count", 0))
     summary["format"] = resolved_fmt
     summary["attachment_id"] = attachment.id
+    summary["dedup_preview"] = dedup_preview
     if "quarantined_records" in parsed:
         summary["quarantined_records"] = parsed["quarantined_records"]
     if "diagnostics" in parsed:
@@ -390,6 +398,8 @@ async def commit_import_batch(
     committed_version_ids: List[str] = []
     created_count = 0
     updated_count = 0
+    merged_count = 0
+    near_duplicate_count = 0
 
     for idx, rec in enumerate(records_to_commit):
         if not isinstance(rec, dict):
@@ -434,6 +444,14 @@ async def commit_import_batch(
             created_count += 1
         else:
             updated_count += 1
+        if version_row.operation == "merge":
+            merged_count += 1
+        persisted_payload = hr.data if isinstance(hr.data, dict) else {}
+        if isinstance(persisted_payload.get("_carefold_provenance"), dict):
+            prov_obj = persisted_payload["_carefold_provenance"]
+            dedup_meta = prov_obj.get("dedup") if isinstance(prov_obj.get("dedup"), dict) else {}
+            if prov_obj.get("review_required") is True or dedup_meta.get("review_required") is True:
+                near_duplicate_count += 1
 
     # Link intra-batch target_resource_id references now that all resources in the batch exist
     await link_intra_batch_references(
@@ -496,6 +514,8 @@ async def commit_import_batch(
             "committed_count": len(committed_ids),
             "created_count": created_count,
             "updated_count": updated_count,
+            "merged_count": merged_count,
+            "near_duplicate_count": near_duplicate_count,
         }),
     )
     session.add(audit_record)
@@ -512,6 +532,8 @@ async def commit_import_batch(
         "committed_count": len(committed_ids),
         "created_count": created_count,
         "updated_count": updated_count,
+        "merged_count": merged_count,
+        "near_duplicate_count": near_duplicate_count,
         "committed_resource_ids": committed_ids,
         "version_ids": committed_version_ids,
         "committed_at": batch.committed_at.isoformat() if batch.committed_at else now.isoformat(),
@@ -585,11 +607,13 @@ __all__ = [
     "detect_import_format",
     "discard_import_batch",
     "ensure_canonical_patient_resource",
+    "evaluate_staged_records_dedup_preview",
     "get_inbound_references",
     "get_import_batch",
     "get_outbound_references",
     "get_resource_version_history",
     "list_import_batches",
+    "reverse_dedup_merge",
     "search_resources_by_coding",
     "stage_import",
     "upsert_fhir_resource_with_history",
