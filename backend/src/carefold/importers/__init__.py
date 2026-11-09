@@ -18,6 +18,8 @@ from carefold.importers.apple_health import (
 )
 from carefold.importers.ccda import parse_ccda_xml
 from carefold.importers.fhir_bundle import (
+    CLINICAL_FHIR_RESOURCE_TYPES,
+    PAPERWORK_FHIR_RESOURCE_TYPES,
     SUPPORTED_FHIR_RESOURCE_TYPES,
     parse_fhir_bundle,
 )
@@ -47,8 +49,10 @@ from carefold.importers.smart_health_card import (
 )
 
 __all__ = [
+    "CLINICAL_FHIR_RESOURCE_TYPES",
     "HIGH_FREQUENCY_HK_TYPES",
     "LOW_FREQUENCY_CLINICAL_HK_TYPES",
+    "PAPERWORK_FHIR_RESOURCE_TYPES",
     "SUPPORTED_FHIR_RESOURCE_TYPES",
     "SUPPORTED_IIS_VACCINES",
     "SUPPORTED_IMPORT_FORMATS",

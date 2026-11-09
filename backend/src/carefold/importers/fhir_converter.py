@@ -449,14 +449,19 @@ async def _convert_via_sidecar(
         raise ValueError("FHIR-Converter sidecar did not return a valid FHIR R4 Bundle.")
 
     parsed = parse_fhir_bundle(json.dumps(fhir_bundle), source_name=f"FHIR-Converter ({input_type.upper()})")
+    patient_resource = next(
+        (r.get("data") for r in parsed.get("records", []) if r.get("resource_type") == "Patient"),
+        None,
+    )
     clinical_records = [
-        r for r in parsed.get("records", []) if r.get("resource_type") != "Provenance"
+        r for r in parsed.get("records", []) if r.get("resource_type") not in ("Provenance", "Patient")
     ]
     return {
         "format": input_type,
         "input_type": input_type,
         "converter_mode": "sidecar",
         "source_name": f"FHIR-Converter ({input_type.upper()})",
+        "patient": patient_resource,
         "bundle": fhir_bundle,
         "records": clinical_records,
         "summary": parsed.get("summary", {}),
