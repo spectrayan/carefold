@@ -36,6 +36,9 @@ import zipfile
 from defusedxml import ElementTree as DET
 from defusedxml.common import DefusedXmlException
 
+from carefold.fhir.registry import extract_codings
+from carefold.fhir.terminology import normalize_fhir_terminology_and_units
+
 HIGH_FREQUENCY_HK_TYPES = frozenset({
     "HKQuantityTypeIdentifierHeartRate",
     "HKQuantityTypeIdentifierStepCount",
@@ -48,6 +51,7 @@ LOW_FREQUENCY_CLINICAL_HK_TYPES = frozenset({
     "HKQuantityTypeIdentifierBloodPressureDiastolic",
     "HKQuantityTypeIdentifierBodyMass",
     "HKQuantityTypeIdentifierHeight",
+    "HKQuantityTypeIdentifierBodyTemperature",
     "HKQuantityTypeIdentifierOxygenSaturation",
     "HKQuantityTypeIdentifierBloodGlucose",
 })
@@ -57,6 +61,7 @@ _CLINICAL_LOINC_MAP: Dict[str, Tuple[str, str, str]] = {
     "HKQuantityTypeIdentifierBloodPressureDiastolic": ("8462-4", "Diastolic blood pressure", "mmHg"),
     "HKQuantityTypeIdentifierBodyMass": ("29463-7", "Body weight", "kg"),
     "HKQuantityTypeIdentifierHeight": ("8302-2", "Body height", "cm"),
+    "HKQuantityTypeIdentifierBodyTemperature": ("8310-5", "Body temperature", "Cel"),
     "HKQuantityTypeIdentifierOxygenSaturation": ("59408-5", "Oxygen saturation", "%"),
     "HKQuantityTypeIdentifierBloodGlucose": ("2339-0", "Blood glucose", "mg/dL"),
 }
@@ -301,12 +306,24 @@ def parse_apple_health_export(
                                 "trust": "untrusted",
                             },
                         }
+                        term_res = normalize_fhir_terminology_and_units(fhir_obs, rtype="Observation")
+                        fhir_obs = term_res.normalized
+                        if isinstance(fhir_obs.get("_carefold_provenance"), dict):
+                            fhir_obs["_carefold_provenance"]["unit_conversions"] = list(term_res.unit_conversions)
+                            fhir_obs["_carefold_provenance"]["terminology_diagnostics"] = [
+                                d.to_dict() for d in term_res.diagnostics
+                            ]
+                        vq_norm = fhir_obs.get("valueQuantity") or {}
+                        norm_val = vq_norm.get("value", num_val)
+                        norm_unit = vq_norm.get("unit") or vq_norm.get("code") or eff_unit
                         clinical_records.append({
                             "resource_type": "Observation",
                             "source_id": f"apple_health:{loinc_code}:{iso_ts}",
+                            "scope": "health.clinical",
                             "effective_at": iso_ts,
-                            "display": f"{display_name}: {num_val} {eff_unit}",
+                            "display": f"{display_name}: {norm_val} {norm_unit}",
                             "code": loinc_code,
+                            "codings": extract_codings(fhir_obs, rtype="Observation"),
                             "data": fhir_obs,
                             "source_display": source_display,
                             "trust": "untrusted",
@@ -587,12 +604,16 @@ def parse_apple_health_export(
                     "trust": "untrusted",
                 },
             }
+            term_bp = normalize_fhir_terminology_and_units(fhir_bp, rtype="Observation")
+            fhir_bp = term_bp.normalized
             staged_records.append({
                 "resource_type": "Observation",
                 "source_id": f"apple_health:bp:{iso_ts}",
+                "scope": "health.clinical",
                 "effective_at": iso_ts,
                 "display": f"Blood pressure: {int(sys_val)}/{int(dia_val)} {unit}",
                 "code": "85354-9",
+                "codings": extract_codings(fhir_bp, rtype="Observation"),
                 "data": fhir_bp,
                 "source_display": source_display,
                 "trust": "untrusted",
@@ -617,12 +638,16 @@ def parse_apple_health_export(
                     "trust": "untrusted",
                 },
             }
+            term_single = normalize_fhir_terminology_and_units(fhir_single, rtype="Observation")
+            fhir_single = term_single.normalized
             staged_records.append({
                 "resource_type": "Observation",
                 "source_id": f"apple_health:{loinc}:{iso_ts}",
+                "scope": "health.clinical",
                 "effective_at": iso_ts,
                 "display": f"{label}: {val} {unit}",
                 "code": loinc,
+                "codings": extract_codings(fhir_single, rtype="Observation"),
                 "data": fhir_single,
                 "source_display": source_display,
                 "trust": "untrusted",
