@@ -34,6 +34,9 @@ from carefold.db.session import (
 
 HEALTH_TABLES = [
     "health_resources",
+    "health_resource_versions",
+    "health_resource_codings",
+    "health_resource_references",
     "appointments",
     "reminders",
     "preventive_records",
@@ -60,9 +63,9 @@ def test_health_pack_migration_greenfield_sqlite():
 
         # Check alembic_version_health
         health_revs = [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()]
-        assert "health_0001_baseline" in health_revs
+        assert "health_0002_fhir_ehr_repository" in health_revs
 
-        # Check all 7 health tables exist and have scope column
+        # Check all health tables exist and have scope column
         inspector = inspect(conn)
         tables = set(inspector.get_table_names())
         for tbl in HEALTH_TABLES:
@@ -139,7 +142,7 @@ def test_health_pack_migration_upgrade_existing_db():
         inspector = inspect(conn)
         assert "alembic_version_health" in inspector.get_table_names()
         health_revs = [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()]
-        assert "health_0001_baseline" in health_revs
+        assert "health_0002_fhir_ehr_repository" in health_revs
 
         # Verify pre-existing data is 100% intact
         hr_row = conn.exec_driver_sql("SELECT data FROM health_resources WHERE id = :id;", {"id": hr_id}).fetchone()
@@ -190,7 +193,7 @@ def test_dual_version_isolation_and_rollback():
         conn.commit()
 
         assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()] == ["0013_turn_tasks"]
-        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()] == ["health_0001_baseline"]
+        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()] == ["health_0002_fhir_ehr_repository"]
 
         # Downgrade core to 0010_i18n_and_locale_storage
         cfg_core = get_alembic_config(conn)
@@ -200,11 +203,30 @@ def test_dual_version_isolation_and_rollback():
         # Core is downgraded
         assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()] == ["0010_i18n_and_locale_storage"]
         # Health version remains untouched
-        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()] == ["health_0001_baseline"]
+        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()] == ["health_0002_fhir_ehr_repository"]
 
         # Re-upgrade core to head
         alembic.command.upgrade(cfg_core, "0013_turn_tasks")
         conn.commit()
 
         assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()] == ["0013_turn_tasks"]
+        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()] == ["health_0002_fhir_ehr_repository"]
+
+        # Also test downgrading health_0002_fhir_ehr_repository -> health_0001_baseline and re-upgrading
+        mig_dir = resolve_health_migrations_dir()
+        cfg_health = get_pack_alembic_config(mig_dir, connection=conn, version_table="alembic_version_health")
+        alembic.command.downgrade(cfg_health, "health_0001_baseline")
+        conn.commit()
         assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()] == ["health_0001_baseline"]
+        tables_after_downgrade = set(inspect(conn).get_table_names())
+        assert "health_resource_versions" not in tables_after_downgrade
+        assert "health_resource_codings" not in tables_after_downgrade
+        assert "health_resource_references" not in tables_after_downgrade
+
+        alembic.command.upgrade(cfg_health, "head")
+        conn.commit()
+        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()] == ["health_0002_fhir_ehr_repository"]
+        tables_after_reupgrade = set(inspect(conn).get_table_names())
+        assert "health_resource_versions" in tables_after_reupgrade
+        assert "health_resource_codings" in tables_after_reupgrade
+        assert "health_resource_references" in tables_after_reupgrade

@@ -36,7 +36,24 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from yarvelle_core.config import settings
-from carefold.models import HealthResource, ImportBatch
+from carefold.fhir.repository import (
+    compute_canonical_fhir_content_hash,
+    delete_fhir_resource_with_history,
+    ensure_canonical_patient_resource,
+    get_inbound_references,
+    get_outbound_references,
+    get_resource_version_history,
+    link_intra_batch_references,
+    search_resources_by_coding,
+    upsert_fhir_resource_with_history,
+)
+from carefold.models import (
+    HealthResource,
+    HealthResourceCoding,
+    HealthResourceReference,
+    HealthResourceVersion,
+    ImportBatch,
+)
 from yarvelle_core.db.models import (
     Attachment,
     AuditEventRecord,
@@ -162,6 +179,10 @@ async def stage_import(
     fmt: Optional[str] = None,
     user_id: Optional[str] = None,
     trusted_jwks: Optional[Dict[str, Any]] = None,
+    *,
+    expected_patient_id: Optional[str] = None,
+    verified_source_patient_ids: Optional[Sequence[str]] = None,
+    strict_patient_matching: bool = True,
 ) -> ImportBatch:
     """Stages a clinical or wearable file into an `ImportBatch` without writing to `HealthResource`.
 
@@ -193,7 +214,14 @@ async def stage_import(
 
     # 1. Run format-specific parser first (fail closed on malformed/XXE/tampered input before DB commit)
     if resolved_fmt == "fhir_r4":
-        parsed = parse_fhir_bundle(raw_bytes, source_name=clean_source_name)
+        parsed = parse_fhir_bundle(
+            raw_bytes,
+            source_name=clean_source_name,
+            profile_id=clean_profile_id,
+            expected_patient_id=expected_patient_id,
+            verified_source_patient_ids=verified_source_patient_ids,
+            strict_patient_matching=strict_patient_matching,
+        )
     elif resolved_fmt == "ccda":
         parsed = parse_ccda_xml(raw_bytes, source_name=clean_source_name)
     elif resolved_fmt == "apple_health":
@@ -266,6 +294,10 @@ async def stage_import(
     summary.setdefault("aggregated_raw_sample_count", summary.get("raw_sample_count", 0))
     summary["format"] = resolved_fmt
     summary["attachment_id"] = attachment.id
+    if "quarantined_records" in parsed:
+        summary["quarantined_records"] = parsed["quarantined_records"]
+    if "diagnostics" in parsed:
+        summary["diagnostics"] = parsed["diagnostics"]
     if resolved_fmt == "smart_health_card":
         summary["verification_status"] = parsed.get("verification_status", "unverified_issuer")
         summary["issuer"] = parsed.get("issuer", "unknown-issuer")
@@ -295,13 +327,20 @@ async def commit_import_batch(
     batch_id: str,
     selected_indices: Optional[List[int]] = None,
     actor_user_id: Optional[str] = None,
+    *,
+    expected_patient_id: Optional[str] = None,
+    verified_source_patient_ids: Optional[Sequence[str]] = None,
+    strict_patient_matching: bool = True,
 ) -> Dict[str, Any]:
-    """Commits staged records from an `ImportBatch` into `HealthResource` rows.
+    """Commits staged records from an `ImportBatch` into `HealthResource` and relational repository tables (#282).
 
     Enforces:
     - Profile ownership check (`batch.profile_id == profile_id`) and `batch.status == "staged"`.
+    - Patient identity verification (rejecting ambiguous multi-patient or wrong-patient imports).
     - Optional selective commit via `selected_indices`.
-    - Idempotent upsert on `(profile_id, source_type="file", source_ref, source_id)` with `content_hash`.
+    - Atomic upsert of `HealthResource` (`meta.versionId`, `meta.lastUpdated`, canonical `content_hash`),
+      immutable `HealthResourceVersion` snapshot, `HealthResourceCoding` index rows, and
+      `HealthResourceReference` graph edges.
     - Enqueues an `index_doc` background `Job` for search freshness.
     - Persists an `AuditEventRecord` (`tool="commit_clinical_import"`, `risk="write_local"`).
     """
@@ -324,6 +363,18 @@ async def commit_import_batch(
             f"ImportBatch '{clean_batch_id}' cannot be committed because its status is '{batch.status}' (expected 'staged')."
         )
 
+    batch_summary: Dict[str, Any] = json.loads(batch.summary_json or "{}")
+    patient_ctx = batch_summary.get("patient_context") or {}
+    if (
+        strict_patient_matching
+        and patient_ctx.get("ambiguous_multi_patient")
+        and not (expected_patient_id or verified_source_patient_ids)
+    ):
+        raise ValueError(
+            f"ImportBatch '{clean_batch_id}' contains ambiguous multiple patient identities and cannot be "
+            f"committed without explicit patient disambiguation."
+        )
+
     staged_records: List[Dict[str, Any]] = json.loads(batch.staged_records_json or "[]")
     if selected_indices is not None:
         index_set = set(int(i) for i in selected_indices)
@@ -336,6 +387,7 @@ async def commit_import_batch(
     source_ref = batch.attachment_id or batch.id
     now = utc_now()
     committed_ids: List[str] = []
+    committed_version_ids: List[str] = []
     created_count = 0
     updated_count = 0
 
@@ -344,58 +396,51 @@ async def commit_import_batch(
             continue
         rtype = str(rec.get("resource_type") or "Observation").strip()
         source_id = str(rec.get("source_id") or f"{rtype}:{idx}").strip()
-        fhir_data = rec.get("data") if isinstance(rec.get("data"), dict) else {}
+        fhir_data = dict(rec.get("data")) if isinstance(rec.get("data"), dict) else {"resourceType": rtype}
         if "source_display" in rec and "_carefold_provenance" not in fhir_data:
-            fhir_data = dict(fhir_data)
             fhir_data["_carefold_provenance"] = {
                 "source_name": batch.source_name,
                 "source_display": rec["source_display"],
                 "trust": rec.get("trust", "untrusted"),
             }
 
-        content_hash = hashlib.sha256(
-            json.dumps(fhir_data, sort_keys=True, default=str).encode("utf-8")
-        ).hexdigest()
         effective_dt = _parse_iso_datetime(rec.get("effective_at"))
+        rec_scope = rec.get("scope")
+        rec_codings = rec.get("codings") if isinstance(rec.get("codings"), list) else None
+        rec_refs = rec.get("references") if isinstance(rec.get("references"), list) else None
 
-        # Check for existing HealthResource for idempotent upsert
-        existing_stmt = select(HealthResource).where(
-            HealthResource.profile_id == clean_profile_id,
-            HealthResource.source_type == "file",
-            HealthResource.source_ref == source_ref,
-            HealthResource.source_id == source_id,
+        hr, version_row, is_created = await upsert_fhir_resource_with_history(
+            session,
+            profile_id=clean_profile_id,
+            resource_type=rtype,
+            fhir_data=fhir_data,
+            source_type="file",
+            source_ref=source_ref,
+            source_id=source_id,
+            effective_at=effective_dt,
+            scope=rec_scope,
+            codings=rec_codings,
+            references=rec_refs,
+            source_batch_id=batch.id,
+            actor_user_id=actor_user_id,
+            expected_patient_id=expected_patient_id,
+            verified_source_patient_ids=verified_source_patient_ids,
+            strict_patient_matching=strict_patient_matching,
+            strict_fhir_validation=(batch.format == "fhir_r4"),
         )
-        existing_res = await session.execute(existing_stmt)
-        hr = existing_res.scalar_one_or_none()
-
-        if hr is not None:
-            hr.resource_type = rtype
-            hr.content_hash = content_hash
-            hr.data = fhir_data
-            hr.effective_at = effective_dt
-            hr.status = "active"
-            hr.updated_at = now
-            committed_ids.append(hr.id)
-            updated_count += 1
-        else:
-            hr = HealthResource(
-                id=str(uuid.uuid4()),
-                profile_id=clean_profile_id,
-                resource_type=rtype,
-                source_type="file",
-                source_ref=source_ref,
-                source_id=source_id,
-                content_hash=content_hash,
-                data=fhir_data,
-                status="active",
-                effective_at=effective_dt,
-                recorded_at=now,
-                created_at=now,
-                updated_at=now,
-            )
-            session.add(hr)
-            committed_ids.append(hr.id)
+        committed_ids.append(hr.id)
+        committed_version_ids.append(version_row.id)
+        if is_created:
             created_count += 1
+        else:
+            updated_count += 1
+
+    # Link intra-batch target_resource_id references now that all resources in the batch exist
+    await link_intra_batch_references(
+        session,
+        profile_id=clean_profile_id,
+        resource_ids=committed_ids,
+    )
 
     batch.status = "committed"
     batch.committed_at = now
@@ -468,9 +513,13 @@ async def commit_import_batch(
         "created_count": created_count,
         "updated_count": updated_count,
         "committed_resource_ids": committed_ids,
+        "version_ids": committed_version_ids,
         "committed_at": batch.committed_at.isoformat() if batch.committed_at else now.isoformat(),
         "undo_reference": f"import_batch:{batch.id}",
     }
+
+
+confirm_batch = commit_import_batch
 
 
 async def discard_import_batch(
@@ -530,9 +579,18 @@ async def get_import_batch(
 __all__ = [
     "SUPPORTED_IMPORT_FORMATS",
     "commit_import_batch",
+    "compute_canonical_fhir_content_hash",
+    "confirm_batch",
+    "delete_fhir_resource_with_history",
     "detect_import_format",
     "discard_import_batch",
+    "ensure_canonical_patient_resource",
+    "get_inbound_references",
     "get_import_batch",
+    "get_outbound_references",
+    "get_resource_version_history",
     "list_import_batches",
+    "search_resources_by_coding",
     "stage_import",
+    "upsert_fhir_resource_with_history",
 ]
