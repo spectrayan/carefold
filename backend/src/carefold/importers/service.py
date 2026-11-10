@@ -66,6 +66,7 @@ from yarvelle_core.db.models import (
 from carefold.importers.apple_health import parse_apple_health_export
 from carefold.importers.ccda import parse_ccda_xml
 from carefold.importers.fhir_bundle import parse_fhir_bundle
+from carefold.importers.fhir_converter import parse_hl7v2_to_fhir
 from carefold.importers.iis_pdf import parse_iis_immunisation_text
 from carefold.importers.smart_health_card import verify_and_parse_smart_health_card
 from carefold.storage.cas import store_cas_file
@@ -78,11 +79,12 @@ SUPPORTED_IMPORT_FORMATS = frozenset({
     "apple_health",
     "iis_pdf",
     "smart_health_card",
+    "hl7v2",
 })
 
 
 def detect_import_format(filename: str, content: Union[bytes, str], fmt: Optional[str] = None) -> str:
-    """Auto-detects or validates the clinical import format ('fhir_r4', 'ccda', 'apple_health', 'iis_pdf', 'smart_health_card')."""
+    """Auto-detects or validates the clinical import format ('fhir_r4', 'ccda', 'apple_health', 'iis_pdf', 'smart_health_card', 'hl7v2')."""
     if fmt and str(fmt).strip():
         clean_fmt = str(fmt).strip().lower()
         aliases = {
@@ -102,6 +104,9 @@ def detect_import_format(filename: str, content: Union[bytes, str], fmt: Optiona
             "shc": "smart_health_card",
             "smart_health_card": "smart_health_card",
             "smart-health-card": "smart_health_card",
+            "hl7": "hl7v2",
+            "hl7v2": "hl7v2",
+            "hl7_v2": "hl7v2",
         }
         resolved = aliases.get(clean_fmt)
         if not resolved:
@@ -115,12 +120,16 @@ def detect_import_format(filename: str, content: Union[bytes, str], fmt: Optiona
 
     if fname_lower.endswith(".smart-health-card"):
         return "smart_health_card"
+    if fname_lower.endswith((".hl7", ".hl7v2", ".er7")):
+        return "hl7v2"
     if raw_bytes[:4] == b"PK\x03\x04" or fname_lower.endswith(".zip"):
         return "apple_health"
     if raw_bytes[:4] == b"%PDF" or fname_lower.endswith(".pdf"):
         return "iis_pdf"
 
     head = raw_bytes[:4096].decode("utf-8", errors="ignore").lstrip()
+    if head.startswith("MSH|") or head.startswith("FHS|") or head.startswith("BHS|"):
+        return "hl7v2"
     if head.lower().startswith("shc:/"):
         return "smart_health_card"
     if head.startswith("eyJ") and head.count(".") == 2:
@@ -211,6 +220,7 @@ async def stage_import(
         "apple_health": "Apple Health Export",
         "iis_pdf": "State IIS Registry PDF",
         "smart_health_card": "SMART Health Card",
+        "hl7v2": "HL7v2 Clinical Message",
     }
     clean_source_name = (source_name or default_sources[resolved_fmt]).strip()
 
@@ -234,6 +244,11 @@ async def stage_import(
         parsed = verify_and_parse_smart_health_card(
             raw_bytes,
             trusted_jwks=trusted_jwks,
+            source_name=clean_source_name,
+        )
+    elif resolved_fmt == "hl7v2":
+        parsed = parse_hl7v2_to_fhir(
+            raw_bytes.decode("utf-8", errors="replace"),
             source_name=clean_source_name,
         )
     else:
@@ -270,6 +285,8 @@ async def stage_import(
             content_type = "application/json"
         elif resolved_fmt == "iis_pdf":
             content_type = "application/pdf"
+        elif resolved_fmt == "hl7v2":
+            content_type = "x-application/hl7-v2+er7"
         else:
             content_type = "application/xml"
         attachment = Attachment(

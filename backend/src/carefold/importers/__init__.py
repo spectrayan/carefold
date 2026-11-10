@@ -24,8 +24,12 @@ from carefold.importers.fhir_bundle import (
     parse_fhir_bundle,
 )
 from carefold.importers.fhir_converter import (
+    HL7APY_LICENSE_ATTESTATION,
+    HL7v2ConversionError,
+    HL7v2Diagnostic,
     convert_clinical_payload_to_fhir,
     parse_hl7v2_to_fhir,
+    unescape_hl7v2_text,
 )
 from carefold.importers.iis_pdf import (
     SUPPORTED_IIS_VACCINES,
@@ -62,6 +66,9 @@ from carefold.importers.smart_health_card import (
 __all__ = [
     "CLINICAL_FHIR_RESOURCE_TYPES",
     "HIGH_FREQUENCY_HK_TYPES",
+    "HL7APY_LICENSE_ATTESTATION",
+    "HL7v2ConversionError",
+    "HL7v2Diagnostic",
     "LOW_FREQUENCY_CLINICAL_HK_TYPES",
     "PAPERWORK_FHIR_RESOURCE_TYPES",
     "SUPPORTED_FHIR_RESOURCE_TYPES",
@@ -93,6 +100,7 @@ __all__ = [
     "reverse_dedup_merge",
     "search_resources_by_coding",
     "stage_import",
+    "unescape_hl7v2_text",
     "upsert_fhir_resource_with_history",
     "verify_and_parse_smart_health_card",
 ]
