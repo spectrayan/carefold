@@ -52,6 +52,14 @@ export {
   SchoolFormsPanel,
 } from './school-forms';
 
+export {
+  EhrChartWorkspace,
+  IpsPatientSummaryTab,
+  LabsAndDiagnosticsExplorer,
+  ProvenanceHistoryDrawer,
+  InteroperableExportModal,
+} from './chart';
+
 export { VisitPrepCard } from './VisitPrepCard';
 export { InsuranceBenefitsCard } from './InsuranceBenefitsCard';
 export { EmergencyEscalationCard } from './EmergencyEscalationCard';
