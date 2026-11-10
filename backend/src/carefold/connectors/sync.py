@@ -43,6 +43,10 @@ from carefold.connectors.lifecycle import (
     record_sync_failure,
 )
 from carefold.connectors.oauth import _is_invalid_grant_failure, load_connection_tokens
+from carefold.connectors.smart_fhir import (
+    persist_smart_fhir_records,
+    redact_smart_auth_secrets,
+)
 from carefold.db.models import (
     Connection,
     HealthResource,
@@ -458,13 +462,27 @@ async def run_connection_sync(
 
                     now = utc_now()
                     for norm_rec in mapped_records:
+                        rec_data = dict(norm_rec.data)
+                        if isinstance(rec_data.get("fhir_resource"), dict):
+                            persisted_hrs = await persist_smart_fhir_records(
+                                session,
+                                profile_id=connection.profile_id,
+                                records=[norm_rec],
+                                connection_id=connection.id,
+                                connector_id=connection.connector_id,
+                                actor_user_id=connection.user_id,
+                            )
+                            for p_hr in persisted_hrs:
+                                upserted_resource_ids.append(p_hr.id)
+                                sync_run.records_upserted += 1
+                            continue
+
                         source_id = str(norm_rec.id).strip()
                         rtype = str(norm_rec.record_type or "observation").strip().lower()
                         effective_dt = norm_rec.timestamp or now
                         if effective_dt.tzinfo is None:
                             effective_dt = effective_dt.replace(tzinfo=timezone.utc)
 
-                        rec_data = dict(norm_rec.data)
                         rec_data.setdefault(
                             "_carefold_provenance",
                             {
@@ -568,7 +586,7 @@ async def run_connection_sync(
 
     except Exception as exc:
         err_code = _classify_sync_exception(exc)
-        err_msg = str(exc) or f"Connector sync failed ({err_code})"
+        err_msg = str(redact_smart_auth_secrets(str(exc) or f"Connector sync failed ({err_code})"))
         await record_sync_failure(session, connection, err_code, err_msg)
 
         end_time = utc_now()

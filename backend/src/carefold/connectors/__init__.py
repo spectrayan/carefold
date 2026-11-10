@@ -23,10 +23,16 @@ from carefold.connectors.lifecycle import (
     serialize_connector_manifest,
 )
 from carefold.connectors.oauth import (
+    SMART_V1_CLINICAL_SCOPES,
+    SMART_V2_CLINICAL_SCOPES,
+    SmartConfiguration,
     build_authorization_url,
+    build_smart_authorization_url,
     create_oauth_state,
+    discover_smart_configuration,
     generate_pkce_pair,
     load_connection_tokens,
+    redact_smart_auth_secrets,
     refresh_connection_token,
     resolve_redirect_uri,
     store_connection_tokens,
@@ -36,10 +42,15 @@ from carefold.connectors.oauth import (
 from carefold.connectors.sync import run_connection_sync
 
 __all__ = [
+    "SMART_V1_CLINICAL_SCOPES",
+    "SMART_V2_CLINICAL_SCOPES",
+    "SmartConfiguration",
     "build_authorization_url",
+    "build_smart_authorization_url",
     "check_scope_and_terms_compatibility",
     "check_under_13_connection_guard",
     "create_oauth_state",
+    "discover_smart_configuration",
     "generate_pkce_pair",
     "get_connector_manifest",
     "get_profile_data_flows",
@@ -47,6 +58,7 @@ __all__ = [
     "list_connector_manifests",
     "load_connection_tokens",
     "record_sync_failure",
+    "redact_smart_auth_secrets",
     "refresh_connection_token",
     "resolve_redirect_uri",
     "revoke_connection",

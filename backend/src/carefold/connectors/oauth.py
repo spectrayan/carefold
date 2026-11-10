@@ -627,14 +627,29 @@ async def refresh_connection_token(
     return merged_tokens
 
 
+from carefold.connectors.smart_fhir import (
+    SMART_V1_CLINICAL_SCOPES,
+    SMART_V2_CLINICAL_SCOPES,
+    SmartConfiguration,
+    build_smart_authorization_url,
+    discover_smart_configuration,
+    redact_smart_auth_secrets,
+)
+
 __all__ = [
     "DEFAULT_LOOPBACK_PORT",
     "DEFAULT_OAUTH_STATE_TTL_SECONDS",
     "OAUTH_CALLBACK_PATH",
+    "SMART_V1_CLINICAL_SCOPES",
+    "SMART_V2_CLINICAL_SCOPES",
+    "SmartConfiguration",
     "build_authorization_url",
+    "build_smart_authorization_url",
     "create_oauth_state",
+    "discover_smart_configuration",
     "generate_pkce_pair",
     "load_connection_tokens",
+    "redact_smart_auth_secrets",
     "refresh_connection_token",
     "resolve_redirect_uri",
     "store_connection_tokens",
