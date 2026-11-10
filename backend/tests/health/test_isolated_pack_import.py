@@ -47,11 +47,11 @@ assert pack.id == "health"
 assert pack.domain == "health"
 assert pack.version == carefold.__version__
 
-# 3. Verify health ToolSpecs (17 tools)
+# 3. Verify health ToolSpecs (20 tools)
 from carefold.tools import get_health_tool_specs
 specs = get_health_tool_specs()
-assert len(specs) == 17, f"Expected 17 health tool specs, got {len(specs)}"
-assert len(pack.tools) == 17, f"Expected 17 tools in pack manifest, got {len(pack.tools)}"
+assert len(specs) == 20, f"Expected 20 health tool specs, got {len(specs)}"
+assert len(pack.tools) == 20, f"Expected 20 tools in pack manifest, got {len(pack.tools)}"
 
 # 4. Verify health SafetyPolicy
 from carefold.safety import CarefoldHealthSafetyPolicy

@@ -111,6 +111,21 @@ provides:
       scopes: {read: [health.clinical]}
       tier: read
       data_flows: {egress: []}
+    - id: fhir_search_resources
+      entry: carefold.tools.fhir_tools:SPEC_SEARCH_RESOURCES
+      scopes: {read: [health.clinical]}
+      tier: read
+      data_flows: {egress: []}
+    - id: fhir_get_patient_summary
+      entry: carefold.tools.fhir_tools:SPEC_GET_PATIENT_SUMMARY
+      scopes: {read: [health.clinical]}
+      tier: read
+      data_flows: {egress: []}
+    - id: fhir_get_observation_trends
+      entry: carefold.tools.fhir_tools:SPEC_GET_OBSERVATION_TRENDS
+      scopes: {read: [health.clinical]}
+      tier: read
+      data_flows: {egress: []}
   routers:
     - entry: carefold.routers.appointments:router
       prefix: ""

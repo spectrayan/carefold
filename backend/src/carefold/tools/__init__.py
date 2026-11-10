@@ -47,6 +47,11 @@ from carefold.tools.school_forms import (
     SPEC_CREATE as SPEC_CREATE_SCHOOL_FORM,
     SPEC_LIST as SPEC_LIST_SCHOOL_FORMS,
 )
+from carefold.tools.fhir_tools import (
+    SPEC_GET_OBSERVATION_TRENDS as SPEC_FHIR_GET_OBSERVATION_TRENDS,
+    SPEC_GET_PATIENT_SUMMARY as SPEC_FHIR_GET_PATIENT_SUMMARY,
+    SPEC_SEARCH_RESOURCES as SPEC_FHIR_SEARCH_RESOURCES,
+)
 
 HEALTH_TOOL_SPECS: List[ToolSpec] = [
     SPEC_RECORD_VITALS,
@@ -66,11 +71,14 @@ HEALTH_TOOL_SPECS: List[ToolSpec] = [
     SPEC_SCHOOL_ICS,
     SPEC_ZOCDOC,
     SPEC_SHC,
+    SPEC_FHIR_SEARCH_RESOURCES,
+    SPEC_FHIR_GET_PATIENT_SUMMARY,
+    SPEC_FHIR_GET_OBSERVATION_TRENDS,
 ]
 
 
 def get_health_tool_specs() -> List[ToolSpec]:
-    """Returns the 17 clinical and health ToolSpecs defined natively in carefold."""
+    """Returns the 20 clinical and health ToolSpecs defined natively in carefold."""
     return list(HEALTH_TOOL_SPECS)
 
 
@@ -82,6 +90,9 @@ __all__ = [
     "SPEC_CREATE_SCHOOL_FORM",
     "SPEC_CREATE_TYPED_NOTE",
     "SPEC_EPIC",
+    "SPEC_FHIR_GET_OBSERVATION_TRENDS",
+    "SPEC_FHIR_GET_PATIENT_SUMMARY",
+    "SPEC_FHIR_SEARCH_RESOURCES",
     "SPEC_GENERATE_PREP_PACK",
     "SPEC_LIST_APPOINTMENTS",
     "SPEC_LIST_SCHOOL_FORMS",
