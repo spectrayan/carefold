@@ -460,6 +460,313 @@ tools:
         required: false
         default: "general"
 
+  fhir_get_capabilities:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: health_resource
+    description: >-
+      Return Carefold's HL7 FHIR R4 (4.0.1) CapabilityStatement declaring supported clinical resource types,
+      search parameters, and system/patient operations ($everything, $summary IPS, $export).
+    statement: |
+      SELECT id, profile_id, resource_type FROM health_resources WHERE profile_id = :profile_id LIMIT 1;
+    parameters: []
+
+  fhir_search_resources:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: health_resource
+    description: >-
+      Search the active patient profile's FHIR R4 clinical repository by resource_type, category,
+      code (system|code or code), date range (ge/le/gt/lt), status, clinical_status, last_updated,
+      include, sort, count, and opaque cursor. Returns a validated FHIR R4 searchset Bundle.
+    statement: |
+      SELECT id, profile_id, resource_type, source_type, data, status, effective_at, updated_at
+      FROM health_resources
+      WHERE profile_id = :profile_id AND status != 'deleted'
+      ORDER BY effective_at DESC
+      LIMIT :count;
+    parameters:
+      - name: resource_type
+        type: string
+        description: FHIR R4 resource type (e.g. 'Observation', 'Condition', 'MedicationRequest', 'Immunization', 'AllergyIntolerance', 'DiagnosticReport', 'Encounter').
+        required: true
+      - name: category
+        type: string
+        description: Optional category code or display filter (e.g. 'laboratory', 'vital-signs').
+        required: false
+        default: ""
+      - name: code
+        type: string
+        description: Optional code filter ('system|code' or 'code', e.g. 'http://loinc.org|4548-4' or '4548-4').
+        required: false
+        default: ""
+      - name: date
+        type: string
+        description: Optional ISO-8601 effective date filter supporting eq/ge/le/gt/lt prefixes (e.g. 'ge2026-01-01').
+        required: false
+        default: ""
+      - name: status
+        type: string
+        description: Optional lifecycle status filter (e.g. 'final', 'active', 'completed').
+        required: false
+        default: ""
+      - name: clinical_status
+        type: string
+        description: Optional clinicalStatus filter ('active', 'resolved', 'inactive').
+        required: false
+        default: ""
+      - name: last_updated
+        type: string
+        description: Optional last-updated timestamp filter with ge/le/gt/lt prefix.
+        required: false
+        default: ""
+      - name: include
+        type: string
+        description: Optional outbound reference include expression (e.g. 'DiagnosticReport:result').
+        required: false
+        default: ""
+      - name: sort
+        type: string
+        description: Sort order ('date', '-date', '_lastUpdated', '-_lastUpdated').
+        required: false
+        default: "-date"
+      - name: count
+        type: integer
+        description: Maximum entries per page (1..100).
+        required: false
+        default: 50
+      - name: cursor
+        type: string
+        description: Opaque pagination cursor from a previous Bundle.
+        required: false
+        default: ""
+
+  fhir_read_resource:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: health_resource
+    description: >-
+      Read a single canonical FHIR R4 resource by resource_type and resource_id within the active
+      patient profile, returning the validated resource and its weak ETag (W/"{versionId}").
+    statement: |
+      SELECT id, profile_id, resource_type, source_type, source_id, version_id, data, status, effective_at, updated_at
+      FROM health_resources
+      WHERE profile_id = :profile_id AND resource_type = :resource_type AND source_id = :resource_id
+      LIMIT 1;
+    parameters:
+      - name: resource_type
+        type: string
+        description: FHIR R4 resource type (e.g. 'Observation', 'Patient', 'Condition').
+        required: true
+      - name: resource_id
+        type: string
+        description: Logical FHIR resource ID.
+        required: true
+
+  fhir_get_resource_history:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: health_resource
+    description: >-
+      Retrieve the immutable version history Bundle (type='history') for a specific FHIR R4 resource
+      in the active patient profile, ordered from newest to oldest revision.
+    statement: |
+      SELECT id, profile_id, resource_id, resource_type, fhir_id, version_id, change_type, data, recorded_at
+      FROM health_resource_versions
+      WHERE profile_id = :profile_id AND resource_type = :resource_type AND fhir_id = :resource_id
+      ORDER BY version_id DESC
+      LIMIT :count;
+    parameters:
+      - name: resource_type
+        type: string
+        description: FHIR R4 resource type.
+        required: true
+      - name: resource_id
+        type: string
+        description: Logical FHIR resource ID.
+        required: true
+      - name: count
+        type: integer
+        description: Maximum revisions per page (1..100).
+        required: false
+        default: 50
+      - name: cursor
+        type: string
+        description: Opaque pagination cursor.
+        required: false
+        default: ""
+
+  fhir_get_patient_everything:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: health_resource
+    description: >-
+      Execute the FHIR R4 Patient/$everything operation for the active profile, returning a longitudinal
+      searchset Bundle across all clinical resource types and recording a hash-chained audit event.
+    statement: |
+      SELECT id, profile_id, resource_type, source_type, version_id, data, status, effective_at, updated_at
+      FROM health_resources
+      WHERE profile_id = :profile_id AND status != 'deleted'
+      ORDER BY effective_at DESC
+      LIMIT :count;
+    parameters:
+      - name: resource_types
+        type: string
+        description: Optional comma-separated FHIR R4 resource types to include.
+        required: false
+        default: ""
+      - name: since
+        type: string
+        description: Optional ISO-8601 timestamp lower bound.
+        required: false
+        default: ""
+      - name: count
+        type: integer
+        description: Maximum entries per page (1..100).
+        required: false
+        default: 50
+      - name: cursor
+        type: string
+        description: Opaque pagination cursor.
+        required: false
+        default: ""
+
+  fhir_get_patient_summary:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: health_resource
+    description: >-
+      Synthesize a standards-compliant HL7 International Patient Summary (IPS) Document Bundle
+      (Bundle.type='document') headed by a Composition (LOINC 60591-5) with structured sections for
+      Active Problems (11450-4), Medications (10160-0), Allergies (48765-2), Immunizations (11369-6),
+      Results (30954-2), Vital Signs (8716-3), and Procedures (47519-4).
+    statement: |
+      SELECT id, profile_id, resource_type, source_type, version_id, data, status, effective_at, updated_at
+      FROM health_resources
+      WHERE profile_id = :profile_id AND status = 'active'
+      ORDER BY effective_at DESC;
+    parameters: []
+
+  fhir_upsert_resource:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: write_local
+    entity: health_resource
+    description: >-
+      Persist a user-intended creation or update of a validated FHIR R4 resource in the active profile's
+      repository with version history, optimistic concurrency (If-Match ETag), idempotency key support,
+      and hash-chained audit logging. Requires explicit user confirmation.
+    statement: |
+      INSERT INTO health_resources (
+        id, profile_id, resource_type, source_type, source_ref, source_id,
+        content_hash, data, status, locale, effective_at, recorded_at, created_at, updated_at
+      ) VALUES (
+        :id, :profile_id, :resource_type, 'manual', 'fhir_r4_api', :resource_id,
+        :content_hash, :resource_json, 'active', :locale, :now, :now, :now, :now
+      )
+      RETURNING id, profile_id, resource_type, status;
+    parameters:
+      - name: resource_type
+        type: string
+        description: FHIR R4 resource type.
+        required: true
+      - name: resource_json
+        type: string
+        description: Complete FHIR R4 resource serialized as a JSON string.
+        required: true
+      - name: resource_id
+        type: string
+        description: Optional logical FHIR resource ID.
+        required: false
+        default: ""
+      - name: if_match
+        type: string
+        description: Optional ETag (W/"{versionId}") for optimistic concurrency.
+        required: false
+        default: ""
+      - name: idempotency_key
+        type: string
+        description: Optional idempotency key for safe retries.
+        required: false
+        default: ""
+      - name: confirmed
+        type: boolean
+        description: Explicit user confirmation flag (must be true).
+        required: false
+        default: false
+
+  fhir_start_bulk_export:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: write_local
+    entity: health_resource
+    description: >-
+      Kick off an audited FHIR Bulk Data ($export) job for the active patient profile, producing
+      multi-file NDJSON streams grouped by FHIR R4 resource type. Requires explicit user confirmation.
+    statement: |
+      SELECT id, profile_id, resource_type, data FROM health_resources WHERE profile_id = :profile_id AND status != 'deleted';
+    parameters:
+      - name: resource_types
+        type: string
+        description: Optional comma-separated FHIR R4 resource types to export.
+        required: false
+        default: ""
+      - name: since
+        type: string
+        description: Optional ISO-8601 timestamp lower bound.
+        required: false
+        default: ""
+      - name: idempotency_key
+        type: string
+        description: Optional idempotency key.
+        required: false
+        default: ""
+      - name: confirmed
+        type: boolean
+        description: Explicit user confirmation flag (must be true).
+        required: false
+        default: false
+
+  fhir_get_bulk_export_status:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: health_resource
+    description: >-
+      Poll the status, progress, and output file manifest of an asynchronous Bulk FHIR $export job.
+    statement: |
+      SELECT id, profile_id, status, payload FROM jobs WHERE profile_id = :profile_id AND id = :job_id AND kind = 'fhir_bulk_export' LIMIT 1;
+    parameters:
+      - name: job_id
+        type: string
+        description: Bulk export job UUID returned by fhir_start_bulk_export.
+        required: true
+
+  fhir_download_bulk_export_file:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: health_resource
+    description: >-
+      Download the generated application/fhir+ndjson lines for a specific resource_type from a completed Bulk $export job.
+    statement: |
+      SELECT id, profile_id, status, payload FROM jobs WHERE profile_id = :profile_id AND id = :job_id AND kind = 'fhir_bulk_export' LIMIT 1;
+    parameters:
+      - name: job_id
+        type: string
+        description: Bulk export job UUID.
+        required: true
+      - name: resource_type
+        type: string
+        description: FHIR R4 resource type (e.g. 'Observation', 'Patient').
+        required: true
+
 toolsets:
   clinical_assist_db:
     - upsert_clinical_note
@@ -473,6 +780,12 @@ toolsets:
     - list_profile_reminders
     - update_preventive_record
     - list_preventive_records
+    - fhir_get_capabilities
+    - fhir_search_resources
+    - fhir_read_resource
+    - fhir_get_resource_history
+    - fhir_get_patient_everything
+    - fhir_get_patient_summary
   navigation_db:
     - upsert_clinical_note
     - list_clinical_notes
@@ -482,6 +795,9 @@ toolsets:
     - create_profile_reminder
     - list_profile_reminders
     - create_email_draft_record
+    - fhir_search_resources
+    - fhir_read_resource
+    - fhir_get_patient_summary
   wellness_db:
     - upsert_clinical_note
     - list_clinical_notes
@@ -492,6 +808,8 @@ toolsets:
     - list_profile_reminders
     - update_preventive_record
     - list_preventive_records
+    - fhir_search_resources
+    - fhir_get_patient_summary
   all_db_tools:
     - upsert_clinical_note
     - list_clinical_notes
@@ -505,3 +823,13 @@ toolsets:
     - update_preventive_record
     - list_preventive_records
     - create_email_draft_record
+    - fhir_get_capabilities
+    - fhir_search_resources
+    - fhir_read_resource
+    - fhir_get_resource_history
+    - fhir_get_patient_everything
+    - fhir_get_patient_summary
+    - fhir_upsert_resource
+    - fhir_start_bulk_export
+    - fhir_get_bulk_export_status
+    - fhir_download_bulk_export_file

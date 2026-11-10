@@ -20,6 +20,7 @@ from yarvelle_core.pack.spec import RouterContribution
 from carefold.routers.appointments import router as appointments_router
 from carefold.routers.companion import router as companion_router
 from carefold.routers.coordinated import router as coordinated_router
+from carefold.routers.fhir_r4 import router as fhir_r4_router
 from carefold.routers.handover import router as handover_router
 from carefold.routers.imports import router as imports_router
 from carefold.routers.prep_pack import router as prep_pack_router
@@ -47,6 +48,7 @@ __all__ = [
     "appointments_router",
     "companion_router",
     "coordinated_router",
+    "fhir_r4_router",
     "handover_router",
     "imports_router",
     "prep_pack_router",
