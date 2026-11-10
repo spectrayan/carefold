@@ -47,15 +47,32 @@ auth:
   token_rotation: false
   rotating_refresh: false
   scopes:
+    - launch/patient
     - openid
     - fhirUser
-    - launch/patient
+    - offline_access
+    - patient/Patient.rs
+    - patient/Condition.rs
+    - patient/MedicationRequest.rs
+    - patient/AllergyIntolerance.rs
+    - patient/Immunization.rs
+    - patient/Observation.rs
+    - patient/DiagnosticReport.rs
+    - patient/Procedure.rs
+    - patient/CarePlan.rs
+    - patient/Encounter.rs
+    - patient/DocumentReference.rs
     - patient/Patient.read
     - patient/Condition.read
     - patient/MedicationRequest.read
     - patient/AllergyIntolerance.read
     - patient/Immunization.read
     - patient/Observation.read
+    - patient/DiagnosticReport.read
+    - patient/Procedure.read
+    - patient/CarePlan.read
+    - patient/Encounter.read
+    - patient/DocumentReference.read
   authorization_url: https://authorization.cerner.com/tenants/ec2458f2-1e24-41c8-b71b-0e701af7583d/protocols/oauth2/profiles/smart-v1/personas/patient/authorize
   token_url: https://authorization.cerner.com/tenants/ec2458f2-1e24-41c8-b71b-0e701af7583d/protocols/oauth2/profiles/smart-v1/token
 tools:

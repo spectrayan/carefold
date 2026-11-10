@@ -9,148 +9,209 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Epic MyChart (SMART on FHIR R4) starter connector (AU-56 / E5.3, E10.7)."""
+"""Epic MyChart (SMART on FHIR R4 / SMART App Launch v2) starter connector (AU-56 & #286).
+
+Ingests read-only USCDI FHIR R4 clinical resources (`Patient`, `Condition`, `MedicationRequest`,
+`AllergyIntolerance`, `Immunization`, `Observation`, `DiagnosticReport`, `Procedure`, `CarePlan`,
+`Encounter`, `DocumentReference`), supports `.well-known/smart-configuration` discovery with
+`/metadata` fallback, SMART v2 `.rs` granular scopes, multi-page `Bundle.link[relation='next']`
+pagination over `ScopedHttp`, and persistent sync into the `#282`/`#283` FHIR repository.
+"""
 
 from __future__ import annotations
 
-import copy
 from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence
+import uuid
 
-from fhir.resources.R4B.allergyintolerance import AllergyIntolerance as FhirAllergyIntolerance
+from fhir.resources.R4B.allergyintolerance import (
+    AllergyIntolerance as FhirAllergyIntolerance,
+)
+from fhir.resources.R4B.careplan import CarePlan as FhirCarePlan
 from fhir.resources.R4B.condition import Condition as FhirCondition
-from fhir.resources.R4B.documentreference import DocumentReference as FhirDocumentReference
+from fhir.resources.R4B.diagnosticreport import (
+    DiagnosticReport as FhirDiagnosticReport,
+)
+from fhir.resources.R4B.documentreference import (
+    DocumentReference as FhirDocumentReference,
+)
 from fhir.resources.R4B.encounter import Encounter as FhirEncounter
 from fhir.resources.R4B.immunization import Immunization as FhirImmunization
-from fhir.resources.R4B.medicationrequest import MedicationRequest as FhirMedicationRequest
+from fhir.resources.R4B.medicationrequest import (
+    MedicationRequest as FhirMedicationRequest,
+)
 from fhir.resources.R4B.observation import Observation as FhirObservation
+from fhir.resources.R4B.patient import Patient as FhirPatient
+from fhir.resources.R4B.procedure import Procedure as FhirProcedure
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from carefold.connectors.smart_fhir import (
+    DEFAULT_MAX_BUNDLE_PAGES,
+    SMART_V1_CLINICAL_SCOPES,
+    SMART_V2_CLINICAL_SCOPES,
+    SmartConfiguration,
+    SmartUntrustedResult,
+    build_smart_authorization_url,
+    discover_smart_configuration,
+    fetch_paginated_fhir_bundle_resources,
+    persist_smart_fhir_records,
+    search_smart_fhir_records,
+)
+from carefold.models.health import HealthResource
 from connectors.base import (
-    Connector,
     NormalisedRecord,
     Page,
     StreamSpec,
     ToolContext,
     ToolSpec,
 )
+from connectors.errors import ConnectorError
 from connectors.http import ScopedHttp
 from connectors.manifest import ConnectorManifest
 
 _MANIFEST_PATH = Path(__file__).resolve().parent / "manifests" / "epic_smart.yaml"
 
-EPIC_FHIR_BASE_URL = "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4"
-
-USCDI_FHIR_STREAMS: Tuple[Tuple[str, str], ...] = (
-    ("Condition", "Clinical problem list, diagnoses, and health concerns"),
-    ("MedicationRequest", "Active and historical prescribed medications"),
-    ("AllergyIntolerance", "Recorded drug, food, and environmental allergies"),
-    ("Immunization", "Vaccine administration history"),
-    ("Observation", "Laboratory results and clinical vital signs"),
-    ("Encounter", "Outpatient, inpatient, and emergency clinical visits"),
-    ("DocumentReference", "Clinical notes, summaries, and diagnostic documents"),
+DEFAULT_EPIC_FHIR_BASE_URL = (
+    "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4"
 )
 
-_FHIR_MODEL_REGISTRY: Dict[str, Any] = {
+_USCDI_STREAMS: tuple[StreamSpec, ...] = (
+    StreamSpec(
+        name="Condition",
+        description="Patient problem list and clinical conditions (USCDI Condition)",
+        read_mode="full_refresh",
+        primary_key=["id"],
+        cursor_field="recordedDate",
+    ),
+    StreamSpec(
+        name="MedicationRequest",
+        description="Active and historical outpatient medication orders (USCDI MedicationRequest)",
+        read_mode="full_refresh",
+        primary_key=["id"],
+        cursor_field="authoredOn",
+    ),
+    StreamSpec(
+        name="AllergyIntolerance",
+        description="Documented allergies and adverse reactions (USCDI AllergyIntolerance)",
+        read_mode="full_refresh",
+        primary_key=["id"],
+        cursor_field="recordedDate",
+    ),
+    StreamSpec(
+        name="Immunization",
+        description="Vaccine administration history (USCDI Immunization)",
+        read_mode="full_refresh",
+        primary_key=["id"],
+        cursor_field="occurrenceDateTime",
+    ),
+    StreamSpec(
+        name="Observation",
+        description="Laboratory results and clinical vital sign observations (USCDI Observation)",
+        read_mode="incremental",
+        primary_key=["id"],
+        cursor_field="effectiveDateTime",
+    ),
+    StreamSpec(
+        name="Encounter",
+        description="Clinical visits and hospital encounters (USCDI Encounter)",
+        read_mode="incremental",
+        primary_key=["id"],
+        cursor_field="period.start",
+    ),
+    StreamSpec(
+        name="DocumentReference",
+        description="Clinical notes and visit summaries (USCDI DocumentReference)",
+        read_mode="incremental",
+        primary_key=["id"],
+        cursor_field="date",
+    ),
+)
+
+_USCDI_MODEL_VALIDATORS: Dict[str, Any] = {
+    "Patient": FhirPatient,
     "Condition": FhirCondition,
     "MedicationRequest": FhirMedicationRequest,
     "AllergyIntolerance": FhirAllergyIntolerance,
     "Immunization": FhirImmunization,
     "Observation": FhirObservation,
+    "DiagnosticReport": FhirDiagnosticReport,
+    "Procedure": FhirProcedure,
+    "CarePlan": FhirCarePlan,
     "Encounter": FhirEncounter,
     "DocumentReference": FhirDocumentReference,
 }
 
 
-def _extract_effective_datetime(resource: Dict[str, Any]) -> Tuple[datetime, str, str]:
-    """Extracts UTC datetime, ISO timestamp, and YYYY-MM-DD date string from a FHIR resource."""
-    candidates = [
+def _extract_fhir_effective_datetime(resource: Mapping[str, Any]) -> datetime:
+    """Extracts a timezone-aware UTC timestamp from a FHIR R4 resource."""
+    candidates = (
         resource.get("effectiveDateTime"),
-        (resource.get("effectivePeriod") or {}).get("start")
-        if isinstance(resource.get("effectivePeriod"), dict)
-        else None,
-        resource.get("onsetDateTime"),
         resource.get("recordedDate"),
-        resource.get("occurrenceDateTime"),
         resource.get("authoredOn"),
+        resource.get("occurrenceDateTime"),
+        resource.get("issued"),
         resource.get("date"),
         (resource.get("period") or {}).get("start")
         if isinstance(resource.get("period"), dict)
         else None,
-        resource.get("issued"),
-    ]
+        (resource.get("effectivePeriod") or {}).get("start")
+        if isinstance(resource.get("effectivePeriod"), dict)
+        else None,
+    )
     for raw in candidates:
-        if raw and isinstance(raw, str) and raw.strip():
+        if isinstance(raw, str) and raw.strip():
             clean = raw.strip()
-            date_part = clean[:10] if len(clean) >= 10 else clean
-            iso_candidate = f"{clean}T00:00:00+00:00" if ("T" not in clean and len(clean) == 10) else clean
+            if clean.endswith("Z"):
+                clean = clean[:-1] + "+00:00"
             try:
-                dt = datetime.fromisoformat(iso_candidate.replace("Z", "+00:00"))
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
-                return dt, dt.isoformat(), date_part
+                parsed = datetime.fromisoformat(clean)
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                return parsed.astimezone(timezone.utc)
             except ValueError:
-                return datetime.now(timezone.utc), iso_candidate, date_part
-
-    now = datetime.now(timezone.utc)
-    return now, now.isoformat(), now.strftime("%Y-%m-%d")
+                continue
+    return datetime.now(timezone.utc)
 
 
-def validate_uscdi_fhir_resource(resource: Dict[str, Any], expected_type: str) -> Dict[str, Any]:
-    """Validates and normalizes a USCDI FHIR R4 resource via `fhir.resources.R4B`."""
-    rtype = str(resource.get("resourceType") or expected_type).strip()
-    model_cls = _FHIR_MODEL_REGISTRY.get(rtype)
-    if model_cls is None:
-        raise ValueError(f"Unsupported USCDI FHIR resourceType '{rtype}'.")
-
-    candidate = copy.deepcopy(resource)
-    candidate["resourceType"] = rtype
-
-    if rtype == "Observation":
-        candidate.setdefault("status", "final")
-        candidate.setdefault("code", {"text": "Clinical Observation"})
-    elif rtype == "MedicationRequest":
-        candidate.setdefault("status", "active")
-        candidate.setdefault("intent", "order")
-        candidate.setdefault("subject", {"display": "Patient"})
-        if "medicationCodeableConcept" not in candidate and "medicationReference" not in candidate:
-            candidate["medicationCodeableConcept"] = {"text": "Medication"}
-    elif rtype == "Condition":
-        candidate.setdefault("subject", {"display": "Patient"})
-    elif rtype == "AllergyIntolerance":
-        candidate.setdefault("patient", {"display": "Patient"})
-    elif rtype == "Immunization":
-        candidate.setdefault("status", "completed")
-        candidate.setdefault("vaccineCode", {"text": "Vaccine"})
-        candidate.setdefault("patient", {"display": "Patient"})
-        if "occurrenceDateTime" not in candidate and "occurrenceString" not in candidate:
-            candidate["occurrenceDateTime"] = "2026-01-01"
-    elif rtype == "Encounter":
-        candidate.setdefault("status", "finished")
-        candidate.setdefault(
-            "class",
-            {"system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "AMB"},
-        )
-    elif rtype == "DocumentReference":
-        candidate.setdefault("status", "current")
-        candidate.setdefault("content", [{"attachment": {"contentType": "text/plain"}}])
-
-    validated = model_cls.model_validate(candidate)
-    return validated.model_dump(mode="json", exclude_none=True)
+def _extract_fhir_display_summary(resource: Mapping[str, Any]) -> str:
+    """Extracts a human-readable code/display summary from a FHIR R4 resource."""
+    for field_name in ("code", "medicationCodeableConcept", "vaccineCode", "type"):
+        field_val = resource.get(field_name)
+        if isinstance(field_val, dict):
+            text = field_val.get("text")
+            if isinstance(text, str) and text.strip():
+                return text.strip()
+            codings = field_val.get("coding")
+            if isinstance(codings, list) and codings:
+                first = codings[0]
+                if isinstance(first, dict):
+                    disp = first.get("display") or first.get("code")
+                    if isinstance(disp, str) and disp.strip():
+                        return disp.strip()
+        elif isinstance(field_val, list) and field_val:
+            first_concept = field_val[0]
+            if isinstance(first_concept, dict):
+                text = first_concept.get("text")
+                if isinstance(text, str) and text.strip():
+                    return text.strip()
+    return str(resource.get("resourceType", "FHIR Resource"))
 
 
 class EpicSmartConnector:
-    """Patient-facing Epic on FHIR SMART R4 starter connector (AU-56)."""
+    """Read-only SMART on FHIR R4 / v2 patient portal connector for Epic MyChart."""
 
     def __init__(
         self,
         manifest: Optional[ConnectorManifest] = None,
-        base_url: str = EPIC_FHIR_BASE_URL,
+        base_url: str = DEFAULT_EPIC_FHIR_BASE_URL,
+        max_pages: int = DEFAULT_MAX_BUNDLE_PAGES,
     ) -> None:
         self._manifest = manifest or ConnectorManifest.from_yaml(_MANIFEST_PATH)
         self._base_url = base_url.rstrip("/")
+        self._max_pages = max(1, int(max_pages or DEFAULT_MAX_BUNDLE_PAGES))
         self._indexed_records: List[NormalisedRecord] = []
 
     @property
@@ -158,16 +219,81 @@ class EpicSmartConnector:
         return self._manifest
 
     def streams(self) -> List[StreamSpec]:
+        return list(_USCDI_STREAMS)
+
+    def tools(self) -> List[ToolSpec]:
         return [
-            StreamSpec(
-                name=stream_name,
-                description=desc,
-                read_mode="incremental",
-                primary_key=["id"],
-                cursor_field="_lastUpdated",
+            ToolSpec(
+                name="epic_smart_search_records",
+                description=(
+                    "Searches normalized USCDI FHIR R4 clinical records imported from "
+                    "Epic MyChart (SMART on FHIR). Output is marked untrusted."
+                ),
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "resource_type": {
+                            "type": "string",
+                            "description": (
+                                "Optional FHIR R4 resourceType filter (Condition, "
+                                "MedicationRequest, AllergyIntolerance, Immunization, "
+                                "Observation, DiagnosticReport, Procedure, CarePlan, "
+                                "Encounter, DocumentReference)."
+                            ),
+                        },
+                        "query": {
+                            "type": "string",
+                            "description": "Case-insensitive substring filter over display text or codes.",
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "default": 20,
+                            "minimum": 1,
+                            "maximum": 100,
+                        },
+                    },
+                },
+                risk_class="read_only",
+                trust="untrusted",
+                data_flows=tuple(self._manifest.data_flows.allowed_hosts),
+                handler=self._handle_search_records,
             )
-            for stream_name, desc in USCDI_FHIR_STREAMS
         ]
+
+    async def discover_smart_configuration(
+        self,
+        http: ScopedHttp,
+        *,
+        require_pkce_s256: bool = True,
+    ) -> SmartConfiguration:
+        """Discovers SMART on FHIR v2 metadata for this Epic endpoint (`.well-known` with `/metadata` fallback)."""
+        return await discover_smart_configuration(
+            self._base_url,
+            http,
+            require_pkce_s256=require_pkce_s256,
+        )
+
+    def build_authorization_url(
+        self,
+        *,
+        smart_config: SmartConfiguration,
+        client_id: str,
+        redirect_uri: str,
+        state: str,
+        code_challenge: str,
+        code_verifier: Optional[str] = None,
+        scopes: Optional[Sequence[str]] = None,
+    ) -> str:
+        """Builds a SMART v2 authorization URL enforcing PKCE S256 and `aud` binding."""
+        return build_smart_authorization_url(
+            smart_config=smart_config,
+            client_id=client_id,
+            redirect_uri=redirect_uri,
+            state=state,
+            code_challenge=code_challenge,
+            code_verifier=code_verifier,
+            scopes=scopes or SMART_V2_CLINICAL_SCOPES,
+        )
 
     async def fetch(
         self,
@@ -175,178 +301,132 @@ class EpicSmartConnector:
         stream: str,
         cursor: Optional[str],
         http: ScopedHttp,
+        *,
+        max_pages: Optional[int] = None,
     ) -> Page:
-        """Queries `https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4/{stream}` via ScopedHttp."""
-        if not ctx.profile_id or not ctx.user_id:
-            raise ValueError("ToolContext user_id and profile_id are required.")
-        if stream not in _FHIR_MODEL_REGISTRY:
-            raise ValueError(f"Unsupported USCDI FHIR stream '{stream}' for EpicSmartConnector.")
+        """Fetches a FHIR R4 Bundle for the requested USCDI resource stream and follows `Bundle.link[relation='next']`."""
+        if stream not in _USCDI_MODEL_VALIDATORS:
+            raise ConnectorError(
+                f"Unsupported Epic SMART stream '{stream}'. Supported: {sorted(_USCDI_MODEL_VALIDATORS)}"
+            )
 
-        url = f"{self._base_url}/{stream}"
-        if cursor:
-            url = f"{url}?_lastUpdated=gt{cursor}"
+        params: Dict[str, str] = {"_count": "50"}
+        if cursor and cursor.startswith(("http://", "https://")):
+            url = cursor
+            params = {}
+        else:
+            url = f"{self._base_url}/{stream}"
+            if cursor:
+                params["_page_token"] = cursor
 
-        response = await http.get(url)
-        payload = response.json() if hasattr(response, "json") else {}
-
-        raw_resources: List[Dict[str, Any]] = []
-        if isinstance(payload, dict) and payload.get("resourceType") == "Bundle":
-            for entry in payload.get("entry") or []:
-                if isinstance(entry, dict) and isinstance(entry.get("resource"), dict):
-                    res = dict(entry["resource"])
-                    res.setdefault("profile_id", ctx.profile_id)
-                    raw_resources.append(res)
-        elif isinstance(payload, dict) and isinstance(payload.get("records"), list):
-            for rec in payload["records"]:
-                if isinstance(rec, dict):
-                    res = dict(rec)
-                    res.setdefault("profile_id", ctx.profile_id)
-                    raw_resources.append(res)
-        elif isinstance(payload, dict) and payload.get("resourceType") in _FHIR_MODEL_REGISTRY:
-            res = dict(payload)
-            res.setdefault("profile_id", ctx.profile_id)
-            raw_resources.append(res)
-
-        next_cursor: Optional[str] = None
-        if isinstance(payload, dict):
-            for link in payload.get("link") or []:
-                if isinstance(link, dict) and link.get("relation") == "next":
-                    next_cursor = str(link.get("url") or "")
-                    break
-            if not next_cursor and payload.get("next_cursor"):
-                next_cursor = str(payload["next_cursor"])
+        records, next_cursor, has_more, pages_fetched = await fetch_paginated_fhir_bundle_resources(
+            http=http,
+            initial_url=url,
+            params=params,
+            max_pages=max_pages or self._max_pages,
+            connector_label="Epic SMART",
+            stream_name=stream,
+        )
 
         return Page(
             stream=stream,
-            records=raw_resources,
+            records=records,
             next_cursor=next_cursor,
-            has_more=bool(next_cursor),
-            metadata={"profile_id": ctx.profile_id, "user_id": ctx.user_id},
+            has_more=has_more,
+            metadata={"profile_id": ctx.profile_id, "pages_fetched": pages_fetched},
         )
 
     def map(self, page: Page) -> List[NormalisedRecord]:
-        """Validates USCDI FHIR R4 resources and attaches untrusted provenance (`E10.7`)."""
+        """Validates raw FHIR R4 resources with `fhir.resources` and wraps them in untrusted `NormalisedRecord` items."""
+        profile_id = str(page.metadata.get("profile_id") or "unknown-profile")
+        stream_name = page.stream
+        validator_cls = _USCDI_MODEL_VALIDATORS.get(stream_name)
+        if validator_cls is None:
+            raise ConnectorError(f"No FHIR validator registered for stream '{stream_name}'.")
+
         normalised: List[NormalisedRecord] = []
-        default_profile_id = str(page.metadata.get("profile_id") or "default-profile")
-
-        for idx, raw in enumerate(page.records):
-            if not isinstance(raw, dict):
+        for raw_res in page.records:
+            if not isinstance(raw_res, dict):
                 continue
-            profile_id = str(raw.get("profile_id") or default_profile_id)
-            clean_input = {k: v for k, v in raw.items() if k != "profile_id"}
-            rtype = str(clean_input.get("resourceType") or page.stream).strip()
 
-            validated_fhir = validate_uscdi_fhir_resource(clean_input, expected_type=page.stream)
-            eff_dt, eff_iso, date_str = _extract_effective_datetime(validated_fhir)
-            source_display = f"From Epic SMART, {date_str}"
+            res_copy = dict(raw_res)
+            res_copy.setdefault("resourceType", stream_name)
+            res_copy.setdefault("id", f"{stream_name.lower()}-{uuid.uuid4().hex[:10]}")
 
-            rec_id = str(validated_fhir.get("id") or f"{rtype.lower()}-{idx}")
-            validated_fhir["id"] = rec_id
-            validated_fhir.setdefault("meta", {})
-            if isinstance(validated_fhir["meta"], dict):
-                validated_fhir["meta"]["source"] = "https://fhir.epic.com"
-                validated_fhir["meta"]["tag"] = [
-                    {
-                        "system": "https://carefold.ai/trust",
-                        "code": "untrusted",
-                        "display": source_display,
-                    }
-                ]
+            validated_model = validator_cls.model_validate(res_copy)
+            validated_dict = json.loads(validated_model.model_dump_json())
 
-            # Re-validate after attaching FHIR-compliant meta tag
-            canonical_fhir = _FHIR_MODEL_REGISTRY[rtype].model_validate(validated_fhir).model_dump(
-                mode="json", exclude_none=True
-            )
+            effective_dt = _extract_fhir_effective_datetime(validated_dict)
+            date_str = effective_dt.date().isoformat()
+            display = _extract_fhir_display_summary(validated_dict)
 
-            record_data: Dict[str, Any] = copy.deepcopy(canonical_fhir)
-            record_data["source_display"] = source_display
-            record_data["trust"] = "untrusted"
-            record_data["effective_at"] = eff_iso
-            record_data["fhir_resource"] = canonical_fhir
-            record_data["_carefold_provenance"] = {
-                "source_name": "Epic SMART",
-                "source_display": source_display,
+            payload: Dict[str, Any] = {
+                "resourceType": stream_name,
+                "fhir_resource": validated_dict,
+                "code_display": display,
+                "effective_date": date_str,
+                "source_display": f"From Epic SMART, {date_str}",
                 "trust": "untrusted",
             }
-
             raw_hash = hashlib.sha256(
-                json.dumps(canonical_fhir, sort_keys=True).encode("utf-8")
+                json.dumps(validated_dict, sort_keys=True).encode("utf-8")
             ).hexdigest()
 
-            normalised.append(
-                NormalisedRecord(
-                    id=f"{rtype}:{rec_id}",
-                    stream=page.stream,
-                    profile_id=profile_id,
-                    source=self._manifest.id,
-                    record_type=rtype,
-                    timestamp=eff_dt,
-                    data=record_data,
-                    raw_hash=raw_hash,
-                )
+            rec = NormalisedRecord(
+                id=str(validated_dict.get("id")),
+                stream=stream_name,
+                profile_id=profile_id,
+                source=self._manifest.id,
+                record_type=stream_name,
+                timestamp=effective_dt,
+                data=payload,
+                raw_hash=raw_hash,
             )
+            normalised.append(rec)
 
         self._indexed_records.extend(normalised)
         return normalised
 
-    def tools(self) -> List[ToolSpec]:
-        async def _search_records_handler(
-            ctx: ToolContext,
-            args: Optional[Dict[str, Any]] = None,
-        ) -> Dict[str, Any]:
-            if not ctx.profile_id or not ctx.user_id:
-                raise ValueError("ToolContext user_id and profile_id are required.")
-            params = args or {}
-            resource_type = params.get("resource_type")
-            query = str(params.get("query") or "").strip().lower()
-
-            matches: List[Dict[str, Any]] = []
-            for rec in self._indexed_records:
-                if rec.profile_id not in (ctx.profile_id, "default-profile"):
-                    continue
-                if resource_type and rec.record_type != resource_type:
-                    continue
-                if query and query not in json.dumps(rec.data).lower():
-                    continue
-                matches.append(rec.data)
-
-            return {
-                "connector_id": self._manifest.id,
-                "profile_id": ctx.profile_id,
-                "trust": "untrusted",
-                "count": len(matches),
-                "records": matches,
-            }
-
-        return [
-            ToolSpec(
-                name="epic_smart_search_records",
-                description="Searches normalized USCDI FHIR R4 clinical records imported from Epic MyChart.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "resource_type": {
-                            "type": "string",
-                            "description": "Optional FHIR resourceType filter (e.g. Condition, Observation)",
-                        },
-                        "query": {
-                            "type": "string",
-                            "description": "Free-text search filter",
-                        },
-                    },
-                },
-                risk_class="read_only",
-                risk_tier="read",
-                trust="untrusted",
-                data_flows=("fhir.epic.com",),
-                handler=_search_records_handler,
-            )
+    async def persist_records(
+        self,
+        session: AsyncSession,
+        *,
+        profile_id: str,
+        records: Optional[Sequence[NormalisedRecord]] = None,
+        connection_id: Optional[str] = None,
+        actor_user_id: Optional[str] = None,
+    ) -> List[HealthResource]:
+        """Persists mapped `NormalisedRecord` items into the `#282`/`#283` FHIR R4 repository."""
+        target_records = list(records) if records is not None else [
+            r for r in self._indexed_records if r.profile_id == profile_id
         ]
+        return await persist_smart_fhir_records(
+            session,
+            profile_id=profile_id,
+            records=target_records,
+            connection_id=connection_id,
+            connector_id=self._manifest.id,
+            actor_user_id=actor_user_id,
+        )
+
+    async def _handle_search_records(
+        self,
+        ctx: ToolContext,
+        args: Mapping[str, Any],
+    ) -> SmartUntrustedResult:
+        """Searches persisted `HealthResource` rows (and any in-memory mapped records) with untrusted taint."""
+        return await search_smart_fhir_records(
+            ctx,
+            args,
+            fallback_indexed_records=self._indexed_records,
+            default_source_label="Epic SMART",
+            connector_source=self._manifest.id,
+        )
 
 
 __all__ = [
-    "EPIC_FHIR_BASE_URL",
+    "DEFAULT_EPIC_FHIR_BASE_URL",
     "EpicSmartConnector",
-    "USCDI_FHIR_STREAMS",
-    "validate_uscdi_fhir_resource",
+    "SMART_V1_CLINICAL_SCOPES",
+    "SMART_V2_CLINICAL_SCOPES",
 ]

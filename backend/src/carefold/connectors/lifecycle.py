@@ -220,15 +220,30 @@ _FALLBACK_STARTER_MANIFESTS: List[Dict[str, Any]] = [
             "token_rotation": False,
             "rotating_refresh": False,
             "scopes": [
+                "launch/patient",
                 "openid",
                 "fhirUser",
-                "launch/patient",
+                "offline_access",
+                "patient/Patient.rs",
+                "patient/Condition.rs",
+                "patient/MedicationRequest.rs",
+                "patient/AllergyIntolerance.rs",
+                "patient/Immunization.rs",
+                "patient/Observation.rs",
+                "patient/DiagnosticReport.rs",
+                "patient/Procedure.rs",
+                "patient/CarePlan.rs",
+                "patient/Encounter.rs",
+                "patient/DocumentReference.rs",
                 "patient/Patient.read",
                 "patient/Condition.read",
                 "patient/MedicationRequest.read",
                 "patient/AllergyIntolerance.read",
                 "patient/Immunization.read",
                 "patient/Observation.read",
+                "patient/DiagnosticReport.read",
+                "patient/Procedure.read",
+                "patient/CarePlan.read",
                 "patient/Encounter.read",
                 "patient/DocumentReference.read",
             ],
@@ -258,11 +273,17 @@ def list_connector_manifests() -> List[ConnectorManifest]:
 
     try:
         pkg_root = Path(connectors.__file__).resolve().parent
-        manifests_dir = pkg_root / "starters" / "manifests"
-        if manifests_dir.is_dir():
-            for yaml_path in sorted(manifests_dir.glob("*.yaml")):
-                loaded = ConnectorManifest.from_yaml(yaml_path)
-                manifests_by_id[loaded.id] = loaded
+        local_root = Path(__file__).resolve().parent
+        candidate_dirs = (
+            pkg_root / "starters" / "manifests",
+            local_root / "manifests",
+            local_root / "starters" / "manifests",
+        )
+        for manifests_dir in candidate_dirs:
+            if manifests_dir.is_dir():
+                for yaml_path in sorted(manifests_dir.glob("*.yaml")):
+                    loaded = ConnectorManifest.from_yaml(yaml_path)
+                    manifests_by_id[loaded.id] = loaded
     except Exception:
         pass
 
