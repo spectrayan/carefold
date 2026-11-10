@@ -28,6 +28,7 @@ from carefold.api.companion import router as companion_router
 from carefold.api.connections import router as connections_router
 from carefold.api.coordinated import router as coordinated_router
 from carefold.api.email_drafts import router as email_drafts_router
+from carefold.api.fhir_r4 import router as fhir_r4_router
 from carefold.api.handover import router as handover_router
 from carefold.api.health import router as health_router
 from carefold.api.i18n import router as i18n_router
@@ -105,6 +106,7 @@ def get_default_router_contributions() -> List[RouterContribution]:
         ),
         RouterContribution(auth_router, prefix="/auth", tags=["auth"], pack_id="core"),
         RouterContribution(admin_router, prefix="/admin", tags=["admin"], pack_id="core"),
+        RouterContribution(fhir_r4_router, pack_id="health", scope="health.clinical", level="read"),
     ]
 
 

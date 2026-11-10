@@ -380,6 +380,95 @@ async def _hook_record_vital_reading(
     }
 
 
+async def _hook_fhir_operation_registry(
+    tool_name: str,
+    exec_params: Dict[str, Any],
+    profile_id: Optional[str],
+    user_id: Optional[str],
+    session: AsyncSession,
+) -> Dict[str, Any]:
+    """Executes an MCP DB Toolbox FHIR R4 tool through the single FHIR Operation Registry (#285)."""
+    from carefold.fhir.operations import (
+        FHIR_MCP_TOOL_REGISTRY,
+        FhirOperationError,
+        execute_fhir_mcp_operation,
+    )
+    from carefold.scope.context import current_scope_context
+
+    ctx_obj = exec_params.get("_ctx")
+    taint_flag = getattr(ctx_obj, "taint", None) if ctx_obj is not None else None
+    extra = getattr(ctx_obj, "extra", None) if ctx_obj is not None else None
+    confirmed = bool(
+        exec_params.get("confirmed") is True
+        or (isinstance(extra, dict) and extra.get("confirmed") is True)
+    )
+
+    # Resolve granted scopes from ToolContext, extra, or ambient ScopeContext
+    resolved_scopes: List[str] = ["health.clinical"]
+    if isinstance(extra, dict) and extra.get("scopes"):
+        resolved_scopes = [str(s) for s in extra["scopes"]]
+    elif ctx_obj is not None and getattr(ctx_obj, "scopes", None):
+        resolved_scopes = [str(s) for s in getattr(ctx_obj, "scopes")]
+    else:
+        raw_scope = str(exec_params.get("scope") or "").strip()
+        if raw_scope in ("health.paperwork", "health.clinical", "health.*"):
+            resolved_scopes = [raw_scope]
+        ambient = current_scope_context()
+        if ambient is not None and getattr(ambient, "granted_scopes", None):
+            resolved_scopes = [str(s) for s in ambient.granted_scopes]
+        elif ambient is not None and getattr(ambient, "scope", None):
+            resolved_scopes = [str(ambient.scope)]
+
+    op_spec = FHIR_MCP_TOOL_REGISTRY[tool_name]
+    annotations_dict = op_spec.annotations.to_dict()
+    try:
+        result = await execute_fhir_mcp_operation(
+            tool_name,
+            exec_params,
+            session=session,
+            profile_id=str(profile_id or "").strip(),
+            user_id=user_id,
+            scopes=resolved_scopes,
+            confirmed=confirmed,
+            taint_flag=taint_flag,
+        )
+    except FhirOperationError as err:
+        return {
+            "status": "error",
+            "tool": tool_name,
+            "operation_id": op_spec.operation_id,
+            "annotations": annotations_dict,
+            "_mcp": {
+                "tool_name": tool_name,
+                "operation_id": op_spec.operation_id,
+                "annotations": annotations_dict,
+            },
+            "error": {
+                "status_code": err.status_code,
+                "issue_code": err.issue_code,
+                "diagnostics": err.diagnostics,
+                "operation_outcome": err.to_operation_outcome(),
+                "problem_details": err.to_problem_details(),
+            },
+        }
+
+    top_level = dict(result) if isinstance(result, dict) else {}
+    return {
+        **top_level,
+        "status": "ok",
+        "tool": tool_name,
+        "operation_id": op_spec.operation_id,
+        "annotations": annotations_dict,
+        "_mcp": {
+            "tool_name": tool_name,
+            "operation_id": op_spec.operation_id,
+            "annotations": annotations_dict,
+        },
+        "entity": "health_resource",
+        "result": result,
+    }
+
+
 def register_carefold_db_toolbox() -> None:
     """Idempotently register Carefold's declarative YAML and clinical side-effect hooks."""
     global _REGISTERED
@@ -393,5 +482,11 @@ def register_carefold_db_toolbox() -> None:
     core_toolbox.register_db_tool_hook(
         "record_vital_reading", _hook_record_vital_reading
     )
+    from carefold.fhir.operations import FHIR_MCP_TOOL_REGISTRY
+
+    for fhir_tool_name in FHIR_MCP_TOOL_REGISTRY:
+        core_toolbox.register_db_tool_hook(
+            fhir_tool_name, _hook_fhir_operation_registry
+        )
     core_toolbox._DEFAULT_TOOLBOX = None
     _REGISTERED = True

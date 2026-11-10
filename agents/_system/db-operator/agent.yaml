@@ -26,5 +26,13 @@ tools:
   - update_profile_reminder
   - create_email_draft_record
   - list_email_draft_records
+extensions:
+  fhir_read_tools:
+    - fhir_get_capabilities
+    - fhir_search_resources
+    - fhir_read_resource
+    - fhir_get_resource_history
+    - fhir_get_patient_everything
+    - fhir_get_patient_summary
 forbidden: []
 persona: persona.md

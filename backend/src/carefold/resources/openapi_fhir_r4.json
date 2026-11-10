@@ -1,0 +1,1468 @@
+{
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Profile-scoped, local-first HL7 FHIR R4 REST API and MCP operation contract backed by Carefold's single FHIR Operation Registry (`carefold.fhir.operations`).",
+    "title": "Carefold Local-First HL7 FHIR R4 REST & MCP Surface",
+    "version": "4.0.1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/fhir/r4/$export-status/{job_id}": {
+      "get": {
+        "operationId": "fhir_r4_bulk_export_status",
+        "parameters": [
+          {
+            "description": "Bulk export job UUID",
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "description": "Bulk export job UUID",
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional profile ID",
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional profile ID",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Poll Bulk FHIR $export Job Status",
+        "tags": [
+          "FHIR R4"
+        ]
+      }
+    },
+    "/api/v1/fhir/r4/$export-status/{job_id}/files/{resource_file}": {
+      "get": {
+        "operationId": "fhir_r4_bulk_export_download",
+        "parameters": [
+          {
+            "description": "Bulk export job UUID",
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "description": "Bulk export job UUID",
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Resource NDJSON filename (e.g. 'Observation.ndjson')",
+            "in": "path",
+            "name": "resource_file",
+            "required": true,
+            "schema": {
+              "description": "Resource NDJSON filename (e.g. 'Observation.ndjson')",
+              "title": "Resource File",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional profile ID",
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional profile ID",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Bulk FHIR $export NDJSON File",
+        "tags": [
+          "FHIR R4"
+        ]
+      }
+    },
+    "/api/v1/fhir/r4/Patient/{id}/$everything": {
+      "get": {
+        "operationId": "fhir_r4_patient_everything",
+        "parameters": [
+          {
+            "description": "Patient / Profile logical ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Patient / Profile logical ID",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comma-separated FHIR resource types",
+            "in": "query",
+            "name": "_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated FHIR resource types",
+              "title": " Type"
+            }
+          },
+          {
+            "description": "ISO-8601 lower bound timestamp",
+            "in": "query",
+            "name": "_since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO-8601 lower bound timestamp",
+              "title": " Since"
+            }
+          },
+          {
+            "description": "Maximum entries per page (1..100)",
+            "in": "query",
+            "name": "_count",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Maximum entries per page (1..100)",
+              "title": " Count",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque pagination cursor",
+            "in": "query",
+            "name": "_cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque pagination cursor",
+              "title": " Cursor"
+            }
+          },
+          {
+            "description": "Optional active profile ID",
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional active profile ID",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patient/$everything Longitudinal Record Export",
+        "tags": [
+          "FHIR R4"
+        ]
+      }
+    },
+    "/api/v1/fhir/r4/Patient/{id}/$export": {
+      "get": {
+        "operationId": "fhir_r4_patient_bulk_export_get",
+        "parameters": [
+          {
+            "description": "Patient / Profile logical ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Patient / Profile logical ID",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comma-separated FHIR resource types",
+            "in": "query",
+            "name": "_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated FHIR resource types",
+              "title": " Type"
+            }
+          },
+          {
+            "description": "ISO-8601 lower bound timestamp",
+            "in": "query",
+            "name": "_since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO-8601 lower bound timestamp",
+              "title": " Since"
+            }
+          },
+          {
+            "description": "Force async 202 response when true",
+            "in": "query",
+            "name": "_async",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Force async 202 response when true",
+              "title": " Async"
+            }
+          },
+          {
+            "description": "Explicit user confirmation flag",
+            "in": "query",
+            "name": "confirmed",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Explicit user confirmation flag",
+              "title": "Confirmed",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Optional active profile ID",
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional active profile ID",
+              "title": "Profile Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Prefer",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Prefer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stream or Start Patient/$export Bulk FHIR NDJSON Export",
+        "tags": [
+          "FHIR R4"
+        ]
+      },
+      "post": {
+        "operationId": "fhir_r4_patient_bulk_export_start",
+        "parameters": [
+          {
+            "description": "Patient / Profile logical ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Patient / Profile logical ID",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comma-separated FHIR resource types",
+            "in": "query",
+            "name": "_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated FHIR resource types",
+              "title": " Type"
+            }
+          },
+          {
+            "description": "ISO-8601 lower bound timestamp",
+            "in": "query",
+            "name": "_since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO-8601 lower bound timestamp",
+              "title": " Since"
+            }
+          },
+          {
+            "description": "Force async 202 response when true",
+            "in": "query",
+            "name": "_async",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Force async 202 response when true",
+              "title": " Async"
+            }
+          },
+          {
+            "description": "Explicit user confirmation flag",
+            "in": "query",
+            "name": "confirmed",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Explicit user confirmation flag",
+              "title": "Confirmed",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Optional active profile ID",
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional active profile ID",
+              "title": "Profile Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Prefer",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Prefer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Patient/$export Bulk FHIR NDJSON Export Job",
+        "tags": [
+          "FHIR R4"
+        ]
+      }
+    },
+    "/api/v1/fhir/r4/Patient/{id}/$summary": {
+      "get": {
+        "operationId": "fhir_r4_patient_summary",
+        "parameters": [
+          {
+            "description": "Patient / Profile logical ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Patient / Profile logical ID",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional active profile ID",
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional active profile ID",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patient/$summary HL7 International Patient Summary (IPS)",
+        "tags": [
+          "FHIR R4"
+        ]
+      }
+    },
+    "/api/v1/fhir/r4/metadata": {
+      "get": {
+        "description": "Returns Carefold's validated `fhir.resources.R4B.capabilitystatement.CapabilityStatement`.",
+        "operationId": "fhir_r4_capabilities",
+        "parameters": [
+          {
+            "description": "Optional target profile ID",
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional target profile ID",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get FHIR R4 CapabilityStatement",
+        "tags": [
+          "FHIR R4"
+        ]
+      }
+    },
+    "/api/v1/fhir/r4/{resource_type}": {
+      "get": {
+        "operationId": "fhir_r4_search_resources",
+        "parameters": [
+          {
+            "description": "FHIR R4 resource type",
+            "in": "path",
+            "name": "resource_type",
+            "required": true,
+            "schema": {
+              "description": "FHIR R4 resource type",
+              "title": "Resource Type",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Patient reference filter",
+            "in": "query",
+            "name": "patient",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Patient reference filter",
+              "title": "Patient"
+            }
+          },
+          {
+            "description": "Subject reference filter",
+            "in": "query",
+            "name": "subject",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Subject reference filter",
+              "title": "Subject"
+            }
+          },
+          {
+            "description": "Category token filter",
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Category token filter",
+              "title": "Category"
+            }
+          },
+          {
+            "description": "Coded concept filter (system|code or code)",
+            "in": "query",
+            "name": "code",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Coded concept filter (system|code or code)",
+              "title": "Code"
+            }
+          },
+          {
+            "description": "Effective date filter(s) with eq/ge/le/gt/lt prefix",
+            "in": "query",
+            "name": "date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Effective date filter(s) with eq/ge/le/gt/lt prefix",
+              "title": "Date"
+            }
+          },
+          {
+            "description": "Lifecycle status filter",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Lifecycle status filter",
+              "title": "Status"
+            }
+          },
+          {
+            "description": "Clinical status filter",
+            "in": "query",
+            "name": "clinical-status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Clinical status filter",
+              "title": "Clinical-Status"
+            }
+          },
+          {
+            "description": "Last updated timestamp filter(s)",
+            "in": "query",
+            "name": "_lastUpdated",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Last updated timestamp filter(s)",
+              "title": " Lastupdated"
+            }
+          },
+          {
+            "description": "Outbound reference include expression",
+            "in": "query",
+            "name": "_include",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Outbound reference include expression",
+              "title": " Include"
+            }
+          },
+          {
+            "description": "Sort expression",
+            "in": "query",
+            "name": "_sort",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "-date",
+              "description": "Sort expression",
+              "title": " Sort"
+            }
+          },
+          {
+            "description": "Page size (1..100)",
+            "in": "query",
+            "name": "_count",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Page size (1..100)",
+              "title": " Count",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque pagination cursor",
+            "in": "query",
+            "name": "_cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque pagination cursor",
+              "title": " Cursor"
+            }
+          },
+          {
+            "description": "Optional active profile ID",
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional active profile ID",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search FHIR R4 Resources",
+        "tags": [
+          "FHIR R4"
+        ]
+      },
+      "post": {
+        "operationId": "fhir_r4_post_resource",
+        "parameters": [
+          {
+            "description": "FHIR R4 resource type",
+            "in": "path",
+            "name": "resource_type",
+            "required": true,
+            "schema": {
+              "description": "FHIR R4 resource type",
+              "title": "Resource Type",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Explicit user confirmation flag",
+            "in": "query",
+            "name": "confirmed",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Explicit user confirmation flag",
+              "title": "Confirmed",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Optional active profile ID",
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional active profile ID",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create FHIR R4 Resource (User-Confirmed)",
+        "tags": [
+          "FHIR R4"
+        ]
+      }
+    },
+    "/api/v1/fhir/r4/{resource_type}/{id}": {
+      "get": {
+        "operationId": "fhir_r4_read_resource",
+        "parameters": [
+          {
+            "description": "FHIR R4 resource type",
+            "in": "path",
+            "name": "resource_type",
+            "required": true,
+            "schema": {
+              "description": "FHIR R4 resource type",
+              "title": "Resource Type",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Logical FHIR resource ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Logical FHIR resource ID",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional active profile ID",
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional active profile ID",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read FHIR R4 Resource by ID",
+        "tags": [
+          "FHIR R4"
+        ]
+      },
+      "put": {
+        "operationId": "fhir_r4_put_resource",
+        "parameters": [
+          {
+            "description": "FHIR R4 resource type",
+            "in": "path",
+            "name": "resource_type",
+            "required": true,
+            "schema": {
+              "description": "FHIR R4 resource type",
+              "title": "Resource Type",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Logical FHIR resource ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Logical FHIR resource ID",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Explicit user confirmation flag",
+            "in": "query",
+            "name": "confirmed",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Explicit user confirmation flag",
+              "title": "Confirmed",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Optional active profile ID",
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional active profile ID",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update or Create FHIR R4 Resource by ID (User-Confirmed)",
+        "tags": [
+          "FHIR R4"
+        ]
+      }
+    },
+    "/api/v1/fhir/r4/{resource_type}/{id}/_history": {
+      "get": {
+        "operationId": "fhir_r4_resource_history",
+        "parameters": [
+          {
+            "description": "FHIR R4 resource type",
+            "in": "path",
+            "name": "resource_type",
+            "required": true,
+            "schema": {
+              "description": "FHIR R4 resource type",
+              "title": "Resource Type",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Logical FHIR resource ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Logical FHIR resource ID",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Max revisions per page (1..100)",
+            "in": "query",
+            "name": "_count",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Max revisions per page (1..100)",
+              "title": " Count",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque pagination cursor",
+            "in": "query",
+            "name": "_cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque pagination cursor",
+              "title": " Cursor"
+            }
+          },
+          {
+            "description": "Optional active profile ID",
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional active profile ID",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get FHIR R4 Resource Version History (_history)",
+        "tags": [
+          "FHIR R4"
+        ]
+      }
+    }
+  },
+  "x-carefold-mcp-operations": [
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "http_method": "GET",
+      "mcp_resource_uri_template": "fhir://profiles/{profile_id}/metadata",
+      "mcp_tool_name": "fhir_get_capabilities",
+      "operation_id": "fhir_capabilities",
+      "requires_confirmation": false,
+      "rest_path": "/metadata",
+      "risk_tier": "read"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "http_method": "GET",
+      "mcp_resource_uri_template": null,
+      "mcp_tool_name": "fhir_search_resources",
+      "operation_id": "fhir_search_resources",
+      "requires_confirmation": false,
+      "rest_path": "/{resource_type}",
+      "risk_tier": "read"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "http_method": "GET",
+      "mcp_resource_uri_template": "fhir://profiles/{profile_id}/{resource_type}/{id}",
+      "mcp_tool_name": "fhir_read_resource",
+      "operation_id": "fhir_read_resource",
+      "requires_confirmation": false,
+      "rest_path": "/{resource_type}/{id}",
+      "risk_tier": "read"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "http_method": "GET",
+      "mcp_resource_uri_template": null,
+      "mcp_tool_name": "fhir_get_resource_history",
+      "operation_id": "fhir_resource_history",
+      "requires_confirmation": false,
+      "rest_path": "/{resource_type}/{id}/_history",
+      "risk_tier": "read"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "http_method": "GET",
+      "mcp_resource_uri_template": null,
+      "mcp_tool_name": "fhir_get_patient_everything",
+      "operation_id": "fhir_patient_everything",
+      "requires_confirmation": false,
+      "rest_path": "/Patient/{id}/$everything",
+      "risk_tier": "read"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "http_method": "GET",
+      "mcp_resource_uri_template": "fhir://profiles/{profile_id}/Patient/$summary",
+      "mcp_tool_name": "fhir_get_patient_summary",
+      "operation_id": "fhir_patient_summary",
+      "requires_confirmation": false,
+      "rest_path": "/Patient/{id}/$summary",
+      "risk_tier": "read"
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "http_method": "PUT",
+      "mcp_resource_uri_template": null,
+      "mcp_tool_name": "fhir_upsert_resource",
+      "operation_id": "fhir_upsert_resource",
+      "requires_confirmation": true,
+      "rest_path": "/{resource_type}/{id}",
+      "risk_tier": "write_local"
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "http_method": "POST",
+      "mcp_resource_uri_template": null,
+      "mcp_tool_name": "fhir_start_bulk_export",
+      "operation_id": "fhir_bulk_export_start",
+      "requires_confirmation": true,
+      "rest_path": "/Patient/{id}/$export",
+      "risk_tier": "write_local"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "http_method": "GET",
+      "mcp_resource_uri_template": null,
+      "mcp_tool_name": "fhir_get_bulk_export_status",
+      "operation_id": "fhir_bulk_export_status",
+      "requires_confirmation": false,
+      "rest_path": "/$export-status/{job_id}",
+      "risk_tier": "read"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "http_method": "GET",
+      "mcp_resource_uri_template": null,
+      "mcp_tool_name": "fhir_download_bulk_export_file",
+      "operation_id": "fhir_bulk_export_download",
+      "requires_confirmation": false,
+      "rest_path": "/$export-status/{job_id}/files/{resource_type}.ndjson",
+      "risk_tier": "read"
+    }
+  ]
+}
