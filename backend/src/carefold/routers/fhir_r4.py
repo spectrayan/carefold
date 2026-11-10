@@ -755,7 +755,6 @@ def generate_fhir_r4_openapi_spec() -> Dict[str, Any]:
     spec_app = FastAPI(
         title="Carefold Local-First HL7 FHIR R4 REST & MCP Surface",
         version="4.0.1",
-        openapi_version="3.1.0",
     )
     spec_app.include_router(router, prefix="/api/v1")
     schema = get_openapi(
@@ -768,6 +767,7 @@ def generate_fhir_r4_openapi_spec() -> Dict[str, Any]:
         ),
         routes=spec_app.routes,
     )
+    schema["openapi"] = "3.1.0"
     schema["x-carefold-mcp-operations"] = [
         {
             "operation_id": spec.operation_id,
