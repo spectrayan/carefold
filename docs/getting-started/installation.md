@@ -63,6 +63,36 @@ Clone the Carefold repository from GitHub and navigate to the project directory:
 git clone https://github.com/spectrayan/carefold.git
 cd carefold
 ```
+---
+
+## Alternative Path: Run via Docker Compose (Recommended)
+
+If you want to build and run the entire stack from source without manually installing **Python, Node.js, and Ollama,** you can use Docker Compose.
+
+### 1. Configure the Vault Key (Required)
+Carefold encrypts local chats, so you need to generate a Vault Key (KEK) before starting:
+
+```bash
+cp deploy/docker/.env.example deploy/docker/.env
+echo "CAREFOLD_VAULT_KEK=$(openssl rand -hex 32)" >> deploy/docker/.env
+```
+
+### 2. Start the Stack
+
+From the repository root, run:
+
+   ```bash
+   docker compose up -d
+   ```
+### 3. (Optional) Start with Local AI
+
+If you want to use local LLMs via Ollama, start the stack with the `local-ai` profile:
+   
+   ```bash
+   docker compose --profile local-ai up -d
+   ```
+
+For more detailed instructions (including how to pull models and check healthchecks), see the [Docker README](../../deploy/docker/README.md).
 
 ---
 
