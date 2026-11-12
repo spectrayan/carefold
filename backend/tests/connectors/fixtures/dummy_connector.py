@@ -17,7 +17,7 @@ import hashlib
 import json
 from typing import Any, Dict, List, Optional
 
-from connectors.base import (
+from yarvelle_core.connectors.base import (
     Connector,
     NormalisedRecord,
     Page,
@@ -25,8 +25,8 @@ from connectors.base import (
     ToolContext,
     ToolSpec,
 )
-from connectors.http import ScopedHttp
-from connectors.manifest import (
+from yarvelle_core.connectors.http import ScopedHttp
+from yarvelle_core.connectors.manifest import (
     AuthConfig,
     ConnectorManifest,
     DataFlowSpec,

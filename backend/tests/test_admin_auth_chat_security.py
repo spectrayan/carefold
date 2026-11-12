@@ -492,14 +492,16 @@ def test_api_chat_unauthenticated_returns_401_immediately(client: TestClient, m3
         "agentId": "appointment-prep-coordinator",
         "prompt": "Hello! Can you help me prepare for my visit?",
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
     }
 
     # No cookies, no Authorization header
     resp = client.post("/api/chat", json=chat_payload)
     assert resp.status_code == 401
     assert "text/event-stream" not in resp.headers.get("content-type", "")
-    assert resp.headers.get("content-type", "").startswith("application/json")
+    assert resp.headers.get("content-type", "").startswith(
+        ("application/problem+json", "application/json")
+    )
     assert resp.json()["detail"] == "Authentication required"
 
 
@@ -509,7 +511,7 @@ def test_api_chat_invalid_token_returns_401_immediately(client: TestClient, m3_a
         "agentId": "appointment-prep-coordinator",
         "prompt": "Hello! Can you help me prepare for my visit?",
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
     }
 
     # Invalid session cookie
@@ -540,7 +542,7 @@ def test_api_chat_disabled_user_returns_403_immediately(client: TestClient, m3_a
         "agentId": "appointment-prep-coordinator",
         "prompt": "Hello! Can you help me prepare for my visit?",
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
     }
 
     resp = client.post(
@@ -572,7 +574,7 @@ def test_api_chat_authenticated_streams_unbuffered_sse(client: TestClient, m3_au
         "prompt": "Can you help me prepare for a general health checkup?",
         "profile_id": profile_id,
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
     }
 
     with client.stream(
@@ -625,7 +627,7 @@ def test_api_chat_authenticated_via_bearer_header(client: TestClient, m3_auth_te
         "prompt": "What documents should I bring to an appointment?",
         "profile_id": profile_id,
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
     }
 
     with client.stream(

@@ -473,7 +473,7 @@ class TestCompanionSkillCouplingAndManifestSymmetry:
             # Symmetry in domain and category
             assert agent_manifest.domain == skill_manifest.domain == AgentDomain.CLINICAL
             assert agent_manifest.category == skill_manifest.category
-            assert agent_manifest.risk_class == RiskClass.CLINICAL_ASSIST
+            assert agent_manifest.risk_class == RiskClass.ASSIST
             assert skill_manifest.risk_class == RiskClass.WELLNESS
 
 

@@ -173,13 +173,13 @@ class VitalsTrendsResponse(BaseModel):
 
 
 def require_profile_access(
-    required_access: Literal["manage", "view_clinical", "view_paperwork"] = "view_clinical",
+    required_access: Literal["manage", "view_records", "view_paperwork"] = "view_records",
 ) -> Callable[..., Coroutine[Any, Any, Profile]]:
     """FastAPI dependency factory enforcing profile-level access control.
 
     Access Matrix:
     - 'manage': Required for mutating operations (POST /vitals).
-    - 'view_clinical': Required for reading vitals & trends (GET /vitals).
+    - 'view_records': Required for reading vitals & trends (GET /vitals).
     - 'view_paperwork': Strictly blocked from clinical vitals endpoints.
     """
     async def _dependency(
@@ -216,7 +216,7 @@ def require_profile_access(
                 detail="Access denied: management permissions required to modify this profile's clinical data.",
             )
 
-        if required_access == "view_clinical" and access not in ("manage", "view_clinical"):
+        if required_access == "view_records" and access not in ("manage", "view_records"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: clinical view permissions required to inspect clinical vitals.",
@@ -534,7 +534,7 @@ async def list_profile_vitals(
     status_filter: str = Query("active", alias="status"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
     user: UserProfile = Depends(get_current_user),
 ) -> VitalsListResponse:
@@ -608,7 +608,7 @@ async def get_profile_vitals_trends(
     metric: str = Query("blood_pressure"),
     tz_param: Optional[str] = Query(None, alias="timezone"),
     days: Optional[int] = None,
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
     user: UserProfile = Depends(get_current_user),
 ) -> VitalsTrendsResponse:

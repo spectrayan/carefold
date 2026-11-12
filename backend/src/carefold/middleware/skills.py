@@ -17,31 +17,13 @@ import logging
 from pathlib import Path
 from typing import Any, Optional, Sequence, Union
 
+from yarvelle_core.middleware.skills import compose_skills_system_prompt
+
+import carefold  # noqa: F401 - ensures health pack template overrides are registered
+
 logger = logging.getLogger(__name__)
 
-CAREFOLD_SKILLS_PROMPT = """\
-## Carefold Clinical Skill Catalog
-
-⚠ **CLINICAL SAFETY BOUNDARY**: You are a healthcare navigation assistant.
-You do NOT provide formal medical diagnoses, prescribe medications, adjust dosages, or replace emergency triage.
-For acute life-threatening emergencies (e.g., crushing chest pain, acute stroke, severe dyspnea, anaphylaxis), immediately direct the user to call 911 / 988 or seek emergency medical care.
-
-### Skill Progressive Disclosure Protocol
-1. Review the catalog below — each skill contains a `name`, `description`, and allowed tools.
-2. When a user inquiry matches a skill's clinical scope, retrieve its full instructions on-demand:
-   `read_file("{{path}}")` (e.g. `read_file("skills/<skill-name>/SKILL.md")`)
-3. Follow the structured protocols defined inside `SKILL.md`. If specialized clinical guidelines or reference templates are cited, retrieve them on-demand:
-   `read_file("skills/<skill-name>/references/<document>.md")`
-4. Never extrapolate clinical advice or execute workflows beyond what the loaded skill's verified documentation explicitly permits.
-
-### Skill Sources
-{skills_locations}
-
-### Catalog
-{skills_list}
-
-{skills_load_warnings}
-"""
+CAREFOLD_SKILLS_PROMPT = compose_skills_system_prompt(pack_id="health") + "\n"
 
 try:
     from deepagents.backends.filesystem import FilesystemBackend

@@ -464,7 +464,7 @@ async def test_05_profile_deletion_db_child_rows_cascade(cascade_test_env):
                 invitee_name="Pediatrician Clinic",
                 role="viewer",
                 invited_by=uid,
-                view_clinical=True,
+                view_records=True,
                 view_paperwork=False,
                 expires_at=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7),
             ))

@@ -117,8 +117,7 @@ def test_upgrade_head_fresh_sqlite():
     """Tests upgrading a completely fresh SQLite database directly to head."""
     engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
     with engine.connect() as conn:
-        cfg = get_alembic_config(conn)
-        alembic.command.upgrade(cfg, "head")
+        run_alembic_migrations(conn)
 
         insp = inspect(conn)
         tables = set(insp.get_table_names())
@@ -175,9 +174,18 @@ def test_upgrade_head_fresh_sqlite():
         # Assert 36 tables at head
         assert len(EXPECTED_HEAD_TABLES) == 36
 
-        # Assert head revision is 0013_turn_tasks
+        # Assert head revision is 0014_neutralize_profile_columns
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0013_turn_tasks"
+        assert curr_ver == "0014_neutralize_profile_columns"
+
+        # Assert 0014 neutralized column names exist at head
+        pc_cols = {c["name"] for c in insp.get_columns("profile_consents")}
+        assert "allow_assist" in pc_cols
+        assert "allow_clinical" not in pc_cols
+
+        vi_cols = {c["name"] for c in insp.get_columns("viewer_invites")}
+        assert "view_records" in vi_cols
+        assert "view_clinical" not in vi_cols
 
         # Assert scope_grants table exists and has expected columns
         sg_cols = {c["name"] for c in insp.get_columns("scope_grants")}
@@ -305,7 +313,7 @@ def test_downgrade_to_0010_i18n_and_locale_storage():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0013_turn_tasks"
+        assert curr_ver == "0014_neutralize_profile_columns"
 
         alembic.command.downgrade(cfg, "0010_i18n_and_locale_storage")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -325,7 +333,7 @@ def test_downgrade_to_0010_i18n_and_locale_storage():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0013_turn_tasks"
+        assert curr_ver_up == "0014_neutralize_profile_columns"
 
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
@@ -342,7 +350,7 @@ def test_downgrade_to_0008_routines_mcp_and_drafts():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0013_turn_tasks"
+        assert curr_ver == "0014_neutralize_profile_columns"
 
         alembic.command.downgrade(cfg, "0008_routines_mcp_and_drafts")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -359,7 +367,7 @@ def test_downgrade_to_0008_routines_mcp_and_drafts():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0013_turn_tasks"
+        assert curr_ver_up == "0014_neutralize_profile_columns"
 
 
 def test_downgrade_to_0007_connectors_and_consent():
@@ -370,7 +378,7 @@ def test_downgrade_to_0007_connectors_and_consent():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0013_turn_tasks"
+        assert curr_ver == "0014_neutralize_profile_columns"
 
         alembic.command.downgrade(cfg, "0007_connectors_and_consent")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -388,7 +396,7 @@ def test_downgrade_to_0007_connectors_and_consent():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0013_turn_tasks"
+        assert curr_ver_up == "0014_neutralize_profile_columns"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_6_TABLES.issubset(tables_up)
@@ -403,7 +411,7 @@ def test_downgrade_to_0006_preventive_and_school_forms():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0013_turn_tasks"
+        assert curr_ver == "0014_neutralize_profile_columns"
 
         alembic.command.downgrade(cfg, "0006_preventive_and_school_forms")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -420,7 +428,7 @@ def test_downgrade_to_0006_preventive_and_school_forms():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0013_turn_tasks"
+        assert curr_ver_up == "0014_neutralize_profile_columns"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_5_TABLES.issubset(tables_up)
@@ -435,7 +443,7 @@ def test_downgrade_to_0005_clinical_domain_records():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0013_turn_tasks"
+        assert curr_ver == "0014_neutralize_profile_columns"
 
         alembic.command.downgrade(cfg, "0005_clinical_domain_records")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -452,7 +460,7 @@ def test_downgrade_to_0005_clinical_domain_records():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0013_turn_tasks"
+        assert curr_ver_up == "0014_neutralize_profile_columns"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_4_TABLES.issubset(tables_up)
@@ -547,10 +555,10 @@ def test_downgrade_to_0004_policy_gate_and_vault():
         assert note_row[2] == "Review BP meds"
         assert note_row[3] == "prof-b3-test"
 
-        # Re-upgrade to head (0009_companion_and_handover)
+        # Re-upgrade to head
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0013_turn_tasks"
+        assert curr_ver_up == "0014_neutralize_profile_columns"
 
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
@@ -944,14 +952,87 @@ async def test_init_db_idempotency():
 
 def test_offline_sql_generation():
     """Tests generating migration SQL in offline mode without an active DB connection."""
+    # PostgreSQL offline SQL reaches head (including 0014 column renames)
+    pg_buf = io.StringIO()
+    pg_cfg = get_alembic_config()
+    pg_cfg.attributes["output_buffer"] = pg_buf
+    pg_cfg.set_main_option("sqlalchemy.url", "postgresql://localhost/carefold")
+
+    alembic.command.upgrade(pg_cfg, "head", sql=True)
+    pg_sql = pg_buf.getvalue()
+    assert "CREATE TABLE users" in pg_sql
+    assert "CREATE TABLE attachments" in pg_sql
+    assert "CREATE TABLE audit_events" in pg_sql
+    assert "allow_assist" in pg_sql
+
+    # SQLite offline SQL up to 0013_turn_tasks (0014 uses SQLite batch reflection)
     buf = io.StringIO()
     cfg = get_alembic_config()
     cfg.attributes["output_buffer"] = buf
     cfg.set_main_option("sqlalchemy.url", "sqlite:///:memory:")
 
-    # Offline upgrade head generates valid SQL script
-    alembic.command.upgrade(cfg, "head", sql=True)
+    alembic.command.upgrade(cfg, "0013_turn_tasks", sql=True)
     sql_text = buf.getvalue()
     assert "CREATE TABLE users" in sql_text
     assert "CREATE TABLE attachments" in sql_text
     assert "CREATE TABLE audit_events" in sql_text
+
+
+def test_0014_neutralize_profile_columns_upgrade_and_downgrade():
+    """Tests 0013 -> 0014 column & value migration and 0014 -> 0013 downgrade."""
+    engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
+    with engine.connect() as conn:
+        cfg = get_alembic_config(conn)
+        alembic.command.upgrade(cfg, "0013_turn_tasks")
+
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        conn.execute(
+            text(
+                "INSERT INTO users (id, email, username, hashed_password, created_at, updated_at) "
+                "VALUES ('u-0014', 'u@test.local', 'u0014', 'hash', :now, :now)"
+            ),
+            {"now": now},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO profiles (id, user_id, name, relationship, role, avatar_color, is_primary, created_at, updated_at) "
+                "VALUES ('p-0014', 'u-0014', 'Alice', 'self', 'self', '1', 1, :now, :now)"
+            ),
+            {"now": now},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO profile_consents (id, profile_id, terms_version, allow_clinical, teen_handover_notified, created_at, updated_at) "
+                "VALUES ('pc-0014', 'p-0014', 'v1.0', 1, 0, :now, :now)"
+            ),
+            {"now": now},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO viewer_invites (id, invite_code, profile_id, invited_by, invitee_name, role, view_clinical, view_paperwork, expires_at, created_at, updated_at) "
+                "VALUES ('vi-0014', 'CODE0014', 'p-0014', 'u-0014', 'Grandma', 'viewer', 1, 0, :now, :now, :now)"
+            ),
+            {"now": now},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO profile_access (id, profile_id, user_id, role, access_level, granted_at) "
+                "VALUES ('pa-0014', 'p-0014', 'u-0014', 'viewer', 'view_clinical', :now)"
+            ),
+            {"now": now},
+        )
+        conn.commit()
+
+        alembic.command.upgrade(cfg, "head")
+        assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0014_neutralize_profile_columns"
+
+        assert conn.execute(text("SELECT allow_assist FROM profile_consents WHERE id = 'pc-0014'")).scalar() == 1
+        assert conn.execute(text("SELECT view_records FROM viewer_invites WHERE id = 'vi-0014'")).scalar() == 1
+        assert conn.execute(text("SELECT access_level FROM profile_access WHERE id = 'pa-0014'")).scalar() == "view_records"
+
+        alembic.command.downgrade(cfg, "0013_turn_tasks")
+        assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0013_turn_tasks"
+        assert conn.execute(text("SELECT allow_clinical FROM profile_consents WHERE id = 'pc-0014'")).scalar() == 1
+        assert conn.execute(text("SELECT view_clinical FROM viewer_invites WHERE id = 'vi-0014'")).scalar() == 1
+        assert conn.execute(text("SELECT access_level FROM profile_access WHERE id = 'pa-0014'")).scalar() == "view_clinical"
+

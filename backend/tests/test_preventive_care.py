@@ -81,7 +81,7 @@ def test_preventive_skill_manifest_and_yaml_rules_load():
     skill_dir = repo_root / "skills" / "preventive-care"
     manifest = load_skill(skill_dir)
     assert manifest.id == "preventive-care"
-    assert manifest.risk_class.value == "clinical_assist"
+    assert manifest.risk_class.value == "assist"
 
     rules = load_preventive_rules(skills_dir=repo_root / "skills")
     assert len(rules) >= 20
@@ -467,7 +467,7 @@ def preventive_api_env(monkeypatch):
                     id=str(uuid.uuid4()),
                     profile_id=prof.id,
                     user_id=charlie.id,
-                    access_level="view_clinical",
+                    access_level="view_records",
                     granted_by=alice.id,
                     granted_at=now,
                 )
@@ -542,7 +542,7 @@ def test_preventive_rest_api_lifecycle_and_permissions(preventive_api_env):
     assert put_res.status_code == 200
     assert put_res.json()["schedule_source"] == "cdc"
 
-    # Charlie (view_clinical) cannot PUT settings
+    # Charlie (view_records) cannot PUT settings
     charlie_put = client.put(
         f"/api/profiles/{prof_id}/preventive-settings",
         json={"schedule_source": "aap_2026"},

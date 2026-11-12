@@ -71,11 +71,11 @@ export async function agentListCommand(options: AgentListOptions = {}): Promise<
     const agentDir = path.join(paths.agents, dirName);
     try {
       const { agent, effectiveTools } = await loadAgent(agentDir, paths.skills);
-      const isClinical = agent.risk_class === 'clinical_assist';
+      const isClinical = agent.risk_class === 'assist';
 
       if (isClinical && !allowClinical) {
         process.stderr.write(
-          `Warning: Agent "${agent.id}" is classified as "clinical_assist" and disabled. Pass --allow-clinical to enable.\n`
+          `Warning: Agent "${agent.id}" is classified as "assist" and disabled. Pass --allow-clinical to enable.\n`
         );
       }
 

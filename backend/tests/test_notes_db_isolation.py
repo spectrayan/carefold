@@ -13,7 +13,7 @@
 
 Systematically tests:
 1. Multi-tenant slug isolation: identical slugs across different users and different profiles.
-2. Permission scoping: 'manage' required for updates/deletes; 'view_clinical' vs 'view_paperwork'.
+2. Permission scoping: 'manage' required for updates/deletes; 'view_records' vs 'view_paperwork'.
 3. Rejection of unassigned or unauthorized profiles (403/404 handling).
 4. Path traversal and symlink attack attempts in note slugs and titles.
 5. Concurrency: simultaneous creation and updating of notes with identical slugs.
@@ -244,7 +244,7 @@ async def test_same_user_cross_profile_slug_behavior(notes_auth_test_env):
 
 
 # ==============================================================================
-# Verification 2: Permission Scoping (manage vs view_clinical vs view_paperwork)
+# Verification 2: Permission Scoping (manage vs view_records vs view_paperwork)
 # ==============================================================================
 
 @pytest.mark.asyncio
@@ -252,7 +252,7 @@ async def test_permission_scoping_clinical_vs_paperwork(notes_auth_test_env):
     """Stress-test: Comprehensive verification of access levels on clinical notes.
     
     - 'manage': create, read, update, delete
-    - 'view_clinical': read, list, but CANNOT create, update, or delete (403)
+    - 'view_records': read, list, but CANNOT create, update, or delete (403)
     - 'view_paperwork': CANNOT read, update, delete, or create (403)
     - Unfiltered GET /api/notes MUST NOT leak notes to 'view_paperwork' user!
     """
@@ -273,11 +273,11 @@ async def test_permission_scoping_clinical_vs_paperwork(notes_auth_test_env):
             headers=owner["headers"],
             json={"user_id": manager["user"]["id"], "access_level": "manage"},
         )
-        # 2. Clin Viewer -> view_clinical
+        # 2. Clin Viewer -> view_records
         client.post(
             f"/api/profiles/{prof_id}/access",
             headers=owner["headers"],
-            json={"user_id": clin_viewer["user"]["id"], "access_level": "view_clinical"},
+            json={"user_id": clin_viewer["user"]["id"], "access_level": "view_records"},
         )
         # 3. Paper Viewer -> view_paperwork
         client.post(
@@ -318,7 +318,7 @@ async def test_permission_scoping_clinical_vs_paperwork(notes_auth_test_env):
         # Can delete note
         assert client.delete("/api/notes/manager-note", headers=manager["headers"]).status_code == 200
 
-        # --- Test 2: Clinical Viewer permissions ('view_clinical') ---
+        # --- Test 2: Clinical Viewer permissions ('view_records') ---
         # Can read note detail
         assert client.get("/api/notes/chemo-log", headers=clin_viewer["headers"]).status_code == 200
         # Can list notes with profile filter
@@ -329,17 +329,17 @@ async def test_permission_scoping_clinical_vs_paperwork(notes_auth_test_env):
             headers=clin_viewer["headers"],
             json={"content": "Malicious edit by viewer"},
         )
-        assert up_clin.status_code == 403, f"Expected 403 for view_clinical update, got {up_clin.status_code}"
+        assert up_clin.status_code == 403, f"Expected 403 for view_records update, got {up_clin.status_code}"
         # CANNOT delete note (403 required)
         del_clin = client.delete("/api/notes/chemo-log", headers=clin_viewer["headers"])
-        assert del_clin.status_code == 403, f"Expected 403 for view_clinical delete, got {del_clin.status_code}"
+        assert del_clin.status_code == 403, f"Expected 403 for view_records delete, got {del_clin.status_code}"
         # CANNOT create note (403 required)
         post_clin = client.post(
             "/api/notes",
             headers=clin_viewer["headers"],
             json={"slug": "unauth-clin-note", "title": "Unauth", "content": "Content", "profile_id": prof_id},
         )
-        assert post_clin.status_code == 403, f"Expected 403 for view_clinical create, got {post_clin.status_code}"
+        assert post_clin.status_code == 403, f"Expected 403 for view_records create, got {post_clin.status_code}"
 
         # --- Test 3: Paperwork Viewer permissions ('view_paperwork') ---
         # CANNOT read note detail (403 required)

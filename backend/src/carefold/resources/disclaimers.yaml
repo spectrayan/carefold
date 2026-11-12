@@ -32,12 +32,18 @@ standard_refusal_clauses:
   emergency_notice: "If this is an emergency, contact local emergency services immediately."
   medication_warning: "Do not change medication without the prescribing clinician."
 
-# Clinical assist risk class warnings
+# Assist risk class warnings
+assist_warning: >-
+  Agent '{agent_id}' is an assist agent. Explicit user consent (allow_assist=true) is required.
+
+assist_unauthorized: >-
+  Agent '{agent_id}' is classified as assist. Execution is forbidden without explicit consent (allow_assist=True).
+
 clinical_assist_warning: >-
-  Agent '{agent_id}' is a clinical_assist agent. Explicit user consent (allow_clinical=true) is required.
+  Agent '{agent_id}' is an assist agent. Explicit user consent (allow_assist=true) is required.
 
 clinical_assist_unauthorized: >-
-  Agent '{agent_id}' is classified as clinical_assist. Execution is forbidden without explicit clinical consent (allow_clinical=True).
+  Agent '{agent_id}' is classified as assist. Execution is forbidden without explicit consent (allow_assist=True).
 
 # Health insurance and benefit coverage disclaimers
 coverage_guarantee_disclaimer: >-

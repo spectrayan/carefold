@@ -14,7 +14,7 @@
 Enforces:
 1. Closed Phase 0 tool registry (PHASE_0_REGISTRY) validation.
 2. ToolValidationError on unauthorized or forbidden tools.
-3. Dynamic risk class elevation to 'clinical_assist' when clinical skills load.
+3. Dynamic risk class elevation to 'assist' when clinical skills load.
 4. Intended-use clinical disclaimer enforcement.
 """
 
@@ -95,7 +95,7 @@ class ClinicalSafetyMiddleware(AgentMiddleware):
         """Pre-execution hook executed before the agent reasoning loop.
 
         Validates declared tools in state and skills metadata against PHASE_0_REGISTRY,
-        and dynamically elevates risk class to 'clinical_assist' if clinical skills load.
+        and dynamically elevates risk class to 'assist' if clinical skills load.
         """
         skills_metadata = state.get("skills_metadata") or []
         max_risk: str = RiskClass.ADMIN.value
@@ -119,8 +119,8 @@ class ClinicalSafetyMiddleware(AgentMiddleware):
             # Evaluate risk class (case-insensitive)
             raw_risk = meta.get("risk_class") or skill.get("risk_class", RiskClass.ADMIN.value)
             risk_val = raw_risk.value if isinstance(raw_risk, RiskClass) else str(raw_risk).strip().lower()
-            if risk_val in (RiskClass.CLINICAL_ASSIST.value, "clinical_assist"):
-                max_risk = RiskClass.CLINICAL_ASSIST.value
+            if risk_val in (RiskClass.ASSIST.value, "assist"):
+                max_risk = RiskClass.ASSIST.value
 
             # Validate tools (union across all declared tool fields)
             declared_tools: List[str] = []
@@ -136,9 +136,9 @@ class ClinicalSafetyMiddleware(AgentMiddleware):
                         f"Allowed tools: {self._allowed_tools_display()}"
                     )
 
-        # 3. Dynamic elevation to clinical_assist
+        # 3. Dynamic elevation to assist
         updates: Dict[str, Any] = {}
-        if max_risk == RiskClass.CLINICAL_ASSIST.value:
+        if max_risk == RiskClass.ASSIST.value:
             updates["carefold_risk_class"] = max_risk
             if isinstance(state, dict):
                 state["carefold_risk_class"] = max_risk
@@ -178,11 +178,11 @@ class ClinicalSafetyMiddleware(AgentMiddleware):
     ) -> Optional[Dict[str, Any]]:
         """Post-execution hook executed after agent response generation.
 
-        Enforces mandatory clinical disclaimers if thread is elevated to clinical_assist.
+        Enforces mandatory clinical disclaimers if thread is elevated to assist.
         """
         risk_class = state.get("carefold_risk_class")
         risk_str = (risk_class.value if isinstance(risk_class, RiskClass) else str(risk_class)).strip().lower() if risk_class else ""
-        if risk_str not in (RiskClass.CLINICAL_ASSIST.value, "clinical_assist"):
+        if risk_str not in (RiskClass.ASSIST.value, "assist"):
             return None
 
         output = state.get("output", "")

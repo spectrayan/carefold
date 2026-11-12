@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 import uuid
 
-from connectors.base import (
+from yarvelle_core.connectors.base import (
     Connector,
     NormalisedRecord,
     Page,
@@ -28,8 +28,8 @@ from connectors.base import (
     ToolContext,
     ToolSpec,
 )
-from connectors.http import ScopedHttp
-from connectors.manifest import ConnectorManifest
+from yarvelle_core.connectors.http import ScopedHttp
+from yarvelle_core.connectors.manifest import ConnectorManifest
 
 _GOOGLE_MANIFEST_PATH = Path(__file__).resolve().parent / "manifests" / "google_calendar.yaml"
 _CALDAV_MANIFEST_PATH = Path(__file__).resolve().parent / "manifests" / "caldav.yaml"
@@ -61,10 +61,10 @@ def _parse_iso_dt(value: Union[str, datetime]) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
-def sanitize_calendar_event_title(title: str, strip_phi: bool = True) -> str:
+def sanitize_calendar_event_title(title: str, strip_sensitive: bool = True) -> str:
     """Strips clinical diagnoses, medications, and sensitive PHI from calendar event titles.
 
-    By default (`strip_phi=True`), external calendar titles are replaced with a neutral
+    By default (`strip_sensitive=True`), external calendar titles are replaced with a neutral
     `"Medical Appointment"` label unless the provided title is already an approved generic
     placeholder, preventing accidental disclosure of diagnoses or medications to third-party
     calendar providers.
@@ -72,7 +72,7 @@ def sanitize_calendar_event_title(title: str, strip_phi: bool = True) -> str:
     cleaned = " ".join(str(title or "").split()).strip()
     if not cleaned:
         return "Medical Appointment"
-    if not strip_phi:
+    if not strip_sensitive:
         return cleaned
     if cleaned.lower() in _SAFE_GENERIC_TITLES:
         return cleaned
@@ -342,8 +342,8 @@ class _BaseCalendarConnector:
                 raise ValueError("ToolContext user_id and profile_id are required.")
             params = args or {}
             raw_title = str(params.get("title") or "Medical Appointment")
-            strip_phi = bool(params.get("strip_phi", True))
-            sanitized_title = sanitize_calendar_event_title(raw_title, strip_phi=strip_phi)
+            strip_sensitive = bool(params.get("strip_sensitive", True))
+            sanitized_title = sanitize_calendar_event_title(raw_title, strip_sensitive=strip_sensitive)
             event_id = str(params.get("event_id") or uuid.uuid4().hex[:12])
             return {
                 "status": "created",
@@ -381,7 +381,7 @@ class _BaseCalendarConnector:
                         "title": {"type": "string"},
                         "start": {"type": "string"},
                         "end": {"type": "string"},
-                        "strip_phi": {"type": "boolean", "default": True},
+                        "strip_sensitive": {"type": "boolean", "default": True},
                     },
                     "required": ["start", "end"],
                 },

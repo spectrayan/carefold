@@ -59,8 +59,8 @@ from carefold.db.models import (
 )
 from carefold.db.session import create_db_engine, get_session_factory, init_db
 from carefold.engine.tool_exec import TaintFlag, ToolContext, UntrustedResult, execute_tool_call
-from connectors.errors import ManifestValidationError
-from connectors.manifest import ConnectorManifest, McpToolAllowlistEntry
+from yarvelle_core.connectors.errors import ManifestValidationError
+from yarvelle_core.connectors.manifest import ConnectorManifest, McpToolAllowlistEntry
 
 
 @pytest.fixture
@@ -549,7 +549,7 @@ async def test_standing_routine_fire_time_rechecks(
     conn1.status = "active"
     await session.commit()
 
-    # 4. Creator loses manage access (downgraded to view_clinical) -> routine revoked & PermissionError
+    # 4. Creator loses manage access (downgraded to view_records) -> routine revoked & PermissionError
     access_row = (
         await session.execute(
             select(ProfileAccess).where(
@@ -558,7 +558,7 @@ async def test_standing_routine_fire_time_rechecks(
             )
         )
     ).scalar_one()
-    access_row.access_level = "view_clinical"
+    access_row.access_level = "view_records"
     await session.commit()
 
     with pytest.raises(PermissionError, match="no longer holds manage access"):

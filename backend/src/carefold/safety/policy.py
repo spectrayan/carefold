@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, Sequence, Set
 
-from yarvelle_core.constants.defaults import DEFAULT_FORBIDDEN_INTENTS
+from carefold.constants.defaults import DEFAULT_FORBIDDEN_INTENTS
 from yarvelle_core.engine.safety_policy import (
     EmergencyDirective,
     SafetyContext,

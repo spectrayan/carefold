@@ -24,7 +24,7 @@ license: Apache-2.0
 compatibility: Requires local LLM or API key for model access
 domain: clinical
 category: preventive
-risk_class: clinical_assist
+risk_class: assist
 allowed-tools: skill-docs
 tools:
   - skill-docs
@@ -36,7 +36,7 @@ references:
 metadata:
   id: preventive-care
   title: Preventive Care & Immunisation Guide
-  risk_class: clinical_assist
+  risk_class: assist
   domain: clinical
   category: preventive
   version: 0.4.0

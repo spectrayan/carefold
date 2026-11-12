@@ -48,8 +48,8 @@ export async function GET(req: Request | NextRequest): Promise<NextResponse> {
     // Clinical consent is never assumed by the proxy (#87): forward only an explicit
     // client-side `true`, otherwise send `false`.
     targetUrl.searchParams.set(
-      'allow_clinical',
-      url.searchParams.get('allow_clinical') === 'true' ? 'true' : 'false'
+      'allow_assist',
+      url.searchParams.get('allow_assist') === 'true' ? 'true' : 'false'
     );
 
     const headers: Record<string, string> = { Accept: 'application/json' };

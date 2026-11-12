@@ -24,7 +24,7 @@ categories:
   - immunisations
   - vitals
   - labs
-entrypoint: connectors.starters.epic_smart:EpicSmartConnector
+entrypoint: carefold.connectors.starters.epic_smart:EpicSmartConnector
 data_flows:
   allowed_hosts:
     - fhir.epic.com

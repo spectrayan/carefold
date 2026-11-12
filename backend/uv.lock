@@ -233,6 +233,7 @@ dependencies = [
     { name = "defusedxml" },
     { name = "fastapi" },
     { name = "fhir-resources" },
+    { name = "hl7apy" },
     { name = "httpx" },
     { name = "jinja2" },
     { name = "keyring" },
@@ -245,6 +246,7 @@ dependencies = [
     { name = "langgraph-checkpoint-sqlite" },
     { name = "langgraph-sdk" },
     { name = "opentelemetry-api" },
+    { name = "pint" },
     { name = "pwdlib", extra = ["argon2"] },
     { name = "pyasn1" },
     { name = "pydantic" },
@@ -290,6 +292,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "fhir-resources", specifier = ">=8.0.0" },
     { name = "hatchling", marker = "extra == 'dev'", specifier = ">=1.25.0" },
+    { name = "hl7apy", specifier = ">=1.3.5" },
     { name = "httpx", specifier = ">=0.27.0,<1" },
     { name = "import-linter", marker = "extra == 'dev'", specifier = ">=2.0" },
     { name = "jinja2", specifier = ">=3.1.0" },
@@ -305,6 +308,7 @@ requires-dist = [
     { name = "licenseheaders", marker = "extra == 'dev'", specifier = ">=0.8.8" },
     { name = "opentelemetry-api", specifier = ">=1.45.1" },
     { name = "pillow", marker = "extra == 'ocr'", specifier = ">=10.0.0" },
+    { name = "pint", specifier = ">=0.24" },
     { name = "pwdlib", extras = ["argon2"], specifier = ">=0.2.0" },
     { name = "pyasn1", specifier = ">=0.6.5" },
     { name = "pydantic", specifier = ">=2.8.0" },
@@ -322,7 +326,7 @@ requires-dist = [
     { name = "sse-starlette", specifier = ">=2.1.0" },
     { name = "structlog", specifier = ">=24.1.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30.0" },
-    { name = "yarvelle-core", specifier = ">=0.2.4,<0.3.0" },
+    { name = "yarvelle-core", specifier = ">=0.2.5,<0.3.0" },
 ]
 provides-extras = ["dev", "ocr"]
 
@@ -724,6 +728,30 @@ wheels = [
 ]
 
 [[package]]
+name = "flexcache"
+version = "0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/55/b0/8a21e330561c65653d010ef112bf38f60890051d244ede197ddaa08e50c1/flexcache-0.3.tar.gz", hash = "sha256:18743bd5a0621bfe2cf8d519e4c3bfdf57a269c15d1ced3fb4b64e0ff4600656", size = 15816, upload-time = "2024-03-09T03:21:07.555Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/27/cd/c883e1a7c447479d6e13985565080e3fea88ab5a107c21684c813dba1875/flexcache-0.3-py3-none-any.whl", hash = "sha256:d43c9fea82336af6e0115e308d9d33a185390b8346a017564611f1466dcd2e32", size = 13263, upload-time = "2024-03-09T03:21:05.635Z" },
+]
+
+[[package]]
+name = "flexparser"
+version = "0.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/82/99/b4de7e39e8eaf8207ba1a8fa2241dd98b2ba72ae6e16960d8351736d8702/flexparser-0.4.tar.gz", hash = "sha256:266d98905595be2ccc5da964fe0a2c3526fbbffdc45b65b3146d75db992ef6b2", size = 31799, upload-time = "2024-11-07T02:00:56.249Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fe/5e/3be305568fe5f34448807976dc82fc151d76c3e0e03958f34770286278c1/flexparser-0.4-py3-none-any.whl", hash = "sha256:3738b456192dcb3e15620f324c447721023c0293f6af9955b481e91d00179846", size = 27625, upload-time = "2024-11-07T02:00:54.523Z" },
+]
+
+[[package]]
 name = "google-auth"
 version = "2.59.0"
 source = { registry = "https://pypi.org/simple" }
@@ -966,6 +994,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f6/97/b5312f01a8c6daf729a9d272dd442e0c546dbcc630495788786c4b567ed0/hatchling-1.32.4.tar.gz", hash = "sha256:c4468f73144c054d2aab4ef0f0378c43b9878bf07f8ffd6b79690e970d375f07", size = 58065, upload-time = "2026-09-20T22:48:45.398Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5f/80/91f51f439c05d4ec4623c22928ce16a938d6d793bf709477830823497859/hatchling-1.32.4-py3-none-any.whl", hash = "sha256:08ecf7548fb48205e7f213d70c71e67b8271b7242093dc3f1da578b42c734a2c", size = 78748, upload-time = "2026-09-20T22:48:44.19Z" },
+]
+
+[[package]]
+name = "hl7apy"
+version = "1.3.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/eb/68/c200fbbdb320703046af1be1b9da6b9ff2e596e5081393180d25fa04b294/hl7apy-1.3.5.tar.gz", hash = "sha256:4ed02ae574ddcf9084b389bfcaf1e9023c4b2f4dfa2ce4ab42c430c4180a03fe", size = 959807, upload-time = "2024-03-13T11:34:28.128Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/91/f7/1150f6d878a05272858a9a2dedd5466e06003a02dd7c555b51f299656178/hl7apy-1.3.5-py2.py3-none-any.whl", hash = "sha256:c8b80ff5ad020bf9c1e68a6395cf45cb78db621f65569d1798c46eb1b657e27b", size = 974708, upload-time = "2024-03-13T11:34:16.213Z" },
 ]
 
 [[package]]
@@ -1885,6 +1922,30 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/8e/ed/d504165ef79af6fafe25c76726cf30f544cc236002f7ed054f1d51adc4ff/pillow-13.0.0-pp312-pypy312_pp80-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:93ff9c9c3663ce23aaa5d0b6b6abac55359e2a0c06c7e30f3771829af816be63", size = 5464358, upload-time = "2026-10-16T22:18:02.779Z" },
     { url = "https://files.pythonhosted.org/packages/7b/fe/a10aba5503ca13e9e009b8bd0a1a4ce5584bdce246245fd6f3a83701369c/pillow-13.0.0-pp312-pypy312_pp80-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e65dd6e75de67b2362a4fa3e16aa627595f65054dc4ec73d64680c84d592fa61", size = 6043514, upload-time = "2026-10-16T22:18:04.538Z" },
     { url = "https://files.pythonhosted.org/packages/c0/37/66b12dc476041fe523bca29c9d58fbf1ea92a4eaf73acfb9e993948f1191/pillow-13.0.0-pp312-pypy312_pp80-win_amd64.whl", hash = "sha256:567f20f1c75897d7663830da6ea8af719e03d712b1d9ee7f813319f9ece42e5a", size = 7366030, upload-time = "2026-10-16T22:18:06.638Z" },
+]
+
+[[package]]
+name = "pint"
+version = "0.26.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "flexcache" },
+    { name = "flexparser" },
+    { name = "platformdirs" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d3/b0/cef9c8913ebe959d97b2d57b1fc2a77a4291c4f2bd4dc3fe4d3313c938ea/pint-0.26.2.tar.gz", hash = "sha256:391e5d2fc01fdb121c113b8eb47386688575542c1f5144c465ff318bf5133573", size = 295834, upload-time = "2026-10-19T19:49:31.845Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b7/d5/01ea71591a29e88926582e3ca7ed32f8b933e9ebc99187a7ab100587242d/pint-0.26.2-py3-none-any.whl", hash = "sha256:c94124cdb19baa1a84bb65c8bb9a620a9636b9b9cd80f32f30ad7ff795ea2eb8", size = 351853, upload-time = "2026-10-19T19:49:29.966Z" },
+]
+
+[[package]]
+name = "platformdirs"
+version = "4.14.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d7/9a/8475be631fb33ca1466915e70fd594c42a4e84b512db650eaa14f90fe75d/platformdirs-4.14.5.tar.gz", hash = "sha256:32e9921db7385aa8169bee4fe9501923e5715ba9fb7ea3b9c69b0d8e0639f7a1", size = 71464, upload-time = "2026-11-04T16:54:50.358Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7c/ae/ecbbbfd0e4343a6a521d49b3c8656fb4643dee2a4f6eaf941cf3280391a8/platformdirs-4.14.5-py3-none-any.whl", hash = "sha256:8e778c6fa421516f4d3369449f8df3b0e1b72c0e0005fe88e3ec772d0a14e750", size = 35402, upload-time = "2026-11-04T16:54:48.875Z" },
 ]
 
 [[package]]
@@ -3036,7 +3097,7 @@ wheels = [
 
 [[package]]
 name = "yarvelle-core"
-version = "0.2.4"
+version = "0.2.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -3073,9 +3134,9 @@ dependencies = [
     { name = "structlog" },
     { name = "uvicorn", extra = ["standard"] },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d9/9a/5710333987416002c9196e79602a21103ccfeb568ce17998b908037824d6/yarvelle_core-0.2.4.tar.gz", hash = "sha256:59b05c3a94b5512cb6efdfd4a90cb1383929b0879b637593165b4b5108c794fb", size = 951466, upload-time = "2026-11-07T21:17:23.909Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e9/40/1e2915a14e358b358bcc0d62ee59aa839611eb2222354f68453697d323c6/yarvelle_core-0.2.5.tar.gz", hash = "sha256:37942e984e0d5b17642939da9d15f458743921d7da66e7799f555d8949813d87", size = 1005076, upload-time = "2026-11-12T17:32:01.218Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b9/06/1672db4d995e1508fa9a94a830800e3812e13a1d770afca5f02f0a404eef/yarvelle_core-0.2.4-py3-none-any.whl", hash = "sha256:64614b46a326c2cdeb154e258960e28d5f00250cd25939806b146081497481e9", size = 1043830, upload-time = "2026-11-07T21:17:22.205Z" },
+    { url = "https://files.pythonhosted.org/packages/2f/2b/87cdd17949b61212a8fc1f9122837b9cec702734752272f6e504391f5700/yarvelle_core-0.2.5-py3-none-any.whl", hash = "sha256:ad21a9fbc8972fc824c5078d3aae84e7652f2b34ae114db269832c3754dbf41f", size = 1097328, upload-time = "2026-11-12T17:31:59.694Z" },
 ]
 
 [[package]]

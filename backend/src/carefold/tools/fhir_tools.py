@@ -1339,7 +1339,7 @@ SPEC_SEARCH_RESOURCES = ToolSpec(
     },
     risk_tier="read",
     trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_fhir_search_resources,
     metadata={
         "action": "fhir_search_resources",
@@ -1371,7 +1371,7 @@ SPEC_GET_PATIENT_SUMMARY = ToolSpec(
     },
     risk_tier="read",
     trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_fhir_get_patient_summary,
     metadata={
         "action": "fhir_get_patient_summary",
@@ -1408,7 +1408,7 @@ SPEC_GET_OBSERVATION_TRENDS = ToolSpec(
     },
     risk_tier="read",
     trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_fhir_get_observation_trends,
     metadata={
         "action": "fhir_get_observation_trends",

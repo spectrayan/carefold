@@ -23,7 +23,7 @@ const mockAgents: AgentSummary[] = [
     id: 'appointment-prep-coordinator',
     title: 'Appointment Prep Coordinator',
     version: '0.4.0',
-    risk_class: 'clinical_assist',
+    risk_class: 'assist',
     skills: ['visit-prep'],
     effectiveTools: ['attach-read', 'workspace-note'],
     starters: ['Help me prepare for my visit'],
@@ -56,7 +56,7 @@ const mockSkills: SkillSummary[] = [
     id: 'visit-prep',
     name: 'Clinical Visit Preparation',
     domain: 'clinical',
-    risk_class: 'clinical_assist',
+    risk_class: 'assist',
     description: 'Clinical guidelines and prompt templates for outpatient visit prep.',
     version: '1.0.0',
     tools: ['attach-read', 'workspace-note']
@@ -135,7 +135,7 @@ describe('Helpers & Skills Catalog (/helpers)', () => {
     );
 
     const riskSelect = screen.getByLabelText(/safety level/i);
-    fireEvent.change(riskSelect, { target: { value: 'clinical_assist' } });
+    fireEvent.change(riskSelect, { target: { value: 'assist' } });
 
     expect(screen.getByText('Appointment Prep Coordinator')).toBeInTheDocument();
     expect(screen.queryByText('Habit Coordinator')).not.toBeInTheDocument();

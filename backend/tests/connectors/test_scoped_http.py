@@ -16,8 +16,8 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from connectors.errors import EgressBlockedError
-from connectors.http import ScopedHttp
+from yarvelle_core.connectors.errors import EgressBlockedError
+from yarvelle_core.connectors.http import ScopedHttp
 
 
 @pytest.fixture

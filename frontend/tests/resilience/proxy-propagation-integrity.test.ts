@@ -329,7 +329,7 @@ describe('Resilience Suite: Next.js Proxy Routes Propagation & Streaming', () =>
     it('preserves search queries (e.g. ?q=cardiology) and headers on GET /api/agents', async () => {
       setupMockFetch();
       const req = new NextRequest(
-        'http://localhost:3000/api/agents?search=cardiology&domain=clinical&allow_clinical=true',
+        'http://localhost:3000/api/agents?search=cardiology&domain=clinical&allow_assist=true',
         { headers: { cookie: TEST_COOKIE, authorization: TEST_AUTH } }
       );
       const res = await getAgents(req);
@@ -340,7 +340,7 @@ describe('Resilience Suite: Next.js Proxy Routes Propagation & Streaming', () =>
       expect(call.url).toContain('/api/v1/agents');
       expect(call.url).toContain('search=cardiology');
       expect(call.url).toContain('domain=clinical');
-      expect(call.url).toContain('allow_clinical=true');
+      expect(call.url).toContain('allow_assist=true');
       expect(getHeader(call.headers, 'cookie')).toBe(TEST_COOKIE);
       expect(getHeader(call.headers, 'authorization')).toBe(TEST_AUTH);
     });
@@ -366,7 +366,7 @@ describe('Resilience Suite: Next.js Proxy Routes Propagation & Streaming', () =>
     it('preserves query params and headers on GET /api/skills', async () => {
       setupMockFetch();
       const req = new NextRequest(
-        'http://localhost:3000/api/skills?q=cardiology&category=clinical_assist&page=1&per_page=10',
+        'http://localhost:3000/api/skills?q=cardiology&category=assist&page=1&per_page=10',
         { headers: { cookie: TEST_COOKIE, authorization: TEST_AUTH } }
       );
       const res = await getSkills(req);
@@ -376,7 +376,7 @@ describe('Resilience Suite: Next.js Proxy Routes Propagation & Streaming', () =>
       const call = capturedFetches[0];
       expect(call.url).toContain('/api/v1/skills');
       expect(call.url).toContain('q=cardiology');
-      expect(call.url).toContain('category=clinical_assist');
+      expect(call.url).toContain('category=assist');
       expect(call.url).toContain('per_page=10');
       expect(getHeader(call.headers, 'cookie')).toBe(TEST_COOKIE);
       expect(getHeader(call.headers, 'authorization')).toBe(TEST_AUTH);
@@ -521,7 +521,7 @@ describe('Resilience Suite: Next.js Proxy Routes Propagation & Streaming', () =>
         body: JSON.stringify({
           agentId: 'heart-care-coordinator',
           prompt: 'Hello, what does 120/80 mean?',
-          allow_clinical: true,
+          allow_assist: true,
         }),
       });
 
@@ -572,7 +572,7 @@ describe('Resilience Suite: Next.js Proxy Routes Propagation & Streaming', () =>
         body: JSON.stringify({
           agentId: 'heart-care-coordinator',
           prompt: 'Prescribe me meds',
-          allow_clinical: false,
+          allow_assist: false,
         }),
       });
 

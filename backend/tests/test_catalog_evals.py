@@ -129,7 +129,7 @@ class TestSqliteCatalogIndexingEmpirical:
             assert stored.title == meta["title"]
             assert stored.domain == AgentDomain.CLINICAL
             assert stored.category == meta["category"]
-            assert stored.risk_class == RiskClass.CLINICAL_ASSIST
+            assert stored.risk_class == RiskClass.ASSIST
             assert stored.maturity == AgentMaturity.STABLE
             assert stored.hidden is False
             assert meta["companion_skill"] in stored.skills

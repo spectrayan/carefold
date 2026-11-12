@@ -164,7 +164,7 @@ async def get_prep_pack_for_appointment(
     db: AsyncSession = Depends(get_db),
 ) -> PrepPackResponse:
     """Retrieves the generated prep pack note associated with an appointment."""
-    await _verify_profile_access(profile_id, user, db, required_level="view_clinical")
+    await _verify_profile_access(profile_id, user, db, required_level="view_records")
     clean_pid = profile_id.strip()
     clean_aid = appointment_id.strip()
 
