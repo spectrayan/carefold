@@ -12,11 +12,13 @@
  */
 
 import type { Config } from 'tailwindcss';
-import { yarvellePreset } from '@yarvelle/ui/tailwind-preset';
-import { yarvelleUiContentGlob } from '@yarvelle/ui/tokens';
+import {
+  compatibleYarvellePreset,
+  resolveYarvelleUiContentGlob
+} from './src/lib/yarvelleUiTailwind';
 
 const config: Config = {
-  presets: [yarvellePreset],
+  presets: [compatibleYarvellePreset],
   darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
@@ -24,7 +26,7 @@ const config: Config = {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/health-ui/**/*.{js,ts,jsx,tsx,mdx}',
     './src/lib/**/*.{js,ts,jsx,tsx}',
-    yarvelleUiContentGlob()
+    resolveYarvelleUiContentGlob()
   ],
   theme: {
     extend: {

@@ -14,10 +14,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import postcss from 'postcss';
-import tailwindcss from 'tailwindcss';
+import tailwindcss, { type Config } from 'tailwindcss';
 import { describe, expect, it } from 'vitest';
 import { yarvellePreset } from '@yarvelle/ui/tailwind-preset';
-import { yarvelleUiContentGlob } from '@yarvelle/ui/tokens';
+import * as yarvelleTokens from '@yarvelle/ui/tokens';
+import {
+  compatibleYarvellePreset,
+  resolveYarvellePreset,
+  resolveYarvelleUiContentGlob
+} from '../src/lib/yarvelleUiTailwind';
 import tailwindConfig from '../tailwind.config';
 
 const frontendDir = path.resolve(__dirname, '..');
@@ -34,17 +39,51 @@ async function compileStylesheet(): Promise<string> {
 describe('Tailwind preset & content-scan contract (#342)', () => {
   it('extends yarvellePreset and scans both src/health-ui/** and @yarvelle/ui dist bundles', () => {
     expect(tailwindConfig.presets).toBeDefined();
-    expect(tailwindConfig.presets).toContain(yarvellePreset);
+    expect(tailwindConfig.presets).toContain(compatibleYarvellePreset);
+    if (yarvellePreset.theme?.extend) {
+      expect(compatibleYarvellePreset).toBe(yarvellePreset);
+    }
     expect(tailwindConfig.darkMode).toBe('class');
 
     const contentEntries = Array.isArray(tailwindConfig.content)
       ? tailwindConfig.content.filter((entry): entry is string => typeof entry === 'string')
       : [];
 
+    const expectedGlob = resolveYarvelleUiContentGlob();
     expect(contentEntries).toContain('./src/health-ui/**/*.{js,ts,jsx,tsx,mdx}');
     expect(contentEntries).toContain('./src/lib/**/*.{js,ts,jsx,tsx}');
-    expect(contentEntries).toContain(yarvelleUiContentGlob());
-    expect(yarvelleUiContentGlob()).toMatch(/\/dist\/\*\*\/\*\.{js,mjs}$/);
+    expect(contentEntries).toContain(expectedGlob);
+    expect(expectedGlob).toMatch(/\/dist\/\*\*\/\*\.{js,mjs}$/);
+
+    const maybeNamedGlob = (
+      yarvelleTokens as { yarvelleUiContentGlob?: (rootDir?: string) => string }
+    ).yarvelleUiContentGlob;
+    if (typeof maybeNamedGlob === 'function') {
+      expect(expectedGlob).toBe(maybeNamedGlob());
+    }
+  });
+
+  it('supports backward-compatible fallback when @yarvelle/ui lacks yarvelleUiContentGlob or theme.extend', () => {
+    const fallbackGlob = resolveYarvelleUiContentGlob(undefined, {});
+    expect(fallbackGlob).toMatch(/\/dist\/\*\*\/\*\.{js,mjs}$/);
+    expect(resolveYarvelleUiContentGlob('/app/frontend', {})).toBe(
+      '/app/frontend/node_modules/@yarvelle/ui/dist/**/*.{js,mjs}'
+    );
+
+    const legacyPreset: Config = {
+      content: [],
+      theme: {
+        colors: {
+          surface: 'var(--ui-surface)'
+        }
+      }
+    };
+    const normalized = resolveYarvellePreset(legacyPreset);
+    expect(normalized.theme?.extend).toEqual({
+      colors: {
+        surface: 'var(--ui-surface)'
+      }
+    });
   });
 
   it('emits safety-critical src/health-ui/** and @yarvelle/ui utility rules with non-transparent styles', async () => {
@@ -106,7 +145,7 @@ describe('Tailwind preset & content-scan contract (#342)', () => {
     );
 
     const presetSerialized = JSON.stringify(
-      yarvellePreset.theme?.extend ?? {},
+      compatibleYarvellePreset.theme?.extend ?? {},
       (_key, value) => (typeof value === 'function' ? value({}) : value)
     );
     const referencedVars = Array.from(
