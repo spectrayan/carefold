@@ -20,6 +20,7 @@ _os.environ.setdefault("YARVELLE_PACK_PACKAGES", "carefold")
 _os.environ.setdefault("YARVELLE_APP_SLUG", "carefold")
 _os.environ.setdefault("YARVELLE_LOCAL_DOMAIN", "carefold.local")
 _os.environ.setdefault("YARVELLE_HOME_DIR_NAME", ".carefold")
+_os.environ.setdefault("YARVELLE_DB_FILENAME", "carefold.db")
 _os.environ.setdefault("YARVELLE_ENV_PREFIX", "CAREFOLD")
 # Core vault identity: core derives the vault KEK (passphrase path) and the
 # checkpoint key (HKDF salt) from <PREFIX>_VAULT_SALT. Existing Carefold vaults
@@ -27,17 +28,17 @@ _os.environ.setdefault("YARVELLE_ENV_PREFIX", "CAREFOLD")
 # so core must use the same salt. An explicit CAREFOLD_VAULT_SALT still wins.
 _os.environ.setdefault("YARVELLE_VAULT_SALT", "carefold_kek_sal")
 
-# Align yarvelle-core settings brand with Carefold (skill-docs / ICS / prompts).
+# Align yarvelle-core public brand settings with Carefold (skill-docs / ICS / prompts).
 try:
-    from yarvelle_core.config import BrandConfig as _YcBrandConfig
     from yarvelle_core.config import settings as _yc_settings
 
-    _yc_settings._brand_config = _YcBrandConfig(
-        product_name="Carefold",
-        env_prefix="CAREFOLD_",
-        home_dir_name=".carefold",
-        default_agent="appointment-prep-coordinator",
-    )
+    _yc_settings.brand_config.product_name = "Carefold"
+    _yc_settings.brand_config.env_prefix = "CAREFOLD_"
+    _yc_settings.brand_config.home_dir_name = ".carefold"
+    _yc_settings.brand_config.db_filename = "carefold.db"
+    _yc_settings.brand_config.oauth_scheme = "carefold"
+    _yc_settings.brand_config.cookie_prefix = "carefold_"
+    _yc_settings.brand_config.default_agent = "appointment-prep-coordinator"
     # CAREFOLD_CHECKPOINT_* aliases for core checkpoint encryption settings.
     from carefold.checkpoint_env import apply_checkpoint_encryption_default as _apply_cp_default
     from carefold.checkpoint_env import apply_checkpoint_env_aliases as _apply_cp_aliases
@@ -49,86 +50,9 @@ except Exception:
     pass
 
 
-import importlib as _importlib
-import importlib.abc as _importlib_abc
-import importlib.machinery as _machinery
-import sys as _sys
-from typing import Any
-
-# Register `carefold_health` alias pointing directly to `carefold`
-_sys.modules.setdefault("carefold_health", _sys.modules[__name__])
-
-
-class _CarefoldAliasLoader(_importlib_abc.Loader):
-    def __init__(self, target_mod: Any) -> None:
-        self.target_mod = target_mod
-        self.orig_spec = getattr(target_mod, "__spec__", None)
-
-    def create_module(self, spec):
-        return self.target_mod
-
-    def exec_module(self, module):
-        if self.orig_spec is not None:
-            try:
-                module.__spec__ = self.orig_spec
-            except AttributeError:
-                pass
-
-
-_CORE_DELEGATED_SUBPACKAGES = (
-    "auth",
-    "memory",
-    "scope",
-    "settings",
-)
-
-
-class _CarefoldRedirectFinder(_importlib_abc.MetaPathFinder):
-    """Redirects `carefold_health.*` to `carefold.*` and pure core subpackages to `yarvelle_core.*`."""
-
-    def find_spec(self, fullname: str, path=None, target=None):
-        if fullname == "carefold_health" or fullname.startswith("carefold_health."):
-            suffix = fullname[len("carefold_health"):]
-            if suffix == ".db.models":
-                target_name = "carefold.models.health"
-            elif suffix == ".db.migrations" or suffix.startswith(".db.migrations."):
-                target_name = "carefold.db.health_migrations" + suffix[len(".db.migrations"):]
-            else:
-                target_name = "carefold" + suffix
-            try:
-                mod = _importlib.import_module(target_name)
-            except ImportError:
-                return None
-            is_pkg = hasattr(mod, "__path__")
-            spec = _machinery.ModuleSpec(fullname, _CarefoldAliasLoader(mod), is_package=is_pkg)
-            if is_pkg:
-                spec.submodule_search_locations = list(mod.__path__)
-            return spec
-
-        for sub in _CORE_DELEGATED_SUBPACKAGES:
-            prefix = f"carefold.{sub}"
-            if fullname == prefix or fullname.startswith(prefix + "."):
-                target_name = "yarvelle_core." + fullname[len("carefold."):]
-                try:
-                    mod = _importlib.import_module(target_name)
-                except ImportError:
-                    return None
-                is_pkg = hasattr(mod, "__path__")
-                spec = _machinery.ModuleSpec(fullname, _CarefoldAliasLoader(mod), is_package=is_pkg)
-                if is_pkg:
-                    spec.submodule_search_locations = list(mod.__path__)
-                return spec
-        return None
-
-
-
-if not any(type(f).__name__ == "_CarefoldRedirectFinder" for f in _sys.meta_path):
-    _sys.meta_path.insert(0, _CarefoldRedirectFinder())
-
-
 import logging
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 from yarvelle_core.pack.spec import PackEvalsSpec, PackProvidesSpec, PackSpec, RouterContribution
 from yarvelle_core.schemas.orchestration import (
@@ -145,25 +69,13 @@ from yarvelle_core.schemas.safety import GuardCheckSpec, PackSafetySpec, SafetyG
 from yarvelle_core.workflows.subgraphs.extraction.dossiers import register_dossier_type
 
 try:
-    import yarvelle_core.engine.tool_exec as _core_tool_exec
-    from yarvelle_core.connectors.base import (
-        ToolContext as _ConnectorToolContext,
-        ToolSpec as _ConnectorToolSpec,
-    )
-
-    _core_tool_exec.ConnectorToolContext = _ConnectorToolContext
-    _core_tool_exec.ConnectorToolSpec = _ConnectorToolSpec
-except Exception:
-    pass
-
-try:
     from carefold.auth_reset import install_atomic_password_reset as _install_atomic_password_reset
 
     _install_atomic_password_reset()
 except Exception:
     pass
 
-logger = logging.getLogger("carefold_health")
+logger = logging.getLogger("carefold")
 
 __version__ = "0.5.0b2"
 
@@ -180,7 +92,8 @@ except Exception:
 try:
     from yarvelle_core.tools.reminders import register_reminder_category
 
-    register_reminder_category("vitals")
+    for _cat in ("medication", "vitals", "appointment"):
+        register_reminder_category(_cat)
 except Exception:
     pass
 
@@ -469,5 +382,20 @@ def _register_native_pack_resources() -> None:
 
 
 _register_native_pack_resources()
+
+# Register CarefoldHealthSafetyPolicy via yarvelle_core's public safety policy registry
+try:
+    from yarvelle_core.engine.safety_policy import (
+        set_default_safety_policy as _set_default_safety_policy,
+        set_domain_safety_policy as _set_domain_safety_policy,
+    )
+    from carefold.safety import CarefoldHealthSafetyPolicy as _CarefoldHealthSafetyPolicy
+
+    _default_health_policy = _CarefoldHealthSafetyPolicy()
+    _set_default_safety_policy(_default_health_policy)
+    _set_domain_safety_policy("clinical", _default_health_policy)
+    _set_domain_safety_policy("health", _default_health_policy)
+except Exception:
+    pass
 
 __all__ = ["get_pack", "__version__"]

@@ -730,10 +730,6 @@ def run_all_migrations(connection: Connection, enabled_packs: Optional[list[str]
 async def init_db(engine: Optional[AsyncEngine] = None) -> None:
     """Initializes database tables via Base.metadata.create_all and automated migrations."""
     import carefold.db.models  # noqa: F401
-    try:
-        import carefold_health.db.models  # noqa: F401
-    except ImportError:
-        pass
     target_engine = engine or get_engine()
     _ensure_sqlite_dir(str(target_engine.url))
     db_path = _get_sqlite_db_path(target_engine)
