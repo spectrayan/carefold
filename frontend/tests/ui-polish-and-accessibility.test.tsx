@@ -234,7 +234,7 @@ describe('Web UI Polish, Accessibility & Plain-Language Verification (#171–#18
   // ---------------------------------------------------------------------------
   describe('Marketplace Filter Simplification (#180)', () => {
     it('verifies RISK_CLASS_OPTIONS does not include unused "education" filter', () => {
-      expect(RISK_CLASS_OPTIONS).toEqual(['wellness', 'admin', 'clinical_assist']);
+      expect(RISK_CLASS_OPTIONS).toEqual(['wellness', 'admin', 'assist']);
       expect(RISK_CLASS_OPTIONS).not.toContain('education');
     });
   });

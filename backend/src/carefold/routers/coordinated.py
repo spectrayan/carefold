@@ -55,7 +55,7 @@ _V2_MANIFEST_FILES = (
 
 
 def require_profile_access(
-    required_access: Literal["manage", "view_clinical"] = "view_clinical",
+    required_access: Literal["manage", "view_records"] = "view_records",
 ) -> Callable[..., Coroutine[Any, Any, Profile]]:
     """Enforces profile-scoped RBAC via `get_user_profile_access`."""
 
@@ -93,7 +93,7 @@ def require_profile_access(
                 detail="Access denied: management permissions required.",
             )
 
-        if required_access == "view_clinical" and access not in ("manage", "view_clinical"):
+        if required_access == "view_records" and access not in ("manage", "view_records"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: clinical view permissions required.",
@@ -150,7 +150,7 @@ class GmailSendRequest(BaseModel):
 async def post_discover_smart_scheduling_slots(
     profile_id: str,
     payload: SmartSlotsDiscoveryRequest,
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Discovers free SMART Scheduling Links slots and marks calendar conflicts against profile appointments (`AU-72`)."""
@@ -341,7 +341,7 @@ async def post_send_profile_email_draft(
 )
 async def get_verify_profile_audit_chain(
     profile_id: str,
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Verifies the profile's `AuditEventRecord` SHA-256 hash chain (`AU-78`)."""

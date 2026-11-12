@@ -14,7 +14,7 @@ scopes:
   - id: health.clinical
     description: "Clinical visit prep, vitals observations, appointments, and medical records"
     consent: required
-    sensitivity: phi
+    sensitivity: restricted
   - id: health.paperwork
     description: "Health insurance benefits, claims appeals, prior-authorizations, and bills"
     consent: optional

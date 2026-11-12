@@ -108,7 +108,7 @@ class TestRouteShadowing:
 
     def test_agent_detail_appointment_prep_coordinator_returns_200(self, client: TestClient):
         """GET /api/agents/appointment-prep-coordinator must resolve to detail endpoint with 200 OK."""
-        res = client.get("/api/agents/appointment-prep-coordinator?allow_clinical=true")
+        res = client.get("/api/agents/appointment-prep-coordinator?allow_assist=true")
         assert res.status_code == 200
         detail = res.json()
         assert detail["id"] == "appointment-prep-coordinator"
@@ -402,8 +402,8 @@ class TestCombinedFilters:
         assert "benefits-coordinator" in agent_ids
 
     def test_combined_domain_navigation_risk_class_clinical_assist(self, client: TestClient):
-        """When risk_class='clinical_assist' is used with domain='navigation', exactly appointment-prep-coordinator matches."""
-        res = client.get("/api/agents?domain=navigation&risk_class=clinical_assist&page=1&per_page=10")
+        """When risk_class='assist' is used with domain='navigation', exactly appointment-prep-coordinator matches."""
+        res = client.get("/api/agents?domain=navigation&risk_class=assist&page=1&per_page=10")
         assert res.status_code == 200
         agents = res.json()
         assert len(agents) == 1

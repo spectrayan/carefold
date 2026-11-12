@@ -356,7 +356,7 @@ async def list_notes(
     is_admin = getattr(user, "role", "member") == "admin"
 
     if profile_id:
-        prof = await _verify_profile_access(profile_id, user, db, required_level="view_clinical")
+        prof = await _verify_profile_access(profile_id, user, db, required_level="view_records")
         stmt = select(Note).where(Note.profile_id == prof.id).order_by(Note.updated_at.desc())
     else:
         if is_admin or owner_id is None:
@@ -371,7 +371,7 @@ async def list_notes(
                     (Profile.user_id == owner_id)
                     | (
                         (ProfileAccess.user_id == effective_user_id)
-                        & ProfileAccess.access_level.in_(("manage", "view_clinical"))
+                        & ProfileAccess.access_level.in_(("manage", "view_records"))
                     )
                 )
                 .distinct()
@@ -993,7 +993,7 @@ async def list_profile_typed_notes(
 ) -> TypedNoteListResponse:
     """Lists typed notes for a profile with filtering by type, linked appointment, and pagination."""
     clean_pid = profile_id.strip()
-    await _verify_profile_access(clean_pid, user, db, required_level="view_clinical")
+    await _verify_profile_access(clean_pid, user, db, required_level="view_records")
 
     query = select(Note).where(Note.profile_id == clean_pid)
     count_query = select(func.count(Note.id)).where(Note.profile_id == clean_pid)
@@ -1036,7 +1036,7 @@ async def get_profile_note_detail(
 ) -> TypedNoteDetailResponse:
     """Retrieves full detail of a typed note by ID or slug within a profile."""
     clean_pid = profile_id.strip()
-    await _verify_profile_access(clean_pid, user, db, required_level="view_clinical")
+    await _verify_profile_access(clean_pid, user, db, required_level="view_records")
 
     clean_target = note_id.strip()
     stmt = select(Note).where(

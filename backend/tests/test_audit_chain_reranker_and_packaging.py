@@ -250,7 +250,7 @@ async def test_audit_hash_chain_append_and_tamper_detection(db_session: AsyncSes
         actor_user_id="user-stream1-test",
         event="run",
         tool=None,
-        risk="clinical_assist",
+        risk="assist",
         decision="allow",
         payload_hash="sha256_payload_4",
     )

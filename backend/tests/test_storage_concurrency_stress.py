@@ -377,21 +377,21 @@ class TestProfileAccessScoping:
             assert alice_dl_res.content == content
 
     def test_viewer_access_can_download_but_cannot_delete(self, multi_user_env):
-        """User Charlie with 'view_clinical' access can download but cannot delete."""
+        """User Charlie with 'view_records' access can download but cannot delete."""
         with TestClient(app) as client:
             alice = _register_user(client, "alice2@scope.local", "Alice")
             charlie = _register_user(client, "charlie@scope.local", "Charlie")
 
             alice_prof_id = client.get("/api/profiles", headers=alice["headers"]).json()[0]["id"]
 
-            # Alice invites Charlie with 'viewer' role (view_clinical=True)
+            # Alice invites Charlie with 'viewer' role (view_records=True)
             invite_res = client.post(
                 f"/api/profiles/{alice_prof_id}/invites",
                 headers=alice["headers"],
                 json={
                     "invitee_name": "Charlie",
                     "role": "viewer",
-                    "view_clinical": True,
+                    "view_records": True,
                     "view_paperwork": False,
                 },
             )

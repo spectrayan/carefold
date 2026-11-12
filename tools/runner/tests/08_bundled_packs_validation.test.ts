@@ -173,7 +173,7 @@ describe('08: Milestone 2 Bundled Reference Packs Validation Suite', () => {
             ).toBe(true);
           }
 
-          // Bundled risk classes must not be clinical_assist
+          // Bundled risk classes must not be assist
           expect(['wellness', 'admin', 'education']).toContain(skill.risk_class);
         });
 
@@ -270,7 +270,7 @@ describe('08: Milestone 2 Bundled Reference Packs Validation Suite', () => {
 
           // Canonical risk classes per AGENTS.md Table 2.1
           if (agentId === 'appointment-prep-coordinator') {
-            expect(agent.risk_class).toBe('clinical_assist');
+            expect(agent.risk_class).toBe('assist');
           } else {
             expect(['wellness', 'admin', 'education']).toContain(agent.risk_class);
           }
@@ -356,20 +356,20 @@ describe('08: Milestone 2 Bundled Reference Packs Validation Suite', () => {
   // 4. Risk Class Inheritance & Elevation
   // =========================================================================
   describe('Risk Class Inheritance & Catalog Safety', () => {
-    it('ensures zero bundled starter skills or non-clinical agents possess risk_class clinical_assist', async () => {
+    it('ensures zero bundled starter skills or non-clinical agents possess risk_class assist', async () => {
       for (const skillId of EXPECTED_SKILL_IDS) {
         const s = await loadSkill(path.join(SKILLS_DIR, skillId));
-        expect(s.risk_class).not.toBe('clinical_assist');
+        expect(s.risk_class).not.toBe('assist');
       }
 
       for (const agentId of EXPECTED_AGENT_IDS) {
-        if (agentId === 'appointment-prep-coordinator') continue; // appointment-prep-coordinator is clinical_assist per AGENTS.md Table 2.1
+        if (agentId === 'appointment-prep-coordinator') continue; // appointment-prep-coordinator is assist per AGENTS.md Table 2.1
         const { agent } = await loadAgent(path.join(AGENTS_DIR, agentId), SKILLS_DIR);
-        expect(agent.risk_class).not.toBe('clinical_assist');
+        expect(agent.risk_class).not.toBe('assist');
       }
     });
 
-    it('correctly inherits and elevates risk_class when a clinical_assist skill is declared', () => {
+    it('correctly inherits and elevates risk_class when a assist skill is declared', () => {
       const wellnessAgent: AgentManifest = {
         id: 'test-agent',
         title: 'Test Agent',
@@ -385,16 +385,16 @@ describe('08: Milestone 2 Bundled Reference Packs Validation Suite', () => {
         name: 'clinical-skill',
         description: 'Clinical Assist Skill',
         version: '0.1.0',
-        risk_class: 'clinical_assist',
+        risk_class: 'assist',
         tools: []
       };
 
       // Elevation rule check
       let elevated = wellnessAgent.risk_class;
-      if ([clinicalSkill].some(s => s.risk_class === 'clinical_assist')) {
-        elevated = 'clinical_assist';
+      if ([clinicalSkill].some(s => s.risk_class === 'assist')) {
+        elevated = 'assist';
       }
-      expect(elevated).toBe('clinical_assist');
+      expect(elevated).toBe('assist');
     });
   });
 

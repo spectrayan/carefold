@@ -18,7 +18,7 @@ Adversarially fuzzes and stress-tests:
    - Tool boundary enforcement in `before_tool` and `wrap_tool_call`
    - Secondary field tool validation bypass vulnerability
    - Fail-open behavior in `wrap_tool_call` on empty/missing tool names
-   - Dynamic risk elevation across permutations of risk classes (`admin`, `wellness`, `education`, `clinical_assist`)
+   - Dynamic risk elevation across permutations of risk classes (`admin`, `wellness`, `education`, `assist`)
    - Case sensitivity in risk class parsing
    - Intended-use disclaimer enforcement in `after_agent`
    - Omission of disclaimer enforcement on native `DeepAgentState` (messages-only)
@@ -115,7 +115,7 @@ class TestClinicalSafetyMiddlewareToolBoundaries:
                 {
                     "name": "malicious-skill",
                     "metadata": {
-                        "risk_class": "clinical_assist",
+                        "risk_class": "assist",
                         "tools": ["skill-docs", malicious_tool],
                     },
                 }
@@ -196,7 +196,7 @@ class TestClinicalSafetyMiddlewareToolBoundaries:
                     "name": "sneaky-skill",
                     # Safe in metadata.tools
                     "metadata": {
-                        "risk_class": "clinical_assist",
+                        "risk_class": "assist",
                         "tools": ["skill-docs"],
                     },
                     # Unauthorized in top-level tools
@@ -229,7 +229,7 @@ class TestClinicalSafetyMiddlewareRiskAndDisclaimers:
     """Tests dynamic risk class elevation and intended-use clinical disclaimers."""
 
     def test_pure_admin_skills_do_not_elevate(self):
-        """Verifies threads with only administrative skills do not elevate to clinical_assist."""
+        """Verifies threads with only administrative skills do not elevate to assist."""
         mw = ClinicalSafetyMiddleware()
         state = {
             "skills_metadata": [
@@ -238,11 +238,11 @@ class TestClinicalSafetyMiddlewareRiskAndDisclaimers:
             ]
         }
         updates = mw.before_agent(state)
-        assert updates is None or updates.get("carefold_risk_class") != "clinical_assist"
-        assert state.get("carefold_risk_class") != "clinical_assist"
+        assert updates is None or updates.get("carefold_risk_class") != "assist"
+        assert state.get("carefold_risk_class") != "assist"
 
     def test_wellness_and_education_skills_do_not_elevate(self):
-        """Verifies wellness and education skills do not elevate thread to clinical_assist."""
+        """Verifies wellness and education skills do not elevate thread to assist."""
         mw = ClinicalSafetyMiddleware()
         state = {
             "skills_metadata": [
@@ -251,52 +251,52 @@ class TestClinicalSafetyMiddlewareRiskAndDisclaimers:
             ]
         }
         updates = mw.before_agent(state)
-        assert updates is None or updates.get("carefold_risk_class") != "clinical_assist"
-        assert state.get("carefold_risk_class") != "clinical_assist"
+        assert updates is None or updates.get("carefold_risk_class") != "assist"
+        assert state.get("carefold_risk_class") != "assist"
 
     @pytest.mark.parametrize("other_class", ["admin", "wellness", "education"])
     def test_mixed_skills_elevate_to_clinical_assist(self, other_class: str):
-        """Verifies any presence of a clinical skill elevates the entire thread to clinical_assist."""
+        """Verifies any presence of a clinical skill elevates the entire thread to assist."""
         mw = ClinicalSafetyMiddleware()
         state = {
             "skills_metadata": [
                 {"name": "other-skill", "metadata": {"risk_class": other_class}},
-                {"name": "cardiology-prep", "metadata": {"risk_class": "clinical_assist"}},
+                {"name": "cardiology-prep", "metadata": {"risk_class": "assist"}},
             ]
         }
         updates = mw.before_agent(state)
         assert updates is not None
-        assert updates.get("carefold_risk_class") == "clinical_assist"
-        assert state.get("carefold_risk_class") == "clinical_assist"
+        assert updates.get("carefold_risk_class") == "assist"
+        assert state.get("carefold_risk_class") == "assist"
 
     def test_risk_class_enum_instance_handled(self):
         """Verifies RiskClass enum instances in metadata are handled smoothly."""
         mw = ClinicalSafetyMiddleware()
         state = {
             "skills_metadata": [
-                {"name": "derma-prep", "metadata": {"risk_class": RiskClass.CLINICAL_ASSIST}}
+                {"name": "derma-prep", "metadata": {"risk_class": RiskClass.ASSIST}}
             ]
         }
         updates = mw.before_agent(state)
-        assert updates == {"carefold_risk_class": "clinical_assist"}
+        assert updates == {"carefold_risk_class": "assist"}
 
     def test_risk_class_case_insensitivity(self):
         """Verifies case-insensitive normalization of risk_class in metadata."""
         mw = ClinicalSafetyMiddleware()
         state = {
             "skills_metadata": [
-                {"name": "cardiology-prep", "metadata": {"risk_class": "CLINICAL_ASSIST"}}
+                {"name": "cardiology-prep", "metadata": {"risk_class": "ASSIST"}}
             ]
         }
         updates = mw.before_agent(state)
         assert updates is not None
-        assert updates.get("carefold_risk_class") == "clinical_assist"
+        assert updates.get("carefold_risk_class") == "assist"
 
     def test_after_agent_attaches_disclaimers_when_missing(self):
         """Verifies after_agent appends canonical disclaimers when elevated output lacks them."""
         mw = ClinicalSafetyMiddleware()
         state = {
-            "carefold_risk_class": "clinical_assist",
+            "carefold_risk_class": "assist",
             "output": "Here are 3 pre-visit preparation questions for your doctor.",
         }
         updates = mw.after_agent(state)
@@ -318,7 +318,7 @@ class TestClinicalSafetyMiddlewareRiskAndDisclaimers:
             "Do not change medication without the prescribing clinician."
         )
         state = {
-            "carefold_risk_class": "clinical_assist",
+            "carefold_risk_class": "assist",
             "output": compliant_text,
         }
         updates = mw.after_agent(state)
@@ -340,7 +340,7 @@ class TestClinicalSafetyMiddlewareRiskAndDisclaimers:
         mw = ClinicalSafetyMiddleware()
         # Native DeepAgentState has messages, not an 'output' string
         state = {
-            "carefold_risk_class": "clinical_assist",
+            "carefold_risk_class": "assist",
             "messages": [
                 AIMessage(content="Here is your cardiology pre-visit checklist without disclaimers.")
             ],

@@ -32,7 +32,8 @@ export const CLINICAL_CONSENT_STORAGE_KEY = 'carefold_clinical_consent_v1';
 /** DOM event dispatched on `window` whenever consent is granted or withdrawn. */
 export const CLINICAL_CONSENT_CHANGED_EVENT = 'carefold:clinical-consent-changed';
 
-export const CLINICAL_ASSIST_RISK_CLASS = 'clinical_assist';
+export const ASSIST_RISK_CLASS = 'assist';
+export const CLINICAL_ASSIST_RISK_CLASS = 'assist';
 
 export interface ClinicalConsentRecord {
   /** ISO 8601 timestamp of when the user granted consent. */
@@ -63,7 +64,8 @@ export { FORBIDDEN_INTENT_DESCRIPTIONS, formatForbiddenIntent, describeForbidden
 
 /** Returns true when the agent's risk class requires explicit user consent. */
 export function requiresClinicalConsent(riskClass: string | undefined | null): boolean {
-  return (riskClass || '').trim().toLowerCase() === CLINICAL_ASSIST_RISK_CLASS;
+  const norm = (riskClass || '').trim().toLowerCase();
+  return norm === ASSIST_RISK_CLASS || norm === 'clinical_assist';
 }
 
 function isValidRecord(value: unknown): value is ClinicalConsentRecord {

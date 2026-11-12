@@ -255,7 +255,7 @@ SPEC = ToolSpec(
     },
     risk_tier="write_local",
     trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_create_typed_note,
     metadata={
         "action": "create_typed_note",

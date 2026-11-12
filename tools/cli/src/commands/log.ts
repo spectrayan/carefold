@@ -139,18 +139,18 @@ export async function logCommand(options: LogCommandOptions = {}): Promise<void>
     const header = [
       'TIMESTAMP'.padEnd(24),
       'EVENT'.padEnd(10),
-      'AGENT'.padEnd(20),
+      'AGENT'.padEnd(30),
       'DETAILS'.padEnd(35),
       'DURATION'
     ].join(' ');
 
     console.log(header);
-    console.log('─'.repeat(100));
+    console.log('─'.repeat(110));
 
     for (const evt of recentEvents) {
       const ts = (evt.ts ? evt.ts.replace('T', ' ').slice(0, 19) + ' UTC' : '-').padEnd(24);
       const evType = evt.event.padEnd(10);
-      const agent = (evt.agent_id || '-').slice(0, 19).padEnd(20);
+      const agent = (evt.agent_id || '-').slice(0, 29).padEnd(30);
 
       let details = '';
       if (evt.event === 'tool') {

@@ -583,17 +583,17 @@ class TestRefusalHandlingAndChipsSuppression:
 
     @pytest.mark.asyncio
     async def test_clinical_assist_agent_forbidden_without_consent(self, temp_workspace: Path):
-        """Verifies clinical_assist agent risk class blocks execution without allow_clinical=True."""
+        """Verifies assist agent risk class blocks execution without allow_assist=True."""
         service = AgentExecutionService(workspace_root=temp_workspace)
 
-        # Create clinical_assist agent
+        # Create assist agent
         ag_dir = temp_workspace / "agents" / "clinical-triage"
         ag_dir.mkdir(parents=True, exist_ok=True)
         (ag_dir / "agent.yaml").write_text(
             """id: clinical-triage
 title: Clinical Triage
 role: Clinical triage
-risk_class: clinical_assist
+risk_class: assist
 model: carefold-default
 tools: []
 skills: []
@@ -608,11 +608,11 @@ starters: []
                 thread_id="th-clinical-gate-refuse",
                 prompt="Triage my condition",
                 agent_id="clinical-triage",
-                allow_clinical=False,
+                allow_assist=False,
             )
         ]
 
         assert len(events) == 1
         assert events[0]["type"] == SSE_EVENT_ERROR
-        assert "clinical_assist" in events[0]["message"]
+        assert "assist" in events[0]["message"]
         assert "consent" in events[0]["message"] or "forbidden" in events[0]["message"]

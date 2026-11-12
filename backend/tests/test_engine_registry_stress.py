@@ -365,9 +365,9 @@ class TestMiddlewareProtocolHardening:
         with pytest.raises(ToolValidationError, match="Phase 0 closed registry"):
             mw.before_tool("arbitrary_bash_execution")
 
-    @pytest.mark.parametrize("risk_input", ["clinical_assist", "CLINICAL_ASSIST", "Clinical_Assist", RiskClass.CLINICAL_ASSIST])
+    @pytest.mark.parametrize("risk_input", ["assist", "ASSIST", "Assist", RiskClass.ASSIST])
     def test_clinical_safety_middleware_case_insensitive_risk_elevation(self, risk_input: Any):
-        """Verifies case-insensitive normalization elevates risk class to 'clinical_assist'."""
+        """Verifies case-insensitive normalization elevates risk class to 'assist'."""
         mw = ClinicalSafetyMiddleware()
         state: Dict[str, Any] = {
             "skills_metadata": [
@@ -379,8 +379,8 @@ class TestMiddlewareProtocolHardening:
         }
         updates = mw.before_agent(state)
         assert updates is not None
-        assert updates.get("carefold_risk_class") == RiskClass.CLINICAL_ASSIST.value
-        assert state.get("carefold_risk_class") == RiskClass.CLINICAL_ASSIST.value
+        assert updates.get("carefold_risk_class") == RiskClass.ASSIST.value
+        assert state.get("carefold_risk_class") == RiskClass.ASSIST.value
 
     def test_clinical_safety_middleware_appends_disclaimer_to_messages(self):
         """Verifies disclaimer is appended to messages list in DeepAgentState when output key is absent."""
@@ -388,7 +388,7 @@ class TestMiddlewareProtocolHardening:
 
         mw = ClinicalSafetyMiddleware()
         state: Dict[str, Any] = {
-            "carefold_risk_class": "clinical_assist",
+            "carefold_risk_class": "assist",
             "messages": [AIMessage(content="Here is some preparation information.")],
         }
         updates = mw.after_agent(state)

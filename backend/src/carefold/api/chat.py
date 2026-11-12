@@ -161,7 +161,7 @@ async def chat_stream(
                 prompt=request.prompt,
                 messages=request.messages,
                 attachments=request.attachments,
-                allow_clinical=request.allow_clinical,
+                allow_assist=request.allow_assist,
                 thread_id=thread_id,
                 provider=provider,
                 model=model,

@@ -48,7 +48,7 @@ export function toAgentDetail(data: any): AgentDetail {
 
 /**
  * Builds a read-only preview from a public agent summary, used when the detail
- * endpoint is consent-gated (clinical_assist without consent). The persona is
+ * endpoint is consent-gated (assist without consent). The persona is
  * intentionally omitted because the backend withholds it until consent.
  */
 export function toAgentPreview(summary: AgentSummary): AgentDetail {

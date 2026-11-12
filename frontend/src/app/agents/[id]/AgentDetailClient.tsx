@@ -44,7 +44,7 @@ import { AgentFormModal } from '@/components/agents/AgentFormModal';
 
 export interface AgentDetailClientProps {
   agent: AgentDetail;
-  /** True when the server could only load a read-only preview (clinical_assist without consent). */
+  /** True when the server could only load a read-only preview (assist without consent). */
   consentRequired?: boolean;
 }
 
@@ -70,7 +70,7 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/v1/agents/${encodeURIComponent(previewAgent.id)}?allow_clinical=true`);
+        const res = await fetch(`/api/v1/agents/${encodeURIComponent(previewAgent.id)}?allow_assist=true`);
         if (!res.ok) return;
         const data = await res.json();
         if (!cancelled) setFullDetail(toAgentDetail(data));
@@ -162,7 +162,7 @@ export function AgentDetailClient({ agent: previewAgent, consentRequired = false
         return 'Administrative Navigation: Clarifies health insurance terms, billing statements, and plan benefits. Does not render medical decisions or guarantee insurance reimbursement.';
       case 'education':
         return 'Educational Guide: Explains physiological and scientific concepts in plain language. Never substitutes personalized medical counsel.';
-      case 'clinical_assist':
+      case 'assist':
         return 'Clinical Assistant: For visit preparation and questions. Subject to clinician oversight and safety guardrails.';
       default:
         return 'Local health assistant with strict local sandbox controls.';

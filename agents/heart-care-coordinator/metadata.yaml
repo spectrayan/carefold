@@ -39,4 +39,4 @@ maturity: stable
 hidden: false
 domain: clinical
 category: clinical.cardiology
-risk_class: clinical_assist
+risk_class: assist

@@ -130,7 +130,7 @@ import logging
 from pathlib import Path
 from typing import List
 
-from yarvelle_core.pack.spec import PackEvalsSpec, PackSpec, RouterContribution
+from yarvelle_core.pack.spec import PackEvalsSpec, PackProvidesSpec, PackSpec, RouterContribution
 from yarvelle_core.schemas.orchestration import (
     DelegationReminderSpec,
     DelegationSpec,
@@ -394,6 +394,14 @@ def get_pack() -> PackSpec:
         eval_suites=["clinical_safety", "emergency_red_flags", "boundary_enforcement"],
     )
 
+    provides = PackProvidesSpec(
+        prompts_dir="resources/prompts/",
+        locales_dir="resources/locales/",
+        connectors_dir="connectors/",
+        resources_dir="resources/",
+        workflows_dir="workflows/",
+    )
+
     spec = PackSpec(
         pack_api=1,
         id="health",
@@ -415,6 +423,7 @@ def get_pack() -> PackSpec:
         routing_hints=routing_hints,
         manifest_path=str(Path(__file__).resolve().parent / "pack.yaml"),
         scoped_models=scoped_models,
+        provides=provides,
         orchestration=orchestration,
         safety=safety,
     )
@@ -422,16 +431,37 @@ def get_pack() -> PackSpec:
 
 
 def _register_native_pack_resources() -> None:
-    """Register Carefold's routing patterns with core through the pack API.
+    """Register Carefold's pack root, prompt templates, and routing patterns with core.
 
-    Core's ``ResourceLoader.register_pack`` resolves the pack root from
-    ``manifest_path``, loads the declared ``routing_hints.patterns_resource``
-    and merges its ``dossier_types`` into ``get_routing_patterns()``, matching
-    pack types before core's generic fallback type (yarvelle-core >= 0.2.2).
+    Uses a lightweight bootstrap ``PackSpec`` so ``carefold.middleware.skills`` and
+    other modules imported transitively by ``get_pack()`` can resolve ``pack_id="health"``
+    Handlebars templates without re-entrant import ordering issues.
     """
     from yarvelle_core.resources.loader import get_resource_loader as _yc_get_resource_loader
 
-    _yc_get_resource_loader().register_pack(get_pack())
+    bootstrap_spec = PackSpec(
+        pack_api=1,
+        id="health",
+        name="Carefold Health Pack",
+        version=__version__,
+        domain="health",
+        requires_core=">=0.2.4,<0.3.0",
+        routing_hints=RoutingHints(
+            domain="health",
+            description="Clinical visit preparation, health records management, and insurance navigation",
+            default_agent="appointment-prep-coordinator",
+            patterns_resource="resources/routing_patterns.yaml",
+        ),
+        manifest_path=str(Path(__file__).resolve().parent / "pack.yaml"),
+        provides=PackProvidesSpec(
+            prompts_dir="resources/prompts/",
+            locales_dir="resources/locales/",
+            connectors_dir="connectors/",
+            resources_dir="resources/",
+            workflows_dir="workflows/",
+        ),
+    )
+    _yc_get_resource_loader().register_pack(bootstrap_spec)
 
 
 _register_native_pack_resources()

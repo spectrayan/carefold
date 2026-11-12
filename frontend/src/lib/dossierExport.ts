@@ -93,7 +93,7 @@ export function formatDossierMarkdown(options: DossierExportOptions): string {
   const { agent, messages, threadId } = options;
   const agentId = options.agentId || agent?.id || 'general';
   const agentTitle = agent?.title || 'Health Assistant';
-  const riskClass = agent?.risk_class || 'clinical_assist';
+  const riskClass = agent?.risk_class || 'assist';
 
   const exportedAtStr = options.exportedAt
     ? typeof options.exportedAt === 'string'
@@ -158,7 +158,7 @@ export function formatDossierJson(options: DossierExportOptions): string {
   const { agent, messages, threadId } = options;
   const agentId = options.agentId || agent?.id || 'general';
   const agentTitle = agent?.title || 'Health Assistant';
-  const riskClass = agent?.risk_class || 'clinical_assist';
+  const riskClass = agent?.risk_class || 'assist';
 
   const exportedAtStr = options.exportedAt
     ? typeof options.exportedAt === 'string'

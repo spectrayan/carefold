@@ -71,7 +71,7 @@ SPEC_WITHINGS = ToolSpec(
     trust="trusted",
     data_flows=DataFlows(
         allowed_hosts=("wbsapi.withings.net", "account.withings.com"),
-        data_sensitivity="phi",
+        data_sensitivity="restricted",
     ),
     executor=execute_withings_latest_vitals,
     metadata={
@@ -132,7 +132,7 @@ SPEC_EPIC = ToolSpec(
     trust="untrusted",
     data_flows=DataFlows(
         allowed_hosts=("fhir.epic.com",),
-        data_sensitivity="phi",
+        data_sensitivity="restricted",
     ),
     executor=execute_epic_smart_search_records,
     metadata={
@@ -220,7 +220,7 @@ SPEC_ZOCDOC = ToolSpec(
     trust="untrusted",
     data_flows=DataFlows(
         allowed_hosts=("api.zocdoc.com",),
-        data_sensitivity="phi",
+        data_sensitivity="restricted",
     ),
     executor=execute_zocdoc_book_appointment,
     metadata={
@@ -261,7 +261,7 @@ SPEC_SHC = ToolSpec(
     },
     risk_tier="write_local",
     trust="untrusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_verify_smart_health_card,
     metadata={
         "action": "verify_smart_health_card",

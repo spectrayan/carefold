@@ -218,7 +218,7 @@ SPEC_CREATE = ToolSpec(
     },
     risk_tier="write_local",
     trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_create_school_form,
     metadata={
         "action": "create_school_form",
@@ -245,7 +245,7 @@ SPEC_LIST = ToolSpec(
     },
     risk_tier="read",
     trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_list_school_forms,
     metadata={
         "action": "list_school_forms",

@@ -76,7 +76,7 @@ class TestSearchRecordsToolSpecRegistration:
         reg = create_default_registry()
         spec = reg.get("search_records")
         assert spec is not None
-        assert spec.data_flows.data_sensitivity == "phi"
+        assert spec.data_flows.data_sensitivity == "restricted"
         assert spec.data_flows.allowed_hosts == ()
 
     def test_search_records_closed_definitions_sync(self):
@@ -442,7 +442,7 @@ class TestSearchRecordsUniversalChokePoint:
             parameters={"report": {"type": "string"}},
             risk_tier="write_external",
             trust="trusted",
-            data_flows=DataFlows(allowed_hosts=("api.clinic.org",), data_sensitivity="phi"),
+            data_flows=DataFlows(allowed_hosts=("api.clinic.org",), data_sensitivity="restricted"),
             executor=lambda args, ctx=None: ToolResult(success=True, output="sent"),
         )
 

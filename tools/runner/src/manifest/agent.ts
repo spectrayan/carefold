@@ -138,10 +138,10 @@ export async function loadAgent(agentDir: string, skillsDir?: string): Promise<L
 
   const effectiveTools = Array.from(unionSet).filter(t => allowedToolsSet.has(t));
 
-  // Risk class elevation: if any skill is clinical_assist, agent risk class is elevated
+  // Risk class elevation: if any skill is assist, agent risk class is elevated
   let riskClass = agentData.risk_class;
-  if (loadedSkills.some(s => s.risk_class === 'clinical_assist')) {
-    riskClass = 'clinical_assist';
+  if (loadedSkills.some(s => s.risk_class === 'assist')) {
+    riskClass = 'assist';
   }
 
   const agent: AgentManifest = {

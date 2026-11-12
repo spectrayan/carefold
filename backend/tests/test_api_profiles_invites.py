@@ -87,7 +87,7 @@ async def test_create_viewer_invite_and_7_day_expiry(invites_test_env):
             json={
                 "invitee_name": "Grandma Rose",
                 "role": "viewer",
-                "view_clinical": True,
+                "view_records": True,
                 "view_paperwork": False,
             },
         )
@@ -97,7 +97,7 @@ async def test_create_viewer_invite_and_7_day_expiry(invites_test_env):
         assert invite_data["invite_code"].startswith("cf-inv-")
         assert len(invite_data["invite_code"]) >= 24
         assert invite_data["invitee_name"] == "Grandma Rose"
-        assert invite_data["view_clinical"] is True
+        assert invite_data["view_records"] is True
         assert invite_data["view_paperwork"] is False
         assert invite_data["accepted_at"] is None
 
@@ -154,7 +154,7 @@ async def test_accept_viewer_invite_lifecycle(invites_test_env):
         inv = client.post(
             f"/api/profiles/{prof_id}/invites",
             headers=owner["headers"],
-            json={"invitee_name": "Bob", "view_clinical": True, "view_paperwork": False},
+            json={"invitee_name": "Bob", "view_records": True, "view_paperwork": False},
         ).json()
         code = inv["invite_code"]
 
@@ -168,12 +168,12 @@ async def test_accept_viewer_invite_lifecycle(invites_test_env):
         acc_data = accept_resp.json()
         assert acc_data["success"] is True
         assert acc_data["role"] == "viewer"
-        assert acc_data["access_level"] == "view_clinical"
+        assert acc_data["access_level"] == "view_records"
         assert acc_data["profile_id"] == prof_id
 
         # 3. Bob now sees Alice's profile in list_profiles
         b_profs = client.get("/api/profiles", headers=viewer["headers"]).json()
-        assert any(p["id"] == prof_id and p["access_level"] == "view_clinical" for p in b_profs)
+        assert any(p["id"] == prof_id and p["access_level"] == "view_records" for p in b_profs)
 
         # 4. Attempting to accept again must fail (single-use)
         reaccept = client.post(
@@ -309,7 +309,7 @@ async def test_list_all_viewer_invites_global_endpoint(invites_test_env):
             json={
                 "invitee_name": "Uncle Bob",
                 "role": "viewer",
-                "view_clinical": True,
+                "view_records": True,
                 "view_paperwork": False,
             },
         )
@@ -323,7 +323,7 @@ async def test_list_all_viewer_invites_global_endpoint(invites_test_env):
             json={
                 "invitee_name": "Nurse Sarah",
                 "role": "viewer",
-                "view_clinical": False,
+                "view_records": False,
                 "view_paperwork": True,
             },
         )

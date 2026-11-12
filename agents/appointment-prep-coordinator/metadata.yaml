@@ -33,4 +33,4 @@ maturity: stable
 hidden: false
 domain: navigation
 category: navigation.appointments
-risk_class: clinical_assist
+risk_class: assist

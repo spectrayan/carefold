@@ -23,7 +23,7 @@ const summary: AgentSummary = {
   id: 'heart-care-coordinator',
   title: 'Cardiology Guide',
   version: '0.1.0',
-  risk_class: 'clinical_assist',
+  risk_class: 'assist',
   skills: ['cardiology-prep'],
   effectiveTools: ['skill-docs'],
   starters: ['Help me prepare for my cardiology visit'],
@@ -35,7 +35,7 @@ const fullDetailPayload = {
   id: 'heart-care-coordinator',
   title: 'Cardiology Guide',
   version: '0.1.0',
-  risk_class: 'clinical_assist',
+  risk_class: 'assist',
   persona: { role: 'Guide', instructions: 'FULL PERSONA INSTRUCTIONS' },
   resolvedSkills: [{ id: 'cardiology-prep', name: 'Cardiology Prep', description: 'Prep skill', version: '1.0.0' }],
   effectiveTools: ['skill-docs'],
@@ -76,7 +76,7 @@ describe('AgentDetailClient clinical consent (#87)', () => {
     expect(hasClinicalConsent('heart-care-coordinator')).toBe(false);
   });
 
-  it('grant loads the full detail through the proxy with allow_clinical=true', async () => {
+  it('grant loads the full detail through the proxy with allow_assist=true', async () => {
     const mockFetch = vi.fn().mockResolvedValue(
       new Response(JSON.stringify(fullDetailPayload), { status: 200, headers: { 'Content-Type': 'application/json' } })
     );
@@ -88,7 +88,7 @@ describe('AgentDetailClient clinical consent (#87)', () => {
     fireEvent.click(screen.getByTestId('clinical-consent-accept'));
 
     expect(await screen.findByText('FULL PERSONA INSTRUCTIONS')).toBeInTheDocument();
-    expect(mockFetch).toHaveBeenCalledWith('/api/v1/agents/heart-care-coordinator?allow_clinical=true');
+    expect(mockFetch).toHaveBeenCalledWith('/api/v1/agents/heart-care-coordinator?allow_assist=true');
     expect(screen.getByTestId('clinical-consent-chip')).toBeInTheDocument();
     expect(screen.queryByTestId('agent-consent-required')).not.toBeInTheDocument();
   });

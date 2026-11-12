@@ -267,7 +267,7 @@ async def test_viewer_invite_model_crud_and_defaults(db_session: AsyncSession):
     assert invite.id is not None
     assert len(invite.id) == 36
     assert invite.role == "viewer"
-    assert invite.view_clinical is True
+    assert invite.view_records is True
     assert invite.view_paperwork is False
     assert invite.accepted_at is None
     assert invite.accepted_by is None

@@ -51,14 +51,14 @@ export async function GET(
 
   try {
     const url = new URL(_req.url);
-    const allowClinical = url.searchParams.get('allow_clinical') === 'true' ? 'true' : 'false';
+    const allowAssist = url.searchParams.get('allow_assist') === 'true' ? 'true' : 'false';
     const forwardHeaders: Record<string, string> = { Accept: 'application/json' };
     const incomingCookie = _req.headers.get('cookie');
     if (incomingCookie) forwardHeaders['cookie'] = incomingCookie;
     const authHeader = _req.headers.get('authorization');
     if (authHeader) forwardHeaders['authorization'] = authHeader;
 
-    const res = await fetch(`${backendUrl}/api/v1/agents/${encodeURIComponent(agentId)}?allow_clinical=${allowClinical}`, {
+    const res = await fetch(`${backendUrl}/api/v1/agents/${encodeURIComponent(agentId)}?allow_assist=${allowAssist}`, {
       method: 'GET',
       headers: forwardHeaders,
       cache: 'no-store'

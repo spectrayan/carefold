@@ -23,7 +23,7 @@ const mockAgent: AgentDetail = {
   version: '0.1.0',
   model: 'llama3.2:3b',
   license: 'Apache-2.0',
-  risk_class: 'clinical_assist',
+  risk_class: 'assist',
   description: 'Helps users prepare for cardiology visits and understand cardiovascular terms.',
   persona: 'Role & Empathy: Cardiology guide.',
   skills: [
@@ -32,7 +32,7 @@ const mockAgent: AgentDetail = {
       name: 'Cardiology Prep',
       version: '0.1.0',
       description: 'Cardiology visit agenda and symptom tracking.',
-      risk_class: 'clinical_assist',
+      risk_class: 'assist',
       tools: ['attach-read', 'skill-docs']
     },
     {
@@ -40,7 +40,7 @@ const mockAgent: AgentDetail = {
       name: 'Emergency Red Flags',
       version: '0.1.0',
       description: 'Acute emergency escalation protocol.',
-      risk_class: 'clinical_assist',
+      risk_class: 'assist',
       tools: ['skill-docs']
     }
   ],

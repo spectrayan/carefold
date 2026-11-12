@@ -48,54 +48,54 @@ const chatRequest = (body: Record<string, unknown>, query = '') =>
   });
 
 describe('GET /api/agents proxy', () => {
-  it('defaults allow_clinical to false for list and single lookups', async () => {
+  it('defaults allow_assist to false for list and single lookups', async () => {
     await listAgents(new Request('http://localhost:3000/api/agents'));
     await listAgents(new Request('http://localhost:3000/api/agents?id=heart-care-coordinator'));
-    expect(new URL(backendCalls[0].url).searchParams.get('allow_clinical')).toBe('false');
-    expect(new URL(backendCalls[1].url).searchParams.get('allow_clinical')).toBe('false');
+    expect(new URL(backendCalls[0].url).searchParams.get('allow_assist')).toBe('false');
+    expect(new URL(backendCalls[1].url).searchParams.get('allow_assist')).toBe('false');
   });
 
   it('forwards only an explicit true', async () => {
-    await listAgents(new Request('http://localhost:3000/api/agents?id=heart-care-coordinator&allow_clinical=true'));
-    await listAgents(new Request('http://localhost:3000/api/agents?id=heart-care-coordinator&allow_clinical=yes'));
-    expect(new URL(backendCalls[0].url).searchParams.get('allow_clinical')).toBe('true');
-    expect(new URL(backendCalls[1].url).searchParams.get('allow_clinical')).toBe('false');
+    await listAgents(new Request('http://localhost:3000/api/agents?id=heart-care-coordinator&allow_assist=true'));
+    await listAgents(new Request('http://localhost:3000/api/agents?id=heart-care-coordinator&allow_assist=yes'));
+    expect(new URL(backendCalls[0].url).searchParams.get('allow_assist')).toBe('true');
+    expect(new URL(backendCalls[1].url).searchParams.get('allow_assist')).toBe('false');
   });
 });
 
 describe('GET /api/agents/[id] proxy', () => {
   const ctx = { params: Promise.resolve({ id: 'heart-care-coordinator' }) };
 
-  it('defaults allow_clinical to false', async () => {
+  it('defaults allow_assist to false', async () => {
     await getAgent(new Request('http://localhost:3000/api/agents/heart-care-coordinator'), ctx);
-    expect(new URL(backendCalls[0].url).searchParams.get('allow_clinical')).toBe('false');
+    expect(new URL(backendCalls[0].url).searchParams.get('allow_assist')).toBe('false');
   });
 
   it('forwards an explicit true and normalizes anything else', async () => {
-    await getAgent(new Request('http://localhost:3000/api/agents/heart-care-coordinator?allow_clinical=true'), ctx);
-    await getAgent(new Request('http://localhost:3000/api/agents/heart-care-coordinator?allow_clinical=1%26x%3Dy'), ctx);
-    expect(new URL(backendCalls[0].url).searchParams.get('allow_clinical')).toBe('true');
-    expect(new URL(backendCalls[1].url).searchParams.get('allow_clinical')).toBe('false');
+    await getAgent(new Request('http://localhost:3000/api/agents/heart-care-coordinator?allow_assist=true'), ctx);
+    await getAgent(new Request('http://localhost:3000/api/agents/heart-care-coordinator?allow_assist=1%26x%3Dy'), ctx);
+    expect(new URL(backendCalls[0].url).searchParams.get('allow_assist')).toBe('true');
+    expect(new URL(backendCalls[1].url).searchParams.get('allow_assist')).toBe('false');
     expect(new URL(backendCalls[1].url).searchParams.has('x')).toBe(false);
   });
 });
 
 describe('POST /api/chat proxy', () => {
-  it('defaults allow_clinical to false when the client omits it', async () => {
+  it('defaults allow_assist to false when the client omits it', async () => {
     await postChat(chatRequest({}));
-    expect(backendCalls[0].body.allow_clinical).toBe(false);
+    expect(backendCalls[0].body.allow_assist).toBe(false);
   });
 
   it('forwards explicit consent', async () => {
-    await postChat(chatRequest({ allow_clinical: true }));
-    expect(backendCalls[0].body.allow_clinical).toBe(true);
+    await postChat(chatRequest({ allow_assist: true }));
+    expect(backendCalls[0].body.allow_assist).toBe(true);
   });
 
   it('does not treat truthy non-boolean values as consent', async () => {
-    await postChat(chatRequest({ allow_clinical: 'false' }));
-    await postChat(chatRequest({ allowClinical: 1 }));
-    expect(backendCalls[0].body.allow_clinical).toBe(false);
-    expect(backendCalls[1].body.allow_clinical).toBe(false);
+    await postChat(chatRequest({ allow_assist: 'false' }));
+    await postChat(chatRequest({ allowAssist: 1 }));
+    expect(backendCalls[0].body.allow_assist).toBe(false);
+    expect(backendCalls[1].body.allow_assist).toBe(false);
   });
 
   it('forwards explicit profileId / profile_id and defaults to "me" when omitted', async () => {

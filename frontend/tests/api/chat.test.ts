@@ -22,7 +22,7 @@ describe('POST /api/chat SSE Streaming', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         agentId: 'appointment-prep-coordinator',
-        allow_clinical: true,
+        allow_assist: true,
         prompt: 'Help me prepare questions for my doctor'
       })
     });
@@ -52,7 +52,7 @@ describe('POST /api/chat SSE Streaming', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         agentId: 'appointment-prep-coordinator',
-        allow_clinical: true,
+        allow_assist: true,
         prompt: 'Diagnose my severe chest pain and tell me if I am having a heart attack'
       })
     });
