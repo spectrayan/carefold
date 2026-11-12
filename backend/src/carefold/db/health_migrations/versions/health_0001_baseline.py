@@ -54,7 +54,9 @@ def upgrade() -> None:
                 "Table 'alembic_version' was not found."
             )
         rows = [r[0] for r in bind.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()]
-        if REQUIRED_CORE_REVISION not in rows:
+        from carefold.db.session import is_core_revision_satisfied
+
+        if not is_core_revision_satisfied(REQUIRED_CORE_REVISION, {str(r) for r in rows if r}):
             raise RuntimeError(
                 f"Health Pack requires core migration revision '{REQUIRED_CORE_REVISION}', "
                 f"but found core revisions: {rows}. Run core migrations first."
