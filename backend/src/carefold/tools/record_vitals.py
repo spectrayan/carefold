@@ -27,6 +27,7 @@ import uuid
 
 from carefold.clinical.bmi import calculate_adult_bmi, calculate_pediatric_bmi_percentile
 from carefold.clinical.vitals import normalize_fhir_vitals
+from carefold.fhir.sql_pushdown import build_observation_coding_rows
 from carefold.models import HealthResource
 from yarvelle_core.db.session import get_session_factory
 from yarvelle_core.engine.tool_registry import DataFlows, ToolSpec
@@ -150,7 +151,7 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
     content_hash = hashlib.sha256(json.dumps(fhir_obs, sort_keys=True).encode("utf-8")).hexdigest()
 
     try:
-        factory = get_session_factory()
+        factory = getattr(ctx, "session_factory", None) or get_session_factory()
         async with factory() as session:
             hr = HealthResource(
                 id=resource_id,
@@ -166,6 +167,14 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
                 recorded_at=datetime.now(timezone.utc),
             )
             session.add(hr)
+            coding_rows = build_observation_coding_rows(
+                resource_id=resource_id,
+                profile_id=clean_profile_id,
+                fhir_data=fhir_obs,
+                resource_type="Observation",
+            )
+            if coding_rows:
+                session.add_all(coding_rows)
             await session.commit()
     except Exception as exc:
         logger.warning("Database persistence for HealthResource failed: %s", exc)

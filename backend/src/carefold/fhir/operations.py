@@ -44,8 +44,19 @@ from fhir.resources.R4B.composition import Composition as FhirComposition
 from fhir.resources.R4B.operationoutcome import (
     OperationOutcome as FhirOperationOutcome,
 )
-from sqlalchemy import desc, select
+from sqlalchemy import asc, desc, func, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from carefold.fhir.sql_pushdown import (
+    build_category_sql_filter,
+    build_clinical_status_sql_filter,
+    build_code_sql_filter,
+    build_fhir_date_sql_filters,
+    build_fhir_status_sql_filter,
+    build_logical_id_sql_filter,
+    get_session_dialect_name,
+    json_string_expr,
+)
 
 from carefold.fhir.registry import (
     CLINICAL_FHIR_RESOURCE_TYPES,
@@ -743,16 +754,18 @@ async def handle_fhir_read_resource(
             "etag": f'W/"{validated.get("meta", {}).get("versionId", "1")}"',
         }
 
-    stmt = select(HealthResource).where(
-        HealthResource.profile_id == ctx.profile_id,
-        HealthResource.status != "deleted",
+    dialect = get_session_dialect_name(session)
+    stmt = (
+        select(HealthResource)
+        .where(
+            HealthResource.profile_id == ctx.profile_id,
+            HealthResource.status != "deleted",
+            build_logical_id_sql_filter(resource_type, logical_id, dialect_name=dialect),
+        )
+        .limit(5)
     )
-    rows = (await session.execute(stmt)).scalars().all()
     matched_row: Optional[HealthResource] = None
-    for row in rows:
-        row_rt = _CASE_INSENSITIVE_TYPE_MAP.get((row.resource_type or "").lower(), row.resource_type)
-        if row_rt != resource_type:
-            continue
+    for row in (await session.execute(stmt)).scalars().all():
         try:
             raw_d = json.loads(row.data) if isinstance(row.data, str) else dict(row.data or {})
         except Exception:
@@ -808,40 +821,13 @@ async def handle_fhir_search_resources(
     offset, cursor_sort = decode_opaque_cursor(cursor_token)
     sort_param = str(params.get("_sort") or params.get("sort") or cursor_sort or "-date").strip()
 
-    # Code filter resolution via HealthResourceCoding
-    code_param = str(params.get("code") or "").strip()
-    matching_code_resource_ids: Optional[Set[str]] = None
-    if code_param:
-        matching_code_resource_ids = set()
-        tokens = [t.strip() for t in code_param.split(",") if t.strip()]
-        for tok in tokens:
-            if "|" in tok:
-                raw_sys, raw_code = tok.split("|", 1)
-                norm_sys = normalize_code_system_uri(raw_sys.strip()).canonical_system if raw_sys.strip() else ""
-                c_stmt = select(HealthResourceCoding.resource_id).where(
-                    HealthResourceCoding.profile_id == ctx.profile_id,
-                    HealthResourceCoding.code == raw_code.strip(),
-                )
-                if norm_sys:
-                    c_stmt = c_stmt.where(HealthResourceCoding.system == norm_sys)
-            else:
-                c_stmt = select(HealthResourceCoding.resource_id).where(
-                    HealthResourceCoding.profile_id == ctx.profile_id,
-                    HealthResourceCoding.code == tok,
-                )
-            matching_code_resource_ids.update((await session.execute(c_stmt)).scalars().all())
+    dialect = get_session_dialect_name(session)
 
     if resource_type == "Patient":
         await ensure_canonical_patient_resource(session, profile_id=ctx.profile_id)
         await session.flush()
 
-    stmt = select(HealthResource).where(
-        HealthResource.profile_id == ctx.profile_id,
-        HealthResource.status != "deleted",
-    )
-    rows = (await session.execute(stmt)).scalars().all()
-
-    # Normalize date & _lastUpdated filters into sequences
+    # Normalize date & _lastUpdated filters into sequences (validates token syntax upfront)
     raw_date = params.get("date")
     date_filters: List[str] = (
         [str(x) for x in raw_date if x]
@@ -859,50 +845,96 @@ async def handle_fhir_search_resources(
     status_filter = str(params.get("status") or "").strip().lower()
     clinical_status_filter = str(params.get("clinical_status") or params.get("clinical-status") or "").strip()
 
-    matched_items: List[Tuple[HealthResource, Dict[str, Any], bool]] = []
-    for row in rows:
-        row_rt = _CASE_INSENSITIVE_TYPE_MAP.get((row.resource_type or "").lower(), row.resource_type)
-        if row_rt != resource_type:
-            continue
-        if matching_code_resource_ids is not None and row.id not in matching_code_resource_ids:
-            continue
+    where_clauses: List[Any] = [
+        HealthResource.profile_id == ctx.profile_id,
+        HealthResource.status != "deleted",
+        func.lower(HealthResource.resource_type) == resource_type.lower(),
+    ]
 
-        clean_res, is_untrusted = _load_clean_fhir_from_row(row)
-        if status_filter and str(clean_res.get("status") or "").lower() != status_filter:
-            continue
-        if category_filter and not _matches_category_filter(clean_res, category_filter):
-            continue
-        if clinical_status_filter and not _matches_clinical_status_filter(clean_res, clinical_status_filter):
-            continue
-        if date_filters and not _matches_date_filters(row.effective_at, date_filters):
-            continue
-        if lu_filters and not _matches_date_filters(row.updated_at, lu_filters):
-            continue
+    # Code filter resolution pushed into SQL via HealthResourceCoding + unindexed JSON fallback
+    code_param = str(params.get("code") or "").strip()
+    if code_param:
+        tokens = [t.strip() for t in code_param.split(",") if t.strip()]
+        code_or_clauses: List[Any] = []
+        for tok in tokens:
+            if "|" in tok:
+                raw_sys, raw_code = tok.split("|", 1)
+                norm_sys = (
+                    normalize_code_system_uri(raw_sys.strip(), code=raw_code.strip(), resource_type=resource_type).canonical_system
+                    if raw_sys.strip()
+                    else ""
+                )
+                code_or_clauses.append(
+                    build_code_sql_filter(
+                        raw_code.strip(),
+                        system=norm_sys or None,
+                        dialect_name=dialect,
+                    )
+                )
+            else:
+                code_or_clauses.append(
+                    build_code_sql_filter(tok, dialect_name=dialect)
+                )
+        if code_or_clauses:
+            where_clauses.append(or_(*code_or_clauses))
 
-        matched_items.append((row, clean_res, is_untrusted))
+    if status_filter:
+        where_clauses.append(build_fhir_status_sql_filter(status_filter, dialect_name=dialect))
+    if category_filter:
+        where_clauses.append(build_category_sql_filter(category_filter, dialect_name=dialect))
+    if clinical_status_filter:
+        where_clauses.append(build_clinical_status_sql_filter(clinical_status_filter, dialect_name=dialect))
+    if date_filters:
+        where_clauses.extend(
+            build_fhir_date_sql_filters(HealthResource.effective_at, date_filters, _parse_date_filter_token)
+        )
+    if lu_filters:
+        where_clauses.extend(
+            build_fhir_date_sql_filters(HealthResource.updated_at, lu_filters, _parse_date_filter_token)
+        )
 
-    # Deterministic sorting
-    def _sort_key(item: Tuple[HealthResource, Dict[str, Any], bool]) -> Tuple[str, str]:
-        r, d, _ = item
-        if sort_param in ("_lastUpdated", "-_lastUpdated"):
-            ts_str = r.updated_at.astimezone(timezone.utc).isoformat() if r.updated_at else ""
-        else:
-            ts_str = r.effective_at.astimezone(timezone.utc).isoformat() if r.effective_at else ""
-        return (ts_str, str(d.get("id") or r.id))
+    count_stmt = select(func.count(HealthResource.id)).where(*where_clauses)
+    total_matches = int((await session.execute(count_stmt)).scalar_one() or 0)
 
+    # Deterministic SQL sorting matching FHIR _sort
     reverse_sort = sort_param.startswith("-") or sort_param in ("date", "_lastUpdated")
     if sort_param in ("date", "_lastUpdated", "id"):
         reverse_sort = False
-    matched_items.sort(key=_sort_key, reverse=reverse_sort)
 
-    total_matches = len(matched_items)
-    page_slice = matched_items[offset : offset + count]
+    sort_col = (
+        HealthResource.updated_at
+        if sort_param in ("_lastUpdated", "-_lastUpdated")
+        else HealthResource.effective_at
+    )
+    logical_id_sort_expr = func.coalesce(
+        json_string_expr(HealthResource.data, "id", dialect_name=dialect),
+        HealthResource.source_id,
+        HealthResource.id,
+    )
+    if sort_param == "id":
+        order_clauses: List[Any] = [asc(logical_id_sort_expr), asc(HealthResource.id)]
+    elif sort_param == "-id":
+        order_clauses = [desc(logical_id_sort_expr), desc(HealthResource.id)]
+    elif reverse_sort:
+        order_clauses = [asc(sort_col.is_(None)), desc(sort_col), desc(logical_id_sort_expr)]
+    else:
+        order_clauses = [asc(sort_col.is_not(None)), asc(sort_col), asc(logical_id_sort_expr)]
+
+    page_stmt = (
+        select(HealthResource)
+        .where(*where_clauses)
+        .order_by(*order_clauses)
+        .limit(count)
+        .offset(offset)
+    )
+    page_rows = list((await session.execute(page_stmt)).scalars().all())
 
     entries: List[Dict[str, Any]] = []
     included_keys: Set[Tuple[str, str]] = set()
     include_param = str(params.get("_include") or params.get("include") or "").strip()
 
-    for row, clean_res, is_untrusted in page_slice:
+    for row in page_rows:
+        clean_res, is_untrusted = _load_clean_fhir_from_row(row)
         _propagate_taint_if_untrusted(ctx, is_untrusted)
         model_cls = get_r4_model_class(resource_type)
         validated_res = model_cls.model_validate(clean_res).model_dump(mode="json", exclude_none=True)
@@ -914,7 +946,7 @@ async def handle_fhir_search_resources(
         })
         included_keys.add((resource_type, logical_id))
 
-        # Handle _include outbound references within the same profile
+        # Handle _include outbound references within the same profile via targeted SQL lookup
         if include_param:
             inc_parts = include_param.split(":")
             inc_src = inc_parts[0].strip() if len(inc_parts) >= 1 else "*"
@@ -934,10 +966,16 @@ async def handle_fhir_search_resources(
                     req_scope = resolve_resource_scope(t_type)
                     if req_scope not in ctx.scopes and "health.*" not in ctx.scopes:
                         continue
-                    for cand_row in rows:
-                        cand_rt = _CASE_INSENSITIVE_TYPE_MAP.get((cand_row.resource_type or "").lower(), cand_row.resource_type)
-                        if cand_rt != t_type:
-                            continue
+                    inc_stmt = (
+                        select(HealthResource)
+                        .where(
+                            HealthResource.profile_id == ctx.profile_id,
+                            HealthResource.status != "deleted",
+                            build_logical_id_sql_filter(t_type, ref.target_id, dialect_name=dialect),
+                        )
+                        .limit(5)
+                    )
+                    for cand_row in (await session.execute(inc_stmt)).scalars().all():
                         cand_clean, cand_untrusted = _load_clean_fhir_from_row(cand_row)
                         if ref.target_id in (cand_clean["id"], cand_row.id, cand_row.source_id):
                             _propagate_taint_if_untrusted(ctx, cand_untrusted)
@@ -994,33 +1032,48 @@ async def handle_fhir_resource_history(
     count = max(1, min(int(raw_count or DEFAULT_FHIR_PAGE_COUNT), MAX_FHIR_PAGE_COUNT))
     offset, _ = decode_opaque_cursor(params.get("_cursor") or params.get("cursor"))
 
-    versions: List[HealthResourceVersion] = []
-    stmt = select(HealthResource).where(HealthResource.profile_id == ctx.profile_id)
+    dialect = get_session_dialect_name(session)
+    target_row: Optional[HealthResource] = None
+    stmt = (
+        select(HealthResource)
+        .where(
+            HealthResource.profile_id == ctx.profile_id,
+            build_logical_id_sql_filter(resource_type, logical_id, dialect_name=dialect),
+        )
+        .limit(5)
+    )
     for row in (await session.execute(stmt)).scalars().all():
-        row_rt = _CASE_INSENSITIVE_TYPE_MAP.get((row.resource_type or "").lower(), row.resource_type)
-        if row_rt == resource_type:
-            clean_d, _ = _load_clean_fhir_from_row(row)
-            if logical_id in (clean_d["id"], row.id, row.source_id):
-                v_stmt = (
-                    select(HealthResourceVersion)
-                    .where(
-                        HealthResourceVersion.profile_id == ctx.profile_id,
-                        HealthResourceVersion.resource_id == row.id,
-                    )
-                    .order_by(HealthResourceVersion.version_id.asc())
-                )
-                versions = list((await session.execute(v_stmt)).scalars().all())
-                break
+        clean_d, _ = _load_clean_fhir_from_row(row)
+        if logical_id in (clean_d["id"], row.id, row.source_id):
+            target_row = row
+            break
 
-    if not versions:
+    total_versions = 0
+    page_versions: List[HealthResourceVersion] = []
+    if target_row is not None:
+        v_where = [
+            HealthResourceVersion.profile_id == ctx.profile_id,
+            HealthResourceVersion.resource_id == target_row.id,
+        ]
+        total_versions = int(
+            (await session.execute(select(func.count(HealthResourceVersion.id)).where(*v_where))).scalar_one() or 0
+        )
+        if total_versions > 0:
+            v_stmt = (
+                select(HealthResourceVersion)
+                .where(*v_where)
+                .order_by(HealthResourceVersion.version_id.asc())
+                .limit(count)
+                .offset(offset)
+            )
+            page_versions = list((await session.execute(v_stmt)).scalars().all())
+
+    if total_versions == 0:
         raise FhirOperationError(
             status_code=404,
             issue_code="not-found",
             diagnostics=f"History for {resource_type}/{logical_id} was not found.",
         )
-
-    total_versions = len(versions)
-    page_versions = versions[offset : offset + count]
     entries: List[Dict[str, Any]] = []
     model_cls = get_r4_model_class(resource_type)
 
@@ -1113,43 +1166,56 @@ async def handle_fhir_patient_everything(
     await ensure_canonical_patient_resource(session, profile_id=ctx.profile_id)
     await session.flush()
 
-    stmt = (
-        select(HealthResource)
-        .where(
+    scope_allowed_types = [
+        rt
+        for rt in REST_SUPPORTED_R4_RESOURCE_TYPES
+        if (allowed_types is None or rt in allowed_types)
+        and (resolve_resource_scope(rt) in ctx.scopes or "health.*" in ctx.scopes)
+    ]
+
+    if not scope_allowed_types:
+        total = 0
+        page_rows: List[HealthResource] = []
+    else:
+        ev_where: List[Any] = [
             HealthResource.profile_id == ctx.profile_id,
             HealthResource.status != "deleted",
+            func.lower(HealthResource.resource_type).in_([rt.lower() for rt in scope_allowed_types]),
+        ]
+        if since_filters:
+            ev_where.extend(
+                build_fhir_date_sql_filters(
+                    func.coalesce(HealthResource.updated_at, HealthResource.effective_at),
+                    since_filters,
+                    _parse_date_filter_token,
+                )
+            )
+        total = int((await session.execute(select(func.count(HealthResource.id)).where(*ev_where))).scalar_one() or 0)
+        stmt = (
+            select(HealthResource)
+            .where(*ev_where)
+            .order_by(desc(HealthResource.effective_at), HealthResource.id)
+            .limit(count)
+            .offset(offset)
         )
-        .order_by(desc(HealthResource.effective_at), HealthResource.id)
-    )
-    rows = (await session.execute(stmt)).scalars().all()
+        page_rows = list((await session.execute(stmt)).scalars().all())
 
-    matched_entries: List[Dict[str, Any]] = []
-    for row in rows:
+    page_entries: List[Dict[str, Any]] = []
+    for row in page_rows:
         row_rt = _CASE_INSENSITIVE_TYPE_MAP.get((row.resource_type or "").lower(), row.resource_type)
-        if not row_rt or row_rt not in REST_SUPPORTED_R4_RESOURCE_TYPES:
+        if not row_rt:
             continue
-        if allowed_types is not None and row_rt not in allowed_types:
-            continue
-        req_scope = resolve_resource_scope(row_rt)
-        if req_scope not in ctx.scopes and "health.*" not in ctx.scopes:
-            continue
-        if since_filters and not _matches_date_filters(row.updated_at or row.effective_at, since_filters):
-            continue
-
         clean_res, is_untrusted = _load_clean_fhir_from_row(row)
         if row_rt == "Patient":
             clean_res["id"] = ctx.profile_id
         _propagate_taint_if_untrusted(ctx, is_untrusted)
         model_cls = get_r4_model_class(row_rt)
         val_res = model_cls.model_validate(clean_res).model_dump(mode="json", exclude_none=True)
-        matched_entries.append({
+        page_entries.append({
             "fullUrl": f"{ctx.base_url}/{row_rt}/{val_res['id']}",
             "resource": val_res,
             "search": {"mode": "match"},
         })
-
-    total = len(matched_entries)
-    page_entries = matched_entries[offset : offset + count]
     links: List[Dict[str, str]] = [
         {"relation": "self", "url": f"{ctx.base_url}/Patient/{ctx.profile_id}/$everything?_count={count}"}
     ]
@@ -1258,15 +1324,29 @@ async def handle_fhir_patient_summary(
     _propagate_taint_if_untrusted(ctx, pat_untrusted)
     validated_patient = get_r4_model_class("Patient").model_validate(pat_clean).model_dump(mode="json", exclude_none=True)
 
-    stmt = (
-        select(HealthResource)
-        .where(
-            HealthResource.profile_id == ctx.profile_id,
-            HealthResource.status == "active",
+    ips_section_groups: List[Tuple[str, ...]] = [
+        ("Condition",),
+        ("MedicationRequest", "MedicationStatement"),
+        ("AllergyIntolerance",),
+        ("Immunization",),
+        ("Observation",),
+        ("DiagnosticReport",),
+        ("Procedure",),
+    ]
+    section_limit = max(1, min(int(params.get("_count") or params.get("limit_per_section") or 50), MAX_FHIR_PAGE_COUNT))
+    rows: List[HealthResource] = []
+    for rt_group in ips_section_groups:
+        grp_stmt = (
+            select(HealthResource)
+            .where(
+                HealthResource.profile_id == ctx.profile_id,
+                HealthResource.status == "active",
+                func.lower(HealthResource.resource_type).in_([t.lower() for t in rt_group]),
+            )
+            .order_by(desc(HealthResource.effective_at), HealthResource.id)
+            .limit(section_limit)
         )
-        .order_by(desc(HealthResource.effective_at), HealthResource.id)
-    )
-    rows = (await session.execute(stmt)).scalars().all()
+        rows.extend((await session.execute(grp_stmt)).scalars().all())
 
     prob_refs: List[Dict[str, str]] = []
     med_refs: List[Dict[str, str]] = []
@@ -1460,21 +1540,25 @@ async def handle_fhir_upsert_resource(
     logical_id = str(payload_copy["id"])
 
     # Enforce optimistic concurrency (If-Match: W/"{versionId}") on existing resource updates
+    dialect = get_session_dialect_name(session)
     if_match_raw = (ctx.if_match or str(params.get("if_match") or "")).strip()
-    existing_stmt = select(HealthResource).where(
-        HealthResource.profile_id == ctx.profile_id,
-        HealthResource.status != "deleted",
+    existing_stmt = (
+        select(HealthResource)
+        .where(
+            HealthResource.profile_id == ctx.profile_id,
+            HealthResource.status != "deleted",
+            build_logical_id_sql_filter(resource_type, logical_id, dialect_name=dialect),
+        )
+        .limit(5)
     )
     existing_match: Optional[HealthResource] = None
     existing_clean_ver: Optional[str] = None
     for row in (await session.execute(existing_stmt)).scalars().all():
-        row_rt = _CASE_INSENSITIVE_TYPE_MAP.get((row.resource_type or "").lower(), row.resource_type)
-        if row_rt == resource_type:
-            clean_d, _ = _load_clean_fhir_from_row(row)
-            if logical_id in (clean_d["id"], row.id, row.source_id):
-                existing_match = row
-                existing_clean_ver = str((clean_d.get("meta") or {}).get("versionId") or "1")
-                break
+        clean_d, _ = _load_clean_fhir_from_row(row)
+        if logical_id in (clean_d["id"], row.id, row.source_id):
+            existing_match = row
+            existing_clean_ver = str((clean_d.get("meta") or {}).get("versionId") or "1")
+            break
 
     if if_match_raw:
         expected_ver = if_match_raw.replace("W/", "").strip('"').strip()
@@ -1584,36 +1668,45 @@ async def handle_fhir_bulk_export_start(
     await ensure_canonical_patient_resource(session, profile_id=ctx.profile_id)
     await session.flush()
 
-    stmt = (
-        select(HealthResource)
-        .where(
-            HealthResource.profile_id == ctx.profile_id,
-            HealthResource.status != "deleted",
-        )
-        .order_by(HealthResource.resource_type, HealthResource.id)
-    )
-    rows = (await session.execute(stmt)).scalars().all()
+    export_allowed_types = [
+        rt
+        for rt in REST_SUPPORTED_R4_RESOURCE_TYPES
+        if (allowed_types is None or rt in allowed_types)
+        and (resolve_resource_scope(rt) in ctx.scopes or "health.*" in ctx.scopes)
+    ]
 
     grouped_ndjson: Dict[str, List[str]] = {}
-    for row in rows:
-        row_rt = _CASE_INSENSITIVE_TYPE_MAP.get((row.resource_type or "").lower(), row.resource_type)
-        if not row_rt or row_rt not in REST_SUPPORTED_R4_RESOURCE_TYPES:
-            continue
-        if allowed_types is not None and row_rt not in allowed_types:
-            continue
-        req_scope = resolve_resource_scope(row_rt)
-        if req_scope not in ctx.scopes and "health.*" not in ctx.scopes:
-            continue
-        if since_filters and not _matches_date_filters(row.updated_at or row.effective_at, since_filters):
-            continue
-
-        clean_res, is_untrusted = _load_clean_fhir_from_row(row)
-        if row_rt == "Patient":
-            clean_res["id"] = ctx.profile_id
-        _propagate_taint_if_untrusted(ctx, is_untrusted)
-        model_cls = get_r4_model_class(row_rt)
-        val_res = model_cls.model_validate(clean_res).model_dump(mode="json", exclude_none=True)
-        grouped_ndjson.setdefault(row_rt, []).append(json.dumps(val_res, separators=(",", ":"), sort_keys=True))
+    if export_allowed_types:
+        export_where: List[Any] = [
+            HealthResource.profile_id == ctx.profile_id,
+            HealthResource.status != "deleted",
+            func.lower(HealthResource.resource_type).in_([rt.lower() for rt in export_allowed_types]),
+        ]
+        if since_filters:
+            export_where.extend(
+                build_fhir_date_sql_filters(
+                    func.coalesce(HealthResource.updated_at, HealthResource.effective_at),
+                    since_filters,
+                    _parse_date_filter_token,
+                )
+            )
+        stmt = (
+            select(HealthResource)
+            .where(*export_where)
+            .order_by(HealthResource.resource_type, HealthResource.id)
+        )
+        rows = (await session.execute(stmt)).scalars().all()
+        for row in rows:
+            row_rt = _CASE_INSENSITIVE_TYPE_MAP.get((row.resource_type or "").lower(), row.resource_type)
+            if not row_rt:
+                continue
+            clean_res, is_untrusted = _load_clean_fhir_from_row(row)
+            if row_rt == "Patient":
+                clean_res["id"] = ctx.profile_id
+            _propagate_taint_if_untrusted(ctx, is_untrusted)
+            model_cls = get_r4_model_class(row_rt)
+            val_res = model_cls.model_validate(clean_res).model_dump(mode="json", exclude_none=True)
+            grouped_ndjson.setdefault(row_rt, []).append(json.dumps(val_res, separators=(",", ":"), sort_keys=True))
 
     now = utc_now()
     job_id = str(uuid.uuid4())

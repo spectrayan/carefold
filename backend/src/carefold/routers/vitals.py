@@ -33,6 +33,11 @@ from yarvelle_core.audit.logger import record_audit
 from yarvelle_core.auth.ports import UserProfile
 from carefold.clinical.bmi import calculate_adult_bmi, calculate_pediatric_bmi_percentile
 from carefold.clinical.vitals import calculate_diurnal_bp_trends, normalize_fhir_vitals
+from carefold.fhir.sql_pushdown import (
+    build_code_sql_filter,
+    build_observation_coding_rows,
+    get_session_dialect_name,
+)
 from carefold.models import HealthResource
 from yarvelle_core.db.models import Profile
 from yarvelle_core.logging import get_logger
@@ -463,6 +468,14 @@ async def create_profile_vitals(
         recorded_at=now_utc,
     )
     db.add(hr)
+    coding_rows = build_observation_coding_rows(
+        resource_id=new_id,
+        profile_id=profile.id,
+        fhir_data=fhir_obs,
+        resource_type="Observation",
+    )
+    if coding_rows:
+        db.add_all(coding_rows)
     try:
         await db.commit()
     except IntegrityError:
@@ -525,43 +538,38 @@ async def list_profile_vitals(
     db: AsyncSession = Depends(get_db),
     user: UserProfile = Depends(get_current_user),
 ) -> VitalsListResponse:
-    """Lists historical vitals observations with pagination and privacy suppression."""
-    stmt = select(HealthResource).where(HealthResource.profile_id == profile.id)
+    """Lists historical vitals observations with SQL filtering, pagination, and privacy suppression."""
+    dialect_name = get_session_dialect_name(db)
+    conditions = [HealthResource.profile_id == profile.id]
 
     if status_filter != "all":
-        stmt = stmt.where(HealthResource.status == status_filter)
+        conditions.append(HealthResource.status == status_filter)
     if resource_type:
-        stmt = stmt.where(HealthResource.resource_type == resource_type)
+        conditions.append(func.lower(HealthResource.resource_type) == resource_type.lower())
     if start_date:
-        stmt = stmt.where(HealthResource.effective_at >= start_date)
+        conditions.append(HealthResource.effective_at >= start_date)
     if end_date:
-        stmt = stmt.where(HealthResource.effective_at <= end_date)
-
-    # Order chronologically descending
-    stmt = stmt.order_by(HealthResource.effective_at.desc(), HealthResource.recorded_at.desc())
-
-    res = await db.execute(stmt)
-    all_matching = list(res.scalars().all())
-
-    # Optional LOINC code filter
+        conditions.append(HealthResource.effective_at <= end_date)
     if loinc_code:
-        filtered = []
-        for r in all_matching:
-            data = r.data or {}
-            coding_list = data.get("code", {}).get("coding", [])
-            has_code = any(c.get("code") == loinc_code for c in coding_list if isinstance(c, dict))
-            if not has_code:
-                for comp in data.get("component", []):
-                    comp_codings = comp.get("code", {}).get("coding", [])
-                    if any(c.get("code") == loinc_code for c in comp_codings if isinstance(c, dict)):
-                        has_code = True
-                        break
-            if has_code:
-                filtered.append(r)
-        all_matching = filtered
+        conditions.append(
+            build_code_sql_filter(
+                loinc_code,
+                component_only_or_top=True,
+                dialect_name=dialect_name,
+            )
+        )
 
-    total = len(all_matching)
-    paged_records = all_matching[offset : offset + limit]
+    count_stmt = select(func.count()).select_from(HealthResource).where(*conditions)
+    total = int((await db.execute(count_stmt)).scalar_one() or 0)
+
+    page_stmt = (
+        select(HealthResource)
+        .where(*conditions)
+        .order_by(HealthResource.effective_at.desc(), HealthResource.recorded_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    paged_records = list((await db.execute(page_stmt)).scalars().all())
 
     hide_weight = _is_weight_hidden(profile)
     items = []
