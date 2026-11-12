@@ -1,0 +1,72 @@
+# ============================================================================
+# Carefold Gmail MCP Classification Heuristics & Defaults (#343)
+# ============================================================================
+
+allowed_labels:
+  - appointments
+  - school-summaries
+  - healthcare
+  - INBOX
+
+defaults:
+  appointment_hour: 9
+  appointment_minute: 0
+  provider_fallback: "Healthcare Provider"
+  specialty_fallback: "General"
+
+provider_line_prefixes:
+  - "provider:"
+  - "doctor:"
+  - "clinic:"
+  - "with:"
+  - "physician:"
+
+school_exclusion_phrases:
+  - "appointment confirmation"
+  - "your visit with dr"
+
+school_keywords:
+  - school
+  - classroom
+  - guardian
+  - immunization
+  - immunisation
+  - physical form
+  - health form
+  - permission slip
+  - nurse
+  - camp
+  - grade
+  - homework
+  - missing assignment
+
+appointment_keywords:
+  - appointment
+  - visit
+  - scheduled
+  - confirmation
+  - check-in
+  - clinic
+  - dr.
+  - doctor
+  - pediatrics
+  - cardiology
+  - dermatology
+  - dentist
+  - ophthalmology
+  - orthopedics
+
+specialty_hints:
+  cardiology: Cardiology
+  pediatric: Pediatrics
+  dermatology: Dermatology
+  neurology: Neurology
+  endocrinology: Endocrinology
+  orthopedic: Orthopedics
+  ophthalmology: Ophthalmology
+  vision: Ophthalmology
+  dental: Dentistry
+  dentist: Dentistry
+  oncology: Oncology
+  gastro: Gastroenterology
+  pulmonology: Pulmonology

@@ -164,13 +164,14 @@ class TestConcurrencyResourceLoader:
                     errors.append(f"reader_patterns: {type(e).__name__}: {e}")
 
         def invalidator():
-            import time
-            while not stop:
+            for _ in range(150):
                 try:
                     loader.clear_cache()
-                    time.sleep(0.002)
+                    threading.Event().wait(0.0)
                 except Exception as e:
                     errors.append(f"invalidator: {type(e).__name__}: {e}")
+            nonlocal stop
+            stop = True
 
         threads = [
             threading.Thread(target=reader_disclaimers),
@@ -182,12 +183,9 @@ class TestConcurrencyResourceLoader:
         for t in threads:
             t.start()
 
-        import time
-        time.sleep(0.3)
-        stop = True
-
         for t in threads:
-            t.join()
+            t.join(timeout=5.0)
+        stop = True
 
         assert len(errors) == 0, f"Errors during concurrent invalidation: {errors[:5]}"
 

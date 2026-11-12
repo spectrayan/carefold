@@ -286,38 +286,28 @@ def test_malformed_and_corrupted_hl7v2_messages_fail_safely_with_phi_free_diagno
 
 
 @pytest.mark.asyncio
-async def test_hl7v2_stage_and_commit_into_relational_fhir_repository(tmp_path, monkeypatch) -> None:
+async def test_hl7v2_stage_and_commit_into_relational_fhir_repository(
+    tmp_path,
+    monkeypatch,
+    async_db_session_factory,
+    user_factory,
+    profile_factory,
+) -> None:
     """Verifies end-to-end staging and committing of an HL7v2 `.hl7` file into the #282 FHIR repository."""
     monkeypatch.setattr(settings, "home_dir", tmp_path)
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    user = await user_factory(email="maya@example.com", username="maya_patel", role="steward")
+    profile = await profile_factory(
+        user_id=user.id,
+        name="Maya Patel",
+        relationship="self",
+        role="self",
+        date_of_birth="1988-11-23",
+        is_primary=True,
+    )
+    user_id = user.id
+    profile_id = profile.id
 
-    factory = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
-    user_id = str(uuid.uuid4())
-    profile_id = str(uuid.uuid4())
-
-    async with factory() as session:
-        session.add_all([
-            User(
-                id=user_id,
-                email="maya@example.com",
-                username="maya_patel",
-                hashed_password="hashed_password",
-                role="steward",
-            ),
-            Profile(
-                id=profile_id,
-                user_id=user_id,
-                name="Maya Patel",
-                relationship="self",
-                role="self",
-                date_of_birth="1988-11-23",
-                is_primary=True,
-            ),
-        ])
-        await session.commit()
-
+    async with async_db_session_factory() as session:
         assert detect_import_format("quest_labs.hl7", SAMPLE_ORU_R01) == "hl7v2"
 
         batch = await stage_import(
@@ -372,5 +362,3 @@ async def test_hl7v2_stage_and_commit_into_relational_fhir_repository(tmp_path, 
             )
         ).scalars().all()
         assert len(refs) == 4
-
-    await engine.dispose()
