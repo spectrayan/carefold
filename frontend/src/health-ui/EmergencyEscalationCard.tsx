@@ -95,7 +95,7 @@ export function EmergencyEscalationCard({
         <a
           data-testid="emergency-call-911-btn"
           href={config.primaryEmergency.telUri}
-          className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-sm shadow-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl bg-emergency hover:bg-red-800 active:bg-red-900 text-emergency-fg font-bold text-sm shadow-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
         >
           <PhoneCall className="w-4 h-4 shrink-0" aria-hidden="true" />
           <span>{config.primaryEmergency.actionText}</span>

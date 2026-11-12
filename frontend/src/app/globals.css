@@ -97,7 +97,7 @@
   --cf-weight-regular: 400; --cf-weight-medium: 500; --cf-weight-semibold: 600; --cf-weight-bold: 700;
 
   /* ---------- Spacing (4px base) ---------- */
-  --cf-space-0: 0;     --cf-space-1: 4px;  --cf-space-2: 8px;  --cf-space-3: 12px;
+  --cf-space-0: 0px;   --cf-space-1: 4px;  --cf-space-2: 8px;  --cf-space-3: 12px;
   --cf-space-4: 16px;  --cf-space-5: 20px; --cf-space-6: 24px; --cf-space-8: 32px;
   --cf-space-10: 40px; --cf-space-12: 48px; --cf-space-16: 64px;
 
@@ -131,7 +131,132 @@
   /* ---------- Z-index ---------- */
   --cf-z-rail: 20; --cf-z-sticky: 30; --cf-z-popover: 40; --cf-z-modal: 50; --cf-z-toast: 60; --cf-z-skip: 70;
 
-  /* ---------- Yarvelle Semantic Tokens (--ui-*) Bridge ---------- */
+  /* ---------- Yarvelle Preset Canonical Tokens (--ui-*) Bridge ---------- */
+  --ui-canvas: var(--cf-canvas);
+  --ui-surface: var(--cf-surface);
+  --ui-surface-2: var(--cf-surface-2);
+  --ui-surface-3: var(--cf-surface-3);
+  --ui-rail: var(--cf-rail);
+  --ui-overlay: var(--cf-overlay);
+  --ui-fg: var(--cf-fg);
+  --ui-fg-muted: var(--cf-fg-muted);
+  --ui-fg-subtle: var(--cf-fg-subtle);
+  --ui-fg-on-primary: var(--cf-fg-on-primary);
+  --ui-fg-link: var(--cf-fg-link);
+  --ui-border: var(--cf-border);
+  --ui-border-strong: var(--cf-border-strong);
+  --ui-primary: var(--cf-primary);
+  --ui-primary-hover: var(--cf-primary-hover);
+  --ui-primary-fg: var(--cf-fg-on-primary);
+  --ui-primary-soft: var(--cf-primary-soft);
+  --ui-primary-soft-fg: var(--cf-primary-soft-fg);
+  --ui-info-bg: var(--cf-info-bg);
+  --ui-info-fg: var(--cf-info-fg);
+  --ui-info-border: var(--cf-info-border);
+  --ui-warn-bg: var(--cf-warn-bg);
+  --ui-warn-fg: var(--cf-warn-fg);
+  --ui-warn-border: var(--cf-warn-border);
+  --ui-danger-bg: var(--cf-danger-bg);
+  --ui-danger-fg: var(--cf-danger-fg);
+  --ui-danger-border: var(--cf-danger-border);
+  --ui-success-bg: var(--cf-success-bg);
+  --ui-success-fg: var(--cf-success-fg);
+  --ui-success-border: var(--cf-success-border);
+  --ui-emergency: var(--cf-emergency);
+  --ui-emergency-fg: var(--cf-emergency-fg);
+  --ui-focus: var(--cf-focus);
+  --ui-focus-offset: var(--cf-focus-offset);
+  --ui-member-1-bg: var(--cf-member-1-bg);
+  --ui-member-1-fg: var(--cf-member-1-fg);
+  --ui-member-2-bg: var(--cf-member-2-bg);
+  --ui-member-2-fg: var(--cf-member-2-fg);
+  --ui-member-3-bg: var(--cf-member-3-bg);
+  --ui-member-3-fg: var(--cf-member-3-fg);
+  --ui-member-4-bg: var(--cf-member-4-bg);
+  --ui-member-4-fg: var(--cf-member-4-fg);
+  --ui-member-5-bg: var(--cf-member-5-bg);
+  --ui-member-5-fg: var(--cf-member-5-fg);
+  --ui-scope-health-bg: #ecfdf5;
+  --ui-scope-health-fg: #065f46;
+  --ui-scope-finance-bg: #ecfeff;
+  --ui-scope-finance-fg: #0e7490;
+  --ui-scope-education-bg: #fdf4ff;
+  --ui-scope-education-fg: #86198f;
+  --ui-scope-household-bg: #fffbeb;
+  --ui-scope-household-fg: #92400e;
+  --ui-risk-low-bg: var(--cf-success-bg);
+  --ui-risk-low-fg: var(--cf-success-fg);
+  --ui-risk-low-border: var(--cf-success-border);
+  --ui-risk-medium-bg: var(--cf-warn-bg);
+  --ui-risk-medium-fg: var(--cf-warn-fg);
+  --ui-risk-medium-border: var(--cf-warn-border);
+  --ui-risk-high-bg: #fff7ed;
+  --ui-risk-high-fg: #c2410c;
+  --ui-risk-high-border: #fdba74;
+  --ui-risk-critical-bg: var(--cf-danger-bg);
+  --ui-risk-critical-fg: var(--cf-danger-fg);
+  --ui-risk-critical-border: var(--cf-danger-border);
+  --ui-font-sans: var(--cf-font-sans);
+  --ui-font-display: var(--cf-font-display);
+  --ui-font-mono: var(--cf-font-mono);
+  --ui-text-xs: var(--cf-text-xs);
+  --ui-leading-xs: var(--cf-leading-xs);
+  --ui-text-sm: var(--cf-text-sm);
+  --ui-leading-sm: var(--cf-leading-sm);
+  --ui-text-md: var(--cf-text-md);
+  --ui-leading-md: var(--cf-leading-md);
+  --ui-text-lg: var(--cf-text-lg);
+  --ui-leading-lg: var(--cf-leading-lg);
+  --ui-text-xl: var(--cf-text-xl);
+  --ui-leading-xl: var(--cf-leading-xl);
+  --ui-text-2xl: var(--cf-text-2xl);
+  --ui-leading-2xl: var(--cf-leading-2xl);
+  --ui-text-3xl: var(--cf-text-3xl);
+  --ui-leading-3xl: var(--cf-leading-3xl);
+  --ui-text-4xl: var(--cf-text-4xl);
+  --ui-leading-4xl: var(--cf-leading-4xl);
+  --ui-weight-regular: var(--cf-weight-regular);
+  --ui-weight-medium: var(--cf-weight-medium);
+  --ui-weight-semibold: var(--cf-weight-semibold);
+  --ui-weight-bold: var(--cf-weight-bold);
+  --ui-space-0: var(--cf-space-0);
+  --ui-space-1: var(--cf-space-1);
+  --ui-space-2: var(--cf-space-2);
+  --ui-space-3: var(--cf-space-3);
+  --ui-space-4: var(--cf-space-4);
+  --ui-space-5: var(--cf-space-5);
+  --ui-space-6: var(--cf-space-6);
+  --ui-space-8: var(--cf-space-8);
+  --ui-space-10: var(--cf-space-10);
+  --ui-space-12: var(--cf-space-12);
+  --ui-space-16: var(--cf-space-16);
+  --ui-radius-sm: var(--cf-radius-sm);
+  --ui-radius-md: var(--cf-radius-md);
+  --ui-radius-lg: var(--cf-radius-lg);
+  --ui-radius-xl: var(--cf-radius-xl);
+  --ui-radius-full: var(--cf-radius-full);
+  --ui-shadow-0: var(--cf-shadow-0);
+  --ui-shadow-1: var(--cf-shadow-1);
+  --ui-shadow-2: var(--cf-shadow-2);
+  --ui-shadow-3: var(--cf-shadow-3);
+  --ui-tap: var(--cf-tap);
+  --ui-rail-w: var(--cf-rail-w);
+  --ui-content-max: var(--cf-content-max);
+  --ui-content-wide: var(--cf-content-wide);
+  --ui-topbar-h: var(--cf-topbar-h);
+  --ui-tabbar-h: var(--cf-tabbar-h);
+  --ui-ease: var(--cf-ease);
+  --ui-duration-fast: var(--cf-duration-fast);
+  --ui-duration-base: var(--cf-duration-base);
+  --ui-duration-slow: var(--cf-duration-slow);
+  --ui-z-rail: var(--cf-z-rail);
+  --ui-z-sticky: var(--cf-z-sticky);
+  --ui-z-popover: var(--cf-z-popover);
+  --ui-z-modal: var(--cf-z-modal);
+  --ui-z-toast: var(--cf-z-toast);
+  --ui-z-skip: var(--cf-z-skip);
+
+  /* ---------- Yarvelle Legacy Semantic Aliases (--ui-bg-* / --ui-action-*) ---------- */
   --ui-bg-canvas: var(--cf-canvas);
   --ui-bg-surface: var(--cf-surface);
   --ui-bg-surface-2: var(--cf-surface-2);
@@ -139,12 +264,7 @@
   --ui-bg-rail: var(--cf-rail);
   --ui-bg-overlay: var(--cf-overlay);
   --ui-fg-default: var(--cf-fg);
-  --ui-fg-muted: var(--cf-fg-muted);
-  --ui-fg-subtle: var(--cf-fg-subtle);
-  --ui-fg-on-primary: var(--cf-fg-on-primary);
-  --ui-fg-link: var(--cf-fg-link);
   --ui-border-default: var(--cf-border);
-  --ui-border-strong: var(--cf-border-strong);
   --ui-action-primary: var(--cf-primary);
   --ui-action-primary-hover: var(--cf-primary-hover);
   --ui-action-primary-soft: var(--cf-primary-soft);
@@ -163,28 +283,7 @@
   --ui-status-success-bg: var(--cf-success-bg);
   --ui-status-success-fg: var(--cf-success-fg);
   --ui-status-success-border: var(--cf-success-border);
-  --ui-emergency: var(--cf-emergency);
-  --ui-emergency-fg: var(--cf-emergency-fg);
-  --ui-member-1-bg: var(--cf-member-1-bg);
-  --ui-member-1-fg: var(--cf-member-1-fg);
-  --ui-member-2-bg: var(--cf-member-2-bg);
-  --ui-member-2-fg: var(--cf-member-2-fg);
-  --ui-member-3-bg: var(--cf-member-3-bg);
-  --ui-member-3-fg: var(--cf-member-3-fg);
-  --ui-member-4-bg: var(--cf-member-4-bg);
-  --ui-member-4-fg: var(--cf-member-4-fg);
-  --ui-member-5-bg: var(--cf-member-5-bg);
-  --ui-member-5-fg: var(--cf-member-5-fg);
   --ui-focus-ring: var(--cf-focus);
-  --ui-radius-sm: var(--cf-radius-sm);
-  --ui-radius-md: var(--cf-radius-md);
-  --ui-radius-lg: var(--cf-radius-lg);
-  --ui-radius-xl: var(--cf-radius-xl);
-  --ui-radius-full: var(--cf-radius-full);
-  --ui-shadow-0: var(--cf-shadow-0);
-  --ui-shadow-1: var(--cf-shadow-1);
-  --ui-shadow-2: var(--cf-shadow-2);
-  --ui-shadow-3: var(--cf-shadow-3);
 
   /* ---------- Legacy / shadcn compatibility bridge ---------- */
   --background: var(--cf-canvas);
@@ -200,7 +299,8 @@
   --ring: var(--cf-focus);
 }
 
-.dark {
+.dark,
+[data-theme="dark"] {
   color-scheme: dark;
 
   --cf-canvas:        #0b1220;
@@ -244,6 +344,18 @@
   --cf-shadow-1: 0 1px 2px rgb(0 0 0 / 0.30);
   --cf-shadow-2: 0 8px 20px -4px rgb(0 0 0 / 0.50);
   --cf-shadow-3: 0 24px 48px -12px rgb(0 0 0 / 0.60);
+
+  --ui-scope-health-bg: rgb(16 185 129 / 0.15);
+  --ui-scope-health-fg: #6ee7b7;
+  --ui-scope-finance-bg: rgb(6 182 212 / 0.15);
+  --ui-scope-finance-fg: #67e8f9;
+  --ui-scope-education-bg: rgb(217 70 239 / 0.15);
+  --ui-scope-education-fg: #f0abfc;
+  --ui-scope-household-bg: rgb(245 158 11 / 0.15);
+  --ui-scope-household-fg: #fde68a;
+  --ui-risk-high-bg: rgb(249 115 22 / 0.12);
+  --ui-risk-high-fg: #fdba74;
+  --ui-risk-high-border: rgb(249 115 22 / 0.35);
 
   /* ---------- Legacy / shadcn compatibility bridge ---------- */
   --background: var(--cf-canvas);
