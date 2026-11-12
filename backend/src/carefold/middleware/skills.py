@@ -17,13 +17,21 @@ import logging
 from pathlib import Path
 from typing import Any, Optional, Sequence, Union
 
-from yarvelle_core.middleware.skills import compose_skills_system_prompt
+try:
+    from yarvelle_core.middleware.skills import compose_skills_system_prompt
+except ImportError:  # yarvelle-core <= 0.2.4 before Handlebars skills prompt extraction
+    compose_skills_system_prompt = None  # type: ignore[assignment]
 
+from carefold.templates.engine import render_template
 import carefold  # noqa: F401 - ensures health pack template overrides are registered
 
 logger = logging.getLogger(__name__)
 
-CAREFOLD_SKILLS_PROMPT = compose_skills_system_prompt(pack_id="health") + "\n"
+CAREFOLD_SKILLS_PROMPT = (
+    compose_skills_system_prompt(pack_id="health") + "\n"
+    if compose_skills_system_prompt is not None
+    else render_template("skills_middleware", {}) + "\n"
+)
 
 try:
     from deepagents.backends.filesystem import FilesystemBackend

@@ -528,15 +528,19 @@ class ResourceLoader:
         """Formats error message template for given CFD-*/YRV-* code or slug safely."""
         if self.resources_dir == Path(__file__).parent.resolve():
             import carefold  # noqa: F401 - ensures CFD pack error catalog is registered
-            from yarvelle_core.errors.catalog import get_error_catalog
+            try:
+                from yarvelle_core.errors.catalog import get_error_catalog
+            except ImportError:
+                get_error_catalog = None  # type: ignore[assignment]
 
-            spec = get_error_catalog().get(error_key)
-            if spec is not None:
-                try:
-                    safe_kwargs = collections.defaultdict(str, kwargs)
-                    return spec.template.format_map(safe_kwargs)
-                except Exception:
-                    return spec.template
+            if get_error_catalog is not None:
+                spec = get_error_catalog().get(error_key)
+                if spec is not None:
+                    try:
+                        safe_kwargs = collections.defaultdict(str, kwargs)
+                        return spec.template.format_map(safe_kwargs)
+                    except Exception:
+                        return spec.template
         err_def = self.get_errors().get("errors", {}).get(error_key, {})
         msg_template = str(err_def.get("template") or err_def.get("message", error_key))
         try:
@@ -549,11 +553,15 @@ class ResourceLoader:
         """Returns the HTTP status code for given CFD-*/YRV-* code or slug."""
         if self.resources_dir == Path(__file__).parent.resolve():
             import carefold  # noqa: F401 - ensures CFD pack error catalog is registered
-            from yarvelle_core.errors.catalog import get_error_catalog
+            try:
+                from yarvelle_core.errors.catalog import get_error_catalog
+            except ImportError:
+                get_error_catalog = None  # type: ignore[assignment]
 
-            spec = get_error_catalog().get(error_key)
-            if spec is not None:
-                return spec.http_status
+            if get_error_catalog is not None:
+                spec = get_error_catalog().get(error_key)
+                if spec is not None:
+                    return spec.http_status
         err_def = self.get_errors().get("errors", {}).get(error_key, {})
         return int(err_def.get("http_status", err_def.get("status_code", 500)))
 
