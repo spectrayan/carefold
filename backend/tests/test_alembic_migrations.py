@@ -18,7 +18,6 @@ import tempfile
 import uuid
 
 import alembic.command
-import alembic.script
 from alembic.config import Config
 import pytest
 from sqlalchemy import create_engine, inspect, text
@@ -33,12 +32,6 @@ from carefold.db.session import (
     init_db,
     run_alembic_migrations,
 )
-
-EXPECTED_CORE_HEAD = (
-    alembic.script.ScriptDirectory.from_config(get_alembic_config()).get_current_head()
-    or "0014_neutralize_profile_columns"
-)
-HAS_0014_MIGRATION = EXPECTED_CORE_HEAD == "0014_neutralize_profile_columns"
 
 EXPECTED_BASELINE_TABLES = {
     "users",
@@ -181,21 +174,18 @@ def test_upgrade_head_fresh_sqlite():
         # Assert 36 tables at head
         assert len(EXPECTED_HEAD_TABLES) == 36
 
-        # Assert head revision matches installed yarvelle-core chain
+        # Assert head revision is 0014_neutralize_profile_columns
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == EXPECTED_CORE_HEAD
+        assert curr_ver == "0014_neutralize_profile_columns"
 
-        # Assert expected profile_consents / viewer_invites columns exist at head
+        # Assert 0014 neutralized column names exist at head
         pc_cols = {c["name"] for c in insp.get_columns("profile_consents")}
+        assert "allow_assist" in pc_cols
+        assert "allow_clinical" not in pc_cols
+
         vi_cols = {c["name"] for c in insp.get_columns("viewer_invites")}
-        if HAS_0014_MIGRATION:
-            assert "allow_assist" in pc_cols
-            assert "allow_clinical" not in pc_cols
-            assert "view_records" in vi_cols
-            assert "view_clinical" not in vi_cols
-        else:
-            assert "allow_clinical" in pc_cols
-            assert "view_clinical" in vi_cols
+        assert "view_records" in vi_cols
+        assert "view_clinical" not in vi_cols
 
         # Assert scope_grants table exists and has expected columns
         sg_cols = {c["name"] for c in insp.get_columns("scope_grants")}
@@ -323,7 +313,7 @@ def test_downgrade_to_0010_i18n_and_locale_storage():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == EXPECTED_CORE_HEAD
+        assert curr_ver == "0014_neutralize_profile_columns"
 
         alembic.command.downgrade(cfg, "0010_i18n_and_locale_storage")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -343,7 +333,7 @@ def test_downgrade_to_0010_i18n_and_locale_storage():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == EXPECTED_CORE_HEAD
+        assert curr_ver_up == "0014_neutralize_profile_columns"
 
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
@@ -360,7 +350,7 @@ def test_downgrade_to_0008_routines_mcp_and_drafts():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == EXPECTED_CORE_HEAD
+        assert curr_ver == "0014_neutralize_profile_columns"
 
         alembic.command.downgrade(cfg, "0008_routines_mcp_and_drafts")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -377,7 +367,7 @@ def test_downgrade_to_0008_routines_mcp_and_drafts():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == EXPECTED_CORE_HEAD
+        assert curr_ver_up == "0014_neutralize_profile_columns"
 
 
 def test_downgrade_to_0007_connectors_and_consent():
@@ -388,7 +378,7 @@ def test_downgrade_to_0007_connectors_and_consent():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == EXPECTED_CORE_HEAD
+        assert curr_ver == "0014_neutralize_profile_columns"
 
         alembic.command.downgrade(cfg, "0007_connectors_and_consent")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -406,7 +396,7 @@ def test_downgrade_to_0007_connectors_and_consent():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == EXPECTED_CORE_HEAD
+        assert curr_ver_up == "0014_neutralize_profile_columns"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_6_TABLES.issubset(tables_up)
@@ -421,7 +411,7 @@ def test_downgrade_to_0006_preventive_and_school_forms():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == EXPECTED_CORE_HEAD
+        assert curr_ver == "0014_neutralize_profile_columns"
 
         alembic.command.downgrade(cfg, "0006_preventive_and_school_forms")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -438,7 +428,7 @@ def test_downgrade_to_0006_preventive_and_school_forms():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == EXPECTED_CORE_HEAD
+        assert curr_ver_up == "0014_neutralize_profile_columns"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_5_TABLES.issubset(tables_up)
@@ -453,7 +443,7 @@ def test_downgrade_to_0005_clinical_domain_records():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == EXPECTED_CORE_HEAD
+        assert curr_ver == "0014_neutralize_profile_columns"
 
         alembic.command.downgrade(cfg, "0005_clinical_domain_records")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -470,7 +460,7 @@ def test_downgrade_to_0005_clinical_domain_records():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == EXPECTED_CORE_HEAD
+        assert curr_ver_up == "0014_neutralize_profile_columns"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_4_TABLES.issubset(tables_up)
@@ -568,7 +558,7 @@ def test_downgrade_to_0004_policy_gate_and_vault():
         # Re-upgrade to head
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == EXPECTED_CORE_HEAD
+        assert curr_ver_up == "0014_neutralize_profile_columns"
 
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
@@ -973,10 +963,7 @@ def test_offline_sql_generation():
     assert "CREATE TABLE users" in pg_sql
     assert "CREATE TABLE attachments" in pg_sql
     assert "CREATE TABLE audit_events" in pg_sql
-    if HAS_0014_MIGRATION:
-        assert "allow_assist" in pg_sql
-    else:
-        assert "allow_clinical" in pg_sql
+    assert "allow_assist" in pg_sql
 
     # SQLite offline SQL up to 0013_turn_tasks (0014 uses SQLite batch reflection)
     buf = io.StringIO()
@@ -991,7 +978,6 @@ def test_offline_sql_generation():
     assert "CREATE TABLE audit_events" in sql_text
 
 
-@pytest.mark.skipif(not HAS_0014_MIGRATION, reason="Requires yarvelle-core 0014 migration")
 def test_0014_neutralize_profile_columns_upgrade_and_downgrade():
     """Tests 0013 -> 0014 column & value migration and 0014 -> 0013 downgrade."""
     engine = create_engine("sqlite:///:memory:", poolclass=StaticPool)
@@ -1038,7 +1024,7 @@ def test_0014_neutralize_profile_columns_upgrade_and_downgrade():
         conn.commit()
 
         alembic.command.upgrade(cfg, "head")
-        assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == EXPECTED_CORE_HEAD
+        assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0014_neutralize_profile_columns"
 
         assert conn.execute(text("SELECT allow_assist FROM profile_consents WHERE id = 'pc-0014'")).scalar() == 1
         assert conn.execute(text("SELECT view_records FROM viewer_invites WHERE id = 'vi-0014'")).scalar() == 1

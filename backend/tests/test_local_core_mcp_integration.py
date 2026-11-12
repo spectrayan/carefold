@@ -31,8 +31,6 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-pytest.importorskip("yarvelle_core.errors")
-
 import carefold  # noqa: F401 — ensures health pack resources & CFD catalog are registered
 from carefold.db.base import Base
 from carefold.db.models import Profile

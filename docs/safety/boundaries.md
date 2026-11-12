@@ -64,7 +64,7 @@ flowchart TD
 
 ## Buffered Answer Release & Safety Guards (`safety.guards`)
 
-Carefold configures `safety.guards` in `backend/src/carefold/pack.yaml` (requires `yarvelle-core>=0.2.4,<0.3.0`):
+Carefold configures `safety.guards` in `backend/src/carefold/pack.yaml` (requires `yarvelle-core>=0.2.5,<0.3.0`):
 
 - **Buffered release (`release: buffered`)**: Answer tokens are held in the service until the final output check passes, then emitted as a single `token` event before `suggestions` and `done`. If an answer is refused, its text is never sent to the client.
 - **Deterministic policy first (`CarefoldHealthSafetyPolicy`)**: Carefold's deterministic clinical classifier (`resources/refusal_patterns.yaml`) and emergency red-flag detector always run first and enforce all hard clinical refusals (`forbidden_intent:dose`, `forbidden_intent:prescribe`, `forbidden_intent:instruct_stop_medication`, `forbidden_intent:replace_emergency_care`, `emergency_red_flag`) and soft diagnosis boundary warnings (`forbidden_intent:diagnose`).

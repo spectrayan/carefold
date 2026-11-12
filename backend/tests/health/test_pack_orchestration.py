@@ -50,17 +50,9 @@ def _agent_dirs() -> set[str]:
 def test_pack_yaml_orchestration_validates_as_manifest() -> None:
     data = yaml.safe_load(PACK_YAML.read_text(encoding="utf-8"))
     assert isinstance(data, dict)
-    if "error_prefix" not in PackManifest.model_fields:
-        data = {k: v for k, v in data.items() if k != "error_prefix"}
-        if isinstance(data.get("scopes"), list):
-            data["scopes"] = [
-                {**s, "sensitivity": "phi"}
-                if isinstance(s, dict) and s.get("sensitivity") == "restricted"
-                else s
-                for s in data["scopes"]
-            ]
     manifest = PackManifest.model_validate(data)
-    assert manifest.requires_core == ">=0.2.4,<0.3.0"
+    assert manifest.requires_core == ">=0.2.5,<0.3.0"
+    assert manifest.error_prefix == "CFD"
     assert manifest.orchestration is not None
     orch = manifest.orchestration
     assert orch.default_agent == "appointment-prep-coordinator"
@@ -80,13 +72,16 @@ def test_get_pack_orchestration_and_core_compat() -> None:
     import carefold
 
     pack = carefold.get_pack()
-    assert pack.requires_core == ">=0.2.4,<0.3.0"
+    assert pack.requires_core == ">=0.2.5,<0.3.0"
+    assert pack.error_prefix == "CFD"
+    assert pack.provides is not None
+    assert pack.provides.errors_file == "resources/errors.yaml"
     assert pack.routing_hints is not None
     assert pack.routing_hints.patterns_resource == "resources/routing_patterns.yaml"
     assert getattr(pack.routing_hints, "patterns_path", None) is None
     assert pack.orchestration is not None
     validate_pack_spec(pack, core_version=core_version)
-    assert Version(core_version) >= Version("0.2.4")
+    assert Version(core_version) >= Version("0.2.5")
 
 
 def test_orchestration_referenced_agents_exist_on_disk() -> None:

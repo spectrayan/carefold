@@ -102,67 +102,8 @@ class HealthSafetyPolicy(metaclass=_HealthSafetyPolicyMeta):
 
 CarefoldHealthSafetyPolicy = HealthSafetyPolicy
 
-
-def adapt_legacy_core_turn_kwargs(
-    service: Any,
-    args: tuple[Any, ...],
-    kwargs: dict[str, Any],
-    core_service_cls: Any,
-) -> tuple[dict[str, Any], Optional[list[dict[str, Any]]]]:
-    """Bridges allow_assist -> allow_clinical and assist gating when running on yarvelle-core 0.2.4."""
-    import inspect
-
-    params = inspect.signature(core_service_cls.execute_turn).parameters
-    if "allow_assist" in params:
-        return kwargs, None
-
-    adapted = dict(kwargs)
-    if "allow_assist" in adapted and "allow_clinical" not in adapted:
-        adapted["allow_clinical"] = bool(adapted["allow_assist"])
-
-    allow_flag = adapted.get("allow_assist", adapted.get("allow_clinical", True))
-    adapted.pop("allow_assist", None)
-    agent_id = adapted.get("agent_id") if "agent_id" in adapted else (args[3] if len(args) > 3 else None)
-    if not allow_flag and agent_id:
-        try:
-            from yarvelle_core.constants.api import SSE_EVENT_ERROR
-            from yarvelle_core.loaders.agent_loader import find_agent_dir, load_agent
-
-            ws_root = getattr(service, "workspace_root", None)
-            if ws_root is not None:
-                agent_dir = find_agent_dir(ws_root / "agents", str(agent_id))
-                if agent_dir is not None:
-                    agent, _, _ = load_agent(agent_dir, ws_root / "skills")
-                    rc = getattr(agent.risk_class, "value", str(agent.risk_class))
-                    if rc == "assist":
-                        err_msg = (
-                            f"Agent '{agent_id}' is classified as assist. "
-                            "Execution is forbidden without explicit consent (allow_assist=True)."
-                        )
-                        return adapted, [{"type": SSE_EVENT_ERROR, "message": err_msg}]
-        except Exception:
-            pass
-
-    return adapted, None
-
-
-def adapt_legacy_core_chat_request(request: Any, core_service_cls: Any) -> Any:
-    """Bridges raw dict chat requests carrying allow_assist onto yarvelle-core 0.2.4."""
-    import inspect
-
-    if not isinstance(request, dict):
-        return request
-    if "allow_assist" in inspect.signature(core_service_cls.execute_turn).parameters:
-        return request
-    if "allow_assist" in request and "allow_clinical" not in request:
-        return {**request, "allow_clinical": bool(request["allow_assist"])}
-    return request
-
-
 __all__ = [
     "HealthSafetyPolicy",
     "CarefoldHealthSafetyPolicy",
-    "adapt_legacy_core_chat_request",
-    "adapt_legacy_core_turn_kwargs",
 ]
 

@@ -19,21 +19,6 @@ from typing import Any
 from yarvelle_core.schemas.chat import *  # noqa: F401, F403
 import yarvelle_core.schemas.chat as _target_module
 
-if hasattr(_target_module, "ChatRequestBody") and "allow_assist" not in _target_module.ChatRequestBody.model_fields:
-
-    class _CompatChatRequestBody(_target_module.ChatRequestBody):  # type: ignore[misc]
-        allow_assist: bool = False
-
-        def model_post_init(self, __context: Any) -> None:
-            super().model_post_init(__context)
-            if "allow_assist" in self.model_fields_set and "allow_clinical" not in self.model_fields_set:
-                self.allow_clinical = self.allow_assist
-            elif "allow_clinical" in self.model_fields_set and "allow_assist" not in self.model_fields_set:
-                self.allow_assist = self.allow_clinical
-
-    _target_module.ChatRequestBody = _CompatChatRequestBody  # type: ignore[misc]
-    ChatRequestBody = _CompatChatRequestBody
-
 sys.modules[__name__] = _target_module
 
 

@@ -17,7 +17,6 @@ import tempfile
 import uuid
 
 import alembic.command
-import alembic.script
 from alembic.config import Config
 import pytest
 from sqlalchemy import create_engine, inspect, text
@@ -59,11 +58,8 @@ def test_health_pack_migration_greenfield_sqlite():
         conn.commit()
 
         # Check alembic_version
-        expected_core_head = alembic.script.ScriptDirectory.from_config(
-            get_alembic_config()
-        ).get_current_head()
         core_revs = [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()]
-        assert expected_core_head in core_revs
+        assert "0014_neutralize_profile_columns" in core_revs
 
         # Check alembic_version_health
         health_revs = [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()]
@@ -196,10 +192,7 @@ def test_dual_version_isolation_and_rollback():
         run_all_migrations(conn, enabled_packs=["health"])
         conn.commit()
 
-        expected_core_head = alembic.script.ScriptDirectory.from_config(
-            get_alembic_config()
-        ).get_current_head()
-        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()] == [expected_core_head]
+        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()] == ["0014_neutralize_profile_columns"]
         assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()] == ["health_0002_fhir_ehr_repository"]
 
         # Downgrade core to 0010_i18n_and_locale_storage
@@ -215,7 +208,8 @@ def test_dual_version_isolation_and_rollback():
         # Re-upgrade core to head
         alembic.command.upgrade(cfg_core, "head")
         conn.commit()
-        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()] == [expected_core_head]
+
+        assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()] == ["0014_neutralize_profile_columns"]
         assert [r[0] for r in conn.exec_driver_sql("SELECT version_num FROM alembic_version_health;").fetchall()] == ["health_0002_fhir_ehr_repository"]
 
         # Also test downgrading health_0002_fhir_ehr_repository -> health_0001_baseline and re-upgrading

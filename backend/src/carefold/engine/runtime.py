@@ -40,11 +40,7 @@ from yarvelle_core.engine.service import AgentExecutionService as CoreAgentExecu
 
 from carefold.engine.refusal_node import CarefoldRefusalNode
 from carefold.engine.response_synthesizer import CarefoldResponseSynthesizerNode
-from carefold.safety.policy import (
-    CarefoldHealthSafetyPolicy,
-    adapt_legacy_core_chat_request,
-    adapt_legacy_core_turn_kwargs,
-)
+from carefold.safety.policy import CarefoldHealthSafetyPolicy
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
 
 logger = logging.getLogger(__name__)
@@ -216,21 +212,8 @@ class CarefoldAgentExecutionService(CoreAgentExecutionService):
         finally:
             await stream.aclose()
 
-    async def execute_chat(self, request: Any, *args: Any, **kwargs: Any) -> AsyncGenerator[Any, None]:
-        """Normalizes dict request payloads across yarvelle-core versions."""
-        adapted_req = adapt_legacy_core_chat_request(request, CoreAgentExecutionService)
-        async for item in super().execute_chat(adapted_req, *args, **kwargs):
-            yield item
-
     async def execute_turn(self, *args: Any, **kwargs: Any) -> AsyncGenerator[Dict[str, Any], None]:
         """Run core's turn with a write-queued checkpointer when none was injected."""
-        kwargs, blocked_events = adapt_legacy_core_turn_kwargs(
-            self, args, kwargs, CoreAgentExecutionService
-        )
-        if blocked_events is not None:
-            for ev in blocked_events:
-                yield ev
-            return
         async with AsyncExitStack() as stack:
             saver = None if self.checkpointer is not None else await self._open_serialized_saver(stack)
             if saver is None:

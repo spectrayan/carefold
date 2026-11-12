@@ -29,17 +29,6 @@ from yarvelle_core.scope.mixin import ScopedMixin  # noqa: F401
 from yarvelle_core.db.models import *  # noqa: F401, F403
 import yarvelle_core.db.models as _core_models
 
-# Bridge 0.2.4 <-> 0.2.5+ neutralized ORM columns via SQLAlchemy synonyms
-if not hasattr(ProfileConsent, "allow_assist") and hasattr(ProfileConsent, "allow_clinical"):
-    ProfileConsent.allow_assist = synonym("allow_clinical")
-elif not hasattr(ProfileConsent, "allow_clinical") and hasattr(ProfileConsent, "allow_assist"):
-    ProfileConsent.allow_clinical = synonym("allow_assist")
-
-if not hasattr(ViewerInvite, "view_records") and hasattr(ViewerInvite, "view_clinical"):
-    ViewerInvite.view_records = synonym("view_clinical")
-elif not hasattr(ViewerInvite, "view_clinical") and hasattr(ViewerInvite, "view_records"):
-    ViewerInvite.view_clinical = synonym("view_records")
-
 # 2. Re-export all 7 health pack models from carefold.models.health
 try:
     from carefold.models.health import (

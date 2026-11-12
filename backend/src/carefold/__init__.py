@@ -167,16 +167,12 @@ logger = logging.getLogger("carefold_health")
 
 __version__ = "0.5.0b2"
 
-# Eagerly register "clinical" on core AgentDomain and dual-version RiskClass values
+# Eagerly register "clinical" on core AgentDomain when health pack is loaded
 try:
-    from yarvelle_core.schemas.manifest import AgentDomain, RiskClass
+    from yarvelle_core.schemas.manifest import AgentDomain
 
     if hasattr(AgentDomain, "register") and not hasattr(AgentDomain, "CLINICAL"):
         AgentDomain.CLINICAL = AgentDomain.register("clinical")
-    if hasattr(RiskClass, "register") and not hasattr(RiskClass, "ASSIST"):
-        RiskClass.ASSIST = RiskClass.register("assist")
-    if hasattr(RiskClass, "register") and not hasattr(RiskClass, "CLINICAL_ASSIST"):
-        RiskClass.CLINICAL_ASSIST = RiskClass.register("clinical_assist")
 except Exception:
     pass
 
@@ -282,20 +278,6 @@ except Exception:
     pass
 
 
-
-
-def _build_pack_provides_spec(**kwargs: Any) -> PackProvidesSpec:
-    """Constructs PackProvidesSpec, omitting unreleased fields on older yarvelle-core."""
-    if "errors_file" in kwargs and "errors_file" not in PackProvidesSpec.model_fields:
-        kwargs = {k: v for k, v in kwargs.items() if k != "errors_file"}
-    return PackProvidesSpec(**kwargs)
-
-
-def _build_pack_spec(**kwargs: Any) -> PackSpec:
-    """Constructs PackSpec, passing error_prefix only when supported by installed yarvelle-core."""
-    if "error_prefix" in kwargs and "error_prefix" not in PackSpec.model_fields:
-        kwargs = {k: v for k, v in kwargs.items() if k != "error_prefix"}
-    return PackSpec(**kwargs)
 
 
 def get_pack() -> PackSpec:
@@ -412,7 +394,7 @@ def get_pack() -> PackSpec:
         eval_suites=["clinical_safety", "emergency_red_flags", "boundary_enforcement"],
     )
 
-    provides = _build_pack_provides_spec(
+    provides = PackProvidesSpec(
         prompts_dir="resources/prompts/",
         locales_dir="resources/locales/",
         connectors_dir="connectors/",
@@ -421,13 +403,13 @@ def get_pack() -> PackSpec:
         errors_file="resources/errors.yaml",
     )
 
-    spec = _build_pack_spec(
+    spec = PackSpec(
         pack_api=1,
         id="health",
         name="Carefold Health Pack",
         version=__version__,
         domain="health",
-        requires_core=">=0.2.4,<0.3.0",
+        requires_core=">=0.2.5,<0.3.0",
         owned_scopes=["health.*", "health.clinical", "health.paperwork"],
         declared_reads=[],
         risk_tier_max="T4",
@@ -459,13 +441,13 @@ def _register_native_pack_resources() -> None:
     """
     from yarvelle_core.resources.loader import get_resource_loader as _yc_get_resource_loader
 
-    bootstrap_spec = _build_pack_spec(
+    bootstrap_spec = PackSpec(
         pack_api=1,
         id="health",
         name="Carefold Health Pack",
         version=__version__,
         domain="health",
-        requires_core=">=0.2.4,<0.3.0",
+        requires_core=">=0.2.5,<0.3.0",
         routing_hints=RoutingHints(
             domain="health",
             description="Clinical visit preparation, health records management, and insurance navigation",
@@ -473,7 +455,7 @@ def _register_native_pack_resources() -> None:
             patterns_resource="resources/routing_patterns.yaml",
         ),
         manifest_path=str(Path(__file__).resolve().parent / "pack.yaml"),
-        provides=_build_pack_provides_spec(
+        provides=PackProvidesSpec(
             prompts_dir="resources/prompts/",
             locales_dir="resources/locales/",
             connectors_dir="connectors/",
