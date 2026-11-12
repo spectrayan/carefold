@@ -9,22 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Storage port interfaces and domain models."""
+"""Package re-export shim delegating to yarvelle_core.storage.ports."""
 
-from carefold.storage.ports.storage_port import (
-    StorageError,
-    StorageFile,
-    StorageFileMetadata,
-    StorageFileNotFoundError,
-    StoragePort,
-    StorageSecurityError,
-)
+from __future__ import annotations
 
-__all__ = [
-    "StoragePort",
-    "StorageFileMetadata",
-    "StorageFile",
-    "StorageError",
-    "StorageFileNotFoundError",
-    "StorageSecurityError",
-]
+from typing import Any
+from yarvelle_core.storage.ports import *  # noqa: F401, F403
+import yarvelle_core.storage.ports as _target_module
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

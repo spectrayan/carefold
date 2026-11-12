@@ -32,19 +32,36 @@ from yarvelle_core.workflows.subgraphs.extraction.sanitizer import (
     DEFAULT_ADDRESS_TAG,
     DEFAULT_EMAIL_TAG,
     DEFAULT_PHONE_TAG,
-    DEFAULT_RECORD_ID_TAG,
     DEFAULT_REDACTED_TAG,
     DEFAULT_SSN_TAG,
     EMAIL_PATTERN,
     PHONE_COMBINED_PATTERN,
     PHONE_CONTEXT_PATTERN,
     PO_BOX_PATTERN,
-    RECORD_ID_CONTEXT_PATTERN,
-    RECORD_ID_TOKEN_PATTERN,
     SSN_CONTEXT_PATTERN,
     SSN_HYPHEN_PATTERN,
     SSN_UNHYPHENATED_PATTERN,
     SanitizationResult,
+)
+
+DEFAULT_RECORD_ID_TAG: str = getattr(
+    _core_sanitizer,
+    "DEFAULT_RECORD_ID_TAG",
+    getattr(_core_sanitizer, "DEFAULT_MRN_TAG", "[RECORD_ID]"),
+)
+RECORD_ID_TOKEN_PATTERN: re.Pattern[str] = getattr(
+    _core_sanitizer,
+    "RECORD_ID_TOKEN_PATTERN",
+    getattr(_core_sanitizer, "MRN_TOKEN_PATTERN", re.compile(r"(?i)(?:(?<=\d)|\b)(?:ID|REC|ACCT|MEM)[0-9A-Z]+\b")),
+)
+RECORD_ID_CONTEXT_PATTERN: re.Pattern[str] = getattr(
+    _core_sanitizer,
+    "RECORD_ID_CONTEXT_PATTERN",
+    getattr(
+        _core_sanitizer,
+        "MRN_CONTEXT_PATTERN",
+        re.compile(r"(?i)((?:(?<=\d)|\b)(?:record\s*(?:id|no\.?|number)?|account\s*(?:id|no\.?|number)?|member\s*id)\b[:#\s]+)[A-Za-z0-9\-]+"),
+    ),
 )
 
 DEFAULT_MRN_TAG: str = "[MRN]"

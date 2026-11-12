@@ -9,29 +9,22 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold engine package.
-
-Streamlined execution engine exposing AgentExecutionService,
-prompt assembly, and runtime execution facade.
-"""
+"""Re-export shim delegating to yarvelle_core.engine."""
 
 from __future__ import annotations
 
-from carefold.engine.agent_factory import (
-    create_carefold_agent,
-    load_all_subagents,
-    load_subagent_from_yaml,
-)
-from carefold.engine.prompt_builder import build_system_prompt
-from carefold.engine.runner import ExecutionContext, execute_agent_run
-from carefold.engine.service import AgentExecutionService
+import yarvelle_core.engine as _yc_engine
+from carefold.engine.runtime import CarefoldAgentExecutionService
 
-__all__ = [
-    "AgentExecutionService",
-    "ExecutionContext",
-    "build_system_prompt",
-    "create_carefold_agent",
-    "execute_agent_run",
-    "load_all_subagents",
-    "load_subagent_from_yaml",
-]
+_RETIRED = frozenset({"GraphBuilder", "create_agent_graph"})
+for _k in dir(_yc_engine):
+    if not _k.startswith("_") and _k not in _RETIRED:
+        globals()[_k] = getattr(_yc_engine, _k)
+AgentExecutionService = CarefoldAgentExecutionService
+__all__ = [k for k in getattr(_yc_engine, "__all__", []) if k not in _RETIRED]
+
+
+def __getattr__(name: str):
+    if name in _RETIRED:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    return getattr(_yc_engine, name)

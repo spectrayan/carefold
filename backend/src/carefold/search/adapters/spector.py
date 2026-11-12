@@ -9,27 +9,23 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Backward-compatibility re-export shim for yarvelle_core.search.adapters.spector."""
+"""SpectorSearchIndex shim defaulting chunker to Carefold ClinicalChunker."""
 
 from __future__ import annotations
 
 from typing import Any
-
 from yarvelle_core.search.adapters.spector import *  # noqa: F401, F403
 import yarvelle_core.search.adapters.spector as _target_module
-from yarvelle_core.search.adapters.spector import SpectorSearchIndex as _CoreSpectorSearchIndex
-
+from yarvelle_core.search.adapters.spector import SpectorSearchIndex as _CoreIdx
 from carefold.search.chunker import ClinicalChunker as _DefaultChunker
 
 
-class _SpectorSearchIndexMeta(type(_CoreSpectorSearchIndex)):
+class _Meta(type(_CoreIdx)):
     def __instancecheck__(cls, instance: Any) -> bool:
-        return super().__instancecheck__(instance) or isinstance(instance, _CoreSpectorSearchIndex)
+        return super().__instancecheck__(instance) or isinstance(instance, _CoreIdx)
 
 
-class SpectorSearchIndex(_CoreSpectorSearchIndex, metaclass=_SpectorSearchIndexMeta):
-    """Carefold search adapter defaulting to Carefold's section-aware chunker."""
-
+class SpectorSearchIndex(_CoreIdx, metaclass=_Meta):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         if kwargs.get("chunker") is None and len(args) < 6:
             kwargs["chunker"] = _DefaultChunker()
@@ -38,7 +34,3 @@ class SpectorSearchIndex(_CoreSpectorSearchIndex, metaclass=_SpectorSearchIndexM
 
 def __getattr__(name: str) -> Any:
     return getattr(_target_module, name)
-
-
-def __dir__() -> list[str]:
-    return sorted(set(globals().keys()) | set(dir(_target_module)))

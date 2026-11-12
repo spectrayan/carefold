@@ -84,16 +84,120 @@ if _health_models is not None:
 
 # 4. Register dual-write listeners after all models are loaded
 try:
-    from carefold.scope.adapter import DualWriteAdapter
+    from yarvelle_core.scope.adapter import DualWriteAdapter
 
     DualWriteAdapter.register_listeners()
 except Exception:
-    try:
-        from yarvelle_core.scope.adapter import DualWriteAdapter
+    pass
 
-        DualWriteAdapter.register_listeners()
-    except Exception:
-        pass
+
+def _register_pack_scope_grant_bridge() -> None:
+    """Ensures ProfileAccess and ProfileConsent synchronize ScopeGrant rows before flush."""
+    import uuid
+    from sqlalchemy import delete, event, select
+    from sqlalchemy.orm import Session
+
+    if getattr(Session, "_carefold_scope_bridge_registered", False):
+        return
+
+    _NS = "health"
+
+    @event.listens_for(Session, "before_flush")
+    def _on_before_flush(session: Session, flush_context: Any, instances: Any) -> None:
+        if session.info.get("skip_dual_write", False):
+            return
+        session.info["skip_dual_write"] = True
+        session.info["carefold_bridge_skip_dw"] = True
+
+        for obj in list(session.deleted):
+            if isinstance(obj, ProfileAccess) and obj.profile_id and obj.user_id:
+                session.execute(
+                    delete(ScopeGrant).where(
+                        ScopeGrant.profile_id == obj.profile_id,
+                        ScopeGrant.user_id == obj.user_id,
+                    )
+                )
+
+        for obj in list(session.new) + list(session.dirty):
+            if isinstance(obj, ProfileConsent) and obj.profile_id:
+                if obj in session.dirty and not session.is_modified(obj, include_collections=False):
+                    continue
+                rec_scope = f"{_NS}.records"
+                session.execute(
+                    delete(ScopeGrant).where(
+                        ScopeGrant.profile_id == obj.profile_id,
+                        ScopeGrant.user_id.is_(None),
+                        ScopeGrant.scope == rec_scope,
+                    )
+                )
+                for g in list(session.new):
+                    if isinstance(g, ScopeGrant) and g.profile_id == obj.profile_id and g.user_id is None and g.scope == rec_scope:
+                        session.expunge(g)
+                if obj.allow_assist:
+                    session.add(
+                        ScopeGrant(
+                            id=str(uuid.uuid4()),
+                            profile_id=obj.profile_id,
+                            user_id=None,
+                            scope=rec_scope,
+                            access_level="read",
+                            granted_at=obj.updated_at or obj.created_at,
+                        )
+                    )
+                continue
+
+            if not isinstance(obj, ProfileAccess) or not obj.profile_id or not obj.user_id:
+                continue
+            if obj in session.dirty and not session.is_modified(obj, include_collections=False):
+                continue
+
+            session.execute(
+                delete(ScopeGrant).where(
+                    ScopeGrant.profile_id == obj.profile_id,
+                    ScopeGrant.user_id == obj.user_id,
+                )
+            )
+            for g in list(session.new):
+                if isinstance(g, ScopeGrant) and g.profile_id == obj.profile_id and g.user_id == obj.user_id:
+                    session.expunge(g)
+
+            lvl = getattr(obj, "access_level", None)
+            if lvl == "manage":
+                targets = [(f"{_NS}.*", "write"), (f"{_NS}.*", "approve")]
+            elif lvl == "view_records":
+                targets = [
+                    (f"{_NS}.clinical", "read"),
+                    (f"{_NS}.records", "read"),
+                    (f"{_NS}.paperwork", "read"),
+                ]
+            elif lvl == "view_paperwork":
+                targets = [(f"{_NS}.paperwork", "read")]
+            else:
+                targets = [(f"{_NS}.*", "read")]
+
+            for sc, access_lvl in targets:
+                session.add(
+                    ScopeGrant(
+                        id=str(uuid.uuid4()),
+                        profile_id=obj.profile_id,
+                        user_id=obj.user_id,
+                        scope=sc,
+                        access_level=access_lvl,
+                        granted_at=obj.granted_at,
+                        granted_by=obj.granted_by,
+                    )
+                )
+
+    def _restore_dw(session: Session, *_args: Any) -> None:
+        if session.info.pop("carefold_bridge_skip_dw", False):
+            session.info.pop("skip_dual_write", None)
+
+    event.listen(Session, "after_flush", _restore_dw)
+    event.listen(Session, "after_rollback", _restore_dw)
+    setattr(Session, "_carefold_scope_bridge_registered", True)
+
+
+_register_pack_scope_grant_bridge()
 
 
 def __getattr__(name: str) -> Any:

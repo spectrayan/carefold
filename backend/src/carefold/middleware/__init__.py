@@ -9,22 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold Deep Agents middleware stack components."""
+"""Package re-export shim delegating to yarvelle_core.middleware."""
 
 from __future__ import annotations
 
-from carefold.middleware.clinical_safety import ClinicalSafetyMiddleware
-from carefold.middleware.skills import (
-    CAREFOLD_SKILLS_PROMPT,
-    CarefoldSkillsMiddleware,
-    create_carefold_skills_middleware,
-    create_skills_middleware,
-)
+from typing import Any
+from yarvelle_core.middleware import *  # noqa: F401, F403
+import yarvelle_core.middleware as _target_module
 
-__all__ = [
-    "CAREFOLD_SKILLS_PROMPT",
-    "CarefoldSkillsMiddleware",
-    "ClinicalSafetyMiddleware",
-    "create_carefold_skills_middleware",
-    "create_skills_middleware",
-]
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

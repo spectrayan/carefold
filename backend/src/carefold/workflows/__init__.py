@@ -9,30 +9,20 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold Workflows Package.
-
-Houses class-based LangGraph nodes, multi-agent subgraphs, and the unified
-AgentState schema following SOLID principles.
-"""
+"""Re-export shim delegating to yarvelle_core.workflows."""
 
 from __future__ import annotations
 
-from carefold.workflows.nodes.base import BaseNode
-from carefold.workflows.state import (
-    AgentState,
-    create_initial_state,
-    extract_text_content,
-    get_last_message,
-    get_last_user_message,
-    get_last_user_prompt_text,
-)
+import yarvelle_core.workflows as _yc_workflows
 
-__all__ = [
-    "AgentState",
-    "BaseNode",
-    "create_initial_state",
-    "extract_text_content",
-    "get_last_message",
-    "get_last_user_message",
-    "get_last_user_prompt_text",
-]
+_RETIRED = frozenset({"ExecutionDispatcher"})
+for _k in dir(_yc_workflows):
+    if not _k.startswith("_") and _k not in _RETIRED:
+        globals()[_k] = getattr(_yc_workflows, _k)
+__all__ = [k for k in getattr(_yc_workflows, "__all__", []) if k not in _RETIRED]
+
+
+def __getattr__(name: str):
+    if name in _RETIRED:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    return getattr(_yc_workflows, name)

@@ -164,11 +164,19 @@ async def test_carefold_decide_copy_rejects_placeholder_edits(db, single_user) -
     from fastapi import HTTPException
     from yarvelle_core.audit.redaction import redact_tool_args
 
+    try:
+        from yarvelle_core.errors import YarvelleError
+
+        err_types: tuple[type[BaseException], ...] = (HTTPException, YarvelleError)
+    except ImportError:
+        err_types = (HTTPException,)
+
     await _seed_pending(db)
     payload = ApprovalDecideRequest(decision="approved", edited_args=redact_tool_args(SECRET_ARGS))
-    with pytest.raises(HTTPException) as exc:
+    with pytest.raises(err_types) as exc:
         await decide_approval("app-r", payload, _request(), DEFAULT_STEWARD_USER, db)
-    assert exc.value.status_code == 422
+    status_code = getattr(exc.value, "status_code", None) or getattr(exc.value, "http_status", None)
+    assert status_code == 422
 
 
 @pytest.mark.asyncio

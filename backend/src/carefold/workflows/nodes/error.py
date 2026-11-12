@@ -9,8 +9,11 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Alias re-export for ErrorNode."""
+"""Re-export shim delegating to yarvelle_core.workflows.nodes.error."""
 
-from carefold.workflows.nodes.error_node import ErrorNode
+from __future__ import annotations
 
-__all__ = ["ErrorNode"]
+import sys as _sys
+import yarvelle_core.workflows.nodes.error as _target_module
+
+_sys.modules[__name__] = _target_module

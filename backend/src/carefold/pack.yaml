@@ -142,7 +142,7 @@ provides:
       require_scope: {id: health.clinical, level: read}
     - entry: carefold.routers.imports:router
       prefix: ""
-      require_scope: {id: health.clinical, level: write}
+      require_scope: {id: health.clinical, level: read}
     - entry: carefold.routers.prep_pack:router
       prefix: ""
       require_scope: {id: health.clinical, level: read}
@@ -153,6 +153,9 @@ provides:
       prefix: ""
       require_scope: {id: health.clinical, level: read}
     - entry: carefold.routers.vitals:router
+      prefix: ""
+      require_scope: {id: health.clinical, level: read}
+    - entry: carefold.routers.fhir_r4:router
       prefix: ""
       require_scope: {id: health.clinical, level: read}
   jobs: []

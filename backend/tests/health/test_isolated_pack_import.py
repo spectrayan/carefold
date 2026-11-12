@@ -60,11 +60,11 @@ assert policy is not None
 assert pack.safety_policy is not None
 assert len(policy.get_forbidden_intents()) > 0
 
-# 5. Verify health Routers (9 routers)
+# 5. Verify health Routers (10 routers)
 from carefold.routers import get_health_router_contributions
 routers = get_health_router_contributions()
-assert len(routers) == 9, f"Expected 9 health router contributions, got {len(routers)}"
-assert len(pack.routers) == 9, f"Expected 9 routers in pack manifest, got {len(pack.routers)}"
+assert len(routers) == 10, f"Expected 10 health router contributions, got {len(routers)}"
+assert len(pack.routers) == 10, f"Expected 10 routers in pack manifest, got {len(pack.routers)}"
 
 # 6. Verify Scoped Models (7 models)
 from carefold.models import (

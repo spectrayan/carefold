@@ -9,22 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Re-export audit package components."""
+"""Package re-export shim delegating to yarvelle_core.audit."""
 
-from carefold.audit.redaction import redact_audit_event
-from carefold.audit.logger import (
-    AuditLogger,
-    compute_payload_hash,
-    get_recent_audit_events,
-    read_recent_audit_events,
-    record_audit,
-)
+from __future__ import annotations
 
-__all__ = [
-    "redact_audit_event",
-    "record_audit",
-    "get_recent_audit_events",
-    "read_recent_audit_events",
-    "compute_payload_hash",
-    "AuditLogger",
-]
+from typing import Any
+from yarvelle_core.audit import *  # noqa: F401, F403
+import yarvelle_core.audit as _target_module
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

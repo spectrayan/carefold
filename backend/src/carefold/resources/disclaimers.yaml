@@ -16,6 +16,10 @@ intended_use:
 safe_refusal_template: >-
   I am a wellness and care navigation assistant, not a licensed medical professional or emergency service. I cannot diagnose conditions, prescribe medications, or alter medical treatments. Please consult a qualified healthcare provider or contact emergency services immediately if you are experiencing a medical emergency.
 
+# Standardized Workflow Refusal Node Response (F-29).
+f29_refusal_template: >-
+  I am an informational care navigation assistant with Carefold, not a licensed clinician, physician, or emergency medical service. I cannot diagnose medical conditions, prescribe medications, or determine clinical dosing. Please consult your doctor or a qualified healthcare clinician for medical advice and treatment decisions. If you are experiencing a medical emergency, please call 911 or contact local emergency services immediately.
+
 # Header disclaimer for chat interface and UI banners
 disclaimer_header_text: >-
   Carefold agents provide wellness and care navigation assistance. They do not provide clinical diagnosis, medical treatment, or emergency care.

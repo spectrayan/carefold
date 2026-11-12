@@ -122,11 +122,19 @@ async def test_db_failure_leaves_keys_and_files_intact(async_db_session, monkeyp
 
     monkeypatch.setattr(profiles_api, "purge_profile_rows", _boom)
 
-    with pytest.raises(HTTPException) as exc_info:
+    try:
+        from yarvelle_core.errors import YarvelleError
+
+        err_types: tuple[type[BaseException], ...] = (HTTPException, YarvelleError)
+    except ImportError:
+        err_types = (HTTPException,)
+
+    with pytest.raises(err_types) as exc_info:
         await profiles_api.delete_profile(PROFILE_ID, DEFAULT_STEWARD_USER, async_db_session)
 
-    assert exc_info.value.status_code == 500
-    assert "simulated" not in str(exc_info.value.detail)
+    status_code = getattr(exc_info.value, "status_code", None) or getattr(exc_info.value, "http_status", None)
+    assert status_code == 500
+    assert "simulated" not in str(getattr(exc_info.value, "detail", exc_info.value))
     assert await async_db_session.get(Profile, PROFILE_ID) is not None
     assert await _count(async_db_session, ProfileKey) == 1
     assert (cas_dir / "blob.bin").is_file()

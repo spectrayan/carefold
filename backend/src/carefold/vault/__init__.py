@@ -9,58 +9,20 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold Cryptographic Keyring Vault.
+"""Package re-export shim delegating to yarvelle_core.vault while binding carefold.vault.kek."""
 
-Implements two-tier envelope encryption (KEK -> DEK -> Credentials),
-strict AAD binding, and fail-closed key resolution.
-"""
+from __future__ import annotations
 
-from carefold.vault.crypto import decrypt, encrypt
-from carefold.vault.dek import (
-    compute_aad_binding,
-    compute_dek_wrapping_aad,
-    compute_scope_aad,
-    decrypt_credential,
-    decrypt_scoped_credential,
-    delete_profile_keys,
-    derive_scope_dek,
-    encrypt_credential,
-    encrypt_scoped_credential,
-    get_or_create_dek,
-    get_vault_for_scope,
-    rotate_dek,
-    ScopedVault,
-)
-from carefold.vault.errors import (
-    DecryptionError,
-    KeyDerivationError,
-    VaultError,
-    VaultLockedError,
-)
-from carefold.vault.kek import derive_argon2id_kek, get_kek, resolve_kek
+from typing import Any
+from yarvelle_core.vault import *  # noqa: F401, F403
+import yarvelle_core.vault as _target_module
+from carefold.vault import kek  # noqa: F401
+from carefold.vault.kek import DEFAULT_ARGON2_SALT, derive_argon2id_kek, get_kek, resolve_kek  # noqa: F401
 
-__all__ = [
-    "encrypt",
-    "decrypt",
-    "get_kek",
-    "resolve_kek",
-    "derive_argon2id_kek",
-    "get_or_create_dek",
-    "encrypt_credential",
-    "decrypt_credential",
-    "encrypt_scoped_credential",
-    "decrypt_scoped_credential",
-    "compute_aad_binding",
-    "compute_dek_wrapping_aad",
-    "compute_scope_aad",
-    "derive_scope_dek",
-    "rotate_dek",
-    "delete_profile_keys",
-    "ScopedVault",
-    "get_vault_for_scope",
-    "VaultError",
-    "VaultLockedError",
-    "DecryptionError",
-    "KeyDerivationError",
-]
 
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

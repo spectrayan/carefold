@@ -9,54 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold platform foundation services: reminders, scheduled routines, and email drafts."""
+"""Package re-export shim delegating to yarvelle_core.platform."""
 
-from carefold.platform.email_drafts import (
-    NO_AUTO_SEND_NOTICE,
-    build_mailto_uri,
-    create_email_draft,
-    delete_email_draft,
-    execute_create_email_draft,
-    export_draft_as_eml,
-    get_email_draft,
-    list_email_drafts,
-    serialize_email_draft,
-)
-from carefold.platform.reminders import (
-    SNOOZE_DELTAS,
-    WEEKDAY_MAP,
-    advance_rrule_occurrence,
-    apply_reminder_snooze,
-    coalesce_overdue_reminders,
-    generate_ics_calendar,
-    handle_reminder_job,
-)
-from carefold.platform.routines import (
-    create_standing_routine,
-    execute_standing_routine,
-    set_connection_autonomy,
-    update_standing_routine_status,
-)
+from __future__ import annotations
 
-__all__ = [
-    "NO_AUTO_SEND_NOTICE",
-    "SNOOZE_DELTAS",
-    "WEEKDAY_MAP",
-    "advance_rrule_occurrence",
-    "apply_reminder_snooze",
-    "build_mailto_uri",
-    "coalesce_overdue_reminders",
-    "create_email_draft",
-    "create_standing_routine",
-    "delete_email_draft",
-    "execute_create_email_draft",
-    "execute_standing_routine",
-    "export_draft_as_eml",
-    "generate_ics_calendar",
-    "get_email_draft",
-    "handle_reminder_job",
-    "list_email_drafts",
-    "serialize_email_draft",
-    "set_connection_autonomy",
-    "update_standing_routine_status",
-]
+from typing import Any
+from yarvelle_core.platform import *  # noqa: F401, F403
+import yarvelle_core.platform as _target_module
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

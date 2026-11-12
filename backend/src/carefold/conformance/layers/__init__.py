@@ -9,47 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Conformance suite isolation layer tests."""
+"""Package re-export shim delegating to yarvelle_core.conformance.layers."""
 
-from carefold.conformance.layers.base import BaseIsolationLayerTest
-from carefold.conformance.layers.layer_01_orm import Layer01OrmTest
-from carefold.conformance.layers.layer_02_cas import Layer02CasTest
-from carefold.conformance.layers.layer_03_fts5 import Layer03Fts5Test
-from carefold.conformance.layers.layer_04_memory import Layer04MemoryTest
-from carefold.conformance.layers.layer_05_vault import Layer05VaultTest
-from carefold.conformance.layers.layer_06_tool_gate import Layer06ToolGateTest
-from carefold.conformance.layers.layer_07_prompt import Layer07PromptTest
-from carefold.conformance.layers.layer_08_api import Layer08ApiTest
-from carefold.conformance.layers.layer_09_export import Layer09ExportTest
-from carefold.conformance.layers.layer_10_audit import Layer10AuditTest
-from carefold.conformance.layers.layer_11_redaction import Layer11RedactionTest
+from __future__ import annotations
 
-ALL_ISOLATION_LAYERS = [
-    Layer01OrmTest(),
-    Layer02CasTest(),
-    Layer03Fts5Test(),
-    Layer04MemoryTest(),
-    Layer05VaultTest(),
-    Layer06ToolGateTest(),
-    Layer07PromptTest(),
-    Layer08ApiTest(),
-    Layer09ExportTest(),
-    Layer10AuditTest(),
-    Layer11RedactionTest(),
-]
+from typing import Any
+from yarvelle_core.conformance.layers import *  # noqa: F401, F403
+import yarvelle_core.conformance.layers as _target_module
 
-__all__ = [
-    "BaseIsolationLayerTest",
-    "Layer01OrmTest",
-    "Layer02CasTest",
-    "Layer03Fts5Test",
-    "Layer04MemoryTest",
-    "Layer05VaultTest",
-    "Layer06ToolGateTest",
-    "Layer07PromptTest",
-    "Layer08ApiTest",
-    "Layer09ExportTest",
-    "Layer10AuditTest",
-    "Layer11RedactionTest",
-    "ALL_ISOLATION_LAYERS",
-]
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

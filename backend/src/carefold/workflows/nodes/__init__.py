@@ -9,43 +9,22 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Discrete class-based LangGraph nodes for Carefold workflows (F-21 to F-32).
-
-Each node adheres to the Single Responsibility Principle and implements BaseNode.
-Exports BaseNode and all 11 discrete node classes.
-"""
+"""Re-export shim delegating to yarvelle_core.workflows.nodes."""
 
 from __future__ import annotations
 
-from carefold.workflows.nodes.agent_node import AgentNode
-from carefold.workflows.nodes.agent_execution_node import AgentExecutionNode
-from carefold.workflows.nodes.audit_node import AuditNode
-from carefold.workflows.nodes.base import BaseNode
-from carefold.workflows.nodes.error_node import ErrorNode
-from carefold.workflows.nodes.input_guardrail_node import InputGuardrailNode
-from carefold.workflows.nodes.output_guardrail_node import OutputGuardrailNode
-from carefold.workflows.nodes.reflection_node import ReflectionNode
-from carefold.workflows.nodes.refusal_node import RefusalNode
-from carefold.workflows.nodes.response_synthesizer_node import ResponseSynthesizerNode
-from carefold.workflows.nodes.skill_generator_node import SkillGeneratorNode
-from carefold.workflows.nodes.suggestion_node import SuggestionNode
-from carefold.workflows.nodes.tool_node import ToolNode
-from carefold.workflows.nodes.tool_validator_node import ToolValidatorNode
+import yarvelle_core.workflows.nodes as _yc_nodes
+from carefold.clinical.host_bridges import CarefoldInputGuardrailNode as InputGuardrailNode
+from carefold.clinical.host_bridges import CarefoldWorkflowRefusalNode as RefusalNode
 
-__all__ = [
-    "AgentExecutionNode",
-    "AgentNode",
-    "AuditNode",
-    "BaseNode",
-    "ErrorNode",
-    "InputGuardrailNode",
-    "OutputGuardrailNode",
-    "ReflectionNode",
-    "RefusalNode",
-    "ResponseSynthesizerNode",
-    "SkillGeneratorNode",
-    "SuggestionNode",
-    "ToolNode",
-    "ToolValidatorNode",
-]
+_RETIRED = frozenset({"OrchestratorDecision", "OrchestratorNode", "SupervisorNode"})
+for _k in dir(_yc_nodes):
+    if not _k.startswith("_") and _k not in _RETIRED and _k not in ("InputGuardrailNode", "RefusalNode"):
+        globals()[_k] = getattr(_yc_nodes, _k)
+__all__ = [k for k in getattr(_yc_nodes, "__all__", []) if k not in _RETIRED]
 
+
+def __getattr__(name: str):
+    if name in _RETIRED:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    return getattr(_yc_nodes, name)

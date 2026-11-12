@@ -9,20 +9,14 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""OS background service packaging descriptors for macOS, Linux, and Windows (AU-81)."""
+"""Re-export shim delegating to yarvelle_core.packaging and carefold.packaging.service."""
 
 from __future__ import annotations
 
-from carefold.packaging.service import (
-    generate_linux_systemd_unit,
-    generate_macos_launchd_plist,
-    generate_windows_task_xml,
-    list_os_service_descriptors,
-)
+from yarvelle_core.packaging import *  # noqa: F401, F403
+import yarvelle_core.packaging as _yc_packaging
+from carefold.packaging.service import *  # noqa: F401, F403
 
-__all__ = [
-    "generate_linux_systemd_unit",
-    "generate_macos_launchd_plist",
-    "generate_windows_task_xml",
-    "list_os_service_descriptors",
-]
+
+def __getattr__(name: str):
+    return getattr(_yc_packaging, name)

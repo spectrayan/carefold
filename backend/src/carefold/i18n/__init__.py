@@ -9,46 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold Internationalization (i18n) package: BCP 47 locales, ICU catalogs, and multilingual safety."""
+"""Package re-export shim delegating to yarvelle_core.i18n."""
 
-from carefold.i18n.catalog import (
-    LOCALES_DIR,
-    MULTILINGUAL_RED_FLAG_PATTERNS,
-    detect_multilingual_red_flag,
-    format_icu_message,
-    get_catalog,
-    get_localized_disclaimer,
-    get_localized_emergency_directive,
-    translate,
-)
-from carefold.i18n.locale import (
-    BARE_LANGUAGE_DEFAULTS,
-    DEFAULT_LOCALE,
-    RTL_LANGUAGES,
-    SUPPORTED_LOCALES,
-    canonicalize_locale,
-    get_text_direction,
-    negotiate_locale,
-    normalize_text_nfc,
-    validate_bcp47_tag,
-)
+from __future__ import annotations
 
-__all__ = [
-    "BARE_LANGUAGE_DEFAULTS",
-    "DEFAULT_LOCALE",
-    "LOCALES_DIR",
-    "MULTILINGUAL_RED_FLAG_PATTERNS",
-    "RTL_LANGUAGES",
-    "SUPPORTED_LOCALES",
-    "canonicalize_locale",
-    "detect_multilingual_red_flag",
-    "format_icu_message",
-    "get_catalog",
-    "get_localized_disclaimer",
-    "get_localized_emergency_directive",
-    "get_text_direction",
-    "negotiate_locale",
-    "normalize_text_nfc",
-    "translate",
-    "validate_bcp47_tag",
-]
+from typing import Any
+from yarvelle_core.i18n import *  # noqa: F401, F403
+import yarvelle_core.i18n as _target_module
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

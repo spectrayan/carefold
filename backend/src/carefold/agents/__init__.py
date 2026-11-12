@@ -9,8 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold agents module: declarative registry and catalog formatting."""
+"""Package re-export shim delegating to yarvelle_core.agents."""
 
-from carefold.agents.registry import AgentRegistry, get_agent_registry
+from __future__ import annotations
 
-__all__ = ["AgentRegistry", "get_agent_registry"]
+from typing import Any
+from yarvelle_core.agents import *  # noqa: F401, F403
+import yarvelle_core.agents as _target_module
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))
