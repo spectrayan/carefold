@@ -19,7 +19,7 @@ import logging
 from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -448,6 +448,129 @@ async def delete_profile_school_form(
     await db.commit()
 
     return {"deleted": True, "id": form_id, "profile_id": profile.id}
+
+
+class CreateSchoolIcsFeedRequest(BaseModel):
+    """Request schema for registering a child school calendar ICS feed (AU-61)."""
+
+    label: str = Field(..., min_length=1, max_length=255, description="School or calendar feed display name")
+    feed_url: str = Field(..., min_length=1, max_length=1024, description="HTTPS or webcal .ics subscription URL")
+
+
+class SyncSchoolIcsFeedRequest(BaseModel):
+    """Optional request body for syncing a school ICS feed with inline `.ics` payload in tests/offline mode."""
+
+    raw_ics_content: Optional[str] = Field(None, description="Optional raw RFC 5545 .ics content")
+
+
+@router.get(
+    "/profiles/{profile_id}/school-ics",
+    summary="List school calendar ICS feeds for a child profile",
+)
+async def get_profile_school_ics_feeds(
+    profile_id: str,
+    profile: Profile = Depends(require_profile_access("view_records")),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Returns all registered `SchoolIcsFeed` subscriptions for `profile_id`."""
+    from carefold.clinical.school_ics import list_school_ics_feeds, serialize_school_ics_feed
+
+    feeds = await list_school_ics_feeds(db, profile_id=profile.id)
+    items = [serialize_school_ics_feed(f) for f in feeds]
+    return {
+        "profile_id": profile.id,
+        "items": items,
+        "feeds": items,
+        "total": len(items),
+    }
+
+
+@router.post(
+    "/profiles/{profile_id}/school-ics",
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a read-only school calendar ICS subscription feed",
+)
+async def post_profile_school_ics_feed(
+    profile_id: str,
+    payload: CreateSchoolIcsFeedRequest,
+    profile: Profile = Depends(require_profile_access("manage")),
+    db: AsyncSession = Depends(get_db),
+    user: UserProfile = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Validates `feed_url` (`https://` or `webcal://`) and registers a `SchoolIcsFeed`."""
+    from carefold.clinical.school_ics import create_school_ics_feed, serialize_school_ics_feed
+
+    actor_id = resolve_owner_user_id(user) or getattr(user, "id", None)
+    try:
+        feed = await create_school_ics_feed(
+            session=db,
+            profile_id=profile.id,
+            label=payload.label,
+            feed_url=payload.feed_url,
+            actor_user_id=actor_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    return serialize_school_ics_feed(feed)
+
+
+@router.post(
+    "/profiles/{profile_id}/school-ics/{feed_id}/sync",
+    summary="Synchronize VEVENTs from a school calendar ICS feed into Appointments",
+)
+async def post_sync_profile_school_ics_feed(
+    profile_id: str,
+    feed_id: str,
+    payload: Optional[SyncSchoolIcsFeedRequest] = Body(default=None),
+    profile: Profile = Depends(require_profile_access("manage")),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Parses RFC 5545 VEVENTs and upserts school calendar events into `Appointment` rows."""
+    from carefold.clinical.school_ics import sync_school_ics_feed
+
+    raw_ics = payload.raw_ics_content if payload is not None else None
+    try:
+        return await sync_school_ics_feed(
+            session=db,
+            profile_id=profile.id,
+            feed_id=feed_id,
+            raw_ics_content=raw_ics,
+        )
+    except ValueError as exc:
+        msg = str(exc)
+        code = status.HTTP_404_NOT_FOUND if "not found" in msg.lower() else status.HTTP_400_BAD_REQUEST
+        raise HTTPException(status_code=code, detail=msg) from exc
+
+
+@router.delete(
+    "/profiles/{profile_id}/school-ics/{feed_id}",
+    summary="Delete a school calendar ICS subscription feed",
+)
+async def delete_profile_school_ics_feed(
+    profile_id: str,
+    feed_id: str,
+    profile: Profile = Depends(require_profile_access("manage")),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Deletes a `SchoolIcsFeed` subscription."""
+    from carefold.clinical.school_ics import delete_school_ics_feed
+
+    deleted = await delete_school_ics_feed(db, profile_id=profile.id, feed_id=feed_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"SchoolIcsFeed '{feed_id}' not found for profile '{profile.id}'.",
+        )
+    return {
+        "id": feed_id,
+        "feed_id": feed_id,
+        "profile_id": profile.id,
+        "deleted": True,
+    }
 
 
 __all__ = ["router"]

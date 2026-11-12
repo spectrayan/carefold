@@ -293,4 +293,100 @@ async def discard_profile_import_batch(
     }
 
 
+class StageGmailRequest(BaseModel):
+    """Request schema for staging read-only Gmail messages via curated MCP (AU-59)."""
+
+    messages: List[Dict[str, Any]] = Field(default_factory=list, description="Gmail messages from curated MCP")
+    label_filter: str = Field("appointments", description="Allowed Gmail label filter")
+
+
+def _serialize_gmail_batch(batch: ImportBatch) -> Dict[str, Any]:
+    try:
+        summary = json.loads(batch.summary_json or "{}")
+    except Exception:
+        summary = {}
+    try:
+        staged_records = json.loads(batch.staged_records_json or "[]")
+    except Exception:
+        staged_records = []
+    try:
+        committed_ids = json.loads(batch.committed_resource_ids_json or "[]")
+    except Exception:
+        committed_ids = []
+
+    return {
+        "id": batch.id,
+        "batch_id": batch.id,
+        "profile_id": batch.profile_id,
+        "format": batch.format,
+        "source_name": batch.source_name,
+        "status": batch.status,
+        "summary": summary,
+        "staged_records": staged_records,
+        "committed_resource_ids": committed_ids,
+        "created_at": batch.created_at.isoformat() if batch.created_at else None,
+        "committed_at": batch.committed_at.isoformat() if batch.committed_at else None,
+    }
+
+
+@router.post(
+    "/profiles/{profile_id}/gmail/stage",
+    status_code=status.HTTP_201_CREATED,
+    summary="Stage label-filtered Gmail messages into an ImportBatch for review-before-save",
+)
+async def post_stage_gmail_messages(
+    profile_id: str,
+    payload: StageGmailRequest,
+    profile: Profile = Depends(require_profile_access("manage")),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Stages candidate appointments or school action items from read-only Gmail messages."""
+    from carefold.connectors.gmail_mcp import stage_gmail_extractions
+
+    try:
+        batch = await stage_gmail_extractions(
+            session=db,
+            profile_id=profile.id,
+            messages=payload.messages,
+            label_filter=payload.label_filter,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    return _serialize_gmail_batch(batch)
+
+
+@router.post(
+    "/profiles/{profile_id}/gmail/batches/{batch_id}/confirm/{item_index}",
+    summary="Confirm a single staged Gmail candidate item into an Appointment or Reminder",
+)
+async def post_confirm_gmail_staged_item(
+    profile_id: str,
+    batch_id: str,
+    item_index: int,
+    profile: Profile = Depends(require_profile_access("manage")),
+    db: AsyncSession = Depends(get_db),
+    user: UserProfile = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Confirms a single extracted Gmail candidate item at `item_index`."""
+    from carefold.connectors.gmail_mcp import confirm_gmail_staged_item
+
+    actor_id = resolve_owner_user_id(user) or getattr(user, "id", None)
+    try:
+        return await confirm_gmail_staged_item(
+            session=db,
+            profile_id=profile.id,
+            batch_id=batch_id,
+            item_index=item_index,
+            actor_user_id=actor_id,
+        )
+    except ValueError as exc:
+        msg = str(exc)
+        code = status.HTTP_404_NOT_FOUND if "not found" in msg.lower() else status.HTTP_400_BAD_REQUEST
+        raise HTTPException(status_code=code, detail=msg) from exc
+
+
 __all__ = ["router"]

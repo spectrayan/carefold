@@ -9,8 +9,19 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Re-export API package components."""
+"""Re-export package delegating core API symbols to yarvelle_core.api."""
 
-from carefold.api.router import api_router
+from __future__ import annotations
 
-__all__ = ["api_router"]
+from typing import Any
+
+from yarvelle_core.api import *  # noqa: F401, F403
+import yarvelle_core.api as _target_module
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

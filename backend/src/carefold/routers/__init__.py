@@ -30,17 +30,30 @@ from carefold.routers.vitals import router as vitals_router
 
 
 def get_health_router_contributions() -> List[RouterContribution]:
-    """Returns the 9 health router contributions."""
+    """Returns the 10 Carefold health pack router contributions guarded by require_pack_scope."""
     return [
         RouterContribution(vitals_router, pack_id="health", scope="health.clinical", level="read"),
         RouterContribution(appointments_router, pack_id="health", scope="health.clinical", level="read"),
         RouterContribution(preventive_router, pack_id="health", scope="health.clinical", level="read"),
-        RouterContribution(imports_router, pack_id="health", scope="health.clinical", level="write"),
+        RouterContribution(imports_router, pack_id="health", scope="health.clinical", level="read"),
         RouterContribution(school_forms_router, pack_id="health", scope="health.clinical", level="read"),
         RouterContribution(companion_router, pack_id="health", scope="health.clinical", level="read"),
         RouterContribution(handover_router, pack_id="health", scope="health.clinical", level="read"),
-        RouterContribution(coordinated_router, pack_id="health", scope="health.clinical", level="read"),
+        RouterContribution(
+            coordinated_router,
+            pack_id="health",
+            scope="health.clinical",
+            level="read",
+            require_profile=False,
+        ),
         RouterContribution(prep_pack_router, pack_id="health", scope="health.clinical", level="read"),
+        RouterContribution(
+            fhir_r4_router,
+            pack_id="health",
+            scope="health.clinical",
+            level="read",
+            require_profile=False,
+        ),
     ]
 
 
