@@ -122,7 +122,7 @@ No disclaimers here!
     );
   });
 
-  it('elevates agent risk_class to clinical_assist if any declared skill is clinical_assist', async () => {
+  it('elevates agent risk_class to assist if any declared skill is assist', async () => {
     const clinicalSkillDir = path.join(ws, 'skills', 'clinical-skill');
     await fs.mkdir(clinicalSkillDir, { recursive: true });
     await fs.writeFile(
@@ -140,7 +140,7 @@ description: A clinical assist skill
       path.join(clinicalSkillDir, 'carefold.yaml'),
       `
 id: clinical-skill
-risk_class: clinical_assist
+risk_class: assist
 tools: []
 `
     );
@@ -162,7 +162,7 @@ persona: Normal wellness persona
     );
 
     const { agent } = await loadAgent(agentDir, path.join(ws, 'skills'));
-    expect(agent.risk_class).toBe('clinical_assist');
+    expect(agent.risk_class).toBe('assist');
   });
 
   it('fails with ManifestValidationError on malformed YAML syntax', async () => {

@@ -150,7 +150,7 @@ class AgentState(TypedDict, total=False):
     # Context Loading and Safety Gating (R2)
     attachments: List[str]
     notes: List[Dict[str, Any]]
-    allow_clinical: bool
+    allow_assist: bool
     emergency_red_flags: Optional[Dict[str, Any]]
     catalog_summary: Optional[str]
     target_domain: Optional[str]
@@ -326,7 +326,7 @@ def create_initial_state(
         "turn_tool_events": kwargs.get("turn_tool_events", []),
         "attachments": kwargs.get("attachments", []),
         "notes": kwargs.get("notes", []),
-        "allow_clinical": kwargs.get("allow_clinical", False),
+        "allow_assist": kwargs.get("allow_assist", False),
         "emergency_red_flags": kwargs.get("emergency_red_flags", None),
         "catalog_summary": kwargs.get("catalog_summary", ""),
         "target_domain": kwargs.get("target_domain", None),

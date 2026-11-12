@@ -768,6 +768,24 @@ tools:
         required: true
 
 toolsets:
+  assist_db:
+    - upsert_clinical_note
+    - list_clinical_notes
+    - get_clinical_note
+    - record_vital_reading
+    - list_vital_readings
+    - create_appointment_record
+    - list_appointment_records
+    - create_profile_reminder
+    - list_profile_reminders
+    - update_preventive_record
+    - list_preventive_records
+    - fhir_get_capabilities
+    - fhir_search_resources
+    - fhir_read_resource
+    - fhir_get_resource_history
+    - fhir_get_patient_everything
+    - fhir_get_patient_summary
   clinical_assist_db:
     - upsert_clinical_note
     - list_clinical_notes

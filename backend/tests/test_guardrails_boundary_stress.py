@@ -21,10 +21,10 @@ Stress-tests:
    - Case, whitespace, and formatting permutations
    - Boundary values (empty, None, non-string, large payloads)
 2. `InputGuardrailNode`:
-   - Clinical consent gating (clinical domain + allow_clinical=False -> refusal)
+   - Clinical consent gating (clinical domain + allow_assist=False -> refusal)
    - Non-clinical bypass (administrative, wellness, etc.)
    - Precedence hierarchy (emergency > consent > clinical refusal)
-   - Strict boolean gating for allow_clinical
+   - Strict boolean gating for allow_assist
    - Message structure extraction and edge cases
 """
 
@@ -351,11 +351,11 @@ class TestInputGuardrailNodeConsentGating:
 
     @pytest.mark.asyncio
     async def test_unconsented_clinical_request_refused(self):
-        """Clinical request with allow_clinical=False must refuse with clinical_consent_required."""
+        """Clinical request with allow_assist=False must refuse with clinical_consent_required."""
         node = InputGuardrailNode()
         state = {
             "target_domain": "clinical",
-            "allow_clinical": False,
+            "allow_assist": False,
             "messages": [{"role": "user", "content": "How should I treat hypertension?"}],
         }
         res = await node.execute(state)
@@ -367,11 +367,11 @@ class TestInputGuardrailNodeConsentGating:
 
     @pytest.mark.asyncio
     async def test_consented_clinical_request_proceeds(self):
-        """Clinical request with allow_clinical=True must proceed to supervisor."""
+        """Clinical request with allow_assist=True must proceed to supervisor."""
         node = InputGuardrailNode()
         state = {
             "target_domain": "clinical",
-            "allow_clinical": True,
+            "allow_assist": True,
             "messages": [{"role": "user", "content": "Help me prepare questions for my doctor."}],
         }
         res = await node.execute(state)
@@ -390,11 +390,11 @@ class TestInputGuardrailNodeConsentGating:
         None,
     ])
     async def test_non_clinical_domains_bypass_consent(self, domain: str | None):
-        """Non-clinical queries proceed even if allow_clinical is False."""
+        """Non-clinical queries proceed even if allow_assist is False."""
         node = InputGuardrailNode()
         state = {
             "target_domain": domain,
-            "allow_clinical": False,
+            "allow_assist": False,
             "messages": [{"role": "user", "content": "What is my insurance deductible?"}],
         }
         res = await node.execute(state)
@@ -415,11 +415,11 @@ class TestInputGuardrailNodeConsentGating:
         {},
     ])
     async def test_strict_boolean_consent_requirement(self, falsy_val: any):
-        """Ensures allow_clinical strictly requires boolean True."""
+        """Ensures allow_assist strictly requires boolean True."""
         node = InputGuardrailNode()
         state = {
             "target_domain": "clinical",
-            "allow_clinical": falsy_val,
+            "allow_assist": falsy_val,
             "messages": [{"role": "user", "content": "Can you check my insulin schedule?"}],
         }
         res = await node.execute(state)
@@ -432,7 +432,7 @@ class TestInputGuardrailNodeConsentGating:
         node = InputGuardrailNode()
         state = {
             "domain": "clinical",
-            "allow_clinical": False,
+            "allow_assist": False,
             "messages": [{"role": "user", "content": "Can you evaluate my lab results?"}],
         }
         res = await node.execute(state)
@@ -445,7 +445,7 @@ class TestInputGuardrailNodeConsentGating:
         node = InputGuardrailNode()
         state = {
             "target_domain": "clinical",
-            "allow_clinical": False,
+            "allow_assist": False,
             "messages": [{"role": "user", "content": "Crushing chest pain radiating to arm"}],
         }
         res = await node.execute(state)

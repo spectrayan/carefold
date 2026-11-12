@@ -17,7 +17,7 @@ Systematically probes:
    - Concurrent note creation with colliding slugs
    - Concurrent redemption of the same single-use password reset token
 2. Profile Access Governance & Privilege Escalation:
-   - Non-manager (view_clinical / view_paperwork) cannot grant access to others (403)
+   - Non-manager (view_records / view_paperwork) cannot grant access to others (403)
    - Non-manager cannot revoke access from others (403)
    - Non-manager cannot update clinical consent (403)
    - Non-manager cannot delete secondary profiles (403)
@@ -345,7 +345,7 @@ class TestConcurrencyProbes:
 # =============================================================================
 
 class TestProfilePrivilegeEscalation:
-    """Verifies that non-manager access levels (view_clinical, etc.) cannot escalate privileges."""
+    """Verifies that non-manager access levels (view_records, etc.) cannot escalate privileges."""
 
     def test_view_only_user_cannot_grant_or_revoke_access(self, client: TestClient, registered_users):
         alice = registered_users["alice"]
@@ -361,10 +361,10 @@ class TestProfilePrivilegeEscalation:
         assert p_res.status_code == 201
         child_id = p_res.json()["id"]
 
-        # Alice grants Bob view_clinical access
+        # Alice grants Bob view_records access
         grant_res = client.post(
             f"/api/profiles/{child_id}/access",
-            json={"user_id": bob["user"]["id"], "access_level": "view_clinical"},
+            json={"user_id": bob["user"]["id"], "access_level": "view_records"},
             headers=alice["headers"],
         )
         assert grant_res.status_code == 201
@@ -387,7 +387,7 @@ class TestProfilePrivilegeEscalation:
         # Bob attempts to update clinical consent -> Must be 403 Forbidden
         consent_res = client.put(
             f"/api/profiles/{child_id}/consent",
-            json={"allow_clinical": True},
+            json={"allow_assist": True},
             headers=bob["headers"],
         )
         assert consent_res.status_code == 403

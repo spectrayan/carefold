@@ -89,8 +89,8 @@ def get_slot7_middleware():
             for skill in skills_metadata:
                 meta = skill.get("metadata", {}) or {}
                 risk = meta.get("risk_class", RiskClass.ADMIN.value)
-                if risk == RiskClass.CLINICAL_ASSIST.value or risk == "clinical_assist":
-                    max_risk = RiskClass.CLINICAL_ASSIST.value
+                if risk == RiskClass.ASSIST.value or risk == "assist":
+                    max_risk = RiskClass.ASSIST.value
 
                 declared_tools = meta.get("tools", [])
                 for tool in declared_tools:
@@ -101,7 +101,7 @@ def get_slot7_middleware():
                         )
 
             updates: Dict[str, Any] = {}
-            if max_risk == RiskClass.CLINICAL_ASSIST.value:
+            if max_risk == RiskClass.ASSIST.value:
                 updates["carefold_risk_class"] = max_risk
 
             return updates if updates else None
@@ -195,7 +195,7 @@ description: Guides patients through pre-visit preparation for cardiology consul
 license: Apache-2.0
 allowed-tools: skill-docs
 metadata:
-  risk_class: clinical_assist
+  risk_class: assist
   domain: clinical
   category: cardiology
   version: "1.0.0"
@@ -220,7 +220,7 @@ Do not change medication without the prescribing clinician.
         assert "metadata" in parsed.frontmatter
 
         meta = parsed.frontmatter["metadata"]
-        assert meta["risk_class"] == "clinical_assist"
+        assert meta["risk_class"] == "assist"
         assert meta["domain"] == "clinical"
         assert meta["category"] == "cardiology"
         assert meta["tools"] == ["skill-docs"]
@@ -234,7 +234,7 @@ name: pulmonology-prep
 description: Respiratory consultation visit prep.
 license: Apache-2.0
 metadata:
-  risk_class: clinical_assist
+  risk_class: assist
   domain: clinical
   category: pulmonology
   version: "1.0.0"
@@ -267,7 +267,7 @@ Do not change medication without the prescribing clinician.
         )
 
         assert manifest.id == "pulmonology-prep"
-        assert manifest.risk_class == RiskClass.CLINICAL_ASSIST
+        assert manifest.risk_class == RiskClass.ASSIST
         assert manifest.domain == AgentDomain.CLINICAL
         assert manifest.category == "pulmonology"
         assert manifest.tools == ["skill-docs", "attach-read"]
@@ -280,7 +280,7 @@ name: custom-clinical-skill
 description: Custom clinical skill with domain extensions.
 license: Apache-2.0
 metadata:
-  risk_class: clinical_assist
+  risk_class: assist
   domain: clinical
   guideline_authority: "ACC/AHA 2026 Guidelines"
   clinical_triage_level: 2
@@ -321,7 +321,7 @@ Do not change medication without the prescribing clinician.
 
         # Archived legacy manifest
         (skill_dir / "carefold.yaml.migrated").write_text(
-            "id: cardiology-prep\nrisk_class: clinical_assist\ndomain: clinical\n",
+            "id: cardiology-prep\nrisk_class: assist\ndomain: clinical\n",
             encoding="utf-8",
         )
 
@@ -333,7 +333,7 @@ description: Pre-visit cardiology guide.
 license: Apache-2.0
 allowed-tools: skill-docs
 metadata:
-  risk_class: clinical_assist
+  risk_class: assist
   domain: clinical
   category: cardiology
   tools:
@@ -349,7 +349,7 @@ Do not change medication without the prescribing clinician.
         parsed = parse_frontmatter((skill_dir / "SKILL.md").read_text(encoding="utf-8"))
         assert parsed.frontmatter["name"] == "cardiology-prep"
         assert (skill_dir / "carefold.yaml.migrated").exists()
-        assert parsed.frontmatter["metadata"]["risk_class"] == "clinical_assist"
+        assert parsed.frontmatter["metadata"]["risk_class"] == "assist"
 
     # -------------------------------------------------------------------------
     # Feature 2: Allowed Tools (allowed-tools string & resolution)
@@ -558,7 +558,7 @@ You explain standard cardiology intake terminology in plain English and support 
                 {
                     "name": "cardiology-prep",
                     "metadata": {
-                        "risk_class": "clinical_assist",
+                        "risk_class": "assist",
                         "tools": ["skill-docs", "attach-read", "workspace-note"],
                     },
                 }
@@ -566,7 +566,7 @@ You explain standard cardiology intake terminology in plain English and support 
         }
         updates = middleware.before_agent(state)
         assert updates is not None
-        assert updates.get("carefold_risk_class") == "clinical_assist"
+        assert updates.get("carefold_risk_class") == "assist"
 
     def test_slot7_rejects_unauthorized_tools(self):
         """Verifies slot 7 middleware raises ToolValidationError on unauthorized tools."""
@@ -576,7 +576,7 @@ You explain standard cardiology intake terminology in plain English and support 
                 {
                     "name": "rogue-skill",
                     "metadata": {
-                        "risk_class": "clinical_assist",
+                        "risk_class": "assist",
                         "tools": ["skill-docs", "bash_exec"],
                     },
                 }
@@ -587,21 +587,21 @@ You explain standard cardiology intake terminology in plain English and support 
         assert "bash_exec" in str(exc_info.value)
 
     def test_slot7_dynamic_risk_elevation_for_clinical_skills(self):
-        """Elevates thread risk class to clinical_assist when clinical skill is loaded."""
+        """Elevates thread risk class to assist when clinical skill is loaded."""
         middleware = get_slot7_middleware()
         state = {
             "skills_metadata": [
                 {
                     "name": "derma-prep",
                     "metadata": {
-                        "risk_class": "clinical_assist",
+                        "risk_class": "assist",
                         "tools": ["skill-docs"],
                     },
                 }
             ]
         }
         updates = middleware.before_agent(state)
-        assert updates == {"carefold_risk_class": "clinical_assist"}
+        assert updates == {"carefold_risk_class": "assist"}
 
     def test_slot7_retains_admin_for_purely_administrative_skills(self):
         """Retains admin risk class when only navigation/admin skills are loaded."""
@@ -618,7 +618,7 @@ You explain standard cardiology intake terminology in plain English and support 
             ]
         }
         updates = middleware.before_agent(state)
-        assert updates is None or updates.get("carefold_risk_class") != "clinical_assist"
+        assert updates is None or updates.get("carefold_risk_class") != "assist"
 
     def test_slot7_position_in_middleware_pipeline(self):
         """Confirms Slot 7 position in the Deep Agents middleware pipeline architecture."""
@@ -817,16 +817,16 @@ class TestCrossFeatureCombinations:
         assert set(effective) == {"list_agents", "skill-docs", "attach-read", "workspace-note"}
 
     def test_cross_feature_dynamic_risk_elevation_with_disclaimers(self):
-        """Mixed admin + clinical skills elevate risk to clinical_assist and enforce disclaimers."""
+        """Mixed admin + clinical skills elevate risk to assist and enforce disclaimers."""
         middleware = get_slot7_middleware()
         state = {
             "skills_metadata": [
                 {"name": "benefits-explainer", "metadata": {"risk_class": "admin", "tools": ["attach-read"]}},
-                {"name": "cardiology-prep", "metadata": {"risk_class": "clinical_assist", "tools": ["skill-docs"]}},
+                {"name": "cardiology-prep", "metadata": {"risk_class": "assist", "tools": ["skill-docs"]}},
             ]
         }
         updates = middleware.before_agent(state)
-        assert updates.get("carefold_risk_class") == "clinical_assist"
+        assert updates.get("carefold_risk_class") == "assist"
 
     def test_cross_feature_agent_delegation_skill_isolation(self):
         """Inter-agent delegation preserves skill boundaries and tool constraints."""
@@ -918,7 +918,7 @@ class TestClinicalScenarios:
                 {
                     "name": "cardiology-prep",
                     "metadata": {
-                        "risk_class": "clinical_assist",
+                        "risk_class": "assist",
                         "domain": "clinical",
                         "category": "cardiology",
                         "tools": ["skill-docs", "attach-read", "workspace-note"],
@@ -931,7 +931,7 @@ class TestClinicalScenarios:
         # 2. Middleware evaluation
         middleware = get_slot7_middleware()
         updates = middleware.before_agent(state)
-        assert updates.get("carefold_risk_class") == "clinical_assist"
+        assert updates.get("carefold_risk_class") == "assist"
 
         # 3. Simulated response verification
         simulated_response = (
@@ -954,7 +954,7 @@ class TestClinicalScenarios:
                 {
                     "name": "derma-prep",
                     "metadata": {
-                        "risk_class": "clinical_assist",
+                        "risk_class": "assist",
                         "domain": "clinical",
                         "category": "dermatology",
                         "tools": ["skill-docs"],
@@ -966,7 +966,7 @@ class TestClinicalScenarios:
 
         middleware = get_slot7_middleware()
         updates = middleware.before_agent(state)
-        assert updates.get("carefold_risk_class") == "clinical_assist"
+        assert updates.get("carefold_risk_class") == "assist"
 
         # Diagnostic refusal & pre-visit guide
         simulated_response = (
@@ -1000,8 +1000,8 @@ class TestClinicalScenarios:
 
         middleware = get_slot7_middleware()
         updates = middleware.before_agent(state)
-        # Should not elevate to clinical_assist
-        assert updates is None or updates.get("carefold_risk_class") != "clinical_assist"
+        # Should not elevate to assist
+        assert updates is None or updates.get("carefold_risk_class") != "assist"
 
         simulated_response = (
             "Under typical health insurance plans, you must pay the annual deductible of $1,500 "

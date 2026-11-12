@@ -82,7 +82,7 @@ def approvals_test_env(monkeypatch):
         )
         bob_session = await auth_adapter.create_session(bob.id)
 
-        # 3. Charlie (Viewer with only 'view_clinical' access grant, NOT 'manage')
+        # 3. Charlie (Viewer with only 'view_records' access grant, NOT 'manage')
         charlie = await auth_adapter.register_user(
             email="charlie@test.local",
             username="charlie",
@@ -141,12 +141,12 @@ def approvals_test_env(monkeypatch):
             )
             session.add(bob_grant)
 
-            # Grant Charlie 'view_clinical' access (not 'manage')
+            # Grant Charlie 'view_records' access (not 'manage')
             charlie_grant = ProfileAccess(
                 id=str(uuid.uuid4()),
                 profile_id=alice_profile.id,
                 user_id=charlie.id,
-                access_level="view_clinical",
+                access_level="view_records",
                 granted_by=alice.id,
                 granted_at=datetime.now(timezone.utc),
             )
@@ -292,7 +292,7 @@ def test_list_pending_approvals_as_manager(approvals_test_env):
 
 
 def test_list_pending_approvals_viewer_forbidden(approvals_test_env):
-    """Viewer with only 'view_clinical' cannot list approvals (requires 'manage')."""
+    """Viewer with only 'view_records' cannot list approvals (requires 'manage')."""
     env = approvals_test_env
     profile_id = env["profile_id"]
 

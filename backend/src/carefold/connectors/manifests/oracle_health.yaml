@@ -24,7 +24,7 @@ categories:
   - immunisations
   - vitals
   - labs
-entrypoint: connectors.starters.ehr_smart_v2:OracleHealthConnector
+entrypoint: carefold.connectors.starters.ehr_smart_v2:OracleHealthConnector
 data_flows:
   allowed_hosts:
     - fhir-myrecord.cerner.com

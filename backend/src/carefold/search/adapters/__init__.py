@@ -13,18 +13,13 @@
 
 from __future__ import annotations
 
-import sys
 from typing import Any
 
 from yarvelle_core.search.adapters import *  # noqa: F401, F403
 import yarvelle_core.search.adapters as _target_module
-import yarvelle_core.search.adapters.spector as _spector_module
-import yarvelle_core.search.adapters.sqlite as _sqlite_module
 
-sys.modules[__name__] = _target_module
-sys.modules["carefold.search.adapters"] = _target_module
-sys.modules["carefold.search.adapters.sqlite"] = _sqlite_module
-sys.modules["carefold.search.adapters.spector"] = _spector_module
+from carefold.search.adapters.spector import SpectorSearchIndex  # noqa: F401
+from carefold.search.adapters.sqlite import SqliteSearchIndex  # noqa: F401
 
 
 def __getattr__(name: str) -> Any:

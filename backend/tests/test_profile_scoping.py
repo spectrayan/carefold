@@ -393,23 +393,23 @@ async def test_access_governance_sharing(profile_test_env):
         b_resp = client.get(f"/api/profiles/{grandma_id}", headers=user_b["headers"])
         assert b_resp.status_code == 403
 
-        # Alice grants Bob 'view_clinical' access
+        # Alice grants Bob 'view_records' access
         grant_resp = client.post(
             f"/api/profiles/{grandma_id}/access",
             headers=user_a["headers"],
             json={
                 "user_id": user_b["user"]["id"],
-                "access_level": "view_clinical",
+                "access_level": "view_records",
             },
         )
         assert grant_resp.status_code == 201
-        assert grant_resp.json()["access_level"] == "view_clinical"
+        assert grant_resp.json()["access_level"] == "view_records"
 
         # Bob can now view Grandma's profile
         b_resp2 = client.get(f"/api/profiles/{grandma_id}", headers=user_b["headers"])
         assert b_resp2.status_code == 200
         assert b_resp2.json()["name"] == "Grandma"
-        assert b_resp2.json()["access_level"] == "view_clinical"
+        assert b_resp2.json()["access_level"] == "view_records"
 
         # List accesses
         access_list = client.get(f"/api/profiles/{grandma_id}/access", headers=user_a["headers"])
@@ -453,20 +453,20 @@ async def test_clinical_consent_per_profile(profile_test_env):
         # Default consent for Child is not allowed
         cons_resp = client.get(f"/api/profiles/{child_id}/consent", headers=user_a["headers"])
         assert cons_resp.status_code == 200
-        assert cons_resp.json()["allow_clinical"] is False
+        assert cons_resp.json()["allow_assist"] is False
 
         # Update consent for Child to allow clinical
         up_cons = client.put(
             f"/api/profiles/{child_id}/consent",
             headers=user_a["headers"],
-            json={"allow_clinical": True, "terms_version": "v1.0"},
+            json={"allow_assist": True, "terms_version": "v1.0"},
         )
         assert up_cons.status_code == 200
-        assert up_cons.json()["allow_clinical"] is True
+        assert up_cons.json()["allow_assist"] is True
 
         # Verify Child consent is True
         cons_resp2 = client.get(f"/api/profiles/{child_id}/consent", headers=user_a["headers"])
-        assert cons_resp2.json()["allow_clinical"] is True
+        assert cons_resp2.json()["allow_assist"] is True
 
         # Me profile consent is still untouched
         me_cons = client.get(f"/api/profiles/{me_id}/consent", headers=user_a["headers"])

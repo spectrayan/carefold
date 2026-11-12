@@ -9,22 +9,25 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Backward-compatibility re-export shim for yarvelle_core.tools.extraction_tools."""
+"""Re-export shim combining yarvelle_core extraction tools with Carefold's clinical SanitizePIITool."""
 
 from __future__ import annotations
 
-import sys
-from typing import Any
+from yarvelle_core.tools.extraction_tools import (
+    ExtractStructuredDataInput,
+    ExtractStructuredDataTool,
+    SanitizePIIInput,
+    ValidateGroundingInput,
+    ValidateGroundingTool,
+)
 
-from yarvelle_core.tools.extraction_tools import *  # noqa: F401, F403
-import yarvelle_core.tools.extraction_tools as _target_module
+from carefold.clinical.sanitizer import SanitizePIITool
 
-sys.modules[__name__] = _target_module
-
-
-def __getattr__(name: str) -> Any:
-    return getattr(_target_module, name)
-
-
-def __dir__() -> list[str]:
-    return sorted(set(globals().keys()) | set(dir(_target_module)))
+__all__ = [
+    "ExtractStructuredDataInput",
+    "ExtractStructuredDataTool",
+    "SanitizePIIInput",
+    "SanitizePIITool",
+    "ValidateGroundingInput",
+    "ValidateGroundingTool",
+]

@@ -123,7 +123,7 @@ const DEFAULT_FALLBACK_AGENTS: AgentSummary[] = [
     id: 'appointment-prep-coordinator',
     title: 'Appointment Prep Coordinator',
     version: '0.4.0',
-    risk_class: 'clinical_assist',
+    risk_class: 'assist',
     skills: ['visit-prep'],
     effectiveTools: ['attach-read', 'workspace-note'],
     starters: ['Help me prepare for my visit'],
@@ -294,9 +294,9 @@ export function ChatStudioShell({
       let isMounted = true;
       async function loadAgentStarters() {
         try {
-          const allowClinical = hasClinicalConsent(selectedAgentId);
+          const allowAssist = hasClinicalConsent(selectedAgentId);
           const res = await fetch(
-            `/api/v1/agents/${encodeURIComponent(selectedAgentId)}?allow_clinical=${allowClinical}`
+            `/api/v1/agents/${encodeURIComponent(selectedAgentId)}?allow_assist=${allowAssist}`
           );
           if (res.ok) {
             const data = await res.json();
@@ -597,11 +597,11 @@ export function ChatStudioShell({
     const effectiveModel = getEffectiveModel(settings);
     const apiKey = getApiKeyForProvider(settings, settings.provider);
     const customEndpoint = getEndpointForProvider(settings, settings.provider);
-    if (selectedAgent.risk_class === 'clinical_assist' && !hasClinicalConsent(selectedAgent.id)) {
+    if (selectedAgent.risk_class === 'assist' && !hasClinicalConsent(selectedAgent.id)) {
       grantClinicalConsent(selectedAgent.id);
     }
-    const allowClinical =
-      selectedAgent.risk_class === 'clinical_assist' ? true : hasClinicalConsent(selectedAgent.id);
+    const allowAssist =
+      selectedAgent.risk_class === 'assist' ? true : hasClinicalConsent(selectedAgent.id);
 
     let accumulatedAssistantText = '';
     let refusalMessage = '';
@@ -628,8 +628,8 @@ export function ChatStudioShell({
           profile_id: resolvedProfileId,
           prompt: text,
           ...(currentAttachments.length > 0 ? { attachments: currentAttachments } : {}),
-          allow_clinical: allowClinical,
-          allowClinical,
+          allow_assist: allowAssist,
+          allowAssist,
           messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
           provider: settings.provider,
           model: effectiveModel,
@@ -1459,7 +1459,7 @@ export function ChatStudioShell({
                   </button>
                 </div>
                 <span className="text-xs text-[var(--cf-fg-subtle)] block truncate">
-                  {selectedAgent.risk_class === 'clinical_assist'
+                  {selectedAgent.risk_class === 'assist'
                     ? 'Clinical prep · consent given'
                     : 'Everyday wellness'}
                 </span>

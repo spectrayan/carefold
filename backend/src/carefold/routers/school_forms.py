@@ -51,7 +51,7 @@ router = APIRouter(tags=["school-forms"])
 
 
 def require_profile_access(
-    required_access: Literal["manage", "view_clinical"] = "view_clinical",
+    required_access: Literal["manage", "view_records"] = "view_records",
 ) -> Callable[..., Coroutine[Any, Any, Profile]]:
     """Enforces profile-scoped role-based access control for school health forms."""
     async def _dependency(
@@ -88,7 +88,7 @@ def require_profile_access(
                 detail="Access denied: management permissions required to modify school forms.",
             )
 
-        if required_access == "view_clinical" and access not in ("manage", "view_clinical"):
+        if required_access == "view_records" and access not in ("manage", "view_records"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: clinical view permissions required to inspect school forms.",
@@ -160,7 +160,7 @@ async def list_profile_school_forms(
     profile_id: str,
     status_filter: Optional[str] = Query(None, alias="status", description="Filter by form status"),
     form_type: Optional[str] = Query(None, description="Filter by form type"),
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> SchoolFormListResponse:
     """Lists all school/camp health forms for a profile alongside under-13 safeguard status."""
@@ -233,7 +233,7 @@ async def create_profile_school_form(
 async def get_profile_school_form(
     profile_id: str,
     form_id: str,
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> SchoolFormResponse:
     """Retrieves a single school health form and its draft prefill packet."""

@@ -107,7 +107,7 @@ export default function FamilyPage() {
           targetProfileId: String(inv.targetProfileId),
           targetProfileName: String(inv.targetProfileName),
           permissions: {
-            view_clinical: Boolean(inv.permissions?.view_clinical),
+            view_records: Boolean(inv.permissions?.view_records),
             view_paperwork: Boolean(inv.permissions?.view_paperwork)
           },
           expiresInDays: Number(inv.expiresInDays) || 30,
@@ -131,7 +131,7 @@ export default function FamilyPage() {
           targetProfileId: String(inv.targetProfileId),
           targetProfileName: String(inv.targetProfileName),
           permissions: {
-            view_clinical: Boolean(inv.permissions?.view_clinical),
+            view_records: Boolean(inv.permissions?.view_records),
             view_paperwork: Boolean(inv.permissions?.view_paperwork)
           },
           expiresInDays: Number(inv.expiresInDays) || 30,
@@ -297,8 +297,8 @@ export default function FamilyPage() {
                           <span>Code: <code className="font-mono bg-[var(--cf-surface-2)] px-1 py-0.5 rounded text-xs">{invite.inviteCode}</code></span>
                           <span>&middot;</span>
                           <span>
-                            {invite.permissions.view_clinical ? 'Visit prep & clinical' : ''}
-                            {invite.permissions.view_clinical && invite.permissions.view_paperwork ? ', ' : ''}
+                            {invite.permissions.view_records ? 'Visit prep & clinical' : ''}
+                            {invite.permissions.view_records && invite.permissions.view_paperwork ? ', ' : ''}
                             {invite.permissions.view_paperwork ? 'Insurance & paperwork' : ''}
                           </span>
                         </p>

@@ -31,8 +31,8 @@ describe('clinicalConsent store', () => {
     vi.restoreAllMocks();
   });
 
-  it('only clinical_assist requires consent', () => {
-    expect(requiresClinicalConsent('clinical_assist')).toBe(true);
+  it('only assist requires consent', () => {
+    expect(requiresClinicalConsent('assist')).toBe(true);
     expect(requiresClinicalConsent(' Clinical_Assist ')).toBe(true);
     expect(requiresClinicalConsent('wellness')).toBe(false);
     expect(requiresClinicalConsent('admin')).toBe(false);

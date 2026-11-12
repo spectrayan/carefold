@@ -66,7 +66,7 @@ export function ViewerInviteModal({
       targetProfileId,
       targetProfileName,
       permissions: {
-        view_clinical: viewClinical,
+        view_records: viewClinical,
         view_paperwork: viewPaperwork
       },
       expiresInDays,
@@ -153,7 +153,7 @@ export function ViewerInviteModal({
                 />
                 <div className="text-xs">
                   <span className="font-semibold text-[var(--cf-fg)] block">
-                    View visit prep &amp; clinical summaries (view_clinical)
+                    View visit prep &amp; clinical summaries (view_records)
                   </span>
                   <span className="text-[var(--cf-fg-subtle)]">
                     Can see generated visit questions, checklists, and symptom notes.

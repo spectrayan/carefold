@@ -114,7 +114,7 @@ async def get_user_profile_access(
     user: UserProfile,
     db: AsyncSession,
 ) -> Optional[AccessLevel]:
-    """Determines user's access level ('manage', 'view_clinical', 'view_paperwork') for a profile."""
+    """Determines user's access level ('manage', 'view_records', 'view_paperwork') for a profile."""
     owner_id = resolve_owner_user_id(user)
 
     # 1. Offline / single-user mode bypass (local desktop single steward)
@@ -194,7 +194,7 @@ async def auto_provision_primary_me_profile(
     # Add default clinical consent
     consent = ProfileConsent(
         profile_id=profile_id,
-        allow_clinical=False,
+        allow_assist=False,
         terms_version="v1.0",
         consented_at=None,
         teen_handover_notified=False,
@@ -337,7 +337,7 @@ async def create_profile(
 
     consent = ProfileConsent(
         profile_id=new_profile.id,
-        allow_clinical=False,
+        allow_assist=False,
         terms_version="v1.0",
         consented_at=None,
         teen_handover_notified=False,
@@ -367,7 +367,7 @@ async def create_profile(
         consent=ProfileConsentResponse(
             id=consent.id,
             profile_id=consent.profile_id,
-            allow_clinical=consent.allow_clinical,
+            allow_assist=consent.allow_assist,
             terms_version=consent.terms_version,
             consented_at=consent.consented_at.isoformat() if consent.consented_at else None,
             teen_handover_notified=consent.teen_handover_notified,
@@ -438,7 +438,7 @@ async def accept_viewer_invite(
         )
 
     # Determine access level from invite permissions
-    access_level = "view_clinical" if invite.view_clinical else ("view_paperwork" if invite.view_paperwork else "view_clinical")
+    access_level = "view_records" if invite.view_records else ("view_paperwork" if invite.view_paperwork else "view_records")
 
     # Upsert ProfileAccess record
     acc_stmt = select(ProfileAccess).where(
@@ -562,7 +562,7 @@ async def list_all_viewer_invites(
             invited_by=inv.invited_by,
             invitee_name=inv.invitee_name,
             role=inv.role,
-            view_clinical=inv.view_clinical,
+            view_records=inv.view_records,
             view_paperwork=inv.view_paperwork,
             expires_at=inv.expires_at.isoformat(),
             accepted_at=inv.accepted_at.isoformat() if inv.accepted_at else None,
@@ -622,7 +622,7 @@ async def list_viewer_invites(
             invited_by=inv.invited_by,
             invitee_name=inv.invitee_name,
             role=inv.role,
-            view_clinical=inv.view_clinical,
+            view_records=inv.view_records,
             view_paperwork=inv.view_paperwork,
             expires_at=inv.expires_at.isoformat(),
             accepted_at=inv.accepted_at.isoformat() if inv.accepted_at else None,
@@ -675,7 +675,7 @@ async def create_viewer_invite(
         invited_by=effective_user_id,
         invitee_name=payload.invitee_name.strip(),
         role=payload.role or "viewer",
-        view_clinical=payload.view_clinical,
+        view_records=payload.view_records,
         view_paperwork=payload.view_paperwork,
         expires_at=expires_at,
         created_at=now,
@@ -701,7 +701,7 @@ async def create_viewer_invite(
         invited_by=new_invite.invited_by,
         invitee_name=new_invite.invitee_name,
         role=new_invite.role,
-        view_clinical=new_invite.view_clinical,
+        view_records=new_invite.view_records,
         view_paperwork=new_invite.view_paperwork,
         expires_at=new_invite.expires_at.isoformat(),
         accepted_at=None,
@@ -804,7 +804,7 @@ async def get_profile(
         if consent is None:
             consent = ProfileConsent(
                 profile_id=profile.id,
-                allow_clinical=False,
+                allow_assist=False,
                 terms_version="v1.0",
             )
             db.add(consent)
@@ -814,7 +814,7 @@ async def get_profile(
     consent_resp = ProfileConsentResponse(
         id=consent.id,
         profile_id=consent.profile_id,
-        allow_clinical=consent.allow_clinical,
+        allow_assist=consent.allow_assist,
         terms_version=consent.terms_version,
         consented_at=consent.consented_at.isoformat() if consent.consented_at else None,
         teen_handover_notified=consent.teen_handover_notified,
@@ -1278,7 +1278,7 @@ async def get_profile_consent(
     if consent is None:
         consent = ProfileConsent(
             profile_id=profile.id,
-            allow_clinical=False,
+            allow_assist=False,
             terms_version="v1.0",
         )
         db.add(consent)
@@ -1288,7 +1288,7 @@ async def get_profile_consent(
     return ProfileConsentResponse(
         id=consent.id,
         profile_id=consent.profile_id,
-        allow_clinical=consent.allow_clinical,
+        allow_assist=consent.allow_assist,
         terms_version=consent.terms_version,
         consented_at=consent.consented_at.isoformat() if consent.consented_at else None,
         teen_handover_notified=consent.teen_handover_notified,
@@ -1331,20 +1331,20 @@ async def update_profile_consent(
     if consent is None:
         consent = ProfileConsent(
             profile_id=profile.id,
-            allow_clinical=payload.allow_clinical,
+            allow_assist=payload.allow_assist,
             terms_version=payload.terms_version or "v1.0",
-            consented_at=now if payload.allow_clinical else None,
+            consented_at=now if payload.allow_assist else None,
             created_at=now,
             updated_at=now,
         )
         db.add(consent)
     else:
-        if payload.allow_clinical and not consent.allow_clinical:
+        if payload.allow_assist and not consent.allow_assist:
             consent.consented_at = now
-        elif not payload.allow_clinical:
+        elif not payload.allow_assist:
             consent.consented_at = None
 
-        consent.allow_clinical = payload.allow_clinical
+        consent.allow_assist = payload.allow_assist
         if payload.terms_version:
             consent.terms_version = payload.terms_version
         consent.updated_at = now
@@ -1355,7 +1355,7 @@ async def update_profile_consent(
     return ProfileConsentResponse(
         id=consent.id,
         profile_id=consent.profile_id,
-        allow_clinical=consent.allow_clinical,
+        allow_assist=consent.allow_assist,
         terms_version=consent.terms_version,
         consented_at=consent.consented_at.isoformat() if consent.consented_at else None,
         teen_handover_notified=consent.teen_handover_notified,

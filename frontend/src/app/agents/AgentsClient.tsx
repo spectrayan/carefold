@@ -287,7 +287,7 @@ export function AgentsClient({
           {/* Risk Filters */}
           {[
             { id: 'all', label: t('agents.risk_all') },
-            { id: 'clinical_assist', label: t('agents.risk_clinical') },
+            { id: 'assist', label: t('agents.risk_clinical') },
             { id: 'admin', label: t('agents.risk_admin') },
             { id: 'wellness', label: t('agents.risk_wellness') }
           ].map((rf) => {
@@ -349,7 +349,7 @@ export function AgentsClient({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredAgents.map((agent) => {
             const Icon = resolveAgentIcon(agent.id);
-            const isClinical = agent.risk_class === 'clinical_assist';
+            const isClinical = agent.risk_class === 'assist';
 
             return (
               <div

@@ -111,7 +111,7 @@ class TestInputGuardrailPureEmergency:
         node = InputGuardrailNode()
         state = {
             "target_domain": "clinical",
-            "allow_clinical": False,
+            "allow_assist": False,
             "messages": [{"role": "user", "content": "Crushing chest pain radiating to arm"}],
         }
         res = await node.execute(state)
@@ -180,7 +180,7 @@ class TestInputGuardrailCompoundEmergencyEvasion:
         node = InputGuardrailNode()
         state = {
             "target_domain": "clinical",
-            "allow_clinical": False,
+            "allow_assist": False,
             "messages": [{"role": "user", "content": "I have severe crushing chest pain, should I avoid calling 911?"}],
         }
         res = await node.execute(state)
@@ -210,7 +210,7 @@ class TestInputGuardrailEmergencyNegativeControls:
         """Historical mention of past heart attack does not trigger acute emergency red flag."""
         node = InputGuardrailNode()
         state = {
-            "allow_clinical": True,
+            "allow_assist": True,
             "messages": [{"role": "user", "content": "I had a heart attack 5 years ago. What are heart-healthy breakfast foods?"}],
         }
         res = await node.execute(state)
@@ -339,7 +339,7 @@ class TestOrchestratorExplicitRoutingNoHijack:
             "explicit_agent": target_agent,
             "prompt": prompt,
             "messages": [],
-            "allow_clinical": True,
+            "allow_assist": True,
         }
         res_explicit = await orchestrator.execute(state_explicit)
         plan_explicit = ExecutionPlan.model_validate(res_explicit["execution_plan"])
@@ -356,7 +356,7 @@ class TestOrchestratorExplicitRoutingNoHijack:
             "current_agent": target_agent,
             "prompt": prompt,
             "messages": [],
-            "allow_clinical": True,
+            "allow_assist": True,
         }
         res_current = await orchestrator.execute(state_current)
         plan_current = ExecutionPlan.model_validate(res_current["execution_plan"])
@@ -398,7 +398,7 @@ class TestOrchestratorExplicitMultiSpecialistCoordination:
             "explicit_agent": "heart-care-coordinator",
             "prompt": "Please coordinate my heart failure cardiology follow-up visit.",
             "messages": [],
-            "allow_clinical": True,
+            "allow_assist": True,
         }
 
         res = await orchestrator.execute(state)

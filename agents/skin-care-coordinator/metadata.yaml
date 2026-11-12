@@ -40,4 +40,4 @@ maturity: stable
 hidden: false
 domain: clinical
 category: clinical.dermatology
-risk_class: clinical_assist
+risk_class: assist

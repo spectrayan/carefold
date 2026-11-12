@@ -441,7 +441,7 @@ def appointments_api_env(monkeypatch):
                 id=str(uuid.uuid4()),
                 profile_id=alice_profile.id,
                 user_id=charlie.id,
-                access_level="view_clinical",
+                access_level="view_records",
                 granted_by=alice.id,
                 granted_at=now,
             ))
@@ -584,11 +584,11 @@ def test_appointments_api_permissions(appointments_api_env):
     assert bob_res.status_code == 201
     appt_id = bob_res.json()["id"]
 
-    # 2. Charlie (view_clinical) can GET
+    # 2. Charlie (view_records) can GET
     charlie_get = client.get(f"/api/profiles/{prof_id}/appointments", headers=charlie_h)
     assert charlie_get.status_code == 200
 
-    # 3. Charlie (view_clinical) CANNOT POST or PATCH or DELETE (403)
+    # 3. Charlie (view_records) CANNOT POST or PATCH or DELETE (403)
     charlie_post = client.post(f"/api/profiles/{prof_id}/appointments", json=payload, headers=charlie_h)
     assert charlie_post.status_code == 403
 

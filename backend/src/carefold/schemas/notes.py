@@ -13,13 +13,12 @@
 
 from __future__ import annotations
 
-import sys
 from typing import Any
 
 from yarvelle_core.schemas.notes import *  # noqa: F401, F403
 import yarvelle_core.schemas.notes as _target_module
 
-sys.modules[__name__] = _target_module
+from carefold.clinical.notes import AfterVisitExtractionResponse  # noqa: F401
 
 
 def __getattr__(name: str) -> Any:

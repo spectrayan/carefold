@@ -47,7 +47,7 @@ router = APIRouter(tags=["preventive"])
 
 
 def require_profile_access(
-    required_access: Literal["manage", "view_clinical"] = "view_clinical",
+    required_access: Literal["manage", "view_records"] = "view_records",
 ) -> Callable[..., Coroutine[Any, Any, Profile]]:
     """Enforces profile-scoped role-based access control for preventive care."""
     async def _dependency(
@@ -84,7 +84,7 @@ def require_profile_access(
                 detail="Access denied: management permissions required to modify preventive care records.",
             )
 
-        if required_access == "view_clinical" and access not in ("manage", "view_clinical"):
+        if required_access == "view_records" and access not in ("manage", "view_records"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: clinical view permissions required to inspect preventive care.",
@@ -192,7 +192,7 @@ async def get_profile_preventive_care(
     schedule_source: Optional[str] = Query(None, description="Schedule variant: aap_2026 or cdc"),
     sex: Optional[str] = Query(None, description="Optional biological sex filter: female, male, any"),
     category: Optional[str] = Query(None, description="Optional category filter: screening, immunisation, well_visit"),
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> PreventiveChecklistResponse:
     """Evaluates age-appropriate USPSTF screenings or AAP/CDC pediatric immunisations."""

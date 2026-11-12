@@ -61,16 +61,16 @@ from carefold.connectors.smart_fhir import (
     search_smart_fhir_records,
 )
 from carefold.models.health import HealthResource
-from connectors.base import (
+from yarvelle_core.connectors.base import (
     NormalisedRecord,
     Page,
     StreamSpec,
     ToolContext,
     ToolSpec,
 )
-from connectors.errors import ConnectorError
-from connectors.http import ScopedHttp
-from connectors.manifest import ConnectorManifest
+from yarvelle_core.connectors.errors import ConnectorError
+from yarvelle_core.connectors.http import ScopedHttp
+from yarvelle_core.connectors.manifest import ConnectorManifest
 
 _MANIFEST_PATH = Path(__file__).resolve().parent / "manifests" / "epic_smart.yaml"
 

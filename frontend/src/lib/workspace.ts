@@ -15,7 +15,7 @@ import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
 export interface CarefoldConfig {
-  allow_clinical?: boolean;
+  allow_assist?: boolean;
   model?: {
     provider?: string;
     baseUrl?: string;
@@ -98,7 +98,7 @@ export async function loadWorkspaceConfig(workspaceRoot: string): Promise<Carefo
       } catch {}
     }
     return {
-      allow_clinical: Boolean(parsed?.allow_clinical),
+      allow_assist: Boolean(parsed?.allow_assist),
       model: {
         provider: typeof parsed?.model?.provider === 'string' ? parsed.model.provider : 'ollama',
         model: typeof parsed?.model?.model === 'string' ? parsed.model.model : undefined,

@@ -112,7 +112,7 @@ def test_fhir_tool_specs_are_read_only_and_clinical_scoped():
         assert spec.risk_tier == "read"
         assert spec.scopes == {"health.clinical"}
         assert spec.data_flows.allowed_hosts == ()
-        assert spec.data_flows.data_sensitivity == "phi"
+        assert spec.data_flows.data_sensitivity == "restricted"
         assert callable(spec.executor)
 
 

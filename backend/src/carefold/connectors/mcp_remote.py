@@ -42,7 +42,7 @@ from carefold.db.models import (
 )
 from carefold.engine.tool_exec import TaintFlag, UntrustedResult
 from carefold.engine.tool_registry import ToolSpec
-from connectors.manifest import ConnectorManifest, McpToolAllowlistEntry
+from yarvelle_core.connectors.manifest import ConnectorManifest, McpToolAllowlistEntry
 
 CURATED_REMOTE_MCP_IDS = ("google-workspace-gmail",)
 

@@ -74,7 +74,7 @@ describe('Household Family Management Page (/family)', () => {
           inviteeName: 'Dana Rivera',
           targetProfileId: 'rosa',
           targetProfileName: 'Rosa Rivera',
-          permissions: { view_clinical: true, view_paperwork: false },
+          permissions: { view_records: true, view_paperwork: false },
           expiresInDays: 30,
           inviteCode: 'cf-inv-DANA92',
           createdAt: new Date().toISOString()

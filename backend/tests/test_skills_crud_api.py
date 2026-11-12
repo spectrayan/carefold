@@ -62,7 +62,7 @@ def test_create_skill_with_mandatory_disclosures(client: TestClient):
         "description": "Preparation aid for pediatric doctor consultations.",
         "domain": "clinical",
         "category": "pediatrics",
-        "risk_class": "clinical_assist",
+        "risk_class": "assist",
         "tags": ["pediatrics", "children", "prep"],
         "tools": ["attach-read", "workspace-note"],
         "instructions": "Review growth charts, vaccination milestones, and child behavioral questions.",

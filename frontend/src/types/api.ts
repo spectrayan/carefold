@@ -11,12 +11,12 @@
  * Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
  */
 
-export type RiskClass = 'wellness' | 'admin' | 'clinical_assist';
+export type RiskClass = 'wellness' | 'admin' | 'assist';
 
 export const RISK_CLASS_OPTIONS: readonly RiskClass[] = [
   'wellness',
   'admin',
-  'clinical_assist',
+  'assist',
 ] as const;
 
 export const SAFE_REFUSAL_TEMPLATE =
@@ -84,7 +84,7 @@ export interface AgentSummary {
   is_bundled?: boolean;
   isBundled?: boolean;
   verified?: boolean;
-  clinical_enabled?: boolean;
+  assist_enabled?: boolean;
   forbidden?: string[];
   hidden?: boolean;
   error?: string;
@@ -132,7 +132,7 @@ export interface AgentDetailResponse {
   forbidden?: string[];
   is_bundled: boolean;
   isBundled?: boolean;
-  clinical_requires_flag: boolean;
+  assist_requires_flag: boolean;
   readmeText?: string;
   domain?: 'clinical' | 'therapy' | 'wellness' | 'navigation' | 'education' | string;
   category?: string;
@@ -212,8 +212,8 @@ export interface ChatRequestBody {
   prompt: string;
   messages?: ChatMessageInput[];
   attachments?: string[];
-  allow_clinical?: boolean;
-  allowClinical?: boolean;
+  allow_assist?: boolean;
+  allowAssist?: boolean;
   provider?: string;
   model?: string;
   apiKey?: string;

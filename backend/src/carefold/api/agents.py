@@ -82,7 +82,7 @@ router = APIRouter(tags=["Agents"])
 async def list_agents(
     risk_class: Optional[str] = Query(None, description="Filter by risk class"),
     search: Optional[str] = Query(None, description="Search term for title/id"),
-    allow_clinical: bool = Query(False, description="Enable clinical agents"),
+    allow_assist: bool = Query(False, description="Enable clinical agents"),
     include_hidden: bool = Query(False, description="Include internal helper agents"),
     domain: Optional[str] = Query(None, description="Filter by domain"),
     category: Optional[str] = Query(None, description="Filter by category or prefix"),
@@ -107,7 +107,7 @@ async def list_agents(
 
                 effective_tools = compute_effective_tools(tools, None)
 
-                clinical_enabled = False if a.risk_class == RiskClass.CLINICAL_ASSIST.value and not allow_clinical else True
+                assist_enabled = False if a.risk_class == RiskClass.ASSIST.value and not allow_assist else True
                 agents.append(
                     AgentSummary(
                         id=a.id,
@@ -133,7 +133,7 @@ async def list_agents(
                         is_bundled=is_bundled,
                         isBundled=is_bundled,
                         type=a.type,
-                        clinical_enabled=clinical_enabled,
+                        assist_enabled=assist_enabled,
                         verified=True,
                         hidden=a.hidden,
                     )
@@ -175,10 +175,10 @@ async def list_agents(
             if (a.category or "").lower() == c or (a.category or "").lower().startswith(f"{c}.")
         ]
 
-    if not allow_clinical:
+    if not allow_assist:
         for a in filtered:
-            if a.risk_class == RiskClass.CLINICAL_ASSIST.value or a.risk_class == "clinical_assist":
-                a.clinical_enabled = False
+            if a.risk_class == RiskClass.ASSIST.value or a.risk_class == "assist":
+                a.assist_enabled = False
 
     if page is not None:
         start = (page - 1) * per_page
@@ -337,14 +337,14 @@ async def create_agent(
         is_bundled=False,
         isBundled=False,
         type="user",
-        clinical_requires_flag=(new_agent.risk_class == RiskClass.CLINICAL_ASSIST.value),
+        assist_requires_flag=(new_agent.risk_class == RiskClass.ASSIST.value),
     )
 
 
 @router.get(ROUTE_AGENT_DETAIL, response_model=AgentDetailResponse)
 async def get_agent(
     agent_id: str,
-    allow_clinical: bool = Query(False, description="Explicit consent for clinical assist"),
+    allow_assist: bool = Query(False, description="Explicit consent for clinical assist"),
     db: AsyncSession = Depends(get_db),
 ) -> AgentDetailResponse:
     """Returns detailed configuration, persona, tools, and resolved skills for a specific agent."""
@@ -361,10 +361,10 @@ async def get_agent(
         logger.warning("db_get_agent_query_failed", agent_id=agent_id, error=str(db_err))
 
     if db_agent is not None:
-        if db_agent.risk_class == RiskClass.CLINICAL_ASSIST.value and not allow_clinical:
+        if db_agent.risk_class == RiskClass.ASSIST.value and not allow_assist:
             raise HTTPException(
                 status_code=HTTP_403_FORBIDDEN,
-                detail=f"Agent '{agent_id}' is a clinical_assist agent. Explicit user consent (allow_clinical=true) is required.",
+                detail=f"Agent '{agent_id}' is an assist agent. Explicit user consent (allow_assist=true) is required.",
             )
 
         agent_skills = db_agent.get_skills()
@@ -436,7 +436,7 @@ async def get_agent(
             is_bundled=is_bundled,
             isBundled=is_bundled,
             type=db_agent.type,
-            clinical_requires_flag=(db_agent.risk_class == RiskClass.CLINICAL_ASSIST.value),
+            assist_requires_flag=(db_agent.risk_class == RiskClass.ASSIST.value),
         )
 
     # 2. Fallback to disk
@@ -458,10 +458,10 @@ async def get_agent(
     except Exception as err:
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to load agent: {err}")
 
-    if agent.risk_class == RiskClass.CLINICAL_ASSIST and not allow_clinical:
+    if agent.risk_class == RiskClass.ASSIST and not allow_assist:
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN,
-            detail=f"Agent '{agent_id}' is a clinical_assist agent. Explicit user consent (allow_clinical=true) is required.",
+            detail=f"Agent '{agent_id}' is an assist agent. Explicit user consent (allow_assist=true) is required.",
         )
 
     starters = load_agent_starters(agent_dir)
@@ -527,7 +527,7 @@ async def get_agent(
         is_bundled=is_bundled,
         isBundled=is_bundled,
         type="bundled",
-        clinical_requires_flag=(agent.risk_class == RiskClass.CLINICAL_ASSIST),
+        assist_requires_flag=(agent.risk_class == RiskClass.ASSIST),
         readmeText=readme_text,
     )
 
@@ -600,7 +600,7 @@ async def update_agent(
             tools=agent.get_tools(),
             domain=AgentDomain(agent.domain) if agent.domain in [d.value for d in AgentDomain] else AgentDomain.WELLNESS,
             category=agent.category,
-            risk_class=RiskClass(agent.risk_class) if agent.risk_class in [r.value for r in RiskClass] else RiskClass.CLINICAL_ASSIST,
+            risk_class=RiskClass(agent.risk_class) if agent.risk_class in [r.value for r in RiskClass] else RiskClass.ASSIST,
             tags=agent.get_tags(),
             icon=agent.icon,
             can_delegate=agent.can_delegate,
@@ -610,7 +610,7 @@ async def update_agent(
     except Exception as idx_err:
         logger.warning("failed_to_update_catalog_agent", agent_id=agent.id, error=str(idx_err))
 
-    return await get_agent(agent_id=agent.id, allow_clinical=True, db=db)
+    return await get_agent(agent_id=agent.id, allow_assist=True, db=db)
 
 
 @router.delete(ROUTE_AGENT_DETAIL)

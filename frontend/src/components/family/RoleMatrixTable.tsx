@@ -234,7 +234,7 @@ export function RoleMatrixTable({ profiles: profilesProp, className }: RoleMatri
           <div className="flex items-center gap-2 font-semibold text-[var(--cf-fg)]">
             <Stethoscope className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
             <span>Visit prep &amp; clinical</span>
-            <code className="text-xs text-[var(--cf-fg-subtle)] font-mono font-normal">(view_clinical)</code>
+            <code className="text-xs text-[var(--cf-fg-subtle)] font-mono font-normal">(view_records)</code>
           </div>
           <p className="text-xs text-[var(--cf-fg-muted)] leading-relaxed">
             Read clinical notes, visit prep dossiers, and consult clinical assist agents.

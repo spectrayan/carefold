@@ -78,7 +78,7 @@ def activity_api_env(monkeypatch):
         )
         bob_session = await auth_adapter.create_session(bob.id)
 
-        # 3. Charlie (Clinician with 'view_clinical' access only)
+        # 3. Charlie (Clinician with 'view_records' access only)
         charlie = await auth_adapter.register_user(
             email="charlie@activity.test",
             username="charlie",
@@ -132,7 +132,7 @@ def activity_api_env(monkeypatch):
 
             # Grants on profile_id
             session.add(ProfileAccess(profile_id=profile_id, user_id=bob.id, access_level="manage"))
-            session.add(ProfileAccess(profile_id=profile_id, user_id=charlie.id, access_level="view_clinical"))
+            session.add(ProfileAccess(profile_id=profile_id, user_id=charlie.id, access_level="view_records"))
             session.add(ProfileAccess(profile_id=profile_id, user_id=dan.id, access_level="view_paperwork"))
 
             await session.commit()
@@ -257,7 +257,7 @@ class TestActivityTimelineAPI:
     def test_get_activity_timeline_view_clinical_allowed(self, activity_api_env):
         client = TestClient(app)
         prof_id = activity_api_env["profile_id"]
-        charlie_token = activity_api_env["charlie_token"]  # view_clinical
+        charlie_token = activity_api_env["charlie_token"]  # view_records
 
         resp = client.get(
             f"/api/profiles/{prof_id}/activity",
@@ -500,7 +500,7 @@ class TestActivityUndoAPI:
     def test_post_undo_view_clinical_forbidden_403(self, activity_api_env):
         client = TestClient(app)
         prof_id = activity_api_env["profile_id"]
-        charlie_token = activity_api_env["charlie_token"]  # view_clinical only
+        charlie_token = activity_api_env["charlie_token"]  # view_records only
 
         resp = client.post(
             f"/api/profiles/{prof_id}/activity/some-event-id/undo",

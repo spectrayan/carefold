@@ -148,7 +148,7 @@ class TestExtendedSpecialtiesManifests:
             assert manifest.title in expected_titles, f"Expected title in {expected_titles}, got '{manifest.title}'"
             assert manifest.domain == AgentDomain.CLINICAL, f"Agent '{agent_id}' must have domain CLINICAL"
             assert manifest.category == spec["category"], f"Expected category '{spec['category']}', got '{manifest.category}'"
-            assert manifest.risk_class == RiskClass.CLINICAL_ASSIST, f"Agent '{agent_id}' must have risk_class CLINICAL_ASSIST"
+            assert manifest.risk_class == RiskClass.ASSIST, f"Agent '{agent_id}' must have risk_class CLINICAL_ASSIST"
             assert manifest.maturity == AgentMaturity.STABLE, f"Agent '{agent_id}' must have maturity STABLE"
             assert manifest.can_delegate is False, f"Agent '{agent_id}' must not have can_delegate=True"
             assert manifest.hidden is False, f"Agent '{agent_id}' is a public agent and must not be hidden"
@@ -300,7 +300,7 @@ class TestExtendedSpecialtiesSkills:
             fm = parse_frontmatter(raw_text)
             meta = fm.frontmatter.get("metadata", {})
 
-            assert meta.get("risk_class") in ["wellness", "clinical_assist"]
+            assert meta.get("risk_class") in ["wellness", "assist"]
             assert set(meta.get("forbidden") or []) >= {"diagnose", "prescribe", "dose", "replace_emergency_care", "instruct_stop_medication"}, (
                 f"SKILL.md for '{skill_id}' missing required forbidden actions"
             )

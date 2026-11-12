@@ -11,7 +11,7 @@
  * Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
  */
 
-export type RiskClass = 'wellness' | 'admin' | 'education' | 'clinical_assist';
+export type RiskClass = 'wellness' | 'admin' | 'education' | 'assist';
 
 export interface AgentModelConfig {
   provider?: string;

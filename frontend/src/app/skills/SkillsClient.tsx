@@ -80,7 +80,7 @@ export function SkillsClient({ initialSkills }: SkillsClientProps) {
     { id: 'all', label: 'All Risks' },
     { id: 'wellness', label: 'Wellness' },
     { id: 'admin', label: 'Admin' },
-    { id: 'clinical_assist', label: 'Clinical assist' },
+    { id: 'assist', label: 'Clinical assist' },
     { id: 'education', label: 'Education' }
   ];
 

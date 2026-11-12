@@ -525,9 +525,20 @@ class ResourceLoader:
     # =========================================================================
 
     def format_error(self, error_key: str, **kwargs: Any) -> str:
-        """Formats error message template for given error key safely."""
+        """Formats error message template for given CFD-*/YRV-* code or slug safely."""
+        if self.resources_dir == Path(__file__).parent.resolve():
+            import carefold  # noqa: F401 - ensures CFD pack error catalog is registered
+            from yarvelle_core.errors.catalog import get_error_catalog
+
+            spec = get_error_catalog().get(error_key)
+            if spec is not None:
+                try:
+                    safe_kwargs = collections.defaultdict(str, kwargs)
+                    return spec.template.format_map(safe_kwargs)
+                except Exception:
+                    return spec.template
         err_def = self.get_errors().get("errors", {}).get(error_key, {})
-        msg_template = str(err_def.get("message", error_key))
+        msg_template = str(err_def.get("template") or err_def.get("message", error_key))
         try:
             safe_kwargs = collections.defaultdict(str, kwargs)
             return msg_template.format_map(safe_kwargs)
@@ -535,9 +546,16 @@ class ResourceLoader:
             return msg_template
 
     def get_error_status_code(self, error_key: str) -> int:
-        """Returns the HTTP status code for given error key."""
+        """Returns the HTTP status code for given CFD-*/YRV-* code or slug."""
+        if self.resources_dir == Path(__file__).parent.resolve():
+            import carefold  # noqa: F401 - ensures CFD pack error catalog is registered
+            from yarvelle_core.errors.catalog import get_error_catalog
+
+            spec = get_error_catalog().get(error_key)
+            if spec is not None:
+                return spec.http_status
         err_def = self.get_errors().get("errors", {}).get(error_key, {})
-        return int(err_def.get("status_code", 500))
+        return int(err_def.get("http_status", err_def.get("status_code", 500)))
 
 
 _LOADER_LOCK = threading.Lock()

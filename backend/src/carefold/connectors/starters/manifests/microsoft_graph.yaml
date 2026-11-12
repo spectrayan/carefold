@@ -20,7 +20,7 @@ description: Syncs Outlook / Microsoft 365 free/busy schedules, suggests conflic
 categories:
   - scheduling
   - calendar
-entrypoint: connectors.starters.wearables_v2:MicrosoftGraphCalendarConnector
+entrypoint: carefold.connectors.starters.wearables_v2:MicrosoftGraphCalendarConnector
 data_flows:
   allowed_hosts:
     - graph.microsoft.com

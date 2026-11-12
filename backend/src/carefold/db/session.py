@@ -306,7 +306,7 @@ def _run_schema_migrations(connection) -> None:
                     invited_by VARCHAR(36),
                     invitee_name VARCHAR(255) NOT NULL,
                     role VARCHAR(32) NOT NULL DEFAULT 'viewer',
-                    view_clinical BOOLEAN NOT NULL DEFAULT 1,
+                    view_records BOOLEAN NOT NULL DEFAULT 1,
                     view_paperwork BOOLEAN NOT NULL DEFAULT 0,
                     expires_at DATETIME NOT NULL,
                     accepted_at DATETIME,
@@ -474,7 +474,9 @@ def _ensure_approvals_schema(connection: Connection) -> None:
 
 
 def get_alembic_config(connection: Optional[Connection] = None) -> Config:
-    """Constructs and returns Alembic Config pointing to carefold migrations."""
+    """Constructs and returns Alembic Config pointing to yarvelle_core's migration chain."""
+    import yarvelle_core.db
+
     backend_dir = Path(__file__).resolve().parents[3]
     candidate_ini = backend_dir / "alembic.ini"
     if candidate_ini.is_file():
@@ -486,12 +488,35 @@ def get_alembic_config(connection: Optional[Connection] = None) -> Config:
     else:
         cfg = Config()
 
-    migrations_dir = Path(__file__).resolve().parent / "migrations"
+    migrations_dir = Path(yarvelle_core.db.__file__).resolve().parent / "migrations"
     cfg.set_main_option("script_location", str(migrations_dir))
+    # Clear static ini default so yarvelle_core's env.py resolves active DB URL unless explicitly overridden
+    if cfg.get_main_option("sqlalchemy.url") == "sqlite:///carefold.db":
+        cfg.set_main_option("sqlalchemy.url", "")
     if connection is not None:
         cfg.attributes["connection"] = connection
     cfg.attributes["configure_logger"] = False
     return cfg
+
+
+def is_core_revision_satisfied(required_revision: str, active_revisions: set[str]) -> bool:
+    """Checks whether ``required_revision`` is in ``active_revisions`` or their Alembic ancestry."""
+    if required_revision in active_revisions:
+        return True
+    if not active_revisions:
+        return False
+    try:
+        script = alembic.script.ScriptDirectory.from_config(get_alembic_config())
+        satisfied: set[str] = set()
+        for rev in active_revisions:
+            try:
+                for step in script.iterate_revisions(rev, "base"):
+                    satisfied.add(step.revision)
+            except Exception:
+                continue
+        return required_revision in satisfied
+    except Exception:
+        return False
 
 
 def _get_sqlite_db_path(url_or_engine: str | AsyncEngine | URL) -> Optional[Path]:
@@ -649,7 +674,7 @@ def run_pack_migrations(
         core_revs = {
             r[0] for r in connection.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall() if r and r[0]
         }
-        if depends_on_core not in core_revs:
+        if not is_core_revision_satisfied(depends_on_core, core_revs):
             raise RuntimeError(
                 f"Pack migration ({version_table}) requires core revision '{depends_on_core}', "
                 f"but found core revisions: {sorted(core_revs)}."

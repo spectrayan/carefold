@@ -64,7 +64,7 @@ class TeenHandoverRequest(BaseModel):
 
 
 def require_profile_access(
-    required_access: Literal["manage", "view_clinical"] = "view_clinical",
+    required_access: Literal["manage", "view_records"] = "view_records",
 ) -> Callable[..., Coroutine[Any, Any, Profile]]:
     """FastAPI dependency enforcing profile-scoped clinical/management permissions."""
 
@@ -159,7 +159,7 @@ async def update_profile_viewer_sections_endpoint(
 async def get_profile_viewer_sections_endpoint(
     profile_id: str,
     target_user_id: str,
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Returns effective permitted sections across `VALID_VIEWER_SECTIONS` for `(profile_id, target_user_id)`."""
