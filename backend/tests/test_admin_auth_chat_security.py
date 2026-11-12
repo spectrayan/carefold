@@ -499,7 +499,9 @@ def test_api_chat_unauthenticated_returns_401_immediately(client: TestClient, m3
     resp = client.post("/api/chat", json=chat_payload)
     assert resp.status_code == 401
     assert "text/event-stream" not in resp.headers.get("content-type", "")
-    assert resp.headers.get("content-type", "").startswith("application/json")
+    assert resp.headers.get("content-type", "").startswith(
+        ("application/problem+json", "application/json")
+    )
     assert resp.json()["detail"] == "Authentication required"
 
 

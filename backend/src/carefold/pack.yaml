@@ -9,6 +9,7 @@ license: "PolyForm Noncommercial License 1.0.0 and Carefold Additional Terms"
 maintainers:
   - "spectrayan/carefold-maintainers"
 risk_tier_max: "T4"
+error_prefix: CFD
 
 scopes:
   - id: health.clinical
@@ -163,6 +164,7 @@ provides:
   prompts_dir: "resources/prompts/"
   locales_dir: "resources/locales/"
   connectors_dir: "connectors/"
+  errors_file: "resources/errors.yaml"
   evals: "evals/golden.jsonl"
 
 
@@ -230,7 +232,7 @@ migrations:
   branch: health
   version_table: alembic_version_health
   location: src/carefold/db/health_migrations
-  depends_on_core: "0013_turn_tasks"
+  depends_on_core: "0014_neutralize_profile_columns"
 
 compat:
   python: ">=3.12"

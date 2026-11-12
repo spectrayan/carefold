@@ -400,6 +400,7 @@ def get_pack() -> PackSpec:
         connectors_dir="connectors/",
         resources_dir="resources/",
         workflows_dir="workflows/",
+        errors_file="resources/errors.yaml",
     )
 
     spec = PackSpec(
@@ -426,12 +427,13 @@ def get_pack() -> PackSpec:
         provides=provides,
         orchestration=orchestration,
         safety=safety,
+        error_prefix="CFD",
     )
     return spec
 
 
 def _register_native_pack_resources() -> None:
-    """Register Carefold's pack root, prompt templates, and routing patterns with core.
+    """Register Carefold's pack root, prompt templates, error catalog, and routing patterns with core.
 
     Uses a lightweight bootstrap ``PackSpec`` so ``carefold.middleware.skills`` and
     other modules imported transitively by ``get_pack()`` can resolve ``pack_id="health"``
@@ -459,7 +461,9 @@ def _register_native_pack_resources() -> None:
             connectors_dir="connectors/",
             resources_dir="resources/",
             workflows_dir="workflows/",
+            errors_file="resources/errors.yaml",
         ),
+        error_prefix="CFD",
     )
     _yc_get_resource_loader().register_pack(bootstrap_spec)
 

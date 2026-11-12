@@ -21,6 +21,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
+from yarvelle_core.api.errors import register_error_handlers
 from yarvelle_core.api.http_security import build_cors_options, enforce_bind_safety
 
 from carefold import __version__
@@ -118,6 +119,7 @@ def create_app() -> FastAPI:
         version=__version__,
         lifespan=lifespan,
     )
+    register_error_handlers(app)
 
     # Configure CORS middleware for Next.js frontend communication
     app.add_middleware(CORSMiddleware, **build_cors_options(settings.cors_origins))

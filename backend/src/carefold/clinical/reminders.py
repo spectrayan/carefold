@@ -31,13 +31,20 @@ def generate_ics_calendar(
     reminders: List[Dict[str, Any]],
     sanitize_phi: bool = True,
     app_name: Optional[str] = None,
+    *,
+    sanitize_sensitive: Optional[bool] = None,
 ) -> str:
     """Carefold-branded RFC 5545 export (defaults product_name to Carefold)."""
     if app_name is None:
         from carefold.config import settings
 
         app_name = settings.product_name
-    return _generate_ics_calendar(reminders, sanitize_phi=sanitize_phi, app_name=app_name)
+    effective_sanitize = sanitize_phi if sanitize_sensitive is None else sanitize_sensitive
+    return _generate_ics_calendar(
+        reminders,
+        sanitize_sensitive=effective_sanitize,
+        app_name=app_name,
+    )
 
 
 __all__ = [
