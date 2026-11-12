@@ -22,7 +22,12 @@ from yarvelle_core.search.adapters.spector import SpectorSearchIndex as _CoreSpe
 from carefold.search.chunker import ClinicalChunker as _DefaultChunker
 
 
-class SpectorSearchIndex(_CoreSpectorSearchIndex):
+class _SpectorSearchIndexMeta(type(_CoreSpectorSearchIndex)):
+    def __instancecheck__(cls, instance: Any) -> bool:
+        return super().__instancecheck__(instance) or isinstance(instance, _CoreSpectorSearchIndex)
+
+
+class SpectorSearchIndex(_CoreSpectorSearchIndex, metaclass=_SpectorSearchIndexMeta):
     """Carefold search adapter defaulting to Carefold's section-aware chunker."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

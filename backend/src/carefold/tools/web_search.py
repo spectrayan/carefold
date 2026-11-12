@@ -68,7 +68,15 @@ async def execute_web_search(args: Dict[str, Any], ctx: Any = None) -> Dict[str,
     raw_query = str(args.get("query") or "")
     pre_cleaned, mrn_redacted = _strip_clinical_identifiers(raw_query)
     patched_args = {**args, "query": pre_cleaned}
-    res = await _target_module.execute_web_search(patched_args, ctx=ctx)
+    orig_fetch = _target_module._fetch_search_results
+    local_fetch = globals().get("_fetch_search_results", orig_fetch)
+    if local_fetch is not orig_fetch:
+        _target_module._fetch_search_results = local_fetch
+    try:
+        res = await _target_module.execute_web_search(patched_args, ctx=ctx)
+    finally:
+        if local_fetch is not orig_fetch:
+            _target_module._fetch_search_results = orig_fetch
     if isinstance(res, dict):
         res = {
             **res,
