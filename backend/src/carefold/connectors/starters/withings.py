@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from fhir.resources.R4B.observation import Observation as FhirObservation
 
-from connectors.base import (
+from yarvelle_core.connectors.base import (
     Connector,
     NormalisedRecord,
     Page,
@@ -29,8 +29,8 @@ from connectors.base import (
     ToolContext,
     ToolSpec,
 )
-from connectors.http import ScopedHttp
-from connectors.manifest import ConnectorManifest
+from yarvelle_core.connectors.http import ScopedHttp
+from yarvelle_core.connectors.manifest import ConnectorManifest
 
 _MANIFEST_PATH = Path(__file__).resolve().parent / "manifests" / "withings.yaml"
 

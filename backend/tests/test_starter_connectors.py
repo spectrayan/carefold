@@ -20,7 +20,8 @@ from fhir.resources.R4B.observation import Observation as FhirObservation
 import httpx
 import pytest
 
-from connectors import (
+import carefold  # noqa: F401
+from yarvelle_core.connectors import (
     Connector,
     ConnectorRegistry,
     EgressBlockedError,
@@ -30,7 +31,7 @@ from connectors import (
     list_starter_manifests,
     load_connector,
 )
-from connectors.starters import (
+from carefold.connectors.starters import (
     CalDavConnector,
     EpicSmartConnector,
     GoogleCalendarConnector,
@@ -189,8 +190,8 @@ async def test_calendar_connectors_free_slots_phi_stripping_and_tools():
     # Verify PHI stripping from calendar titles
     raw_phi_title = "Cardiology follow-up for Atrial Fibrillation & Eliquis 5mg adjustment"
     assert sanitize_calendar_event_title(raw_phi_title) == "Medical Appointment"
-    assert sanitize_calendar_event_title(raw_phi_title, strip_phi=False) == raw_phi_title
-    assert sanitize_calendar_event_title("Clinic Visit", strip_phi=True) == "Clinic Visit"
+    assert sanitize_calendar_event_title(raw_phi_title, strip_sensitive=False) == raw_phi_title
+    assert sanitize_calendar_event_title("Clinic Visit", strip_sensitive=True) == "Clinic Visit"
 
     # Verify tools on both GoogleCalendarConnector and CalDavConnector
     for conn in (gcal, caldav):

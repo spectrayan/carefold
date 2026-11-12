@@ -1051,7 +1051,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
 
     # 26. withings_latest_vitals (AU-54)
     async def _exec_withings_latest_vitals(args: Dict[str, Any], ctx: Any = None) -> Any:
-        from connectors.starters.withings import WithingsConnector
+        from carefold.connectors.starters.withings import WithingsConnector
         connector = WithingsConnector()
         for t in connector.tools():
             if t.name == "withings_latest_vitals" and t.handler is not None:
@@ -1091,7 +1091,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
 
     # 27. calendar_suggest_slots (AU-55 / E4.3, E5.2)
     async def _exec_calendar_suggest_slots(args: Dict[str, Any], ctx: Any = None) -> Any:
-        from connectors.starters.calendar import GoogleCalendarConnector
+        from carefold.connectors.starters.calendar import GoogleCalendarConnector
         connector = GoogleCalendarConnector()
         for t in connector.tools():
             if t.name == "calendar_suggest_slots" and t.handler is not None:
@@ -1128,7 +1128,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
 
     # 28. calendar_create_event (AU-55 / E4.3)
     async def _exec_calendar_create_event(args: Dict[str, Any], ctx: Any = None) -> Any:
-        from connectors.starters.calendar import GoogleCalendarConnector
+        from carefold.connectors.starters.calendar import GoogleCalendarConnector
         connector = GoogleCalendarConnector()
         for t in connector.tools():
             if t.name == "calendar_create_event" and t.handler is not None:
@@ -1148,7 +1148,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
                 "start_time": {"type": "string", "description": "ISO-8601 start timestamp."},
                 "end_time": {"type": "string", "description": "ISO-8601 end timestamp."},
                 "location": {"type": "string", "description": "Optional clinic address."},
-                "strip_phi": {"type": "boolean", "default": True},
+                "strip_sensitive": {"type": "boolean", "default": True},
             },
             "required": ["title", "start_time", "end_time"],
         },
@@ -1168,7 +1168,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
 
     # 29. epic_smart_search_records (AU-56 / E10.3)
     async def _exec_epic_smart_search_records(args: Dict[str, Any], ctx: Any = None) -> Any:
-        from connectors.starters.epic_smart import EpicSmartConnector
+        from carefold.connectors.starters.epic_smart import EpicSmartConnector
         connector = EpicSmartConnector()
         for t in connector.tools():
             if t.name == "epic_smart_search_records" and t.handler is not None:
@@ -1322,7 +1322,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
 
     # 33. zocdoc_book_appointment (AU-71 / E4.6)
     async def _exec_zocdoc_book_appointment(args: Dict[str, Any], ctx: Any = None) -> Any:
-        from connectors.starters.zocdoc import ZocdocConnector
+        from carefold.connectors.starters.zocdoc import ZocdocConnector
         connector = ZocdocConnector()
         for t in connector.tools():
             if t.name == "zocdoc_book_appointment" and t.handler is not None:

@@ -59,8 +59,8 @@ from carefold.db.models import (
 )
 from carefold.db.session import create_db_engine, get_session_factory, init_db
 from carefold.engine.tool_exec import TaintFlag, ToolContext, UntrustedResult, execute_tool_call
-from connectors.errors import ManifestValidationError
-from connectors.manifest import ConnectorManifest, McpToolAllowlistEntry
+from yarvelle_core.connectors.errors import ManifestValidationError
+from yarvelle_core.connectors.manifest import ConnectorManifest, McpToolAllowlistEntry
 
 
 @pytest.fixture

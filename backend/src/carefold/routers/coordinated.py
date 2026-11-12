@@ -36,8 +36,8 @@ from carefold.connectors.gmail_mcp import (
 from carefold.models import Appointment
 from yarvelle_core.db.models import Approval, EmailDraft, Profile, utc_now
 from yarvelle_core.packaging.service import list_os_service_descriptors
-from connectors.manifest import ConnectorManifest
-from connectors.starters.zocdoc import prepare_zocdoc_booking_payload
+from yarvelle_core.connectors.manifest import ConnectorManifest
+from carefold.connectors.starters.zocdoc import prepare_zocdoc_booking_payload
 
 logger = logging.getLogger("carefold.api.coordinated")
 

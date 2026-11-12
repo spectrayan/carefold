@@ -36,7 +36,7 @@ async def execute_withings_latest_vitals(args: Dict[str, Any], ctx: Any = None) 
         from carefold.connectors.withings import WithingsConnector
     except ImportError:
         try:
-            from connectors.starters.withings import WithingsConnector
+            from carefold.connectors.starters.withings import WithingsConnector
         except ImportError:
             WithingsConnector = None
     if WithingsConnector is not None:
@@ -90,7 +90,7 @@ async def execute_epic_smart_search_records(args: Dict[str, Any], ctx: Any = Non
         from carefold.connectors.epic_smart import EpicSmartConnector
     except ImportError:
         try:
-            from connectors.starters.epic_smart import EpicSmartConnector
+            from carefold.connectors.starters.epic_smart import EpicSmartConnector
         except ImportError:
             EpicSmartConnector = None
     if EpicSmartConnector is not None:
@@ -184,7 +184,7 @@ async def execute_zocdoc_book_appointment(args: Dict[str, Any], ctx: Any = None)
         from carefold.connectors.zocdoc import ZocdocConnector
     except ImportError:
         try:
-            from connectors.starters.zocdoc import ZocdocConnector
+            from carefold.connectors.starters.zocdoc import ZocdocConnector
         except ImportError:
             ZocdocConnector = None
     if ZocdocConnector is not None:

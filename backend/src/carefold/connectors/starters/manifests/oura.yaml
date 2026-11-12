@@ -20,7 +20,7 @@ description: Ingests daily aggregated sleep, readiness, resting heart rate, and 
 categories:
   - vitals
   - wellness
-entrypoint: connectors.starters.wearables_v2:OuraConnector
+entrypoint: carefold.connectors.starters.wearables_v2:OuraConnector
 data_flows:
   allowed_hosts:
     - api.ouraring.com
