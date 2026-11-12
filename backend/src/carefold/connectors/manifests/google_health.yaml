@@ -20,7 +20,7 @@ description: Ingests daily aggregated step counts, heart rate rollups, and body 
 categories:
   - vitals
   - wellness
-entrypoint: connectors.starters.wearables_v2:GoogleHealthConnector
+entrypoint: carefold.connectors.starters.wearables_v2:GoogleHealthConnector
 data_flows:
   allowed_hosts:
     - www.googleapis.com

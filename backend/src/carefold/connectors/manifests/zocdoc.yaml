@@ -20,7 +20,7 @@ description: Searches healthcare providers and books patient appointments via Zo
 categories:
   - appointments
   - booking
-entrypoint: connectors.starters.zocdoc:ZocdocConnector
+entrypoint: carefold.connectors.starters.zocdoc:ZocdocConnector
 data_flows:
   allowed_hosts:
     - api.zocdoc.com

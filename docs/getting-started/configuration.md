@@ -162,7 +162,7 @@ export CAREFOLD_DEFAULT_MODEL="gpt-4o"
 
 ## Safety Guards & Buffered Answer Release
 
-Carefold's `pack.yaml` configures `safety.guards` (`yarvelle-core>=0.2.4`):
+Carefold's `pack.yaml` configures `safety.guards` (`yarvelle-core>=0.2.5`):
 
 - **`release: buffered`**: Answers are held until the final output check passes; a refused answer never leaves the service.
 - **`granite-guardian` model check (`preset: granite_guardian`, `mode: shadow`, `when_unconfigured: allow`)**: Runs after `CarefoldHealthSafetyPolicy` on the output stage when configured via environment variables. Carefold ships no guard model.

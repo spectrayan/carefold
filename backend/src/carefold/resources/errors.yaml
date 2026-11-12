@@ -1,174 +1,132 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan (https://spectrayan.com)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0 and the
+# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+# Personal and household local use only. Commercial use, hosted service
+# offering, rebranding, white-labeling, and redistribution of modified
+# forks are prohibited without a written commercial license from Spectrayan.
+#
+# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+
 # ============================================================================
-# Carefold Standardized Error Messages and Status Codes
+# Carefold Health Pack Error Catalog (CFD-XXX-YYY)
 # ============================================================================
+# Disjoint clinical & health-pack error codes extending yarvelle-core's
+# immutable YRV-XXX-YYY taxonomy under RFC 7807 Problem Details.
+
+apiVersion: yarvelle.errors/v1
+kind: ErrorCatalog
+prefix: CFD
+type_base_uri: https://errors.carefold.dev
+
+categories:
+  100: validation
+  200: configuration
+  300: auth
+  400: vault
+  500: storage
+  600: connector
+  700: mcp_tools
+  800: workflow
+  900: internal
 
 errors:
-  # HTTP 400 Bad Request / Validation Errors
-  prompt_empty:
+  fhir_validation_error:
+    code: CFD-100-001
+    category: validation
+    http_status: 400
     status_code: 400
-    message: "Parameter 'prompt' must not be empty."
-    description: "Submitted user chat prompt was empty or whitespace"
+    jsonrpc_code: -32602
+    retryable: false
+    title: "FHIR Validation Error"
+    template: "FHIR R4 resource validation failed: {detail}"
+    message: "FHIR R4 resource validation failed: {detail}"
+    description: "Submitted clinical or FHIR R4 payload failed structural or code validation."
 
-  invalid_input:
-    status_code: 400
-    message: "Invalid request parameter: {detail}"
-    description: "General parameter validation failure"
-
-  validation_error:
-    status_code: 400
-    message: "Request validation failed: {detail}"
-    description: "Parameter or payload validation error"
-
-  manifest_validation_error:
-    status_code: 400
-    message: "Manifest validation failed: {detail}"
-    description: "Agent or skill manifest failed schema validation"
-
-  tool_validation_error:
-    status_code: 400
-    message: "Tool validation error: {detail}"
-    description: "Undeclared tool or tool outside Phase 0 registry"
-
-  malformed_yaml:
-    status_code: 400
-    message: "Malformed YAML in '{path}': {error}"
-    description: "YAML syntax parsing failure"
-
-  # HTTP 403 Forbidden
   clinical_consent_required:
+    code: CFD-300-001
+    category: auth
+    http_status: 403
     status_code: 403
-    message: "Agent '{agent_id}' is a clinical_assist agent. Explicit user consent (allow_clinical=true) is required."
-    description: "Access to clinical assist agent denied without explicit consent parameter"
+    jsonrpc_code: -32002
+    retryable: false
+    title: "Clinical Assist Consent Required"
+    template: "Agent '{agent_id}' is an assist agent. Explicit user consent (allow_assist=true) is required."
+    message: "Agent '{agent_id}' is an assist agent. Explicit user consent (allow_assist=true) is required."
+    description: "Access to clinical assist agent denied without explicit consent parameter."
 
   clinical_execution_forbidden:
+    code: CFD-300-002
+    category: auth
+    http_status: 403
     status_code: 403
-    message: "Agent '{agent_id}' is classified as clinical_assist. Execution is forbidden without explicit clinical consent (allow_clinical=True)."
-    description: "Execution blocked for clinical assist agent"
+    jsonrpc_code: -32002
+    retryable: false
+    title: "Clinical Assist Execution Forbidden"
+    template: "Agent '{agent_id}' is classified as assist. Execution is forbidden without explicit consent (allow_assist=True)."
+    message: "Agent '{agent_id}' is classified as assist. Execution is forbidden without explicit consent (allow_assist=True)."
+    description: "Execution blocked for clinical assist agent without consent."
 
-  tool_forbidden:
-    status_code: 403
-    message: "Tool '{tool_name}' execution denied: undeclared tool for agent '{agent_id}'."
-    description: "Agent attempted to call a tool outside its allowed union"
-
-  sandbox_access_denied:
-    status_code: 403
-    message: "Access denied: path '{path}' is outside sandboxed workspace."
-    description: "Tool attempted path traversal outside permitted directory"
-
-  # HTTP 404 Not Found
-  not_found:
+  health_record_not_found:
+    code: CFD-500-001
+    category: storage
+    http_status: 404
     status_code: 404
-    message: "Requested resource not found: {detail}"
-    description: "General resource not found error"
+    jsonrpc_code: -32003
+    retryable: false
+    title: "Health Record Not Found"
+    template: "Health record '{resource_id}' not found."
+    message: "Health record '{resource_id}' not found."
+    description: "Requested FHIR or health resource record does not exist in the profile."
 
-  agent_not_found:
-    status_code: 404
-    message: "Agent '{agent_id}' not found."
-    description: "Requested agent ID directory does not exist"
-
-  skill_not_found:
-    status_code: 404
-    message: "Skill '{skill_id}' not found."
-    description: "Requested skill ID directory does not exist"
-
-  thread_not_found:
-    status_code: 404
-    message: "Thread '{thread_id}' not found."
-    description: "Requested conversation thread has no checkpoint record"
-
-  checkpoints_not_found:
-    status_code: 404
-    message: "No checkpoints found for thread '{thread_id}'."
-    description: "Checkpoints database file or record does not exist"
-
-  attachment_not_found:
-    status_code: 404
-    message: "Attachment '{filename}' not found in attachments directory."
-    description: "Referenced attachment file does not exist"
-
-  note_not_found:
-    status_code: 404
-    message: "Note '{note_id}' not found in workspace notes."
-    description: "Referenced note does not exist"
-
-  # HTTP 500 Internal Server Error
-  internal_error:
-    status_code: 500
-    message: "An internal server error occurred: {detail}"
-    description: "Internal runtime error"
-
-  agent_load_failed:
-    status_code: 500
-    message: "Failed to load agent: {error}"
-    description: "Unexpected exception loading agent"
-
-  skill_load_failed:
-    status_code: 500
-    message: "Failed to load skill: {error}"
-    description: "Unexpected exception loading skill"
-
-  thread_load_failed:
-    status_code: 500
-    message: "Failed to load thread: {error}"
-    description: "Unexpected exception reading checkpoints"
-
-  stream_execution_error:
-    status_code: 500
-    message: "Unexpected error during chat stream execution: {error}"
-    description: "Unhandled error during LangGraph agent execution"
-
-  # Model & Provider Errors
-  missing_api_key:
-    status_code: 500
-    message: "API key for provider '{provider}' is missing. Please specify an API key in the request settings or set {env_vars} on the server."
-    description: "Model provider API key not supplied"
-
-  missing_configuration:
-    status_code: 500
-    message: "Configuration for provider '{provider}' is missing: {detail}"
-    description: "Required configuration parameter (e.g. base_url) missing"
-
-  unsupported_provider:
-    status_code: 400
-    message: "Unsupported model provider '{provider}'. Supported providers: {supported}."
-    description: "Unrecognized provider identifier"
-
-  model_timeout:
-    status_code: 504
-    message: "Model request timed out after {timeout} seconds."
-    description: "Upstream model call timed out"
-
-  model_server_error:
+  fhir_upstream_error:
+    code: CFD-600-001
+    category: connector
+    http_status: 502
     status_code: 502
-    message: "Model server error (HTTP {status_code}): {detail}"
-    description: "Upstream model provider returned error"
+    jsonrpc_code: -32007
+    retryable: true
+    title: "FHIR Upstream Error"
+    template: "Upstream SMART-on-FHIR endpoint returned error: {detail}"
+    message: "Upstream SMART-on-FHIR endpoint returned error: {detail}"
+    description: "Transient or upstream failure communicating with a SMART-on-FHIR server."
 
-  # Safety Refusal Errors
-  safety_refusal:
+  clinical_safety_refusal:
+    code: CFD-800-001
+    category: workflow
+    http_status: 200
     status_code: 200
+    jsonrpc_code: -32008
+    retryable: false
+    title: "Clinical Safety Guardrail Refusal"
+    template: "Request intercepted by clinical safety refusal guardrail: {reason}"
     message: "Request intercepted by clinical safety refusal guardrail: {reason}"
-    description: "Clinical safety refusal triggered by deterministic classifier"
+    description: "Clinical safety refusal triggered by deterministic red-flag or boundary classifier."
 
-  refusal_error:
-    status_code: 200
-    message: "Request refused: {reason}"
-    description: "Standard refusal event"
-
-  # Workflow & Extraction Errors
-  max_reflections_exceeded:
+  clinical_grounding_failed:
+    code: CFD-800-002
+    category: workflow
+    http_status: 422
     status_code: 422
-    message: "Max self-correction reflection iterations ({max_reflections}) reached."
-    description: "Reflection loop exceeded retry limit"
+    jsonrpc_code: -32008
+    retryable: false
+    title: "Clinical Grounding Validation Failed"
+    template: "Extracted clinical dossier failed numerical grounding validation: {detail}"
+    message: "Extracted clinical dossier failed numerical grounding validation: {detail}"
+    description: "Extracted clinical or benefits figure is not grounded in raw document text."
 
-  grounding_validation_failed:
-    status_code: 422
-    message: "Extracted dossier failed grounding validation: numerical mismatch with source text."
-    description: "Extracted numerical claim not grounded in raw document text"
-
-  pii_sanitization_error:
+  clinical_internal_error:
+    code: CFD-900-001
+    category: internal
+    http_status: 500
     status_code: 500
-    message: "PII sanitization failed during attachment processing: {error}"
-    description: "Failure during automated PII masking"
+    jsonrpc_code: -32603
+    retryable: false
+    title: "Clinical Runtime Internal Error"
+    template: "An internal clinical pack error occurred: {detail}"
+    message: "An internal clinical pack error occurred: {detail}"
+    description: "Unhandled internal runtime failure inside the health domain pack."
 
 schemas:
   error_response:

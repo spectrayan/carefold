@@ -437,10 +437,10 @@ async def test_migration_profile_access_role_column_added(tmp_path: Path):
                 id VARCHAR(36) PRIMARY KEY,
                 profile_id VARCHAR(36) NOT NULL,
                 user_id VARCHAR(36) NOT NULL,
-                access_level VARCHAR(32) NOT NULL DEFAULT 'view_clinical'
+                access_level VARCHAR(32) NOT NULL DEFAULT 'view_records'
             );
         """)
-        conn.execute("INSERT INTO profile_access VALUES ('pa-1', 'p-1', 'u-1', 'view_clinical');")
+        conn.execute("INSERT INTO profile_access VALUES ('pa-1', 'p-1', 'u-1', 'view_records');")
         conn.commit()
 
     engine = create_db_engine(f"sqlite+aiosqlite:///{db_file.resolve()}")
@@ -545,7 +545,7 @@ async def test_invite_lifecycle_creation_and_7_day_duration(invite_test_env):
         create_resp = client.post(
             f"/api/profiles/{prof_id}/invites",
             headers=owner["headers"],
-            json={"invitee_name": "Nurse Joy", "view_clinical": True, "view_paperwork": True},
+            json={"invitee_name": "Nurse Joy", "view_records": True, "view_paperwork": True},
         )
         assert create_resp.status_code == 201
         data = create_resp.json()
@@ -554,7 +554,7 @@ async def test_invite_lifecycle_creation_and_7_day_duration(invite_test_env):
         # Entropy check: token suffix must be at least 24 hex chars (12 bytes)
         token_suffix = data["invite_code"][len("cf-inv-"):]
         assert len(token_suffix) >= 24
-        assert data["view_clinical"] is True
+        assert data["view_records"] is True
         assert data["view_paperwork"] is True
         assert data["role"] == "viewer"
 
@@ -584,7 +584,7 @@ async def test_invite_acceptance_and_dual_permission_scenarios(invite_test_env):
         inv1 = client.post(
             f"/api/profiles/{prof_id}/invites",
             headers=owner["headers"],
-            json={"invitee_name": "Clin Viewer", "view_clinical": True, "view_paperwork": False},
+            json={"invitee_name": "Clin Viewer", "view_records": True, "view_paperwork": False},
         ).json()
 
         acc1 = client.post(
@@ -593,14 +593,14 @@ async def test_invite_acceptance_and_dual_permission_scenarios(invite_test_env):
             json={"invite_code": inv1["invite_code"]},
         )
         assert acc1.status_code == 200
-        assert acc1.json()["access_level"] == "view_clinical"
+        assert acc1.json()["access_level"] == "view_records"
         assert acc1.json()["role"] == "viewer"
 
         # 2. Paperwork-only invite
         inv2 = client.post(
             f"/api/profiles/{prof_id}/invites",
             headers=owner["headers"],
-            json={"invitee_name": "Paper Viewer", "view_clinical": False, "view_paperwork": True},
+            json={"invitee_name": "Paper Viewer", "view_records": False, "view_paperwork": True},
         ).json()
 
         acc2 = client.post(

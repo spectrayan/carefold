@@ -29,7 +29,7 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
     id: 'heart-care-coordinator',
     title: 'Cardiology Guide',
     version: '0.4.0',
-    risk_class: 'clinical_assist',
+    risk_class: 'assist',
     skills: ['cardiology-prep', 'emergency-red-flags'],
     effectiveTools: ['attach-read', 'workspace-note'],
     starters: ['Help me prepare for my cardiology appointment.'],
@@ -120,7 +120,7 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
       });
 
       expect(md).toContain('**Agent**: Cardiology Guide (`heart-care-coordinator`)');
-      expect(md).toContain('**Risk Class**: clinical_assist');
+      expect(md).toContain('**Risk Class**: assist');
       expect(md).toContain('**Exported**: 2026-10-07T04:15:00.000Z');
       expect(md).toContain('**Thread ID**: `thread-cardiology-123`');
       expect(md).toContain('**Total Messages**: 2');
@@ -183,7 +183,7 @@ describe('Dossier Export Utilities (apps/web/src/lib/dossierExport.ts)', () => {
       expect(parsed.session).toEqual({
         agentId: 'heart-care-coordinator',
         agentTitle: 'Cardiology Guide',
-        riskClass: 'clinical_assist',
+        riskClass: 'assist',
         threadId: 'thread-cardiology-123',
       });
       expect(parsed.summary).toEqual({

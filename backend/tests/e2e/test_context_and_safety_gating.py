@@ -14,7 +14,7 @@
 Verifies:
 1. ContextLoader: Multi-source ingestion of query, checkpoints, attachments, notes, and catalog summary.
 2. Safety Gating: Acute emergency red-flag triggers (immediate 911/ER diversion for chest pain, stroke FAST, anaphylaxis).
-3. Clinical Consent Gating: Enforcing `allow_clinical` check before routing to clinical risk-class specialists.
+3. Clinical Consent Gating: Enforcing `allow_assist` check before routing to clinical risk-class specialists.
 """
 
 from __future__ import annotations
@@ -256,40 +256,40 @@ class TestContextAndSafetyGatingFeatureCoverage:
         assert "epinephrine" in flag.referral_message.lower() or "911" in flag.referral_message
 
     def test_clinical_consent_gating_unconsented(self):
-        """Clinical domain queries without allow_clinical=True trigger consent gating."""
+        """Clinical domain queries without allow_assist=True trigger consent gating."""
         state = {
             "prompt": "What medication should I take for my blood pressure?",
             "target_domain": "clinical",
-            "allow_clinical": False,
+            "allow_assist": False,
         }
 
         # Simulate InputGuardrailNode consent evaluation
-        is_refusal = state.get("target_domain") == "clinical" and not state.get("allow_clinical")
+        is_refusal = state.get("target_domain") == "clinical" and not state.get("allow_assist")
         refusal_reason = "clinical_consent_required" if is_refusal else None
 
         assert is_refusal is True
         assert refusal_reason == "clinical_consent_required"
 
     def test_clinical_consent_gating_consented(self):
-        """Clinical domain queries with allow_clinical=True proceed uninterrupted."""
+        """Clinical domain queries with allow_assist=True proceed uninterrupted."""
         state = {
             "prompt": "Help me prepare questions for my cardiologist",
             "target_domain": "clinical",
-            "allow_clinical": True,
+            "allow_assist": True,
         }
 
-        is_refusal = state.get("target_domain") == "clinical" and not state.get("allow_clinical")
+        is_refusal = state.get("target_domain") == "clinical" and not state.get("allow_assist")
         assert is_refusal is False
 
     def test_administrative_domain_bypasses_clinical_consent(self):
-        """Administrative queries (benefits, billing) do not require allow_clinical."""
+        """Administrative queries (benefits, billing) do not require allow_assist."""
         state = {
             "prompt": "What is my in-network copay for physical therapy?",
             "target_domain": "administrative",
-            "allow_clinical": False,
+            "allow_assist": False,
         }
 
-        is_refusal = state.get("target_domain") == "clinical" and not state.get("allow_clinical")
+        is_refusal = state.get("target_domain") == "clinical" and not state.get("allow_assist")
         assert is_refusal is False
 
 
@@ -340,14 +340,14 @@ class TestContextAndSafetyGatingBoundaries:
         assert flag is None, "Historical medical events should not trigger acute 911 diversion"
 
     def test_clinical_consent_boundary_values(self):
-        """Verifies falsy variations of allow_clinical are properly treated as unconsented."""
+        """Verifies falsy variations of allow_assist are properly treated as unconsented."""
         for falsy_val in [False, None, "", 0, "false"]:
             state = {
                 "target_domain": "clinical",
-                "allow_clinical": falsy_val,
+                "allow_assist": falsy_val,
             }
-            # allow_clinical must be strictly boolean True
-            is_consented = state.get("allow_clinical") is True
+            # allow_assist must be strictly boolean True
+            is_consented = state.get("allow_assist") is True
             assert is_consented is False, f"Falsy value {falsy_val!r} must not grant clinical consent"
 
 
@@ -387,11 +387,11 @@ class TestContextAndSafetyGatingCrossFeature:
         state = {
             "prompt": "I have arrhythmia, should I change my beta blocker?",
             "target_domain": "clinical",
-            "allow_clinical": False,
+            "allow_assist": False,
         }
 
         # Safety gating check
-        if state.get("target_domain") == "clinical" and not state.get("allow_clinical"):
+        if state.get("target_domain") == "clinical" and not state.get("allow_assist"):
             state["is_refusal"] = True
             state["refusal_reason"] = "clinical_consent_required"
 
@@ -424,7 +424,7 @@ class TestContextAndSafetyGatingRealWorldScenarios:
         state = {
             "prompt": "I need help preparing for my upcoming cardiologist and nephrologist visits.",
             "target_domain": "clinical",
-            "allow_clinical": True,
+            "allow_assist": True,
         }
         loaded_state = loader.load_context(state, e2e_workspace)
 

@@ -9,22 +9,9 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Backward-compatibility re-export shim for yarvelle_core.workflows.subgraphs.extraction.sanitizer."""
+"""Re-export shim routing carefold extraction sanitizer imports to carefold.clinical.sanitizer."""
 
 from __future__ import annotations
 
-import sys
-from typing import Any
-
-from yarvelle_core.workflows.subgraphs.extraction.sanitizer import *  # noqa: F401, F403
-import yarvelle_core.workflows.subgraphs.extraction.sanitizer as _target_module
-
-sys.modules[__name__] = _target_module
-
-
-def __getattr__(name: str) -> Any:
-    return getattr(_target_module, name)
-
-
-def __dir__() -> list[str]:
-    return sorted(set(globals().keys()) | set(dir(_target_module)))
+from carefold.clinical.sanitizer import *  # noqa: F401, F403
+from carefold.clinical.sanitizer import __all__  # noqa: F401

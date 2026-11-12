@@ -131,7 +131,7 @@ def _serialize_companion_device(device: CompanionDevice) -> Dict[str, Any]:
 
 
 def require_profile_access(
-    required_access: Literal["manage", "view_clinical"] = "view_clinical",
+    required_access: Literal["manage", "view_records"] = "view_records",
 ) -> Callable[..., Coroutine[Any, Any, Profile]]:
     """FastAPI dependency enforcing profile-scoped clinical/management permissions."""
 
@@ -169,7 +169,7 @@ def require_profile_access(
                 detail="Access denied: management permissions required for companion device administration.",
             )
 
-        if required_access == "view_clinical" and access not in ("manage", "view_clinical"):
+        if required_access == "view_records" and access not in ("manage", "view_records"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: clinical view permissions required.",
@@ -236,7 +236,7 @@ async def _resolve_sync_companion_device(
         )
 
     access = await get_user_profile_access(profile, user, db)
-    if access not in ("manage", "view_clinical"):
+    if access not in ("manage", "view_records"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied for this profile.",
@@ -348,7 +348,7 @@ async def complete_companion_pairing_endpoint(
 )
 async def list_profile_companion_devices(
     profile_id: str,
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Lists all `CompanionDevice` records for `profile_id`."""

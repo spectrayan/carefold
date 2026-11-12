@@ -20,7 +20,7 @@ description: Syncs busy blocks, suggests conflict-free clinic appointment slots,
 categories:
   - scheduling
   - calendar
-entrypoint: connectors.starters.calendar:GoogleCalendarConnector
+entrypoint: carefold.connectors.starters.calendar:GoogleCalendarConnector
 data_flows:
   allowed_hosts:
     - www.googleapis.com

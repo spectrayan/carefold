@@ -83,7 +83,7 @@ def ensure_safety_disclosures(instructions: str) -> str:
 @router.get(ROUTE_SKILLS, response_model=List[SkillSummary])
 async def list_skills(
     risk_class: Optional[str] = Query(None, description="Filter by risk class"),
-    allow_clinical: bool = Query(False, description="Include clinical assist skills"),
+    allow_assist: bool = Query(False, description="Include clinical assist skills"),
     domain: Optional[str] = Query(None, description="Filter by domain"),
     category: Optional[str] = Query(None, description="Filter by category or prefix"),
     page: Optional[int] = Query(None, ge=1, description="Page number (1-based)"),
@@ -408,7 +408,7 @@ async def update_skill(
             description=skill.description,
             domain=AgentDomain(skill.domain) if skill.domain in [d.value for d in AgentDomain] else AgentDomain.WELLNESS,
             category=skill.category,
-            risk_class=RiskClass(skill.risk_class) if skill.risk_class in [r.value for r in RiskClass] else RiskClass.CLINICAL_ASSIST,
+            risk_class=RiskClass(skill.risk_class) if skill.risk_class in [r.value for r in RiskClass] else RiskClass.ASSIST,
             tags=skill.get_tags(),
             tools=skill.get_tools(),
             instructions=skill.instructions,

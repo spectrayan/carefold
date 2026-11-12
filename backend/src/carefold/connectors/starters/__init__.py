@@ -11,14 +11,14 @@
 
 """Built-in starter connectors for Carefold (Withings, Google Calendar, CalDAV, Epic SMART)."""
 
-from connectors.starters.calendar import (
+from carefold.connectors.starters.calendar import (
     CalDavConnector,
     GoogleCalendarConnector,
     sanitize_calendar_event_title,
     suggest_free_slots,
 )
-from connectors.starters.epic_smart import EpicSmartConnector
-from connectors.starters.withings import WithingsConnector
+from carefold.connectors.starters.epic_smart import EpicSmartConnector
+from carefold.connectors.starters.withings import WithingsConnector
 
 __all__ = [
     "CalDavConnector",

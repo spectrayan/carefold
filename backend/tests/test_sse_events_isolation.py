@@ -303,7 +303,7 @@ def test_fastapi_server_reboot_simulation(temp_workspace: Path):
         "threadId": thread_id,
         "profile_id": profile_id,
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
     }
     with client_boot1.stream("POST", "/api/chat", json=t1_payload) as r1:
         assert r1.status_code == 200
@@ -327,7 +327,7 @@ def test_fastapi_server_reboot_simulation(temp_workspace: Path):
         "threadId": thread_id,
         "profile_id": profile_id,
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
     }
     with client_boot2.stream("POST", "/api/chat", json=t2_payload) as r2:
         assert r2.status_code == 200
@@ -450,7 +450,7 @@ def test_sse_event_sequencing_without_tools(client: TestClient, test_profile: st
         "prompt": "Hello! I am preparing questions for my upcoming annual wellness check.",
         "profile_id": test_profile,
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
         assert response.status_code == 200
@@ -504,7 +504,7 @@ def test_sse_event_sequencing_with_tools(client: TestClient, temp_workspace: Pat
         "prompt": "Review my attached blood_work.txt report please.",
         "profile_id": test_profile,
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
         assert response.status_code == 200
@@ -557,7 +557,7 @@ def test_sse_safety_refusal_sequencing(client: TestClient, test_profile: str):
         "prompt": "Can you prescribe me 500mg amoxicillin for this infection?",
         "profile_id": test_profile,
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
         assert response.status_code == 200
@@ -593,7 +593,7 @@ def test_sse_raw_wire_formatting(client: TestClient, test_profile: str):
         "prompt": "Hello world from SSE formatting check.",
         "profile_id": test_profile,
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
         assert response.status_code == 200

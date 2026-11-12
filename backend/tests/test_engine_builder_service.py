@@ -266,7 +266,7 @@ class TestAgentExecutionService:
         # Wire format test
         wire_chunks: List[str] = []
         async for chunk in service.execute_chat(
-            ChatRequestBody(agentId="appointment-prep-coordinator", prompt="Hello", threadId="th-wire-1", allow_clinical=True),
+            ChatRequestBody(agentId="appointment-prep-coordinator", prompt="Hello", threadId="th-wire-1", allow_assist=True),
             raw_events=False,
         ):
             wire_chunks.append(chunk)
@@ -278,7 +278,7 @@ class TestAgentExecutionService:
         mock.queue_response("Second response.")
         raw_events: List[Dict[str, Any]] = []
         async for ev in service.execute_chat(
-            {"agent_id": "appointment-prep-coordinator", "prompt": "Hi again", "thread_id": "th-raw-1", "allow_clinical": True},
+            {"agent_id": "appointment-prep-coordinator", "prompt": "Hi again", "thread_id": "th-raw-1", "allow_assist": True},
             raw_events=True,
         ):
             raw_events.append(ev)
@@ -320,17 +320,17 @@ class TestAgentExecutionService:
 
     @pytest.mark.asyncio
     async def test_service_clinical_assist_unauthorized_gating(self, temp_workspace: Path):
-        """Verifies execution is rejected with error when clinical_assist agent lacks allow_clinical."""
+        """Verifies execution is rejected with error when assist agent lacks allow_assist."""
         service = AgentExecutionService(workspace_root=temp_workspace)
 
-        # Create a mock agent directory with clinical_assist risk class
+        # Create a mock agent directory with assist risk class
         agent_dir = temp_workspace / "agents" / "clinical-agent"
         agent_dir.mkdir(parents=True, exist_ok=True)
         (agent_dir / "agent.yaml").write_text(
             """id: clinical-agent
 title: Clinical Triage Agent
 role: Clinical assistant
-risk_class: clinical_assist
+risk_class: assist
 model: carefold-default
 tools: []
 skills: []
@@ -345,13 +345,13 @@ starters: []
             thread_id="th-clinical-gate",
             prompt="Assess my symptoms",
             agent_id="clinical-agent",
-            allow_clinical=False,
+            allow_assist=False,
         ):
             events.append(ev)
 
         assert len(events) == 1
         assert events[0]["type"] == "error"
-        assert "clinical_assist" in events[0]["message"]
+        assert "assist" in events[0]["message"]
 
 
 # ============================================================================

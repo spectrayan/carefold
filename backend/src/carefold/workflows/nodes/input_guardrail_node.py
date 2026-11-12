@@ -96,16 +96,16 @@ class InputGuardrailNode(BaseNode):
                 },
             }
 
-        # 2. Clinical Consent Gating (allow_clinical check)
+        # 2. Clinical Consent Gating (allow_assist check)
         target_domain = state.get("target_domain") or state.get("domain")
-        is_consented = state.get("allow_clinical") is True
+        is_consented = state.get("allow_assist") is True or state.get("allow_clinical") is True
         if target_domain == "clinical" and not is_consented:
             return {
                 "is_refusal": True,
                 "refused": True,
                 "refusal_reason": "clinical_consent_required",
                 "refusal_message": (
-                    "Clinical assist features require explicit user consent (allow_clinical=True)."
+                    "Clinical assist features require explicit user consent (allow_assist=True)."
                 ),
                 "next_step": "refusal",
                 "tool_calls": [],  # Suppress pending tool calls on lack of consent

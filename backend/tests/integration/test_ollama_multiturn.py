@@ -267,7 +267,7 @@ class TestOllamaMultiTurnExecutionService:
             thread_id=thread_id,
             prompt=turn1_prompt,
             agent_id="appointment-prep-coordinator",
-            allow_clinical=True,
+            allow_assist=True,
         ):
             events_t1.append(event)
 
@@ -293,7 +293,7 @@ class TestOllamaMultiTurnExecutionService:
             thread_id=thread_id,
             prompt=turn2_prompt,
             agent_id="appointment-prep-coordinator",
-            allow_clinical=True,
+            allow_assist=True,
         ):
             events_t2.append(event)
 

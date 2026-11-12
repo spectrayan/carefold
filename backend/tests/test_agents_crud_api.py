@@ -88,7 +88,7 @@ def test_create_custom_agent(client: TestClient):
 
 def test_get_agent_detail(client: TestClient):
     """Verifies getting agent detail with resolved skills and tool definitions."""
-    resp = client.get("/api/agents/heart-care-coordinator?allow_clinical=true")
+    resp = client.get("/api/agents/heart-care-coordinator?allow_assist=true")
     assert resp.status_code == 200
     data = resp.json()
     assert data["id"] == "heart-care-coordinator"

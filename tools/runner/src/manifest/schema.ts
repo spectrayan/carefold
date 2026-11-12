@@ -13,7 +13,7 @@
 
 import { z } from 'zod';
 
-export const RiskClassSchema = z.enum(['wellness', 'admin', 'education', 'clinical_assist']);
+export const RiskClassSchema = z.enum(['wellness', 'admin', 'education', 'assist']);
 
 export const AgentManifestSchema = z.object({
   id: z.string().min(1, 'Agent id is required'),

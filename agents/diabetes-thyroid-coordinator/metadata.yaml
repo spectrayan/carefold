@@ -41,4 +41,4 @@ maturity: stable
 hidden: false
 domain: clinical
 category: clinical.endocrinology
-risk_class: clinical_assist
+risk_class: assist

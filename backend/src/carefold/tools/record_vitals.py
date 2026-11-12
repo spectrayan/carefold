@@ -250,7 +250,7 @@ SPEC = ToolSpec(
     },
     risk_tier="write_local",
     trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_record_vitals,
     metadata={
         "action": "record_vitals",

@@ -232,7 +232,7 @@ def test_agent_load_bundled_agents(temp_workspace: Path):
 
     agent, effective_tools, loaded_skills = load_agent(agents_dir / "appointment-prep-coordinator", skills_dir)
     assert agent.id == "appointment-prep-coordinator"
-    assert agent.risk_class == RiskClass.CLINICAL_ASSIST
+    assert agent.risk_class == RiskClass.ASSIST
     assert "visit-prep" in agent.skills
 
     # Effective tools union: agent tools [attach-read, workspace-note] ∪ skill tools [attach-read, skill-docs]
@@ -261,7 +261,7 @@ def test_agent_effective_tools_union_and_registry_filter():
 
 
 def test_agent_risk_class_elevation(tmp_path: Path):
-    # Setup test skill that has clinical_assist risk class
+    # Setup test skill that has assist risk class
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir()
     clinical_skill_dir = skills_dir / "clinical-triage"
@@ -279,7 +279,7 @@ description: Clinical skill
     )
     (clinical_skill_dir / "carefold.yaml").write_text(
         """id: clinical-triage
-risk_class: clinical_assist
+risk_class: assist
 tools:
   - skill-docs
 """,
@@ -305,8 +305,8 @@ persona: Helper
     )
 
     agent, effective_tools, loaded_skills = load_agent(agent_dir, skills_dir)
-    # Must be elevated to clinical_assist!
-    assert agent.risk_class == RiskClass.CLINICAL_ASSIST
+    # Must be elevated to assist!
+    assert agent.risk_class == RiskClass.ASSIST
     assert set(effective_tools) == {"workspace-note", "skill-docs"}
 
 

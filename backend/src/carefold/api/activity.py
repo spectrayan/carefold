@@ -88,7 +88,7 @@ def require_profile_access(required_access: str):
                 detail="Access denied: management permissions required to undo actions for this profile.",
             )
 
-        if required_access == "view_clinical" and access not in ("manage", "view_clinical"):
+        if required_access == "view_records" and access not in ("manage", "view_records"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: clinical view permissions required to inspect activity timeline.",
@@ -115,7 +115,7 @@ async def get_activity_timeline(
     undoable_only: bool = Query(False, description="Filter for undoable actions only"),
     event: Optional[str] = Query(None, description="Filter by event type"),
     tool: Optional[str] = Query(None, description="Filter by tool name"),
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     user: UserProfile = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ActivityTimelineResponse:

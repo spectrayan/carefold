@@ -44,7 +44,7 @@ export function SkillFormModal({
   const [description, setDescription] = useState('');
   const [domain, setDomain] = useState('clinical');
   const [category, setCategory] = useState('');
-  const [riskClass, setRiskClass] = useState<RiskClass>('clinical_assist');
+  const [riskClass, setRiskClass] = useState<RiskClass>('assist');
   const [selectedTools, setSelectedTools] = useState<string[]>(['attach-read', 'workspace-note', 'skill-docs']);
   const [instructions, setInstructions] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -58,7 +58,7 @@ export function SkillFormModal({
       setDescription(initialSkill.description || '');
       setDomain(String(initialSkill.domain || 'clinical'));
       setCategory(initialSkill.category || '');
-      setRiskClass((initialSkill.risk_class as RiskClass) || 'clinical_assist');
+      setRiskClass((initialSkill.risk_class as RiskClass) || 'assist');
       setSelectedTools(initialSkill.tools || []);
       setInstructions(initialSkill.instructions || '');
     } else {
@@ -68,7 +68,7 @@ export function SkillFormModal({
       setDescription('');
       setDomain('clinical');
       setCategory('');
-      setRiskClass('clinical_assist');
+      setRiskClass('assist');
       setSelectedTools(['attach-read', 'workspace-note', 'skill-docs']);
       setInstructions(
         '# Clinical / Navigational Instructions\n\n' +
@@ -219,7 +219,7 @@ export function SkillFormModal({
                 onChange={(e) => setRiskClass(e.target.value as RiskClass)}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
               >
-                <option value="clinical_assist">Clinical Assist (HITL review)</option>
+                <option value="assist">Clinical Assist (HITL review)</option>
                 <option value="admin">Admin (Formulary / Insurance)</option>
                 <option value="wellness">Wellness</option>
                 <option value="education">Education</option>

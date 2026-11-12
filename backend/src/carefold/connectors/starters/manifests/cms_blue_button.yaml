@@ -21,7 +21,7 @@ categories:
   - claims
   - coverage
   - clinical_records
-entrypoint: connectors.starters.ehr_smart_v2:CmsBlueButtonConnector
+entrypoint: carefold.connectors.starters.ehr_smart_v2:CmsBlueButtonConnector
 data_flows:
   allowed_hosts:
     - sandbox.bluebutton.cms.gov

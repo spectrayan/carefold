@@ -22,7 +22,7 @@ import uuid
 
 from fhir.resources.R4B.observation import Observation as FhirObservation
 
-from connectors.base import (
+from yarvelle_core.connectors.base import (
     Connector,
     NormalisedRecord,
     Page,
@@ -30,9 +30,9 @@ from connectors.base import (
     ToolContext,
     ToolSpec,
 )
-from connectors.http import ScopedHttp
-from connectors.manifest import ConnectorManifest
-from connectors.starters.calendar import (
+from yarvelle_core.connectors.http import ScopedHttp
+from yarvelle_core.connectors.manifest import ConnectorManifest
+from carefold.connectors.starters.calendar import (
     _extract_event_start_end,
     _parse_iso_dt,
     sanitize_calendar_event_title,
@@ -768,8 +768,8 @@ class MicrosoftGraphCalendarConnector:
                 raise ValueError("ToolContext user_id and profile_id are required.")
             params = args or {}
             raw_title = str(params.get("title") or "Medical Appointment")
-            strip_phi = bool(params.get("strip_phi", True))
-            sanitized_title = sanitize_calendar_event_title(raw_title, strip_phi=strip_phi)
+            strip_sensitive = bool(params.get("strip_sensitive", True))
+            sanitized_title = sanitize_calendar_event_title(raw_title, strip_sensitive=strip_sensitive)
             event_id = str(params.get("event_id") or uuid.uuid4().hex[:12])
             return {
                 "status": "created",
@@ -807,7 +807,7 @@ class MicrosoftGraphCalendarConnector:
                         "title": {"type": "string"},
                         "start": {"type": "string"},
                         "end": {"type": "string"},
-                        "strip_phi": {"type": "boolean", "default": True},
+                        "strip_sensitive": {"type": "boolean", "default": True},
                     },
                     "required": ["start", "end"],
                 },

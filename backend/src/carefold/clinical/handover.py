@@ -15,7 +15,7 @@ Implements:
 - `VALID_VIEWER_SECTIONS` and `update_viewer_sections` (`E12.3`): per-section read-only scoping stored in
   `ProfileAccess.allowed_sections_json`.
 - `check_profile_section_access`: evaluates owner/manage bypass, explicit `allowed_sections`, or legacy
-  `view_clinical` / `view_paperwork` fallback mapping.
+  `view_records` / `view_paperwork` fallback mapping.
 - `execute_teen_handover` (`E12.4`): promotes `teen_user_id` to profile steward (`role="self"`, `access_level="manage"`),
   executes `"keep"` vs `"revoke"` decisions across all profile `Connection` records, rotates the profile's
   256-bit DEK (`dek_version = old_dek_version + 1`), re-encrypts all kept `Credential` rows with updated AAD
@@ -133,7 +133,7 @@ async def update_viewer_sections(
             user_id=clean_target_user_id,
             granted_by=grantor_user_id,
             role="viewer",
-            access_level="view_clinical",
+            access_level="view_records",
             allowed_sections_json=json.dumps(normalized_sections),
             granted_at=now,
         )
@@ -209,7 +209,7 @@ async def check_profile_section_access(
     if explicit_sections is not None:
         return clean_section in explicit_sections
 
-    if grant.access_level == "view_clinical":
+    if grant.access_level == "view_records":
         return clean_section in CLINICAL_FALLBACK_SECTIONS
     if grant.access_level == "view_paperwork":
         return clean_section in PAPERWORK_FALLBACK_SECTIONS

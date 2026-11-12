@@ -80,6 +80,7 @@ export function formatRiskClass(riskClass?: string | null): string {
       return 'Admin';
     case 'education':
       return 'Education';
+    case 'assist':
     case 'clinical_assist':
     case 'clinical-assist':
       return 'Clinical assist';

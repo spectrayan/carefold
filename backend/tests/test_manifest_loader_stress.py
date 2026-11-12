@@ -141,7 +141,7 @@ class TestLoadAgentMetadataResilience:
         assert "skill-docs" in effective_tools
 
     def test_load_agent_clinical_skill_elevation(self, tmp_path: Path):
-        """Verifies load_agent elevates risk_class to clinical_assist if a declared skill is clinical_assist."""
+        """Verifies load_agent elevates risk_class to assist if a declared skill is assist."""
         agent_dir = tmp_path / "custom-agent"
         agent_dir.mkdir(parents=True)
 
@@ -151,7 +151,7 @@ class TestLoadAgentMetadataResilience:
         mock_skill.mkdir(parents=True)
         (mock_skill / "SKILL.md").write_text(
             "---\nname: clinical-skill\ndescription: A clinical skill\nallowed-tools: skill-docs\n"
-            "metadata:\n  risk_class: clinical_assist\n  domain: clinical\n  category: clinical.test\n"
+            "metadata:\n  risk_class: assist\n  domain: clinical\n  category: clinical.test\n"
             "  tools:\n  - skill-docs\n---\n"
             "Not a clinician and not emergency care. If this is an emergency, contact local emergency services. "
             "Do not change medication without the prescribing clinician.\n",
@@ -167,7 +167,7 @@ class TestLoadAgentMetadataResilience:
         (agent_dir / "persona_slim.md").write_text("Test persona", encoding="utf-8")
 
         manifest, _, _ = load_agent(agent_dir, skills_dir)
-        assert manifest.risk_class == RiskClass.CLINICAL_ASSIST
+        assert manifest.risk_class == RiskClass.ASSIST
 
     def test_load_agent_malformed_metadata_yaml(self, tmp_path: Path):
         """Verifies load_agent raises ManifestValidationError on syntactically invalid YAML in metadata.yaml."""

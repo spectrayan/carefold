@@ -412,7 +412,7 @@ def school_forms_api_env(monkeypatch):
                     id=str(uuid.uuid4()),
                     profile_id=prof.id,
                     user_id=charlie.id,
-                    access_level="view_clinical",
+                    access_level="view_records",
                     granted_by=alice.id,
                     granted_at=now,
                 )
@@ -488,7 +488,7 @@ def test_school_forms_rest_api_crud_and_prefill_regeneration(school_forms_api_en
     assert created["safeguards"]["guardian_only"] is True
     assert created["prefill_draft"]["immunisations"] == []
 
-    # Charlie (view_clinical) cannot POST
+    # Charlie (view_records) cannot POST
     charlie_post = client.post(
         f"/api/profiles/{prof_id}/school-forms",
         json={"title": "Unauthorized Create"},

@@ -22,7 +22,7 @@ describe('ClinicalConsentDialog Component', () => {
     id: 'heart-care-coordinator',
     title: 'Cardiology Guide',
     version: '0.1.0',
-    risk_class: 'clinical_assist',
+    risk_class: 'assist',
     skills: ['cardiology-prep'],
     effectiveTools: ['skill-docs'],
     starters: ['Help me prepare for my cardiology visit'],

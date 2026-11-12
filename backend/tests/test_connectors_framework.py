@@ -41,7 +41,7 @@ from carefold.engine.tool_exec import (
     ToolSpec as EngineToolSpec,
     execute_tool_call,
 )
-from connectors.base import (
+from yarvelle_core.connectors.base import (
     Connector,
     NormalisedRecord,
     Page,
@@ -49,9 +49,9 @@ from connectors.base import (
     ToolContext,
     ToolSpec,
 )
-from connectors.errors import EgressBlockedError, ManifestValidationError
-from connectors.http import ScopedHttp
-from connectors.manifest import (
+from yarvelle_core.connectors.errors import EgressBlockedError, ManifestValidationError
+from yarvelle_core.connectors.http import ScopedHttp
+from yarvelle_core.connectors.manifest import (
     AuthConfig,
     ConnectorManifest,
     DataFlowSpec,

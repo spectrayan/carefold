@@ -57,20 +57,20 @@ from carefold.engine.tool_exec import (
     ToolSpec as EngineToolSpec,
     evaluate_policy_gate,
 )
-from connectors.base import Connector, ToolContext as ConnectorToolContext
-from connectors.http import ScopedHttp
-from connectors.manifest import ConnectorManifest
-from connectors.starters.ehr_smart_v2 import (
+from yarvelle_core.connectors.base import Connector, ToolContext as ConnectorToolContext
+from yarvelle_core.connectors.http import ScopedHttp
+from yarvelle_core.connectors.manifest import ConnectorManifest
+from carefold.connectors.starters.ehr_smart_v2 import (
     AthenahealthConnector,
     CmsBlueButtonConnector,
     OracleHealthConnector,
 )
-from connectors.starters.wearables_v2 import (
+from carefold.connectors.starters.wearables_v2 import (
     GoogleHealthConnector,
     MicrosoftGraphCalendarConnector,
     OuraConnector,
 )
-from connectors.starters.zocdoc import (
+from carefold.connectors.starters.zocdoc import (
     ZocdocConnector,
     prepare_zocdoc_booking_payload,
 )

@@ -430,7 +430,7 @@ SPEC_CREATE = ToolSpec(
     },
     risk_tier="write_local",
     trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_create_appointment,
     metadata={
         "action": "create_appointment",
@@ -481,7 +481,7 @@ SPEC_LIST = ToolSpec(
     },
     risk_tier="read",
     trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_list_appointments,
     metadata={
         "action": "list_appointments",
@@ -519,7 +519,7 @@ SPEC_UPDATE_STATUS = ToolSpec(
     },
     risk_tier="write_local",
     trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_update_appointment_status,
     metadata={
         "action": "update_appointment_status",

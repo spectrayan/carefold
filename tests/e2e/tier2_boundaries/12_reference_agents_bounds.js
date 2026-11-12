@@ -116,7 +116,7 @@ except (ToolValidationError, Exception) as e:
     },
     {
       id: 'F12-B04',
-      name: 'Agent loader elevates agent risk_class to clinical_assist if any declared skill is clinical_assist',
+      name: 'Agent loader elevates agent risk_class to assist if any declared skill is assist',
       fn: () => {
         const ws = createTempWorkspace();
         try {
@@ -136,7 +136,7 @@ schema_version: "1.0"
 id: "clinical-skill"
 name: "Clinical Skill"
 version: "0.1.0"
-risk_class: "clinical_assist"
+risk_class: "assist"
 tools: []
 `);
 
@@ -158,7 +158,7 @@ skills:
 from carefold.loaders.agent_loader import load_agent
 from carefold.schemas.manifest import RiskClass
 agent, tools, skills = load_agent('${aDir}', '${path.join(ws, 'skills')}')
-assert agent.risk_class == RiskClass.CLINICAL_ASSIST
+assert agent.risk_class == RiskClass.ASSIST
 `;
           const res = runPython(script);
           assertEqual(res.status, 0, `Python test failed: ${res.stderr}`);
