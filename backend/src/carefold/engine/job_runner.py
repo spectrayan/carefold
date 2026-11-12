@@ -13,7 +13,25 @@
 
 from __future__ import annotations
 
-import sys as _sys
-import yarvelle_core.engine.job_runner as _target_module
+import yarvelle_core.engine.job_runner as _yc_job_runner
+from yarvelle_core.engine.job_runner import (
+    AwaitableTuple,
+    CLOCK_JUMP_THRESHOLD_SECONDS,
+    DEFAULT_BATCH_SIZE,
+    DEFAULT_LEASE_DURATION,
+    DEFAULT_MAX_ATTEMPTS,
+    DEFAULT_POLL_INTERVAL,
+    REMINDER_OVERDUE_THRESHOLD_SECONDS,
+    calculate_next_occurrence,
+    execute_tool_call,
+    handle_delete_doc_job,
+    sweep_overdue_reminders,
+)
+from carefold.clinical.host_bridges import CarefoldJobRunner as JobRunner
+from carefold.clinical.host_bridges import create_extract_text_handler_compat as create_extract_text_handler
+from carefold.clinical.host_bridges import handle_extract_text_job_compat as handle_extract_text_job
+from carefold.clinical.host_bridges import handle_index_doc_job_compat as handle_index_doc_job
 
-_sys.modules[__name__] = _target_module
+
+def __getattr__(name: str):
+    return getattr(_yc_job_runner, name)

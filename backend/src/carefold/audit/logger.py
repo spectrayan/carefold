@@ -13,7 +13,10 @@
 
 from __future__ import annotations
 
-import sys as _sys
-import yarvelle_core.audit.logger as _target_module
+from yarvelle_core.audit.logger import *  # noqa: F401, F403
+import yarvelle_core.audit.logger as _yc_audit_logger
+from carefold.clinical.host_bridges import record_audit_compat as record_audit
 
-_sys.modules[__name__] = _target_module
+
+def __getattr__(name: str):
+    return getattr(_yc_audit_logger, name)

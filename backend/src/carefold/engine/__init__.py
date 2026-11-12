@@ -9,18 +9,22 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Package re-export shim delegating to yarvelle_core.engine."""
+"""Re-export shim delegating to yarvelle_core.engine."""
 
 from __future__ import annotations
 
-from typing import Any
-from yarvelle_core.engine import *  # noqa: F401, F403
-import yarvelle_core.engine as _target_module
+import yarvelle_core.engine as _yc_engine
+from carefold.engine.runtime import CarefoldAgentExecutionService
+
+_RETIRED = frozenset({"GraphBuilder", "create_agent_graph"})
+for _k in dir(_yc_engine):
+    if not _k.startswith("_") and _k not in _RETIRED:
+        globals()[_k] = getattr(_yc_engine, _k)
+AgentExecutionService = CarefoldAgentExecutionService
+__all__ = [k for k in getattr(_yc_engine, "__all__", []) if k not in _RETIRED]
 
 
-def __getattr__(name: str) -> Any:
-    return getattr(_target_module, name)
-
-
-def __dir__() -> list[str]:
-    return sorted(set(globals().keys()) | set(dir(_target_module)))
+def __getattr__(name: str):
+    if name in _RETIRED:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    return getattr(_yc_engine, name)

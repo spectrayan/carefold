@@ -13,7 +13,15 @@
 
 from __future__ import annotations
 
-import sys as _sys
-import yarvelle_core.storage.extract as _target_module
+from yarvelle_core.storage.extract import *  # noqa: F401, F403
+from yarvelle_core.storage.extract import Image, _OCR_AVAILABLE, _PYPDF_AVAILABLE, pypdf, pytesseract
+import yarvelle_core.storage.extract as _yc_extract
+from carefold.clinical.host_bridges import (
+    extract_cas_attachment_compat as extract_cas_attachment,
+    extract_cas_document_compat as extract_cas_document,
+    extract_document_text_compat as extract_document_text,
+)
 
-_sys.modules[__name__] = _target_module
+
+def __getattr__(name: str):
+    return getattr(_yc_extract, name)

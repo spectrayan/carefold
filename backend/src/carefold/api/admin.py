@@ -9,13 +9,16 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Re-export shim delegating to yarvelle_core.api.admin."""
+"""Re-export shim delegating to yarvelle_core.api.admin with host version alignment."""
 
 from __future__ import annotations
 
-import sys as _sys
-
 from yarvelle_core.api.admin import *  # noqa: F401, F403
-import yarvelle_core.api.admin as _target_module
+import yarvelle_core.api.admin as _yc_admin
+from carefold.clinical.host_bridges import configure_carefold_admin_router
 
-_sys.modules[__name__] = _target_module
+router = configure_carefold_admin_router()
+
+
+def __getattr__(name: str):
+    return getattr(_yc_admin, name)

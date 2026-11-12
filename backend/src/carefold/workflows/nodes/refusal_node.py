@@ -13,7 +13,13 @@
 
 from __future__ import annotations
 
-import sys as _sys
-import yarvelle_core.workflows.nodes.refusal_node as _target_module
+from yarvelle_core.workflows.nodes.refusal_node import BaseNode
+import yarvelle_core.workflows.nodes.refusal_node as _yc_refusal
+from carefold.clinical.host_bridges import CarefoldWorkflowRefusalNode as RefusalNode
 
-_sys.modules[__name__] = _target_module
+
+def __getattr__(name: str):
+    return getattr(_yc_refusal, name)
+
+
+__all__ = ["BaseNode", "RefusalNode"]

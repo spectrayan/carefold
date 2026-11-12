@@ -9,25 +9,27 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""ResourceLoader shim defaulting resources_dir to Carefold pack resources."""
+"""Re-export shim delegating to yarvelle_core.resources.loader."""
+
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional
-import yarvelle_core.resources.loader as _yc_mod
-from yarvelle_core.resources.loader import FALLBACK_DOSSIER_TYPE, RefusalPattern, ResourceLoader as _CoreResourceLoader  # noqa: F401
 
-_DEFAULT_RESOURCES_DIR = Path(__file__).resolve().parent
-_LOADER_SINGLETON: Optional["ResourceLoader"] = None
+import threading
+from yarvelle_core.resources.loader import *  # noqa: F401, F403
+import yarvelle_core.resources.loader as _yc_loader
+from carefold.clinical.host_bridges import CarefoldResourceLoader as ResourceLoader
 
-class ResourceLoader(_CoreResourceLoader):
-    def __init__(self, resources_dir: Optional[Path] = None) -> None:
-        super().__init__(resources_dir=resources_dir or _DEFAULT_RESOURCES_DIR)
+_LOADER_LOCK = threading.Lock()
+_LOADER_INSTANCE: ResourceLoader | None = None
+
 
 def get_resource_loader() -> ResourceLoader:
-    global _LOADER_SINGLETON
-    if _LOADER_SINGLETON is None:
-        _LOADER_SINGLETON = ResourceLoader()
-    return _LOADER_SINGLETON
+    global _LOADER_INSTANCE
+    if _LOADER_INSTANCE is None:
+        with _LOADER_LOCK:
+            if _LOADER_INSTANCE is None:
+                _LOADER_INSTANCE = ResourceLoader()
+    return _LOADER_INSTANCE
+
 
 def __getattr__(name: str):
-    return getattr(_yc_mod, name)
+    return getattr(_yc_loader, name)

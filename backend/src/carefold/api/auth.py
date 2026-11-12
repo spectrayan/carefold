@@ -9,13 +9,16 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Re-export shim delegating to yarvelle_core.api.auth."""
+"""Re-export shim delegating to yarvelle_core.api.auth with host cookie bridge."""
 
 from __future__ import annotations
 
-import sys as _sys
-
 from yarvelle_core.api.auth import *  # noqa: F401, F403
-import yarvelle_core.api.auth as _target_module
+import yarvelle_core.api.auth as _yc_auth
+from carefold.clinical.host_bridges import build_carefold_auth_router
 
-_sys.modules[__name__] = _target_module
+router = build_carefold_auth_router()
+
+
+def __getattr__(name: str):
+    return getattr(_yc_auth, name)

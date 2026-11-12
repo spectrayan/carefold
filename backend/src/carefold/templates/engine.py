@@ -13,7 +13,12 @@
 
 from __future__ import annotations
 
-import sys as _sys
-import yarvelle_core.templates.engine as _target_module
+from yarvelle_core.templates.engine import *  # noqa: F401, F403
+import yarvelle_core.templates.engine as _yc_templates
+from carefold.clinical.host_bridges import CarefoldTemplateEngine as TemplateEngine
+from carefold.clinical.host_bridges import get_carefold_template_engine as get_template_engine
+from carefold.clinical.host_bridges import render_carefold_template as render_template
 
-_sys.modules[__name__] = _target_module
+
+def __getattr__(name: str):
+    return getattr(_yc_templates, name)

@@ -79,14 +79,18 @@ logger = logging.getLogger("carefold")
 
 __version__ = "0.5.0b2"
 
-# Eagerly register "clinical" on core AgentDomain and Carefold locale catalog when loaded
+# Eagerly register "clinical" on core AgentDomain, dual-version RiskClass, and Carefold locale catalog
 try:
     import yarvelle_core.i18n.catalog as _yc_catalog
-    from yarvelle_core.schemas.manifest import AgentDomain
+    from yarvelle_core.schemas.manifest import AgentDomain, RiskClass
 
     _yc_catalog.LOCALES_DIR = Path(__file__).resolve().parent / "resources" / "locales"
     if hasattr(AgentDomain, "register") and not hasattr(AgentDomain, "CLINICAL"):
         AgentDomain.CLINICAL = AgentDomain.register("clinical")
+    if hasattr(RiskClass, "register") and not hasattr(RiskClass, "ASSIST"):
+        RiskClass.ASSIST = RiskClass.register("assist")
+    if hasattr(RiskClass, "register") and not hasattr(RiskClass, "CLINICAL_ASSIST"):
+        RiskClass.CLINICAL_ASSIST = RiskClass.register("clinical_assist")
 except Exception:
     pass
 
@@ -193,6 +197,20 @@ except Exception:
     pass
 
 
+
+
+def _build_pack_provides_spec(**kwargs: Any) -> PackProvidesSpec:
+    """Constructs PackProvidesSpec, omitting unreleased fields on older yarvelle-core."""
+    if "errors_file" in kwargs and "errors_file" not in PackProvidesSpec.model_fields:
+        kwargs = {k: v for k, v in kwargs.items() if k != "errors_file"}
+    return PackProvidesSpec(**kwargs)
+
+
+def _build_pack_spec(**kwargs: Any) -> PackSpec:
+    """Constructs PackSpec, passing error_prefix only when supported by installed yarvelle-core."""
+    if "error_prefix" in kwargs and "error_prefix" not in PackSpec.model_fields:
+        kwargs = {k: v for k, v in kwargs.items() if k != "error_prefix"}
+    return PackSpec(**kwargs)
 
 
 def get_pack() -> PackSpec:
@@ -309,7 +327,7 @@ def get_pack() -> PackSpec:
         eval_suites=["clinical_safety", "emergency_red_flags", "boundary_enforcement"],
     )
 
-    provides = PackProvidesSpec(
+    provides = _build_pack_provides_spec(
         prompts_dir="resources/prompts/",
         locales_dir="resources/locales/",
         connectors_dir="connectors/",
@@ -318,7 +336,7 @@ def get_pack() -> PackSpec:
         errors_file="resources/errors.yaml",
     )
 
-    spec = PackSpec(
+    spec = _build_pack_spec(
         pack_api=1,
         id="health",
         name="Carefold Health Pack",
@@ -356,7 +374,7 @@ def _register_native_pack_resources() -> None:
     """
     from yarvelle_core.resources.loader import get_resource_loader as _yc_get_resource_loader
 
-    bootstrap_spec = PackSpec(
+    bootstrap_spec = _build_pack_spec(
         pack_api=1,
         id="health",
         name="Carefold Health Pack",
@@ -370,7 +388,7 @@ def _register_native_pack_resources() -> None:
             patterns_resource="resources/routing_patterns.yaml",
         ),
         manifest_path=str(Path(__file__).resolve().parent / "pack.yaml"),
-        provides=PackProvidesSpec(
+        provides=_build_pack_provides_spec(
             prompts_dir="resources/prompts/",
             locales_dir="resources/locales/",
             connectors_dir="connectors/",
@@ -397,6 +415,22 @@ try:
     _set_default_safety_policy(_default_health_policy)
     _set_domain_safety_policy("clinical", _default_health_policy)
     _set_domain_safety_policy("health", _default_health_policy)
+except Exception:
+    pass
+
+# Wire Carefold's agent/skill loaders onto yarvelle_core.db.seeding so SQL seeding
+# preserves care_stages extensions and legacy carefold.yaml skill manifests.
+try:
+    import yarvelle_core.db.seeding as _yc_seeding
+    from carefold.clinical.host_bridges import load_all_skills_compat as _load_all_skills_compat
+    from carefold.loaders.agent_loader import (
+        load_agent as _carefold_load_agent,
+        load_all_agents as _carefold_load_all_agents,
+    )
+
+    _yc_seeding.load_agent = _carefold_load_agent
+    _yc_seeding.load_all_agents = _carefold_load_all_agents
+    _yc_seeding.load_all_skills = _load_all_skills_compat
 except Exception:
     pass
 

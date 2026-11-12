@@ -13,7 +13,10 @@
 
 from __future__ import annotations
 
-import sys as _sys
-import yarvelle_core.workflows.nodes.input_guardrail_node as _target_module
+from yarvelle_core.workflows.nodes.input_guardrail_node import *  # noqa: F401, F403
+import yarvelle_core.workflows.nodes.input_guardrail_node as _yc_ig
+from carefold.clinical.host_bridges import CarefoldInputGuardrailNode as InputGuardrailNode
 
-_sys.modules[__name__] = _target_module
+
+def __getattr__(name: str):
+    return getattr(_yc_ig, name)

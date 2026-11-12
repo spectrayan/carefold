@@ -33,6 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from yarvelle_core.db.base import Base
 import yarvelle_core.db.session as _yc_session
 from yarvelle_core.db.session import (
+    _run_schema_migrations,
     close_db,
     normalize_database_url,
     reset_engine,
@@ -72,6 +73,9 @@ def resolve_database_url(url: Optional[str] = None) -> str:
     return normalize_database_url(settings.get_database_url())
 
 
+_yc_session.resolve_database_url = resolve_database_url
+
+
 def create_db_engine(url: Optional[str] = None) -> AsyncEngine:
     return _yc_session.create_db_engine(resolve_database_url(url))
 
@@ -84,15 +88,7 @@ def get_session_factory(engine: Optional[AsyncEngine] = None) -> async_sessionma
     return _yc_session.get_session_factory(engine if engine is not None else get_engine())
 
 
-async def get_db() -> AsyncIterator[AsyncSession]:
-    factory = get_session_factory()
-    async with factory() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
+get_db = _yc_session.get_db
 
 
 def get_alembic_config(connection: Optional[Connection] = None) -> Config:

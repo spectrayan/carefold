@@ -9,11 +9,22 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Backward-compatibility re-export shim for carefold.platform.email_drafts."""
+"""Backward-compatibility re-export shim for yarvelle_core.platform.email_drafts."""
 
-from carefold.platform.email_drafts import *  # noqa: F401, F403
-from carefold.platform.email_drafts import (
-    NON_CLINICAL_EMAIL_HEADER_NOTE,
+import yarvelle_core.platform.email_drafts as _yc_email_drafts
+
+_yc_email_drafts.NO_AUTO_SEND_NOTICE = (
+    "Draft saved locally. Carefold never sends emails automatically in v1."
+)
+_yc_email_drafts.AUTOMATED_DRAFT_EMAIL_HEADER_NOTE = (
+    "Prepared locally by Carefold as an administrative aid. "
+    "Review and verify all details before sending."
+)
+
+from yarvelle_core.platform.email_drafts import *  # noqa: E402, F401, F403
+from yarvelle_core.platform.email_drafts import (  # noqa: E402
+    AUTOMATED_DRAFT_EMAIL_HEADER_NOTE,
+    AUTOMATED_DRAFT_EMAIL_HEADER_NOTE as NON_CLINICAL_EMAIL_HEADER_NOTE,
     NO_AUTO_SEND_NOTICE,
     VALID_DRAFT_CATEGORIES,
     build_mailto_uri,

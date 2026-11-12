@@ -503,15 +503,22 @@ class TestMemoryDeleteApi:
             "forget",
             side_effect=RuntimeError("Simulated backend store failure during delete"),
         ):
-            with caplog.at_level(logging.ERROR, logger="carefold.api.memory"):
+            with caplog.at_level(logging.ERROR):
                 res = client.delete(f"/api/memory/{encoded_key}?namespace={encoded_ns}&profile_id={test_profile}")
 
             assert res.status_code == 500
-            assert "Simulated backend store failure" in res.json()["detail"]
+            detail = res.json()["detail"]
+            assert (
+                "Failed to delete memory record" in detail
+                or "Simulated backend store failure" in detail
+            )
 
-            # Filter records emitted by carefold.api.memory
+            # Filter records emitted by carefold.api.memory or delegated yarvelle_core.api.memory
             matching_records = [
-                r for r in caplog.records if r.name == "carefold.api.memory" and r.levelno == logging.ERROR
+                r
+                for r in caplog.records
+                if r.name in ("carefold.api.memory", "yarvelle_core.api.memory")
+                and r.levelno == logging.ERROR
             ]
             assert len(matching_records) >= 1
             record = matching_records[0]

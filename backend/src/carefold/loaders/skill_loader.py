@@ -13,7 +13,11 @@
 
 from __future__ import annotations
 
-import sys as _sys
-import yarvelle_core.loaders.skill_loader as _target_module
+from yarvelle_core.loaders.skill_loader import *  # noqa: F401, F403
+import yarvelle_core.loaders.skill_loader as _yc_skill_loader
+from carefold.clinical.host_bridges import load_all_skills_compat as load_all_skills
+from carefold.clinical.host_bridges import load_skill_compat as load_skill
 
-_sys.modules[__name__] = _target_module
+
+def __getattr__(name: str):
+    return getattr(_yc_skill_loader, name)

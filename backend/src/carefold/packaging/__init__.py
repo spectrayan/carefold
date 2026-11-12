@@ -9,18 +9,14 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Package re-export shim delegating to yarvelle_core.packaging."""
+"""Re-export shim delegating to yarvelle_core.packaging and carefold.packaging.service."""
 
 from __future__ import annotations
 
-from typing import Any
 from yarvelle_core.packaging import *  # noqa: F401, F403
-import yarvelle_core.packaging as _target_module
+import yarvelle_core.packaging as _yc_packaging
+from carefold.packaging.service import *  # noqa: F401, F403
 
 
-def __getattr__(name: str) -> Any:
-    return getattr(_target_module, name)
-
-
-def __dir__() -> list[str]:
-    return sorted(set(globals().keys()) | set(dir(_target_module)))
+def __getattr__(name: str):
+    return getattr(_yc_packaging, name)

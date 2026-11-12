@@ -305,6 +305,18 @@ class Settings(BaseSettings):
         notes_path.mkdir(parents=True, exist_ok=True)
         return notes_path
 
+    def __setattr__(self, name: str, value: Any) -> None:
+        super().__setattr__(name, value)
+        if not name.startswith("_"):
+            try:
+                import yarvelle_core.config as _yc_cfg
+
+                yc_settings = getattr(_yc_cfg, "settings", None)
+                if yc_settings is not None and yc_settings is not self and hasattr(yc_settings, name):
+                    setattr(yc_settings, name, value)
+            except Exception:
+                pass
+
 
 settings = Settings()
 
