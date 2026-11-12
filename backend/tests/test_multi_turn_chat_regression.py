@@ -113,7 +113,7 @@ async def test_multi_turn_chat_resets_iteration_count_and_returns_distinct_respo
             prompt=p,
             agent_id="heart-care-coordinator",
             messages=list(client_history),
-            allow_clinical=True,
+            allow_assist=True,
             user_id="user-1",
             profile_id="profile-1",
         ):

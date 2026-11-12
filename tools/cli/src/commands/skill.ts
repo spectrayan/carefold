@@ -71,16 +71,16 @@ export async function skillListCommand(options: SkillListOptions = {}): Promise<
     }
   }
 
-  // Handle clinical_assist gating
+  // Handle assist gating
   let visibleSkills = validSkills;
-  const clinicalSkills = validSkills.filter((s) => s.risk_class === 'clinical_assist');
+  const clinicalSkills = validSkills.filter((s) => s.risk_class === 'assist');
   if (clinicalSkills.length > 0) {
     if (!allowClinical) {
       process.stderr.write(
         `Warning: Clinical assist skills detected (${clinicalSkills.map((s) => s.id).join(', ')}). ` +
         `Pass --allow-clinical to enable clinical assist skills.\n`
       );
-      visibleSkills = validSkills.filter((s) => s.risk_class !== 'clinical_assist');
+      visibleSkills = validSkills.filter((s) => s.risk_class !== 'assist');
     } else {
       process.stderr.write(
         `Notice: Clinical assist mode enabled. Clinical skills require appropriate clinical governance.\n`

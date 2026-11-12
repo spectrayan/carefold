@@ -8,6 +8,7 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - '@yarvelle/ui@0.1.1'
   - '@yarvelle/ui@0.1.2'
+  - '@yarvelle/ui@0.2.5'
 overrides:
   lodash-es: ^4.18.1
   happy-dom: ^21.0.4

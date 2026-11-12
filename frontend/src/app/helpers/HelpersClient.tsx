@@ -318,7 +318,7 @@ export function HelpersClient({
               <option value="all">All safety levels</option>
               <option value="wellness">Everyday wellness</option>
               <option value="admin">Paperwork & navigation</option>
-              <option value="clinical_assist">Clinical prep · asks consent</option>
+              <option value="assist">Clinical prep · asks consent</option>
             </select>
           </div>
         ) : (
@@ -355,7 +355,7 @@ export function HelpersClient({
               <option value="all">All risk classes</option>
               <option value="wellness">Wellness</option>
               <option value="admin">Admin</option>
-              <option value="clinical_assist">Clinical assist</option>
+              <option value="assist">Clinical assist</option>
               <option value="education">Education</option>
             </select>
           </div>
@@ -388,7 +388,7 @@ export function HelpersClient({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
             {filteredAgents.map((agent) => {
               const Icon = resolveAgentIcon(agent.id);
-              const isClinical = agent.risk_class === 'clinical_assist';
+              const isClinical = agent.risk_class === 'assist';
               const isWellness = agent.risk_class === 'wellness';
               const isAdmin = agent.risk_class === 'admin';
 

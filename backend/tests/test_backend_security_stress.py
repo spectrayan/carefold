@@ -133,7 +133,7 @@ async def test_clinical_consent_enforcement(temp_workspace: Path, tmp_path: Path
     (clinical_agent_dir / "agent.yaml").write_text(
         """id: clinical-navigator
 title: Clinical Navigator
-risk_class: clinical_assist
+risk_class: assist
 skills:
   - visit-prep
 tools:
@@ -143,29 +143,29 @@ persona: Clinical advisor
         encoding="utf-8",
     )
 
-    # 1. Run without consent (allow_clinical=False) -> Denied!
+    # 1. Run without consent (allow_assist=False) -> Denied!
     events_unauthorized = []
     async for ev in execute_agent_run(
         agent_id="clinical-navigator",
         prompt="Help with my visit agenda",
         mock=True,
-        allow_clinical=False,
+        allow_assist=False,
         workspace_root=temp_workspace,
     ):
         events_unauthorized.append(ev)
 
     assert any(e["type"] == "error" for e in events_unauthorized)
     err_ev = next(e for e in events_unauthorized if e["type"] == "error")
-    assert "clinical_assist" in err_ev["message"]
+    assert "assist" in err_ev["message"]
     assert "forbidden" in err_ev["message"].lower()
 
-    # 2. Run with explicit consent (allow_clinical=True) -> Allowed!
+    # 2. Run with explicit consent (allow_assist=True) -> Allowed!
     events_authorized = []
     async for ev in execute_agent_run(
         agent_id="clinical-navigator",
         prompt="Help with my visit agenda",
         mock=True,
-        allow_clinical=True,
+        allow_assist=True,
         workspace_root=temp_workspace,
     ):
         events_authorized.append(ev)
@@ -182,7 +182,7 @@ def test_api_clinical_consent_403(client: TestClient, temp_workspace: Path):
     (clinical_agent_dir / "agent.yaml").write_text(
         """id: clinical-bot
 title: Clinical Bot
-risk_class: clinical_assist
+risk_class: assist
 skills:
   - visit-prep
 persona: Helper
@@ -190,13 +190,13 @@ persona: Helper
         encoding="utf-8",
     )
 
-    # GET /api/agents/clinical-bot without allow_clinical=True -> 403 Forbidden
+    # GET /api/agents/clinical-bot without allow_assist=True -> 403 Forbidden
     res1 = client.get("/api/agents/clinical-bot")
     assert res1.status_code == 403
-    assert "clinical_assist" in res1.json()["detail"]
+    assert "assist" in res1.json()["detail"]
 
-    # GET /api/agents/clinical-bot with allow_clinical=true -> 200 OK
-    res2 = client.get("/api/agents/clinical-bot?allow_clinical=true")
+    # GET /api/agents/clinical-bot with allow_assist=true -> 200 OK
+    res2 = client.get("/api/agents/clinical-bot?allow_assist=true")
     assert res2.status_code == 200
     assert res2.json()["id"] == "clinical-bot"
 

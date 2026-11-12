@@ -110,7 +110,7 @@ def _serialize_batch(batch: ImportBatch, include_records: bool = True) -> Dict[s
 
 
 def require_profile_access(
-    required_access: Literal["manage", "view_clinical"] = "view_clinical",
+    required_access: Literal["manage", "view_records"] = "view_records",
 ) -> Callable[..., Coroutine[Any, Any, Profile]]:
     """FastAPI dependency enforcing profile-scoped clinical/management permissions."""
 
@@ -148,7 +148,7 @@ def require_profile_access(
                 detail="Access denied: management permissions required to modify clinical imports.",
             )
 
-        if required_access == "view_clinical" and access not in ("manage", "view_clinical"):
+        if required_access == "view_records" and access not in ("manage", "view_records"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: clinical view permissions required to inspect imports.",
@@ -204,7 +204,7 @@ async def stage_profile_import(
 async def list_profile_imports(
     profile_id: str,
     status_filter: Optional[str] = Query(None, alias="status", description="Filter by batch status"),
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Returns all staged, committed, or discarded import batches for the profile."""
@@ -223,7 +223,7 @@ async def list_profile_imports(
 async def get_profile_import_batch(
     profile_id: str,
     batch_id: str,
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Returns full details and staged records for an import batch."""

@@ -194,7 +194,7 @@ SPEC_STAGE = ToolSpec(
     },
     risk_tier="write_local",
     trust="untrusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_stage_clinical_import,
     metadata={
         "action": "stage_clinical_import",
@@ -228,7 +228,7 @@ SPEC_COMMIT = ToolSpec(
     },
     risk_tier="write_local",
     trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_commit_clinical_import,
     metadata={
         "action": "commit_clinical_import",

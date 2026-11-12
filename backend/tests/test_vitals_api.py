@@ -73,7 +73,7 @@ def vitals_test_env(monkeypatch):
         )
         bob_session = await auth_adapter.create_session(bob.id)
 
-        # 3. Charlie (Viewer with 'view_clinical' access only)
+        # 3. Charlie (Viewer with 'view_records' access only)
         charlie = await auth_adapter.register_user(
             email="charlie@test.local",
             username="charlie",
@@ -182,7 +182,7 @@ def vitals_test_env(monkeypatch):
                 id=str(uuid.uuid4()),
                 profile_id=alice_profile.id,
                 user_id=charlie.id,
-                access_level="view_clinical",
+                access_level="view_records",
                 granted_by=alice.id,
                 granted_at=now,
             ))
@@ -557,7 +557,7 @@ def test_post_vitals_permissions(vitals_test_env):
     )
     assert r_bob.status_code == 201
 
-    # Charlie has 'view_clinical' only -> Forbidden (403)
+    # Charlie has 'view_records' only -> Forbidden (403)
     r_charlie = client.post(
         f"/api/profiles/{pid}/vitals",
         json=payload,
@@ -607,11 +607,11 @@ def test_get_vitals_list_and_filters(vitals_test_env):
 
 
 def test_get_vitals_permissions(vitals_test_env):
-    """GET /vitals allows 'view_clinical' and blocks 'view_paperwork'."""
+    """GET /vitals allows 'view_records' and blocks 'view_paperwork'."""
     client = TestClient(app)
     pid = vitals_test_env["alice_profile_id"]
 
-    # Charlie ('view_clinical') -> 200 OK
+    # Charlie ('view_records') -> 200 OK
     r_charlie = client.get(
         f"/api/profiles/{pid}/vitals",
         headers={"Authorization": f"Bearer {vitals_test_env['charlie_token']}"},
@@ -635,7 +635,7 @@ def test_get_vitals_trends_diurnal_partitioning(vitals_test_env):
     """GET /vitals/trends partitions readings into AM and PM windows in local timezone."""
     client = TestClient(app)
     pid = vitals_test_env["alice_profile_id"]
-    token = vitals_test_env["charlie_token"]  # Charlie has view_clinical
+    token = vitals_test_env["charlie_token"]  # Charlie has view_records
 
     # Seed observations in AM (08:00 UTC) and PM (14:00 UTC) from yesterday
     now = datetime.now(timezone.utc)

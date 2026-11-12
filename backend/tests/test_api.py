@@ -133,22 +133,22 @@ def test_api_agents_list(client: TestClient):
 
 def test_api_agents_list_exposes_forbidden_and_consent_flag(client: TestClient):
     """Summaries expose the forbidden-intent list (rendered by the web consent dialog
-    before consent is given) and only report clinical_enabled when consent is passed."""
+    before consent is given) and only report assist_enabled when consent is passed."""
     res = client.get("/api/agents")
     assert res.status_code == 200
     by_id = {a["id"]: a for a in res.json()}
 
     steward = by_id["appointment-prep-coordinator"]
-    assert steward["risk_class"] == "clinical_assist"
+    assert steward["risk_class"] == "assist"
     assert "diagnose" in steward["forbidden"]
     assert "replace_emergency_care" in steward["forbidden"]
-    assert steward["clinical_enabled"] is False
+    assert steward["assist_enabled"] is False
 
-    consented = {a["id"]: a for a in client.get("/api/agents?allow_clinical=true").json()}
-    assert consented["appointment-prep-coordinator"]["clinical_enabled"] is True
+    consented = {a["id"]: a for a in client.get("/api/agents?allow_assist=true").json()}
+    assert consented["appointment-prep-coordinator"]["assist_enabled"] is True
 
     # Non-clinical agents are never gated
-    assert by_id["habit-coordinator"]["clinical_enabled"] is True
+    assert by_id["habit-coordinator"]["assist_enabled"] is True
 
 
 def test_api_agents_list_include_hidden(client: TestClient):
@@ -260,7 +260,7 @@ def test_api_skills_filter_domain_and_pagination(client: TestClient):
 
 
 def test_api_agents_detail(client: TestClient):
-    res = client.get("/api/agents/appointment-prep-coordinator?allow_clinical=true")
+    res = client.get("/api/agents/appointment-prep-coordinator?allow_assist=true")
     assert res.status_code == 200
     data = res.json()
     assert data["id"] == "appointment-prep-coordinator"
@@ -377,7 +377,7 @@ def test_api_chat_stream_mock_success(client: TestClient, test_profile: str):
         "agentId": "appointment-prep-coordinator",
         "prompt": "Hello! Can you help me prepare for a doctor visit?",
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
         "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
@@ -405,7 +405,7 @@ def test_api_chat_stream_safety_refusal(client: TestClient, test_profile: str):
         "agentId": "appointment-prep-coordinator",
         "prompt": "Please diagnose if my rash is shingles.",
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
         "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
@@ -435,7 +435,7 @@ def test_api_chat_stream_multi_turn_with_thread_id(client: TestClient, test_prof
         "prompt": "I am scheduling an eye exam for next Friday.",
         "threadId": thread_id,
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
         "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=t1_payload) as r1:
@@ -451,7 +451,7 @@ def test_api_chat_stream_multi_turn_with_thread_id(client: TestClient, test_prof
         "prompt": "Can you draft questions for that exam?",
         "threadId": thread_id,
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
         "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=t2_payload) as r2:
@@ -471,7 +471,7 @@ def test_api_chat_stream_with_model_provider_selection(client: TestClient, test_
         "provider": "mock",
         "model": "carefold-mock",
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
         "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
@@ -521,7 +521,7 @@ def test_api_chat_stream_server_restart_simulation(temp_workspace: Path):
         "prompt": "My preferred pharmacy is Walgreens on 5th Ave.",
         "threadId": thread_id,
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
         "profile_id": profile_id,
     }
     with client1.stream("POST", "/api/chat", json=t1_payload) as r1:
@@ -538,7 +538,7 @@ def test_api_chat_stream_server_restart_simulation(temp_workspace: Path):
         "prompt": "What pharmacy did I choose?",
         "threadId": thread_id,
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
         "profile_id": profile_id,
     }
     with client2.stream("POST", "/api/chat", json=t2_payload) as r2:
@@ -561,7 +561,7 @@ def test_api_chat_stream_tool_execution_events(client: TestClient, temp_workspac
         "agentId": "appointment-prep-coordinator",
         "prompt": "Review my attached blood_work.txt report please.",
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
         "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=payload) as response:
@@ -588,7 +588,7 @@ def test_api_chat_get_thread_history(client: TestClient, temp_workspace: Path, t
         "prompt": "Hello from session thread test.",
         "threadId": thread_id,
         "mock": True,
-        "allow_clinical": True,
+        "allow_assist": True,
         "profile_id": test_profile,
     }
     with client.stream("POST", "/api/chat", json=payload) as r:
@@ -649,7 +649,7 @@ def test_api_agents_list_taxonomy_fields(client: TestClient):
 def test_api_agents_detail_taxonomy_fields(client: TestClient):
     """Verify that GET /api/agents/{agent_id} returns all 7 taxonomy fields on AgentDetailResponse."""
     # 1. appointment-prep-coordinator
-    res_vs = client.get("/api/agents/appointment-prep-coordinator?allow_clinical=true")
+    res_vs = client.get("/api/agents/appointment-prep-coordinator?allow_assist=true")
     assert res_vs.status_code == 200
     data_vs = res_vs.json()
     assert data_vs["domain"] == "navigation"
@@ -721,7 +721,7 @@ def test_api_skills_detail_taxonomy_fields(client: TestClient):
 
 def test_api_agents_detail_resolved_skills_titles(client: TestClient):
     """Verify that GET /api/agents/{id} returns resolvedSkills with human-readable titles."""
-    res = client.get("/api/agents/heart-care-coordinator?allow_clinical=true")
+    res = client.get("/api/agents/heart-care-coordinator?allow_assist=true")
     assert res.status_code == 200
     data = res.json()
     assert "resolvedSkills" in data

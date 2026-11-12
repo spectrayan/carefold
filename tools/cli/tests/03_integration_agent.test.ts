@@ -75,7 +75,7 @@ describe('03: CLI Integration: carefold agent commands', () => {
     expect(res.stdout).toContain('appointment-prep-coordinator');
     expect(res.stdout).toContain('Appointment Prep Coordinator');
     expect(res.stdout).toContain('0.1.0');
-    expect(res.stdout).toContain('clinical_assist');
+    expect(res.stdout).toContain('assist');
   });
 
   it('agent list --json outputs valid JSON array', async () => {
@@ -88,7 +88,7 @@ describe('03: CLI Integration: carefold agent commands', () => {
     expect(Array.isArray(parsed)).toBe(true);
     expect(parsed.length).toBe(1);
     expect(parsed[0].id).toBe('appointment-prep-coordinator');
-    expect(parsed[0].risk_class).toBe('clinical_assist');
+    expect(parsed[0].risk_class).toBe('assist');
   });
 
   it('agent inspect displays detailed manifest metadata and starters', async () => {
@@ -98,7 +98,7 @@ describe('03: CLI Integration: carefold agent commands', () => {
     const res = await runCli(['agent', 'inspect', 'appointment-prep-coordinator'], { cwd: ws.workspaceDir });
     expect(res.exitCode).toBe(0);
     expect(res.stdout).toContain('Agent: Appointment Prep Coordinator (appointment-prep-coordinator)');
-    expect(res.stdout).toContain('Risk Class:      clinical_assist');
+    expect(res.stdout).toContain('Risk Class:      assist');
     expect(res.stdout).toContain('Declared Skills');
     expect(res.stdout).toContain('visit-prep');
     expect(res.stdout).toContain('Effective Tools Allowlist');

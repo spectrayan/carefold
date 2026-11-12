@@ -45,7 +45,7 @@ export function AgentFormModal({
   const [description, setDescription] = useState('');
   const [domain, setDomain] = useState('clinical');
   const [category, setCategory] = useState('');
-  const [riskClass, setRiskClass] = useState<RiskClass>('clinical_assist');
+  const [riskClass, setRiskClass] = useState<RiskClass>('assist');
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedTools, setSelectedTools] = useState<string[]>(['attach-read', 'workspace-note', 'skill-docs']);
   const [personaRole, setPersonaRole] = useState('');
@@ -61,7 +61,7 @@ export function AgentFormModal({
       setDescription(initialAgent.description || '');
       setDomain(String(initialAgent.domain || 'clinical'));
       setCategory(initialAgent.category || '');
-      setRiskClass((initialAgent.risk_class as RiskClass) || 'clinical_assist');
+      setRiskClass((initialAgent.risk_class as RiskClass) || 'assist');
       setSelectedSkills(initialAgent.skills || []);
       setSelectedTools(initialAgent.tools || ['attach-read', 'workspace-note', 'skill-docs']);
       setPersonaRole(initialAgent.persona?.role || initialAgent.title);
@@ -73,7 +73,7 @@ export function AgentFormModal({
       setDescription('');
       setDomain('clinical');
       setCategory('');
-      setRiskClass('clinical_assist');
+      setRiskClass('assist');
       setSelectedSkills([]);
       setSelectedTools(['attach-read', 'workspace-note', 'skill-docs']);
       setPersonaRole('Specialist Clinical Steward');
@@ -237,7 +237,7 @@ export function AgentFormModal({
                 onChange={(e) => setRiskClass(e.target.value as RiskClass)}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:border-emerald-700 dark:focus:border-emerald-400"
               >
-                <option value="clinical_assist">Clinical Assist (requires consent)</option>
+                <option value="assist">Clinical Assist (requires consent)</option>
                 <option value="admin">Admin (Formulary / Insurance)</option>
                 <option value="wellness">Wellness</option>
                 <option value="education">Education</option>

@@ -31,7 +31,7 @@ const SKILLS_DIR = path.join(ROOT_DIR, 'skills');
 const AGENTS_DIR = path.join(ROOT_DIR, 'agents');
 
 const PHASE0_CLOSED_TOOLS = ['attach-read', 'workspace-note', 'skill-docs'];
-const VALID_RISK_CLASSES = ['wellness', 'admin', 'clinical_assist', 'education'];
+const VALID_RISK_CLASSES = ['wellness', 'admin', 'assist', 'education'];
 const MANDATORY_INTENDED_USE = [
   'Not a clinician and not emergency care',
   'If this is an emergency, contact local emergency services',

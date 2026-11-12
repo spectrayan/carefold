@@ -130,8 +130,8 @@ importers:
   frontend:
     dependencies:
       '@yarvelle/ui':
-        specifier: ^0.1.2
-        version: 0.1.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        specifier: ^0.2.5
+        version: 0.2.5(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -1163,8 +1163,9 @@ packages:
   '@vitest/utils@4.1.12':
     resolution: {integrity: sha512-Q3awXrwOfEV+qc3WmO5ONyE0yO7Q1gQ9/oyHxGLZ/pl7N3NO/ZztqQwKLuwMkV+CA1JYSIeO3gkHnRDIo4AVaA==}
 
-  '@yarvelle/ui@0.1.2':
-    resolution: {integrity: sha512-elBfixWuT9PB5DbJOmk1BWG3snHfNX5FM9FL54Ee1F8cIU+icHti42u9/TQjfo8ZIQ6lWrWLPCxGzyz8n96Sdw==}
+  '@yarvelle/ui@0.2.5':
+    resolution: {integrity: sha512-OgHIOKlaUchCtO+sQzV6W+W6icOn1/8G/5TenasPbhpX/wIPAFsdsVJDWnhVB+wIr5t1LEsLN8Uz6Qsr8JbDFw==}
+    engines: {node: '>=20.0.0'}
     hasBin: true
     peerDependencies:
       react: '>=18.2.0 || >=19.0.0'
@@ -3342,7 +3343,7 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
 
-  '@yarvelle/ui@0.1.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@yarvelle/ui@0.2.5(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       clsx: 2.1.1
       lucide-react: 0.475.0(react@19.3.0)

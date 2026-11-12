@@ -44,15 +44,15 @@ from carefold.models.health import (
     HealthResourceReference,
     HealthResourceVersion,
 )
-from connectors.base import ToolContext
-from connectors.errors import EgressBlockedError
-from connectors.http import ScopedHttp
-from connectors.starters.ehr_smart_v2 import (
+from yarvelle_core.connectors.base import ToolContext
+from yarvelle_core.connectors.errors import EgressBlockedError
+from yarvelle_core.connectors.http import ScopedHttp
+from carefold.connectors.starters.ehr_smart_v2 import (
     AthenahealthConnector,
     CmsBlueButtonConnector,
     OracleHealthConnector,
 )
-from connectors.starters.epic_smart import EpicSmartConnector
+from carefold.connectors.starters.epic_smart import EpicSmartConnector
 
 
 @pytest.fixture

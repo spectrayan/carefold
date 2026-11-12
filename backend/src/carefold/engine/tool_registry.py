@@ -82,7 +82,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="read",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_attach_read,
     )
 
@@ -217,7 +217,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="read",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_extract_structured_data,
     )
 
@@ -242,7 +242,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="read",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_validate_grounding,
     )
 
@@ -264,7 +264,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="read",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_extract_document_dossier,
     )
 
@@ -303,7 +303,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="read",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_search_records,
     )
 
@@ -351,7 +351,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="write_local",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_record_vitals,
         metadata={
             "action": "record_vitals",
@@ -428,7 +428,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="write_local",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_create_appointment,
         metadata={
             "action": "create_appointment",
@@ -482,7 +482,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="read",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_list_appointments,
         metadata={
             "action": "list_appointments",
@@ -523,7 +523,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="write_local",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_update_appointment_status,
         metadata={
             "action": "update_appointment_status",
@@ -579,7 +579,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="write_local",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_create_reminder,
         metadata={
             "action": "create_reminder",
@@ -634,7 +634,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="read",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_list_reminders,
         metadata={
             "action": "list_reminders",
@@ -680,7 +680,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="write_local",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_generate_prep_pack,
         metadata={
             "action": "generate_prep_pack",
@@ -733,7 +733,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="write_local",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_create_typed_note,
         metadata={
             "action": "create_typed_note",
@@ -776,7 +776,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="read",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_check_preventive_care,
         metadata={
             "action": "check_preventive_care",
@@ -821,7 +821,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="write_local",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_update_preventive_status,
         metadata={
             "action": "update_preventive_status",
@@ -922,7 +922,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="write_local",
         trust="untrusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_stage_clinical_import,
         metadata={
             "action": "stage_clinical_import",
@@ -959,7 +959,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="write_local",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_commit_clinical_import,
         metadata={
             "action": "commit_clinical_import",
@@ -1010,7 +1010,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="write_local",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_create_school_form,
         metadata={
             "action": "create_school_form",
@@ -1040,7 +1040,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="read",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_list_school_forms,
         metadata={
             "action": "list_school_forms",
@@ -1051,7 +1051,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
 
     # 26. withings_latest_vitals (AU-54)
     async def _exec_withings_latest_vitals(args: Dict[str, Any], ctx: Any = None) -> Any:
-        from connectors.starters.withings import WithingsConnector
+        from carefold.connectors.starters.withings import WithingsConnector
         connector = WithingsConnector()
         for t in connector.tools():
             if t.name == "withings_latest_vitals" and t.handler is not None:
@@ -1079,7 +1079,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         trust="trusted",
         data_flows=DataFlows(
             allowed_hosts=("wbsapi.withings.net", "account.withings.com"),
-            data_sensitivity="phi",
+            data_sensitivity="restricted",
         ),
         executor=_exec_withings_latest_vitals,
         metadata={
@@ -1091,7 +1091,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
 
     # 27. calendar_suggest_slots (AU-55 / E4.3, E5.2)
     async def _exec_calendar_suggest_slots(args: Dict[str, Any], ctx: Any = None) -> Any:
-        from connectors.starters.calendar import GoogleCalendarConnector
+        from carefold.connectors.starters.calendar import GoogleCalendarConnector
         connector = GoogleCalendarConnector()
         for t in connector.tools():
             if t.name == "calendar_suggest_slots" and t.handler is not None:
@@ -1128,7 +1128,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
 
     # 28. calendar_create_event (AU-55 / E4.3)
     async def _exec_calendar_create_event(args: Dict[str, Any], ctx: Any = None) -> Any:
-        from connectors.starters.calendar import GoogleCalendarConnector
+        from carefold.connectors.starters.calendar import GoogleCalendarConnector
         connector = GoogleCalendarConnector()
         for t in connector.tools():
             if t.name == "calendar_create_event" and t.handler is not None:
@@ -1148,7 +1148,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
                 "start_time": {"type": "string", "description": "ISO-8601 start timestamp."},
                 "end_time": {"type": "string", "description": "ISO-8601 end timestamp."},
                 "location": {"type": "string", "description": "Optional clinic address."},
-                "strip_phi": {"type": "boolean", "default": True},
+                "strip_sensitive": {"type": "boolean", "default": True},
             },
             "required": ["title", "start_time", "end_time"],
         },
@@ -1168,7 +1168,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
 
     # 29. epic_smart_search_records (AU-56 / E10.3)
     async def _exec_epic_smart_search_records(args: Dict[str, Any], ctx: Any = None) -> Any:
-        from connectors.starters.epic_smart import EpicSmartConnector
+        from carefold.connectors.starters.epic_smart import EpicSmartConnector
         connector = EpicSmartConnector()
         for t in connector.tools():
             if t.name == "epic_smart_search_records" and t.handler is not None:
@@ -1203,7 +1203,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         trust="untrusted",
         data_flows=DataFlows(
             allowed_hosts=("fhir.epic.com",),
-            data_sensitivity="phi",
+            data_sensitivity="restricted",
         ),
         executor=_exec_epic_smart_search_records,
         metadata={
@@ -1242,7 +1242,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="write_local",
         trust="trusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_create_email_draft,
         metadata={
             "action": "create_email_draft",
@@ -1309,7 +1309,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         trust="untrusted",
         data_flows=DataFlows(
             allowed_hosts=("workspace-mcp.spectrayan.com", "gmail.googleapis.com"),
-            data_sensitivity="phi",
+            data_sensitivity="restricted",
         ),
         executor=_exec_gmail_list_messages,
         metadata={
@@ -1322,7 +1322,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
 
     # 33. zocdoc_book_appointment (AU-71 / E4.6)
     async def _exec_zocdoc_book_appointment(args: Dict[str, Any], ctx: Any = None) -> Any:
-        from connectors.starters.zocdoc import ZocdocConnector
+        from carefold.connectors.starters.zocdoc import ZocdocConnector
         connector = ZocdocConnector()
         for t in connector.tools():
             if t.name == "zocdoc_book_appointment" and t.handler is not None:
@@ -1351,7 +1351,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         trust="untrusted",
         data_flows=DataFlows(
             allowed_hosts=("api.zocdoc.com",),
-            data_sensitivity="phi",
+            data_sensitivity="restricted",
         ),
         executor=_exec_zocdoc_book_appointment,
         metadata={
@@ -1388,7 +1388,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         trust="untrusted",
         data_flows=DataFlows(
             allowed_hosts=("workspace-mcp.spectrayan.com", "gmail.googleapis.com"),
-            data_sensitivity="phi",
+            data_sensitivity="restricted",
         ),
         executor=_exec_gmail_send_message,
         metadata={
@@ -1425,7 +1425,7 @@ def _make_builtin_specs() -> List[ToolSpec]:
         },
         risk_tier="write_local",
         trust="untrusted",
-        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+        data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
         executor=_exec_verify_smart_health_card,
         metadata={
             "action": "verify_smart_health_card",

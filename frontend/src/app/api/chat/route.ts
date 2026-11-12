@@ -39,7 +39,7 @@ export async function POST(req: Request | NextRequest): Promise<Response> {
     profile_id,
     prompt,
     attachments,
-    allow_clinical,
+    allow_assist,
     provider,
     model,
     apiKey,
@@ -49,14 +49,14 @@ export async function POST(req: Request | NextRequest): Promise<Response> {
   } = body;
 
   const rawAllowClinical: unknown =
-    allow_clinical !== undefined
-      ? allow_clinical
-      : body.allowClinical;
+    allow_assist !== undefined
+      ? allow_assist
+      : body.allowAssist;
 
   // Clinical consent is never assumed (#87): absent or non-true values mean no consent.
   const url = new URL(req.url);
-  const allowClinicalQuery = url.searchParams.get('allow_clinical') ?? url.searchParams.get('allowClinical');
-  const allowClinical =
+  const allowClinicalQuery = url.searchParams.get('allow_assist') ?? url.searchParams.get('allowAssist');
+  const allowAssist =
     rawAllowClinical !== undefined
       ? rawAllowClinical === true || rawAllowClinical === 'true'
       : allowClinicalQuery === 'true' || allowClinicalQuery === '1';
@@ -92,7 +92,7 @@ export async function POST(req: Request | NextRequest): Promise<Response> {
     prompt: prompt.trim(),
     attachments: Array.isArray(attachments) ? attachments : [],
     messages: Array.isArray(messages) ? messages : [],
-    allow_clinical: allowClinical,
+    allow_assist: allowAssist,
     provider: provider || 'ollama',
     model,
     api_key: apiKey,

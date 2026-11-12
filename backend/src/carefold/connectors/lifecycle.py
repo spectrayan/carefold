@@ -52,8 +52,8 @@ from carefold.db.models import (
     utc_now,
 )
 from carefold.tools.web_search import DEFAULT_ALLOWED_SEARCH_HOSTS
-import connectors
-from connectors.manifest import ConnectorManifest
+import yarvelle_core.connectors as _core_connectors
+from yarvelle_core.connectors.manifest import ConnectorManifest
 
 UNDER_13_MONTHS: int = 13 * 12  # 156 months
 CONSECUTIVE_FAILURES_DEGRADED_THRESHOLD: int = 3
@@ -85,7 +85,7 @@ _FALLBACK_STARTER_MANIFESTS: List[Dict[str, Any]] = [
         "name": "Withings Health Mate",
         "description": "Ingests smart scale weight, blood pressure, heart rate, and SpO2 readings from Withings Health Mate.",
         "categories": ["vitals"],
-        "entrypoint": "connectors.starters.withings:WithingsConnector",
+        "entrypoint": "carefold.connectors.starters.withings:WithingsConnector",
         "data_flows": {
             "allowed_hosts": ["wbsapi.withings.net", "account.withings.com"],
             "allowed_schemes": ["https"],
@@ -120,7 +120,7 @@ _FALLBACK_STARTER_MANIFESTS: List[Dict[str, Any]] = [
         "name": "Google Calendar",
         "description": "Syncs busy blocks, suggests conflict-free clinic appointment slots, and creates sanitized appointment events.",
         "categories": ["scheduling", "calendar"],
-        "entrypoint": "connectors.starters.calendar:GoogleCalendarConnector",
+        "entrypoint": "carefold.connectors.starters.calendar:GoogleCalendarConnector",
         "data_flows": {
             "allowed_hosts": ["www.googleapis.com", "oauth2.googleapis.com", "accounts.google.com"],
             "allowed_schemes": ["https"],
@@ -158,7 +158,7 @@ _FALLBACK_STARTER_MANIFESTS: List[Dict[str, Any]] = [
         "name": "CalDAV Calendar",
         "description": "Standards-based CalDAV calendar connector for iCloud, Fastmail, and self-hosted DAV servers.",
         "categories": ["scheduling", "calendar"],
-        "entrypoint": "connectors.starters.calendar:CalDavConnector",
+        "entrypoint": "carefold.connectors.starters.calendar:CalDavConnector",
         "data_flows": {
             "allowed_hosts": ["caldav.icloud.com", "caldav.fastmail.com", "localhost"],
             "allowed_schemes": ["https", "http"],
@@ -198,7 +198,7 @@ _FALLBACK_STARTER_MANIFESTS: List[Dict[str, Any]] = [
             "vitals",
             "labs",
         ],
-        "entrypoint": "connectors.starters.epic_smart:EpicSmartConnector",
+        "entrypoint": "carefold.connectors.starters.epic_smart:EpicSmartConnector",
         "data_flows": {
             "allowed_hosts": ["fhir.epic.com"],
             "allowed_schemes": ["https"],
@@ -272,7 +272,7 @@ def list_connector_manifests() -> List[ConnectorManifest]:
         manifests_by_id[manifest.id] = manifest
 
     try:
-        pkg_root = Path(connectors.__file__).resolve().parent
+        pkg_root = Path(_core_connectors.__file__).resolve().parent
         local_root = Path(__file__).resolve().parent
         candidate_dirs = (
             pkg_root / "starters" / "manifests",

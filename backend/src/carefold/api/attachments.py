@@ -347,7 +347,7 @@ async def list_attachments(
                     (Profile.user_id == owner_id)
                     | (
                         (ProfileAccess.user_id == effective_user_id)
-                        & ProfileAccess.access_level.in_(("manage", "view_clinical", "view_paperwork"))
+                        & ProfileAccess.access_level.in_(("manage", "view_records", "view_paperwork"))
                     )
                 )
                 .distinct()

@@ -141,7 +141,7 @@ def _serialize_mcp_pin(pin: McpToolPin) -> Dict[str, Any]:
 )
 async def list_profile_routines(
     profile_id: str,
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Lists all `Routine` records for `profile_id`."""
@@ -319,7 +319,7 @@ async def update_profile_connection_autonomy(
 async def list_connection_mcp_pins(
     profile_id: str,
     connection_id: str,
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Lists all `McpToolPin` records for `(profile_id, connection_id)` (`AU-57`)."""

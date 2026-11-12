@@ -110,7 +110,7 @@ description: Experimental triage assistant
     const clinicalYaml = `
 id: triage-guide
 version: 0.1.0
-risk_class: clinical_assist
+risk_class: assist
 tools: []
 `;
 

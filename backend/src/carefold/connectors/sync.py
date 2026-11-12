@@ -54,8 +54,8 @@ from carefold.db.models import (
     SyncRun,
     utc_now,
 )
-from connectors.base import NormalisedRecord, Page, StreamSpec, ToolContext
-from connectors.http import ScopedHttp
+from yarvelle_core.connectors.base import NormalisedRecord, Page, StreamSpec, ToolContext
+from yarvelle_core.connectors.http import ScopedHttp
 
 logger = logging.getLogger("carefold.connectors.sync")
 

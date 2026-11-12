@@ -36,7 +36,7 @@ async def execute_withings_latest_vitals(args: Dict[str, Any], ctx: Any = None) 
         from carefold.connectors.withings import WithingsConnector
     except ImportError:
         try:
-            from connectors.starters.withings import WithingsConnector
+            from carefold.connectors.starters.withings import WithingsConnector
         except ImportError:
             WithingsConnector = None
     if WithingsConnector is not None:
@@ -71,7 +71,7 @@ SPEC_WITHINGS = ToolSpec(
     trust="trusted",
     data_flows=DataFlows(
         allowed_hosts=("wbsapi.withings.net", "account.withings.com"),
-        data_sensitivity="phi",
+        data_sensitivity="restricted",
     ),
     executor=execute_withings_latest_vitals,
     metadata={
@@ -90,7 +90,7 @@ async def execute_epic_smart_search_records(args: Dict[str, Any], ctx: Any = Non
         from carefold.connectors.epic_smart import EpicSmartConnector
     except ImportError:
         try:
-            from connectors.starters.epic_smart import EpicSmartConnector
+            from carefold.connectors.starters.epic_smart import EpicSmartConnector
         except ImportError:
             EpicSmartConnector = None
     if EpicSmartConnector is not None:
@@ -132,7 +132,7 @@ SPEC_EPIC = ToolSpec(
     trust="untrusted",
     data_flows=DataFlows(
         allowed_hosts=("fhir.epic.com",),
-        data_sensitivity="phi",
+        data_sensitivity="restricted",
     ),
     executor=execute_epic_smart_search_records,
     metadata={
@@ -184,7 +184,7 @@ async def execute_zocdoc_book_appointment(args: Dict[str, Any], ctx: Any = None)
         from carefold.connectors.zocdoc import ZocdocConnector
     except ImportError:
         try:
-            from connectors.starters.zocdoc import ZocdocConnector
+            from carefold.connectors.starters.zocdoc import ZocdocConnector
         except ImportError:
             ZocdocConnector = None
     if ZocdocConnector is not None:
@@ -220,7 +220,7 @@ SPEC_ZOCDOC = ToolSpec(
     trust="untrusted",
     data_flows=DataFlows(
         allowed_hosts=("api.zocdoc.com",),
-        data_sensitivity="phi",
+        data_sensitivity="restricted",
     ),
     executor=execute_zocdoc_book_appointment,
     metadata={
@@ -261,7 +261,7 @@ SPEC_SHC = ToolSpec(
     },
     risk_tier="write_local",
     trust="untrusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="phi"),
+    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
     executor=execute_verify_smart_health_card,
     metadata={
         "action": "verify_smart_health_card",

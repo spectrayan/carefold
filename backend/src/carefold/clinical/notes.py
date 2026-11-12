@@ -223,7 +223,24 @@ def extract_after_visit_summary(note_content: str) -> Dict[str, Any]:
     }
 
 
+class AfterVisitExtractionResponse(BaseModel):
+    """Structured after-visit note extraction response with grounded citations."""
+
+    note_id: str
+    diagnoses: List[Dict[str, Any]] = Field(default_factory=list)
+    medication_adjustments: List[Dict[str, Any]] = Field(default_factory=list)
+    ordered_tests: List[Dict[str, Any]] = Field(default_factory=list)
+    follow_up_timeline: List[Dict[str, Any]] = Field(default_factory=list)
+    recommended_reminders: List[Dict[str, Any]] = Field(default_factory=list)
+    disclaimer: str = Field(
+        default=NON_CLINICAL_DISCLAIMER,
+        description="Mandatory non-clinical boundary disclaimer",
+    )
+    extracted_items_count: int = 0
+
+
 __all__ = [
+    "AfterVisitExtractionResponse",
     "AfterVisitSummary",
     "ExtractedClinicalItem",
     "NON_CLINICAL_DISCLAIMER",

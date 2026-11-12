@@ -19,7 +19,7 @@ name: Withings Health Mate
 description: Ingests smart scale weight, blood pressure, heart rate, and SpO2 readings from Withings Health Mate.
 categories:
   - vitals
-entrypoint: connectors.starters.withings:WithingsConnector
+entrypoint: carefold.connectors.starters.withings:WithingsConnector
 data_flows:
   allowed_hosts:
     - wbsapi.withings.net

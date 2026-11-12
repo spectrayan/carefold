@@ -54,7 +54,7 @@ class SafetyContext:
     agent_id: Optional[str] = None
     domain: Optional[str] = None
     risk_class: Optional[str] = None
-    allow_clinical: Optional[bool] = None
+    allow_assist: Optional[bool] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 

@@ -34,7 +34,7 @@ export interface ViewerInvite {
   targetProfileId: string;
   targetProfileName: string;
   permissions: {
-    view_clinical: boolean;
+    view_records: boolean;
     view_paperwork: boolean;
   };
   expiresInDays: number;
@@ -373,7 +373,7 @@ export async function fetchViewerInvites(profileId?: string): Promise<ViewerInvi
           targetProfileId: item.profile_id,
           targetProfileName: item.target_profile_name || item.profile_id,
           permissions: {
-            view_clinical: Boolean(item.view_clinical),
+            view_records: Boolean(item.view_records),
             view_paperwork: Boolean(item.view_paperwork)
           },
           expiresInDays: item.expires_in_days || 30,
@@ -413,7 +413,7 @@ export async function createViewerInvite(
 ): Promise<ViewerInvite> {
   const payload = {
     invitee_name: input.inviteeName.trim(),
-    view_clinical: input.viewClinical,
+    view_records: input.viewClinical,
     view_paperwork: input.viewPaperwork,
     expires_in_days: input.expiresInDays
   };
@@ -437,7 +437,7 @@ export async function createViewerInvite(
         targetProfileId: item.profile_id,
         targetProfileName: input.targetProfileName || item.profile_id,
         permissions: {
-          view_clinical: Boolean(item.view_clinical),
+          view_records: Boolean(item.view_records),
           view_paperwork: Boolean(item.view_paperwork)
         },
         expiresInDays: input.expiresInDays,
@@ -462,7 +462,7 @@ export async function createViewerInvite(
     targetProfileId: profileId,
     targetProfileName: input.targetProfileName || profileId,
     permissions: {
-      view_clinical: input.viewClinical,
+      view_records: input.viewClinical,
       view_paperwork: input.viewPaperwork
     },
     expiresInDays: input.expiresInDays,

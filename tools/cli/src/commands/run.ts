@@ -185,9 +185,9 @@ export async function runCommand(
 
       // Pre-flight manifest check & clinical risk gate
       const { agent } = await loadAgent(agentDir, skillsDir);
-      if (agent.risk_class === 'clinical_assist' && !config.allow_clinical) {
+      if (agent.risk_class === 'assist' && !config.allow_clinical) {
         throw new CliError(
-          `Agent "${agent.id}" (or an attached skill) is classified as "clinical_assist".\n` +
+          `Agent "${agent.id}" (or an attached skill) is classified as "assist".\n` +
           `Execution blocked. Pass --allow-clinical to run clinical assist agents.`,
           ExitCodes.USER_ERROR
         );
@@ -205,9 +205,9 @@ export async function runCommand(
 
       const skill = await loadSkill(skillPath);
 
-      if (skill.risk_class === 'clinical_assist' && !config.allow_clinical) {
+      if (skill.risk_class === 'assist' && !config.allow_clinical) {
         throw new CliError(
-          `Skill "${skill.id}" is classified as "clinical_assist".\n` +
+          `Skill "${skill.id}" is classified as "assist".\n` +
           `Execution blocked. Pass --allow-clinical to run clinical assist skills.`,
           ExitCodes.USER_ERROR
         );

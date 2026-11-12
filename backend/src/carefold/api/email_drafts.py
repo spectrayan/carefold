@@ -59,7 +59,7 @@ router = APIRouter(tags=["email-and-school"])
 
 
 def require_profile_access(
-    required_access: Literal["manage", "view_clinical"] = "view_clinical",
+    required_access: Literal["manage", "view_records"] = "view_records",
 ) -> Callable[..., Coroutine[Any, Any, Profile]]:
     """Enforces profile-scoped role-based access control for email drafts, Gmail staging, and school ICS feeds."""
 
@@ -97,7 +97,7 @@ def require_profile_access(
                 detail="Access denied: management permissions required.",
             )
 
-        if required_access == "view_clinical" and access not in ("manage", "view_clinical"):
+        if required_access == "view_records" and access not in ("manage", "view_records"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: clinical view permissions required.",
@@ -184,7 +184,7 @@ def _serialize_gmail_batch(batch: ImportBatch) -> Dict[str, Any]:
 async def get_profile_email_drafts(
     profile_id: str,
     category: Optional[str] = Query(None, description="Optional category filter"),
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Lists all local email drafts for `profile_id`."""
@@ -241,7 +241,7 @@ async def get_profile_email_draft_eml(
     profile_id: str,
     draft_id: str,
     raw: bool = Query(False, description="Return raw message/rfc822 response body instead of JSON wrapper"),
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """Exports an `EmailDraft` as an RFC 5322 `.eml` message with `X-Unsent: 1`."""
@@ -379,7 +379,7 @@ async def post_confirm_gmail_staged_item(
 )
 async def get_profile_school_ics_feeds(
     profile_id: str,
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Returns all registered `SchoolIcsFeed` subscriptions for `profile_id`."""

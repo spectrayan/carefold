@@ -20,7 +20,7 @@ description: Standards-based CalDAV calendar connector for iCloud, Fastmail, and
 categories:
   - scheduling
   - calendar
-entrypoint: connectors.starters.calendar:CalDavConnector
+entrypoint: carefold.connectors.starters.calendar:CalDavConnector
 data_flows:
   allowed_hosts:
     - caldav.icloud.com

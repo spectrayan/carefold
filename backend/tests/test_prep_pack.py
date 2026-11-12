@@ -573,7 +573,7 @@ def prep_pack_api_env(monkeypatch):
                 id=str(uuid.uuid4()),
                 profile_id=alice_profile.id,
                 user_id=charlie.id,
-                access_level="view_clinical",
+                access_level="view_records",
                 granted_by=alice.id,
                 granted_at=now,
             ))

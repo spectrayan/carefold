@@ -38,7 +38,7 @@ assert "not found" in resp.json().get("detail", "").lower()
     },
     {
       id: 'F19-B02',
-      name: 'GET /api/agents/{id} enforces 403 Forbidden on clinical_assist agent without explicit consent',
+      name: 'GET /api/agents/{id} enforces 403 Forbidden on assist agent without explicit consent',
       fn: () => {
         const ws = createTempWorkspace();
         try {
@@ -51,7 +51,7 @@ id: "clinical-tester"
 title: "Clinical Tester"
 persona: "Diagnostic assistant"
 version: "0.1.0"
-risk_class: "clinical_assist"
+risk_class: "assist"
 tools: []
 skills: []
 `);
@@ -66,12 +66,12 @@ old_root = settings.workspace_root
 settings.workspace_root = Path('${ws}')
 try:
     client = TestClient(app)
-    # 1. Without allow_clinical -> 403
+    # 1. Without allow_assist -> 403
     r1 = client.get("/api/agents/clinical-tester")
     assert r1.status_code == 403, f"Expected 403, got {r1.status_code}"
 
-    # 2. With allow_clinical=true -> 200
-    r2 = client.get("/api/agents/clinical-tester?allow_clinical=true")
+    # 2. With allow_assist=true -> 200
+    r2 = client.get("/api/agents/clinical-tester?allow_assist=true")
     assert r2.status_code == 200, f"Expected 200, got {r2.status_code}"
 finally:
     settings.workspace_root = old_root

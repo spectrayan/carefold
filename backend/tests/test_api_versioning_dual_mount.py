@@ -278,13 +278,13 @@ def test_agents_and_skills_catalog_dual_mount(client: TestClient):
     assert ag_v1.status_code == 200 and ag_leg.status_code == 200
     assert ag_v1.json() == ag_leg.json()
 
-    # Clinical agent detail with allow_clinical=true
-    ag_det_v1 = client.get(f"{API_V1_AGENTS}/appointment-prep-coordinator?allow_clinical=true")
-    ag_det_leg = client.get(f"{API_AGENTS}/appointment-prep-coordinator?allow_clinical=true")
+    # Clinical agent detail with allow_assist=true
+    ag_det_v1 = client.get(f"{API_V1_AGENTS}/appointment-prep-coordinator?allow_assist=true")
+    ag_det_leg = client.get(f"{API_AGENTS}/appointment-prep-coordinator?allow_assist=true")
     assert ag_det_v1.status_code == 200 and ag_det_leg.status_code == 200
     assert ag_det_v1.json() == ag_det_leg.json()
 
-    # Wellness agent detail without allow_clinical requirement
+    # Wellness agent detail without allow_assist requirement
     ag_hc_v1 = client.get(f"{API_V1_AGENTS}/habit-coordinator")
     ag_hc_leg = client.get(f"{API_AGENTS}/habit-coordinator")
     assert ag_hc_v1.status_code == 200 and ag_hc_leg.status_code == 200

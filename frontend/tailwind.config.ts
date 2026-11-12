@@ -121,6 +121,11 @@ const config: Config = {
             text: '#6b21a8',
             border: '#e9d5ff'
           },
+          assist: {
+            bg: '#fffbeb',
+            text: '#b45309',
+            border: '#fde68a'
+          },
           clinical_assist: {
             bg: '#fffbeb',
             text: '#b45309',

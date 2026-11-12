@@ -215,7 +215,7 @@ async def test_sql_audit_event_insertion_with_payload_hash(audit_env):
         payload=test_payload,
         actor_user_id="user-789",
         principal="agent",
-        risk="clinical_assist",
+        risk="assist",
         session_factory=session_factory,
     )
 
@@ -235,7 +235,7 @@ async def test_sql_audit_event_insertion_with_payload_hash(audit_env):
         assert record.principal == "agent"
         assert record.run_id == "run-456"
         assert record.decision == "allow"
-        assert record.risk == "clinical_assist"
+        assert record.risk == "assist"
         assert record.payload_hash == expected_hash
         assert isinstance(record.ts, datetime)
 

@@ -74,8 +74,8 @@ export function formatRiskBadge(riskClass: string): string {
       return 'admin';
     case 'education':
       return 'education';
-    case 'clinical_assist':
-      return 'clinical_assist [RESTRICTED]';
+    case 'assist':
+      return 'assist [RESTRICTED]';
     default:
       return riskClass;
   }

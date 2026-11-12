@@ -290,7 +290,7 @@ class AgentExecutionNode(BaseNode):
                 toolbox = get_db_toolbox()
                 if str(db_toolset_name) == "auto":
                     dom = str(getattr(manifest, "domain", "clinical") or "clinical")
-                    rc = str(getattr(manifest, "risk_class", "clinical_assist") or "clinical_assist")
+                    rc = str(getattr(manifest, "risk_class", "assist") or "assist")
                     toolset_tools = toolbox.get_toolset_for_domain(dom, rc)
                 else:
                     toolset_tools = toolbox.get_toolset(str(db_toolset_name))

@@ -86,7 +86,7 @@ def require_profile_access(required_access: str):
                 detail="Access denied: management permissions required to modify appointments for this profile.",
             )
 
-        if required_access == "view_clinical" and access not in ("manage", "view_clinical"):
+        if required_access == "view_records" and access not in ("manage", "view_records"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: clinical view permissions required to inspect appointments.",
@@ -321,7 +321,7 @@ async def list_appointments(
     specialty: Optional[str] = Query(None, description="Filter by specialty"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> AppointmentListResponse:
     """Lists appointments with filtering and automatically sweeps post-visit transitions."""
@@ -393,7 +393,7 @@ async def list_appointments(
 async def get_appointment(
     profile_id: str,
     appointment_id: str,
-    profile: Profile = Depends(require_profile_access("view_clinical")),
+    profile: Profile = Depends(require_profile_access("view_records")),
     db: AsyncSession = Depends(get_db),
 ) -> AppointmentResponse:
     """Fetches single appointment record by ID."""

@@ -141,7 +141,7 @@ describe('05: CLI Integration: carefold run', () => {
 id: clinical-doc
 title: Clinical Doctor
 version: 0.1.0
-risk_class: clinical_assist
+risk_class: assist
 skills: []
 persona:
   role: Doctor
@@ -155,7 +155,7 @@ persona:
       cwd: ws.workspaceDir
     });
     expect(blocked.exitCode).not.toBe(0);
-    expect(blocked.stderr).toContain('clinical_assist');
+    expect(blocked.stderr).toContain('assist');
     expect(blocked.stderr).toContain('--allow-clinical');
 
     // Run with --allow-clinical

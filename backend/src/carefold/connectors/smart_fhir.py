@@ -40,9 +40,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from carefold.engine.tool_exec import UntrustedResult
 from carefold.fhir.repository import upsert_fhir_resource_with_history
 from carefold.models.health import HealthResource
-from connectors.base import NormalisedRecord, ToolContext
-from connectors.errors import ConnectorError, EgressBlockedError
-from connectors.http import ScopedHttp
+from yarvelle_core.connectors.base import NormalisedRecord, ToolContext
+from yarvelle_core.connectors.errors import ConnectorError, EgressBlockedError
+from yarvelle_core.connectors.http import ScopedHttp
 
 SMART_OAUTH_URIS_EXTENSION_URL = (
     "http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris"

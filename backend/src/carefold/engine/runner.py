@@ -51,7 +51,7 @@ async def execute_agent_run(
     prompt: str,
     messages: Optional[List[ChatMessage]] = None,
     attachments: Optional[List[str]] = None,
-    allow_clinical: bool = True,
+    allow_assist: bool = True,
     model_client: Optional[Any] = None,
     workspace_root: Optional[Union[Path, str]] = None,
     store_bodies: Optional[bool] = None,
@@ -89,7 +89,7 @@ async def execute_agent_run(
 
     async for event in service.execute_turn(
         thread_id=resolved_thread_id, prompt=prompt, agent_id=agent_id,
-        messages=messages, attachments=attachments, allow_clinical=allow_clinical,
+        messages=messages, attachments=attachments, allow_assist=allow_assist,
         model=chat_model, provider=provider, model_name=model,
         api_key=api_key, base_url=base_url, store_bodies=store_bodies, **kwargs,
     ):
