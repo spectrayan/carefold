@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import inspect
 from typing import Any, Dict, List, Optional
 
 from yarvelle_core.platform.reminders import *  # noqa: F401, F403
@@ -24,6 +25,10 @@ from yarvelle_core.platform.reminders import (
     coalesce_overdue_reminders,
     generate_ics_calendar as _generate_ics_calendar,
     handle_reminder_job,
+)
+
+_ICS_ACCEPTS_SANITIZE_SENSITIVE = (
+    "sanitize_sensitive" in inspect.signature(_generate_ics_calendar).parameters
 )
 
 
@@ -40,9 +45,15 @@ def generate_ics_calendar(
 
         app_name = settings.product_name
     effective_sanitize = sanitize_phi if sanitize_sensitive is None else sanitize_sensitive
+    if _ICS_ACCEPTS_SANITIZE_SENSITIVE:
+        return _generate_ics_calendar(
+            reminders,
+            sanitize_sensitive=effective_sanitize,
+            app_name=app_name,
+        )
     return _generate_ics_calendar(
         reminders,
-        sanitize_sensitive=effective_sanitize,
+        sanitize_phi=effective_sanitize,
         app_name=app_name,
     )
 

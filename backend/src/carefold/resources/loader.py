@@ -542,6 +542,13 @@ class ResourceLoader:
                     except Exception:
                         return spec.template
         err_def = self.get_errors().get("errors", {}).get(error_key, {})
+        if not err_def and self.resources_dir == Path(__file__).parent.resolve():
+            try:
+                from yarvelle_core.resources.loader import get_resource_loader as _yc_get_loader
+
+                err_def = _yc_get_loader().get_errors().get("errors", {}).get(error_key, {})
+            except Exception:
+                err_def = {}
         msg_template = str(err_def.get("template") or err_def.get("message", error_key))
         try:
             safe_kwargs = collections.defaultdict(str, kwargs)
@@ -563,6 +570,13 @@ class ResourceLoader:
                 if spec is not None:
                     return spec.http_status
         err_def = self.get_errors().get("errors", {}).get(error_key, {})
+        if not err_def and self.resources_dir == Path(__file__).parent.resolve():
+            try:
+                from yarvelle_core.resources.loader import get_resource_loader as _yc_get_loader
+
+                err_def = _yc_get_loader().get_errors().get("errors", {}).get(error_key, {})
+            except Exception:
+                err_def = {}
         return int(err_def.get("http_status", err_def.get("status_code", 500)))
 
 

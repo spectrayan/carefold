@@ -22,11 +22,17 @@ import carefold
 
 
 def test_pack_spec_passes_error_prefix_and_errors_file_when_supported() -> None:
-    """Against current yarvelle-core, Carefold registers error_prefix='CFD' and errors_file."""
+    """Against current yarvelle-core, Carefold registers error_prefix='CFD' and errors_file; omits cleanly on 0.2.4."""
     spec = carefold.get_pack()
-    assert spec.error_prefix == "CFD"
+    if "error_prefix" in carefold.PackSpec.model_fields:
+        assert spec.error_prefix == "CFD"
+    else:
+        assert not hasattr(spec, "error_prefix")
     assert spec.provides is not None
-    assert spec.provides.errors_file == "resources/errors.yaml"
+    if "errors_file" in carefold.PackProvidesSpec.model_fields:
+        assert spec.provides.errors_file == "resources/errors.yaml"
+    else:
+        assert not hasattr(spec.provides, "errors_file")
 
 
 def test_pack_spec_omits_error_prefix_on_legacy_024_schema_without_swallowing_errors(

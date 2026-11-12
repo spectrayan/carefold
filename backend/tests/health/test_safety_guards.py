@@ -35,9 +35,21 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 PACK_YAML = REPO_ROOT / "backend" / "src" / "carefold" / "pack.yaml"
 
 
+def _validate_pack_manifest_compat(data: Dict[str, Any]) -> PackManifest:
+    payload = dict(data)
+    if "error_prefix" not in PackManifest.model_fields:
+        payload.pop("error_prefix", None)
+        if isinstance(payload.get("scopes"), list):
+            payload["scopes"] = [
+                {**s, "sensitivity": "phi"} if isinstance(s, dict) and s.get("sensitivity") == "restricted" else s
+                for s in payload["scopes"]
+            ]
+    return PackManifest.model_validate(payload)
+
+
 def test_pack_yaml_and_python_twin_declare_buffered_granite_guardian() -> None:
     data = yaml.safe_load(PACK_YAML.read_text(encoding="utf-8"))
-    manifest = PackManifest.model_validate(data)
+    manifest = _validate_pack_manifest_compat(data)
     pack = carefold.get_pack()
 
     for source in (manifest.safety, pack.safety):

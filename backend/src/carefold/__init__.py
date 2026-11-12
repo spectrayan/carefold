@@ -167,12 +167,16 @@ logger = logging.getLogger("carefold_health")
 
 __version__ = "0.5.0b2"
 
-# Eagerly register "clinical" on core AgentDomain when health pack is loaded
+# Eagerly register "clinical" on core AgentDomain and dual-version RiskClass values
 try:
-    from yarvelle_core.schemas.manifest import AgentDomain
+    from yarvelle_core.schemas.manifest import AgentDomain, RiskClass
 
     if hasattr(AgentDomain, "register") and not hasattr(AgentDomain, "CLINICAL"):
         AgentDomain.CLINICAL = AgentDomain.register("clinical")
+    if hasattr(RiskClass, "register") and not hasattr(RiskClass, "ASSIST"):
+        RiskClass.ASSIST = RiskClass.register("assist")
+    if hasattr(RiskClass, "register") and not hasattr(RiskClass, "CLINICAL_ASSIST"):
+        RiskClass.CLINICAL_ASSIST = RiskClass.register("clinical_assist")
 except Exception:
     pass
 
