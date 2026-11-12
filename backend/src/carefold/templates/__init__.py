@@ -9,18 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Template compilation and rendering package for Carefold."""
+"""Package re-export shim delegating to yarvelle_core.templates."""
 
-from carefold.templates.engine import (
-    TemplateEngine,
-    get_template_engine,
-    render_template,
-)
-from carefold.templates.helpers import BUILTIN_HELPERS
+from __future__ import annotations
 
-__all__ = [
-    "TemplateEngine",
-    "get_template_engine",
-    "render_template",
-    "BUILTIN_HELPERS",
-]
+from typing import Any
+from yarvelle_core.templates import *  # noqa: F401, F403
+import yarvelle_core.templates as _target_module
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

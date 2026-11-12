@@ -9,23 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold resources package.
+"""Package re-export shim delegating to yarvelle_core.resources."""
 
-Provides external YAML schemas and ResourceLoader for:
-- disclaimers.yaml
-- refusal_patterns.yaml
-- prompts.yaml
-- errors.yaml
-"""
+from __future__ import annotations
 
-from carefold.resources.loader import (
-    RefusalPattern,
-    ResourceLoader,
-    get_resource_loader,
-)
+from typing import Any
+from yarvelle_core.resources import *  # noqa: F401, F403
+import yarvelle_core.resources as _target_module
 
-__all__ = [
-    "RefusalPattern",
-    "ResourceLoader",
-    "get_resource_loader",
-]
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

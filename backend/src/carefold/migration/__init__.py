@@ -9,8 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold runtime migration package."""
+"""Package re-export shim delegating to yarvelle_core.migration."""
 
-from carefold.migration.runtime_migrator import run_first_launch_migration
+from __future__ import annotations
 
-__all__ = ["run_first_launch_migration"]
+from typing import Any
+from yarvelle_core.migration import *  # noqa: F401, F403
+import yarvelle_core.migration as _target_module
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

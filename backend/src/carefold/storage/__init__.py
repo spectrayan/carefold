@@ -9,38 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold Hexagonal Storage Port & Pluggable Architecture."""
+"""Package re-export shim delegating to yarvelle_core.storage."""
 
-from carefold.storage.adapters.local_adapter import LocalStorageAdapter
-from carefold.storage.factory import (
-    create_storage_adapter,
-    get_storage,
-    get_storage_adapter,
-    reset_storage_adapter,
-    reset_storage_adapters,
-    set_storage_adapter,
-)
-from carefold.storage.ports.storage_port import (
-    StorageError,
-    StorageFile,
-    StorageFileMetadata,
-    StorageFileNotFoundError,
-    StoragePort,
-    StorageSecurityError,
-)
+from __future__ import annotations
 
-__all__ = [
-    "StoragePort",
-    "StorageFileMetadata",
-    "StorageFile",
-    "StorageError",
-    "StorageFileNotFoundError",
-    "StorageSecurityError",
-    "LocalStorageAdapter",
-    "create_storage_adapter",
-    "get_storage_adapter",
-    "set_storage_adapter",
-    "reset_storage_adapter",
-    "reset_storage_adapters",
-    "get_storage",
-]
+from typing import Any
+from yarvelle_core.storage import *  # noqa: F401, F403
+import yarvelle_core.storage as _target_module
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

@@ -68,15 +68,30 @@ async def execute_web_search(args: Dict[str, Any], ctx: Any = None) -> Dict[str,
     raw_query = str(args.get("query") or "")
     pre_cleaned, mrn_redacted = _strip_clinical_identifiers(raw_query)
     patched_args = {**args, "query": pre_cleaned}
-    orig_fetch = _target_module._fetch_search_results
+    orig_fetch = getattr(_target_module, "_fetch_search_results", None)
     local_fetch = globals().get("_fetch_search_results", orig_fetch)
-    if local_fetch is not orig_fetch:
-        _target_module._fetch_search_results = local_fetch
-    try:
+    if local_fetch is not orig_fetch and callable(local_fetch) and not bool(args.get("preview_only", False)):
+        preview = await _target_module.execute_web_search({**patched_args, "preview_only": True}, ctx=ctx)
+        max_res = max(1, min(int(args.get("max_results", 5)), 20)) if str(args.get("max_results", 5)).isdigit() else 5
+        raw_hits = await local_fetch(
+            provider=preview["provider"],
+            target_url=f"https://{preview['target_host']}/",
+            sanitized_query=preview["sanitized_query"],
+            max_results=max_res,
+        )
+        cleaned_hits = _target_module._normalize_search_hits(raw_hits, max_results=max_res)
+        _target_module._mark_context_tainted(ctx)
+        res: Dict[str, Any] = {
+            "query": raw_query,
+            "sanitized_query": preview["sanitized_query"],
+            "redacted_items": preview["redacted_items"],
+            "provider": preview["provider"],
+            "target_host": preview["target_host"],
+            "results": cleaned_hits,
+            "trust": "untrusted",
+        }
+    else:
         res = await _target_module.execute_web_search(patched_args, ctx=ctx)
-    finally:
-        if local_fetch is not orig_fetch:
-            _target_module._fetch_search_results = orig_fetch
     if isinstance(res, dict):
         res = {
             **res,

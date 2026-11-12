@@ -9,8 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Storage adapter implementations."""
+"""Package re-export shim delegating to yarvelle_core.storage.adapters."""
 
-from carefold.storage.adapters.local_adapter import LocalStorageAdapter
+from __future__ import annotations
 
-__all__ = ["LocalStorageAdapter"]
+from typing import Any
+from yarvelle_core.storage.adapters import *  # noqa: F401, F403
+import yarvelle_core.storage.adapters as _target_module
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

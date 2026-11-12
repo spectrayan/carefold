@@ -9,102 +9,21 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold relational database layer with multi-dialect support (SQLite & PostgreSQL)."""
+"""Database layer re-exporting yarvelle_core primitives and Carefold dual-migration session."""
 
-from carefold.db.base import Base
-from carefold.db.models import (
-    Agent,
-    Appointment,
-    Approval,
-    Attachment,
-    AuditEventRecord,
-    ChatThread,
-    CompanionDevice,
-    Connection,
-    ConsentGrant,
-    Credential,
-    EmailDraft,
-    HealthResource,
-    ImportBatch,
-    Job,
-    KnowledgeBase,
-    McpToolPin,
-    Note,
-    PasswordReset,
-    PreventiveRecord,
-    Profile,
-    ProfileAccess,
-    ProfileConsent,
-    ProfileKey,
-    Reminder,
-    Routine,
-    SchoolForm,
-    SchoolIcsFeed,
-    ScopeGrant,
-    Session,
-    Skill,
-    SyncRun,
-    SystemSetting,
-    User,
-    ViewerInvite,
-)
-from carefold.db.session import (
-    close_db,
-    create_db_engine,
-    get_db,
-    get_engine,
-    get_session_factory,
-    init_db,
-    normalize_database_url,
-    reset_engine,
-    resolve_database_url,
-    sanitize_db_url,
+from __future__ import annotations
+
+from typing import Any
+from yarvelle_core.db.base import Base  # noqa: F401
+import yarvelle_core.db as _target_module
+from carefold.db.models import *  # noqa: F401, F403
+from carefold.db.session import (  # noqa: F401
+    close_db, create_db_engine, get_alembic_config, get_db, get_engine, get_pack_alembic_config,
+    get_session_factory, init_db, is_core_revision_satisfied, normalize_database_url, reset_engine,
+    resolve_database_url, resolve_health_migrations_dir, run_alembic_migrations, run_all_migrations,
+    run_pack_migrations, sanitize_db_url,
 )
 
-__all__ = [
-    "Base",
-    "User",
-    "Session",
-    "PasswordReset",
-    "SystemSetting",
-    "Agent",
-    "Skill",
-    "KnowledgeBase",
-    "Note",
-    "Attachment",
-    "AuditEventRecord",
-    "ChatThread",
-    "Profile",
-    "ProfileAccess",
-    "ProfileConsent",
-    "ProfileKey",
-    "Approval",
-    "Job",
-    "Connection",
-    "Credential",
-    "ConsentGrant",
-    "SyncRun",
-    "Routine",
-    "McpToolPin",
-    "EmailDraft",
-    "SchoolIcsFeed",
-    "ScopeGrant",
-    "CompanionDevice",
-    "ViewerInvite",
-    "HealthResource",
-    "Appointment",
-    "Reminder",
-    "PreventiveRecord",
-    "ImportBatch",
-    "SchoolForm",
-    "create_db_engine",
-    "get_engine",
-    "get_session_factory",
-    "get_db",
-    "init_db",
-    "close_db",
-    "reset_engine",
-    "normalize_database_url",
-    "sanitize_db_url",
-    "resolve_database_url",
-]
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)

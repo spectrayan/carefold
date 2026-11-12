@@ -9,9 +9,10 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Re-export shim routing carefold extraction sanitizer imports to carefold.clinical.sanitizer."""
+"""Extraction sanitizer shim re-exporting yarvelle_core-compatible Carefold clinical sanitizer."""
 
 from __future__ import annotations
 
+import yarvelle_core.workflows.subgraphs.extraction.sanitizer as _core_sanitizer  # noqa: F401
 from carefold.clinical.sanitizer import *  # noqa: F401, F403
 from carefold.clinical.sanitizer import __all__  # noqa: F401

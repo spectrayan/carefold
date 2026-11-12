@@ -488,5 +488,4 @@ def register_carefold_db_toolbox() -> None:
         core_toolbox.register_db_tool_hook(
             fhir_tool_name, _hook_fhir_operation_registry
         )
-    core_toolbox._DEFAULT_TOOLBOX = None
     _REGISTERED = True

@@ -9,8 +9,11 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Alias re-export for ReflectionNode."""
+"""Re-export shim delegating to yarvelle_core.workflows.nodes.reflection."""
 
-from carefold.workflows.nodes.reflection_node import ReflectionNode
+from __future__ import annotations
 
-__all__ = ["ReflectionNode"]
+import sys as _sys
+import yarvelle_core.workflows.nodes.reflection as _target_module
+
+_sys.modules[__name__] = _target_module

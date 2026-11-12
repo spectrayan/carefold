@@ -9,139 +9,28 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold agent identifiers, defaults, and delegation constants (Milestone 6).
-
-Centralizes all agent IDs, tool identifiers, risk classes, and orchestration
-execution defaults, eliminating hardcoded string literals across runtime nodes.
-"""
+"""Agent constants re-exported from yarvelle_core with Carefold pack IDs."""
 
 from __future__ import annotations
 
-from typing import FrozenSet
+from yarvelle_core.constants.agents import *  # noqa: F401, F403
 
-# ============================================================================
-# 1. Agent Identifiers
-# ============================================================================
-
-AGENT_ORCHESTRATOR: str = "orchestrator"
-AGENT_DOCUMENT_EXTRACTOR: str = "document-extractor"
 AGENT_VISIT_PREP_COORDINATOR: str = "appointment-prep-coordinator"
 AGENT_BENEFITS_COORDINATOR: str = "benefits-coordinator"
 AGENT_HABIT_COORDINATOR: str = "habit-coordinator"
-AGENT_SUGGESTION_GENERATOR: str = "suggestion-generator"
-AGENT_TEMPLATE: str = "_template"
-
-BUNDLED_AGENT_IDS: FrozenSet[str] = frozenset({
-    AGENT_ORCHESTRATOR,
+DEFAULT_ROUTING_FALLBACK_AGENT: str = AGENT_VISIT_PREP_COORDINATOR
+RISK_CLASS_CLINICAL_ASSIST: str = "assist"
+BUNDLED_AGENT_IDS = frozenset({
     AGENT_VISIT_PREP_COORDINATOR,
     AGENT_BENEFITS_COORDINATOR,
     AGENT_HABIT_COORDINATOR,
-    AGENT_DOCUMENT_EXTRACTOR,
-    AGENT_SUGGESTION_GENERATOR,
+    "suggestion-generator",
+    "document-extractor",
+    "orchestrator",
 })
-ALL_BUNDLED_AGENT_IDS: FrozenSet[str] = BUNDLED_AGENT_IDS
+ALL_BUNDLED_AGENT_IDS = BUNDLED_AGENT_IDS
 
+import yarvelle_core.constants.agents as _yc_mod
 
-DEFAULT_ROUTING_FALLBACK_AGENT: str = AGENT_VISIT_PREP_COORDINATOR
-
-
-# ============================================================================
-# 2. Tool Identifiers
-# ============================================================================
-
-# Phase 0 Closed Tools
-TOOL_ATTACH_READ: str = "attach-read"
-TOOL_WORKSPACE_NOTE: str = "workspace-note"
-TOOL_SKILL_DOCS: str = "skill-docs"
-TOOL_SEARCH_RECORDS: str = "search_records"
-
-# Delegation Meta-Tools
-TOOL_DELEGATE_TO_AGENT: str = "delegate_to_agent"
-TOOL_LIST_AGENTS: str = "list_agents"
-
-DELEGATION_TOOLS: FrozenSet[str] = frozenset({
-    TOOL_DELEGATE_TO_AGENT,
-    TOOL_LIST_AGENTS,
-})
-
-# Extraction Tools
-TOOL_SANITIZE_PII: str = "sanitize_pii"
-TOOL_EXTRACT_STRUCTURED_DATA: str = "extract_structured_data"
-TOOL_VALIDATE_GROUNDING: str = "validate_grounding"
-TOOL_EXTRACT_DOCUMENT_DOSSIER: str = "extract_document_dossier"
-
-EXTRACTION_TOOLS: FrozenSet[str] = frozenset({
-    TOOL_ATTACH_READ,
-    TOOL_SANITIZE_PII,
-    TOOL_EXTRACT_STRUCTURED_DATA,
-    TOOL_VALIDATE_GROUNDING,
-    TOOL_EXTRACT_DOCUMENT_DOSSIER,
-})
-
-EXPANDED_PHASE_0_REGISTRY: FrozenSet[str] = frozenset({
-    TOOL_ATTACH_READ,
-    TOOL_WORKSPACE_NOTE,
-    TOOL_SKILL_DOCS,
-    TOOL_SEARCH_RECORDS,
-    TOOL_DELEGATE_TO_AGENT,
-    TOOL_LIST_AGENTS,
-    TOOL_SANITIZE_PII,
-    TOOL_EXTRACT_STRUCTURED_DATA,
-    TOOL_VALIDATE_GROUNDING,
-    TOOL_EXTRACT_DOCUMENT_DOSSIER,
-})
-
-
-# ============================================================================
-# 3. Agent Risk Classes
-# ============================================================================
-
-RISK_CLASS_ADMIN: str = "admin"
-RISK_CLASS_WELLNESS: str = "wellness"
-RISK_CLASS_ASSIST: str = "assist"
-RISK_CLASS_CLINICAL_ASSIST: str = RISK_CLASS_ASSIST
-RISK_CLASS_EDUCATION: str = "education"
-
-
-# ============================================================================
-# 4. Orchestration & Iteration Limits
-# ============================================================================
-
-DEFAULT_CAN_DELEGATE: bool = False
-DEFAULT_MAX_ITERATIONS: int = 3
-DEFAULT_ORCHESTRATOR_MAX_ITERATIONS: int = 5
-ORCHESTRATOR_MAX_ITERATIONS: int = 5
-
-__all__ = [
-    "AGENT_BENEFITS_COORDINATOR",
-    "AGENT_DOCUMENT_EXTRACTOR",
-    "AGENT_HABIT_COORDINATOR",
-    "AGENT_ORCHESTRATOR",
-    "AGENT_TEMPLATE",
-    "AGENT_VISIT_PREP_COORDINATOR",
-    "ALL_BUNDLED_AGENT_IDS",
-    "BUNDLED_AGENT_IDS",
-    "DEFAULT_CAN_DELEGATE",
-    "DEFAULT_MAX_ITERATIONS",
-    "DEFAULT_ORCHESTRATOR_MAX_ITERATIONS",
-    "DEFAULT_ROUTING_FALLBACK_AGENT",
-    "DELEGATION_TOOLS",
-    "EXPANDED_PHASE_0_REGISTRY",
-    "EXTRACTION_TOOLS",
-    "ORCHESTRATOR_MAX_ITERATIONS",
-    "RISK_CLASS_ADMIN",
-    "RISK_CLASS_ASSIST",
-    "RISK_CLASS_CLINICAL_ASSIST",
-    "RISK_CLASS_EDUCATION",
-    "RISK_CLASS_WELLNESS",
-    "TOOL_ATTACH_READ",
-    "TOOL_DELEGATE_TO_AGENT",
-    "TOOL_EXTRACT_DOCUMENT_DOSSIER",
-    "TOOL_EXTRACT_STRUCTURED_DATA",
-    "TOOL_LIST_AGENTS",
-    "TOOL_SANITIZE_PII",
-    "TOOL_SEARCH_RECORDS",
-    "TOOL_SKILL_DOCS",
-    "TOOL_VALIDATE_GROUNDING",
-    "TOOL_WORKSPACE_NOTE",
-]
+def __getattr__(name: str):
+    return getattr(_yc_mod, name)

@@ -9,7 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Multi-database async SQLAlchemy engine, connection pooling, and session management."""
+"""Database session and dual-chain Alembic migration runner delegating core pooling to yarvelle_core."""
 
 from __future__ import annotations
 
@@ -18,479 +18,97 @@ import contextlib
 try:
     import fcntl
 except ImportError:
-    fcntl = None  # type: ignore
+    fcntl = None  # type: ignore[assignment]
 import os
 from pathlib import Path
-import re
 from typing import AsyncIterator, Optional
 
 import alembic.command
 import alembic.script
 from alembic.config import Config
-from sqlalchemy import event, inspect
-from sqlalchemy.engine import Connection
-from sqlalchemy.engine.url import make_url, URL
-from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
+from sqlalchemy import inspect
+from sqlalchemy.engine import Connection, URL, make_url
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+
+from yarvelle_core.db.base import Base
+import yarvelle_core.db.session as _yc_session
+from yarvelle_core.db.session import (
+    close_db,
+    normalize_database_url,
+    reset_engine,
+    sanitize_db_url,
 )
-from sqlalchemy.pool import AsyncAdaptedQueuePool, NullPool, StaticPool
 
 from carefold.config import settings
 from carefold.constants.paths import ENV_DATABASE_URL, ENV_DATABASE_URL_FALLBACK
-from carefold.db.base import Base
 from carefold.logging import get_logger
 
 logger = get_logger("carefold.db")
 
-_engine: Optional[AsyncEngine] = None
-_session_factory: Optional[async_sessionmaker[AsyncSession]] = None
-_init_db_lock: Optional[asyncio.Lock] = None
-_init_db_lock_loop: Optional[asyncio.AbstractEventLoop] = None
+_init_lock: Optional[asyncio.Lock] = None
+_init_lock_loop: Optional[asyncio.AbstractEventLoop] = None
 
 
-def _get_init_db_lock() -> asyncio.Lock:
-    """Returns a module-level asyncio.Lock for in-process serialization of init_db."""
-    global _init_db_lock, _init_db_lock_loop
+def _get_init_lock() -> asyncio.Lock:
+    global _init_lock, _init_lock_loop
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
         loop = None
-
-    if _init_db_lock is None or (_init_db_lock_loop is not None and _init_db_lock_loop is not loop):
-        _init_db_lock = asyncio.Lock()
-        _init_db_lock_loop = loop
-    return _init_db_lock
-
-
-def normalize_database_url(url: str) -> str:
-    """Normalizes database URLs to async drivers for SQLite and PostgreSQL."""
-    cleaned = url.strip()
-    if cleaned == ":memory:":
-        return "sqlite+aiosqlite:///:memory:"
-
-    if cleaned.startswith("postgres://"):
-        return "postgresql+asyncpg://" + cleaned[len("postgres://"):]
-    if cleaned.startswith("postgresql://"):
-        return "postgresql+asyncpg://" + cleaned[len("postgresql://"):]
-    if cleaned.startswith("postgresql+psycopg2://"):
-        return "postgresql+asyncpg://" + cleaned[len("postgresql+psycopg2://"):]
-
-    if cleaned.startswith("sqlite://") and not cleaned.startswith("sqlite+"):
-        return "sqlite+aiosqlite://" + cleaned[len("sqlite://"):]
-
-    return cleaned
-
-
-def sanitize_db_url(url: str | URL) -> str:
-    """Masks credentials in database connection strings for safe logging."""
-    url_str = str(url)
-    try:
-        parsed = make_url(url_str)
-        return parsed.render_as_string(hide_password=True)
-    except Exception:
-        return re.sub(r"://([^:@]+):([^@]+)@", r"://\1:***@", url_str)
+    if _init_lock is None or (_init_lock_loop is not None and _init_lock_loop is not loop):
+        _init_lock = asyncio.Lock()
+        _init_lock_loop = loop
+    return _init_lock
 
 
 def resolve_database_url(url: Optional[str] = None) -> str:
-    """Resolves the database URL adhering to priority rules:
-
-    1. Explicit parameter
-    2. CAREFOLD_DATABASE_URL environment variable
-    3. DATABASE_URL environment variable
-    4. settings.get_database_url()
-    """
+    """Resolves the database URL honoring CAREFOLD_DATABASE_URL, YARVELLE_DATABASE_URL, and settings."""
     if url is not None and url.strip():
         return normalize_database_url(url)
-
-    env_cf = os.getenv(ENV_DATABASE_URL)
-    if env_cf and env_cf.strip():
-        return normalize_database_url(env_cf)
-
-    env_db = os.getenv(ENV_DATABASE_URL_FALLBACK)
-    if env_db and env_db.strip():
-        return normalize_database_url(env_db)
-
+    for env_key in (ENV_DATABASE_URL, "YARVELLE_DATABASE_URL", ENV_DATABASE_URL_FALLBACK):
+        env_val = os.getenv(env_key)
+        if env_val and env_val.strip():
+            return normalize_database_url(env_val)
     return normalize_database_url(settings.get_database_url())
 
 
-def _ensure_sqlite_dir(url: str) -> None:
-    """Ensures the parent directory exists for file-based SQLite databases."""
-    if ":memory:" in url:
-        return
-    if "sqlite" in url:
-        try:
-            parsed = make_url(url)
-            if parsed.database and parsed.database != ":memory:":
-                db_path = Path(parsed.database)
-                db_path.parent.mkdir(parents=True, exist_ok=True)
-        except Exception:
-            pass
-
-
 def create_db_engine(url: Optional[str] = None) -> AsyncEngine:
-    """Creates a configured AsyncEngine with dialect-specific connection pooling."""
-    resolved_url = resolve_database_url(url)
-    _ensure_sqlite_dir(resolved_url)
-
-    is_sqlite = "sqlite" in resolved_url
-    is_memory = ":memory:" in resolved_url
-
-    if is_sqlite:
-        if is_memory:
-            poolclass = StaticPool
-            connect_args = {"check_same_thread": False}
-        else:
-            poolclass = NullPool
-            connect_args = {"check_same_thread": False, "timeout": 30.0}
-
-        engine = create_async_engine(
-            resolved_url,
-            poolclass=poolclass,
-            connect_args=connect_args,
-            echo=False,
-        )
-
-        @event.listens_for(engine.sync_engine, "connect")
-        def set_sqlite_pragma(dbapi_connection, connection_record):
-            cursor = dbapi_connection.cursor()
-            cursor.execute("PRAGMA journal_mode = WAL;")
-            cursor.execute("PRAGMA busy_timeout = 10000;")
-            cursor.execute("PRAGMA foreign_keys = ON;")
-            cursor.close()
-
-        return engine
-
-    # PostgreSQL / other dialects: AsyncAdaptedQueuePool with pre-ping and recycling
-    engine = create_async_engine(
-        resolved_url,
-        poolclass=AsyncAdaptedQueuePool,
-        pool_size=10,
-        max_overflow=20,
-        pool_timeout=30.0,
-        pool_recycle=1800,
-        pool_pre_ping=True,
-        echo=False,
-    )
-    return engine
+    return _yc_session.create_db_engine(resolve_database_url(url))
 
 
 def get_engine(url: Optional[str] = None) -> AsyncEngine:
-    """Returns the singleton AsyncEngine instance, creating it if needed."""
-    global _engine
-    if _engine is None:
-        _engine = create_db_engine(url)
-    try:
-        import yarvelle_core.db.session as yc_session
-        yc_session._engine = _engine
-    except Exception:
-        pass
-    return _engine
+    return _yc_session.get_engine(resolve_database_url(url))
 
 
-def get_session_factory(
-    engine: Optional[AsyncEngine] = None,
-) -> async_sessionmaker[AsyncSession]:
-    """Returns an async_sessionmaker bound to the engine."""
-    global _session_factory
-    if engine is not None:
-        return async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
-
-    if _session_factory is None:
-        _session_factory = async_sessionmaker(
-            bind=get_engine(),
-            class_=AsyncSession,
-            expire_on_commit=False,
-        )
-    try:
-        import yarvelle_core.db.session as yc_session
-        yc_session._session_factory = _session_factory
-        yc_session._engine = _engine
-    except Exception:
-        pass
-    return _session_factory
+def get_session_factory(engine: Optional[AsyncEngine] = None) -> async_sessionmaker[AsyncSession]:
+    return _yc_session.get_session_factory(engine if engine is not None else get_engine())
 
 
-def reset_engine() -> None:
-    """Resets global engine, sessionmaker, and init lock references."""
-    global _engine, _session_factory, _init_db_lock, _init_db_lock_loop
-    _engine = None
-    _session_factory = None
-    _init_db_lock = None
-    _init_db_lock_loop = None
-    try:
-        import yarvelle_core.db.session as yc_session
-        yc_session._engine = None
-        yc_session._session_factory = None
-        yc_session._init_db_lock = None
-        yc_session._init_db_lock_loop = None
-    except Exception:
-        pass
-
-
-from yarvelle_core.db.session import get_db  # noqa: F401
-
-
-def _run_schema_migrations(connection) -> None:
-    """Safely adds missing columns and renames tables in existing SQLite / PostgreSQL databases without data loss."""
-    inspector = inspect(connection)
-    tables = inspector.get_table_names()
-
-    # 1. Milestone 2: Table rename 'note' -> 'notes'
-    if "note" in tables and "notes" not in tables:
-        connection.exec_driver_sql("ALTER TABLE note RENAME TO notes;")
-        tables.remove("note")
-        tables.append("notes")
-    elif "note" in tables and "notes" in tables:
-        count_notes = connection.exec_driver_sql("SELECT count(*) FROM notes;").scalar()
-        if count_notes == 0:
-            connection.exec_driver_sql("DROP TABLE notes;")
-            connection.exec_driver_sql("ALTER TABLE note RENAME TO notes;")
-            tables.remove("note")
-        else:
-            cols_note = [c["name"] for c in inspector.get_columns("note")]
-            cols_notes = [c["name"] for c in inspector.get_columns("notes")]
-            common_cols = [c for c in cols_note if c in cols_notes]
-            if common_cols:
-                cols_str = ", ".join(common_cols)
-                connection.exec_driver_sql(
-                    f"INSERT OR IGNORE INTO notes ({cols_str}) SELECT {cols_str} FROM note;"
-                )
-            connection.exec_driver_sql("DROP TABLE note;")
-            tables.remove("note")
-
-    # 2. Agent column migrations (existing)
-    if "agent" in tables:
-        columns = [c["name"] for c in inspector.get_columns("agent")]
-        if "extensions_json" not in columns:
-            connection.exec_driver_sql("ALTER TABLE agent ADD COLUMN extensions_json TEXT NOT NULL DEFAULT '{}'")
-        if "target_audience_json" not in columns:
-            connection.exec_driver_sql("ALTER TABLE agent ADD COLUMN target_audience_json TEXT NOT NULL DEFAULT '[]'")
-        if "forbidden_json" not in columns:
-            connection.exec_driver_sql("ALTER TABLE agent ADD COLUMN forbidden_json TEXT NOT NULL DEFAULT '[]'")
-
-    # 3. Milestone 2: Profile columns (short_name, avatar_url)
-    if "profiles" in tables:
-        profile_cols = [c["name"] for c in inspector.get_columns("profiles")]
-        if "short_name" not in profile_cols:
-            connection.exec_driver_sql("ALTER TABLE profiles ADD COLUMN short_name VARCHAR(64)")
-        if "avatar_url" not in profile_cols:
-            connection.exec_driver_sql("ALTER TABLE profiles ADD COLUMN avatar_url VARCHAR(512)")
-
-    # 4. Milestone 2: ProfileAccess column (role)
-    if "profile_access" in tables:
-        pa_cols = [c["name"] for c in inspector.get_columns("profile_access")]
-        if "role" not in pa_cols:
-            connection.exec_driver_sql("ALTER TABLE profile_access ADD COLUMN role VARCHAR(32) NOT NULL DEFAULT 'viewer'")
-
-    # 5. Profile_id column migrations across notes, attachments, chat_threads
-    for tbl in ("notes", "note", "attachments", "chat_threads"):
-        if tbl in tables:
-            cols = [c["name"] for c in inspector.get_columns(tbl)]
-            if "profile_id" not in cols:
-                connection.exec_driver_sql(f"ALTER TABLE {tbl} ADD COLUMN profile_id VARCHAR(36)")
-
-    # 6. Milestone 2: Ensure table 'viewer_invites' is created with its unique index
-    if "viewer_invites" not in tables:
-        if "viewer_invites" in Base.metadata.tables:
-            Base.metadata.tables["viewer_invites"].create(connection, checkfirst=True)
-            tables.append("viewer_invites")
-        else:
-            connection.exec_driver_sql("""
-                CREATE TABLE IF NOT EXISTS viewer_invites (
-                    id VARCHAR(36) NOT NULL PRIMARY KEY,
-                    invite_code VARCHAR(64) NOT NULL,
-                    profile_id VARCHAR(36) NOT NULL,
-                    invited_by VARCHAR(36),
-                    invitee_name VARCHAR(255) NOT NULL,
-                    role VARCHAR(32) NOT NULL DEFAULT 'viewer',
-                    view_records BOOLEAN NOT NULL DEFAULT 1,
-                    view_paperwork BOOLEAN NOT NULL DEFAULT 0,
-                    expires_at DATETIME NOT NULL,
-                    accepted_at DATETIME,
-                    accepted_by VARCHAR(36),
-                    created_at DATETIME NOT NULL,
-                    updated_at DATETIME NOT NULL,
-                    FOREIGN KEY(profile_id) REFERENCES profiles (id) ON DELETE CASCADE,
-                    FOREIGN KEY(invited_by) REFERENCES users (id) ON DELETE CASCADE,
-                    FOREIGN KEY(accepted_by) REFERENCES users (id) ON DELETE SET NULL
-                );
-            """)
-            connection.exec_driver_sql(
-                "CREATE UNIQUE INDEX IF NOT EXISTS ix_viewer_invites_invite_code ON viewer_invites (invite_code);"
-            )
-            connection.exec_driver_sql(
-                "CREATE INDEX IF NOT EXISTS ix_viewer_invites_profile_id ON viewer_invites (profile_id);"
-            )
-            connection.exec_driver_sql(
-                "CREATE INDEX IF NOT EXISTS ix_viewer_invites_invited_by ON viewer_invites (invited_by);"
-            )
-            tables.append("viewer_invites")
-
-    # 7. Milestone 3: Attachments schema evolution (storage_key, sha256_hash, indices & backfill)
-    if "attachments" in tables:
-        # Determine existing columns using dialect-specific pragma or inspector
-        if connection.dialect.name == "sqlite":
-            table_info = connection.exec_driver_sql("PRAGMA table_info(attachments);").fetchall()
-            attachment_cols = [row[1] for row in table_info]  # row[1] is column name
-        else:
-            attachment_cols = [c["name"] for c in inspector.get_columns("attachments")]
-
-        # 7a. Add missing storage_key column
-        if "storage_key" not in attachment_cols:
-            connection.exec_driver_sql("ALTER TABLE attachments ADD COLUMN storage_key VARCHAR(512);")
-            attachment_cols.append("storage_key")
-            logger.info("migration_added_column", table="attachments", column="storage_key")
-
-        # 7b. Add missing sha256_hash column
-        if "sha256_hash" not in attachment_cols:
-            connection.exec_driver_sql("ALTER TABLE attachments ADD COLUMN sha256_hash VARCHAR(64);")
-            attachment_cols.append("sha256_hash")
-            logger.info("migration_added_column", table="attachments", column="sha256_hash")
-
-        # 7c. Ensure missing filename column is added if legacy table only had file_path / filepath
-        if "filename" not in attachment_cols:
-            connection.exec_driver_sql("ALTER TABLE attachments ADD COLUMN filename VARCHAR(255);")
-            logger.info("migration_added_column", table="attachments", column="filename")
-            if "original_name" in attachment_cols:
-                connection.exec_driver_sql(
-                    "UPDATE attachments SET filename = original_name WHERE filename IS NULL AND original_name IS NOT NULL AND original_name != '';"
-                )
-            if "file_path" in attachment_cols:
-                connection.exec_driver_sql(
-                    "UPDATE attachments SET filename = file_path WHERE filename IS NULL AND file_path IS NOT NULL AND file_path != '';"
-                )
-            elif "filepath" in attachment_cols:
-                connection.exec_driver_sql(
-                    "UPDATE attachments SET filename = filepath WHERE filename IS NULL AND filepath IS NOT NULL AND filepath != '';"
-                )
-            connection.exec_driver_sql(
-                "UPDATE attachments SET filename = 'unnamed_attachment' WHERE filename IS NULL OR filename = '';"
-            )
-            attachment_cols.append("filename")
-
-        # 7d. Content-Addressed Storage (CAS) columns
-        if "extracted_text" not in attachment_cols:
-            connection.exec_driver_sql("ALTER TABLE attachments ADD COLUMN extracted_text TEXT;")
-            logger.info("migration_added_column", table="attachments", column="extracted_text")
-            attachment_cols.append("extracted_text")
-        if "source" not in attachment_cols:
-            connection.exec_driver_sql("ALTER TABLE attachments ADD COLUMN source VARCHAR(64) DEFAULT 'upload' NOT NULL;")
-            logger.info("migration_added_column", table="attachments", column="source")
-            attachment_cols.append("source")
-        if "source_ref" not in attachment_cols:
-            connection.exec_driver_sql("ALTER TABLE attachments ADD COLUMN source_ref VARCHAR(255);")
-            logger.info("migration_added_column", table="attachments", column="source_ref")
-            attachment_cols.append("source_ref")
-        if "extraction_status" not in attachment_cols:
-            connection.exec_driver_sql("ALTER TABLE attachments ADD COLUMN extraction_status VARCHAR(32) DEFAULT 'pending' NOT NULL;")
-            logger.info("migration_added_column", table="attachments", column="extraction_status")
-            attachment_cols.append("extraction_status")
-        if "updated_at" not in attachment_cols:
-            connection.exec_driver_sql("ALTER TABLE attachments ADD COLUMN updated_at TIMESTAMP;")
-            connection.exec_driver_sql("UPDATE attachments SET updated_at = created_at WHERE updated_at IS NULL;")
-            logger.info("migration_added_column", table="attachments", column="updated_at")
-            attachment_cols.append("updated_at")
-
-        # 7e. Ensure indices exist for query performance and deduplication lookups
-        existing_indices = {
-            idx["name"] for idx in inspector.get_indexes("attachments") if idx.get("name")
-        }
-        if "ix_attachments_storage_key" not in existing_indices:
-            connection.exec_driver_sql(
-                "CREATE INDEX IF NOT EXISTS ix_attachments_storage_key ON attachments (storage_key);"
-            )
-        if "ix_attachments_sha256_hash" not in existing_indices:
-            connection.exec_driver_sql(
-                "CREATE INDEX IF NOT EXISTS ix_attachments_sha256_hash ON attachments (sha256_hash);"
-            )
-
-        # 7e. Backfill legacy records where storage_key is NULL
-        # Direct backfill from legacy file_path or filepath column if present
-        if "file_path" in attachment_cols:
-            connection.exec_driver_sql("""
-                UPDATE attachments
-                SET storage_key = file_path
-                WHERE storage_key IS NULL AND file_path IS NOT NULL AND file_path != '';
-            """)
-        if "filepath" in attachment_cols:
-            connection.exec_driver_sql("""
-                UPDATE attachments
-                SET storage_key = filepath
-                WHERE storage_key IS NULL AND filepath IS NOT NULL AND filepath != '';
-            """)
-
-        # Fallback scoping backfill if storage_key is still NULL and columns exist
-        has_user = "user_id" in attachment_cols
-        has_prof = "profile_id" in attachment_cols
-        has_name = "filename" in attachment_cols
-
-        if has_name:
-            if has_user and has_prof:
-                connection.exec_driver_sql("""
-                    UPDATE attachments
-                    SET storage_key = user_id || '/' || profile_id || '/' || filename
-                    WHERE storage_key IS NULL AND user_id IS NOT NULL AND user_id != '' AND profile_id IS NOT NULL AND profile_id != '';
-                """)
-            if has_user:
-                connection.exec_driver_sql("""
-                    UPDATE attachments
-                    SET storage_key = user_id || '/' || filename
-                    WHERE storage_key IS NULL AND user_id IS NOT NULL AND user_id != '';
-                """)
-            if has_prof:
-                connection.exec_driver_sql("""
-                    UPDATE attachments
-                    SET storage_key = profile_id || '/' || filename
-                    WHERE storage_key IS NULL AND profile_id IS NOT NULL AND profile_id != '';
-                """)
-            connection.exec_driver_sql("""
-                UPDATE attachments
-                SET storage_key = filename
-                WHERE storage_key IS NULL;
-            """)
-
-    _ensure_approvals_schema(connection)
-
-
-def _ensure_approvals_schema(connection: Connection) -> None:
-    """Ensures approvals.agent_id exists on pre-0.1.2 databases already stamped at 0011_scopes."""
-    inspector = inspect(connection)
-    if "approvals" not in inspector.get_table_names():
-        return
-    approval_cols = {c["name"] for c in inspector.get_columns("approvals")}
-    if "agent_id" not in approval_cols:
-        connection.exec_driver_sql("ALTER TABLE approvals ADD COLUMN agent_id VARCHAR(64);")
-        logger.info("migration_added_column", table="approvals", column="agent_id")
-    existing_indices = {
-        idx["name"] for idx in inspector.get_indexes("approvals") if idx.get("name")
-    }
-    if "ix_approvals_agent_id" not in existing_indices:
-        connection.exec_driver_sql(
-            "CREATE INDEX IF NOT EXISTS ix_approvals_agent_id ON approvals (agent_id);"
-        )
+async def get_db() -> AsyncIterator[AsyncSession]:
+    factory = get_session_factory()
+    async with factory() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 
 def get_alembic_config(connection: Optional[Connection] = None) -> Config:
-    """Constructs and returns Alembic Config pointing to yarvelle_core's migration chain."""
+    """Constructs Alembic Config pointing to yarvelle_core's core migration chain."""
     import yarvelle_core.db
 
     backend_dir = Path(__file__).resolve().parents[3]
-    candidate_ini = backend_dir / "alembic.ini"
-    if candidate_ini.is_file():
-        cfg = Config(str(candidate_ini))
-    elif (Path.cwd() / "alembic.ini").is_file():
-        cfg = Config(str(Path.cwd() / "alembic.ini"))
-    elif (Path.cwd() / "backend" / "alembic.ini").is_file():
-        cfg = Config(str(Path.cwd() / "backend" / "alembic.ini"))
+    for candidate in (backend_dir / "alembic.ini", Path.cwd() / "alembic.ini", Path.cwd() / "backend" / "alembic.ini"):
+        if candidate.is_file():
+            cfg = Config(str(candidate))
+            break
     else:
         cfg = Config()
 
     migrations_dir = Path(yarvelle_core.db.__file__).resolve().parent / "migrations"
     cfg.set_main_option("script_location", str(migrations_dir))
-    # Clear static ini default so yarvelle_core's env.py resolves active DB URL unless explicitly overridden
     if cfg.get_main_option("sqlalchemy.url") == "sqlite:///carefold.db":
         cfg.set_main_option("sqlalchemy.url", "")
     if connection is not None:
@@ -500,7 +118,6 @@ def get_alembic_config(connection: Optional[Connection] = None) -> Config:
 
 
 def is_core_revision_satisfied(required_revision: str, active_revisions: set[str]) -> bool:
-    """Checks whether ``required_revision`` is in ``active_revisions`` or their Alembic ancestry."""
     if required_revision in active_revisions:
         return True
     if not active_revisions:
@@ -519,131 +136,11 @@ def is_core_revision_satisfied(required_revision: str, active_revisions: set[str
         return False
 
 
-def _get_sqlite_db_path(url_or_engine: str | AsyncEngine | URL) -> Optional[Path]:
-    """Returns the resolved Path to the SQLite database file, or None if in-memory or not SQLite."""
-    if isinstance(url_or_engine, AsyncEngine):
-        url = url_or_engine.url
-    elif isinstance(url_or_engine, URL):
-        url = url_or_engine
-    elif isinstance(url_or_engine, str):
-        try:
-            url = make_url(url_or_engine)
-        except Exception:
-            return None
-    else:
-        return None
-
-    driver = getattr(url, "drivername", "")
-    database = getattr(url, "database", None)
-    if "sqlite" in driver and database and database != ":memory:":
-        return Path(database).resolve()
-    return None
-
-
-@contextlib.asynccontextmanager
-async def _sqlite_file_lock(db_path: Optional[Path]):
-    """Advisory file lock for SQLite databases to prevent cross-process migration races."""
-    if db_path is None or fcntl is None:
-        yield
-        return
-
-    lock_path = Path(f"{db_path}.lock")
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        lock_fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o600)
-    except OSError as err:
-        logger.warning("sqlite_lock_file_open_failed", error=str(err), path=str(lock_path))
-        yield
-        return
-
-    try:
-        await asyncio.to_thread(fcntl.flock, lock_fd, fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            try:
-                await asyncio.to_thread(fcntl.flock, lock_fd, fcntl.LOCK_UN)
-            except Exception as e:
-                logger.debug("sqlite_lock_release_failed", error=str(e))
-    finally:
-        try:
-            os.close(lock_fd)
-        except Exception:
-            pass
-
-
-def run_alembic_migrations(connection: Connection) -> None:
-    """Executes database schema migrations via Alembic.
-
-    - Unversioned existing databases (tables present without alembic_version) are
-      stamped with '0001_baseline_schema' then upgraded to head.
-    - Greenfield databases (empty or only alembic_version) are upgraded directly to head.
-    - Existing versioned databases are upgraded directly to head.
-    - If already at head revision, safely no-ops without running redundant migrations.
-    """
-    inspector = inspect(connection)
-    tables = set(inspector.get_table_names())
-    has_alembic = "alembic_version" in tables
-    is_greenfield = len(tables) == 0 or (tables == {"alembic_version"})
-    is_unversioned = not has_alembic and not is_greenfield
-
-    cfg = get_alembic_config(connection)
-
-    # Check whether migrations have already been applied to head
-    if has_alembic:
-        canonical_revisions = {
-            "0003": "0003_household_profiles_and_audit",
-            "0004": "0004_policy_gate_and_vault",
-            "0005": "0005_clinical_domain_records",
-            "0006": "0006_preventive_and_school_forms",
-            "0007": "0007_connectors_and_consent",
-            "0008": "0008_routines_mcp_and_drafts",
-            "0009": "0009_companion_and_handover",
-        }
-        rows = connection.exec_driver_sql("SELECT version_num FROM alembic_version;").fetchall()
-        current_revs = set()
-        for row in rows:
-            if not row or not row[0]:
-                continue
-            ver = str(row[0])
-            prefix = ver[:4]
-            if prefix in canonical_revisions and ver != canonical_revisions[prefix]:
-                new_ver = canonical_revisions[prefix]
-                connection.exec_driver_sql(
-                    "UPDATE alembic_version SET version_num = :new_ver WHERE version_num = :old_ver;",
-                    {"new_ver": new_ver, "old_ver": ver},
-                )
-                ver = new_ver
-            current_revs.add(ver)
-        script = alembic.script.ScriptDirectory.from_config(cfg)
-        heads = set(script.get_heads())
-        if heads and heads.issubset(current_revs):
-            _ensure_approvals_schema(connection)
-            logger.info("database_already_at_head", revisions=list(current_revs))
-            return
-
-    if is_unversioned:
-        _run_schema_migrations(connection)
-        Base.metadata.create_all(connection)
-        logger.info("stamping_legacy_database_baseline", revision="0001_baseline_schema")
-        alembic.command.stamp(cfg, "0001_baseline_schema")
-        logger.info("upgrading_database_to_head")
-        alembic.command.upgrade(cfg, "head")
-    elif is_greenfield:
-        logger.info("upgrading_greenfield_database_to_head")
-        alembic.command.upgrade(cfg, "head")
-    else:
-        logger.info("upgrading_versioned_database_to_head")
-        alembic.command.upgrade(cfg, "head")
-    _ensure_approvals_schema(connection)
-
-
 def get_pack_alembic_config(
     migrations_dir: Path | str,
     version_table: str = "alembic_version_health",
     connection: Optional[Connection] = None,
 ) -> Config:
-    """Builds Alembic Config for an isolated pack migration branch."""
     cfg = Config()
     cfg.set_main_option("script_location", str(migrations_dir))
     cfg.set_main_option("version_table", version_table)
@@ -661,11 +158,8 @@ def run_pack_migrations(
     target: str = "head",
     depends_on_core: Optional[str] = "0013_turn_tasks",
 ) -> None:
-    """Executes database schema migrations for an enabled pack with isolated version tracking."""
     inspector = inspect(connection)
     tables = set(inspector.get_table_names())
-
-    # Step 1: Core baseline precondition verification
     if depends_on_core:
         if "alembic_version" not in tables:
             raise RuntimeError(
@@ -683,91 +177,89 @@ def run_pack_migrations(
     cfg = get_pack_alembic_config(migrations_dir, version_table, connection)
     script = alembic.script.ScriptDirectory.from_config(cfg)
     heads = set(script.get_heads())
-
-    # Step 2: Check if pack already at head
     if version_table in tables:
         current_revs = {
             r[0] for r in connection.exec_driver_sql(f"SELECT version_num FROM {version_table};").fetchall() if r and r[0]
         }
         if heads and heads.issubset(current_revs):
-            logger.info("pack_migration_already_at_head", version_table=version_table, revisions=list(current_revs))
             return
-
-    # Step 3: Upgrade pack migrations to target (head)
-    logger.info("running_pack_migrations", version_table=version_table, target=target)
     alembic.command.upgrade(cfg, target)
 
 
 def resolve_health_migrations_dir() -> Path:
-    """Resolves health pack migration directory across packaging modes."""
-    health_mig_dir = Path(__file__).resolve().parent / "health_migrations"
-    if health_mig_dir.is_dir():
-        return health_mig_dir
-    return Path(__file__).resolve().parent / "migrations"
+    return Path(__file__).resolve().parent / "health_migrations"
 
+
+def _ensure_approvals_schema(connection: Connection) -> None:
+    inspector = inspect(connection)
+    if "approvals" not in inspector.get_table_names():
+        return
+    if "agent_id" not in {c["name"] for c in inspector.get_columns("approvals")}:
+        connection.exec_driver_sql("ALTER TABLE approvals ADD COLUMN agent_id VARCHAR(64);")
+    if "ix_approvals_agent_id" not in {i["name"] for i in inspector.get_indexes("approvals") if i.get("name")}:
+        connection.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_approvals_agent_id ON approvals (agent_id);")
+
+
+def run_alembic_migrations(connection: Connection) -> None:
+    _yc_session.run_alembic_migrations(connection)
+    _ensure_approvals_schema(connection)
 
 
 def run_all_migrations(connection: Connection, enabled_packs: Optional[list[str]] = None) -> None:
-    """Executes core baseline migrations followed by all enabled pack migrations."""
-    # 1. Run Core Baseline Migrations (alembic_version -> 0013_turn_tasks)
     run_alembic_migrations(connection)
-
-    # 2. Discover Enabled Packs (e.g. ['health'] in Carefold)
-    packs_to_run = enabled_packs or ["health"]
-
-    for pack_id in packs_to_run:
+    for pack_id in (enabled_packs or ["health"]):
         if pack_id == "health":
-            health_mig_dir = resolve_health_migrations_dir()
-            if health_mig_dir.is_dir():
+            pack_dir = resolve_health_migrations_dir()
+            if pack_dir.is_dir():
                 run_pack_migrations(
                     connection=connection,
-                    migrations_dir=health_mig_dir,
+                    migrations_dir=pack_dir,
                     version_table="alembic_version_health",
                     depends_on_core="0013_turn_tasks",
                 )
 
 
-async def init_db(engine: Optional[AsyncEngine] = None) -> None:
-    """Initializes database tables via Base.metadata.create_all and automated migrations."""
-    import carefold.db.models  # noqa: F401
-    target_engine = engine or get_engine()
-    _ensure_sqlite_dir(str(target_engine.url))
-    db_path = _get_sqlite_db_path(target_engine)
+def _sqlite_db_file(engine: AsyncEngine) -> Optional[Path]:
+    url: URL = engine.url
+    if "sqlite" in getattr(url, "drivername", "") and url.database and url.database != ":memory:":
+        p = Path(url.database)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        return p.resolve()
+    return None
 
-    async with _get_init_db_lock():
-        async with _sqlite_file_lock(db_path):
+
+@contextlib.asynccontextmanager
+async def _file_lock(db_path: Optional[Path]):
+    if db_path is None or fcntl is None:
+        yield
+        return
+    lock_path = Path(f"{db_path}.lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o600)
+    except OSError:
+        yield
+        return
+    try:
+        await asyncio.to_thread(fcntl.flock, fd, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            with contextlib.suppress(Exception):
+                await asyncio.to_thread(fcntl.flock, fd, fcntl.LOCK_UN)
+    finally:
+        with contextlib.suppress(Exception):
+            os.close(fd)
+
+
+async def init_db(engine: Optional[AsyncEngine] = None) -> None:
+    import carefold.db.models  # noqa: F401
+
+    target_engine = engine or get_engine()
+    db_path = _sqlite_db_file(target_engine)
+    async with _get_init_lock():
+        async with _file_lock(db_path):
             async with target_engine.begin() as conn:
                 await conn.run_sync(run_all_migrations)
                 await conn.run_sync(Base.metadata.create_all)
-
-    logger.info(
-        "database_initialized",
-        dialect=target_engine.dialect.name,
-        url=sanitize_db_url(target_engine.url),
-    )
-    try:
-        import yarvelle_core.db.session as yc_session
-        yc_session._engine = target_engine
-        yc_session._session_factory = get_session_factory(target_engine)
-    except Exception:
-        pass
-
-
-async def close_db() -> None:
-    """Closes and disposes of the global database engine."""
-    global _engine, _session_factory, _init_db_lock, _init_db_lock_loop
-    if _engine is not None:
-        await _engine.dispose()
-        logger.info("database_connection_closed")
-        _engine = None
-        _session_factory = None
-        _init_db_lock = None
-        _init_db_lock_loop = None
-    try:
-        import yarvelle_core.db.session as yc_session
-        yc_session._engine = None
-        yc_session._session_factory = None
-        yc_session._init_db_lock = None
-        yc_session._init_db_lock_loop = None
-    except Exception:
-        pass
+    logger.info("database_initialized", dialect=target_engine.dialect.name, url=sanitize_db_url(target_engine.url))

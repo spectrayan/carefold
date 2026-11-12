@@ -9,30 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold Workflows Package.
-
-Houses class-based LangGraph nodes, multi-agent subgraphs, and the unified
-AgentState schema following SOLID principles.
-"""
+"""Package re-export shim delegating to yarvelle_core.workflows."""
 
 from __future__ import annotations
 
-from carefold.workflows.nodes.base import BaseNode
-from carefold.workflows.state import (
-    AgentState,
-    create_initial_state,
-    extract_text_content,
-    get_last_message,
-    get_last_user_message,
-    get_last_user_prompt_text,
-)
+from typing import Any
+from yarvelle_core.workflows import *  # noqa: F401, F403
+import yarvelle_core.workflows as _target_module
 
-__all__ = [
-    "AgentState",
-    "BaseNode",
-    "create_initial_state",
-    "extract_text_content",
-    "get_last_message",
-    "get_last_user_message",
-    "get_last_user_prompt_text",
-]
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

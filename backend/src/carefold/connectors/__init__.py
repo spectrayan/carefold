@@ -9,62 +9,11 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold Connectors Runtime Package (OAuth Broker, Lifecycle, Consent & Sync Engine)."""
+"""Carefold connectors package re-exporting core OAuth, Carefold lifecycle, and sync helpers."""
 
-from carefold.connectors.lifecycle import (
-    check_scope_and_terms_compatibility,
-    check_under_13_connection_guard,
-    get_connector_manifest,
-    get_profile_data_flows,
-    grant_connector_consent,
-    list_connector_manifests,
-    record_sync_failure,
-    revoke_connection,
-    serialize_connector_manifest,
-)
-from carefold.connectors.oauth import (
-    SMART_V1_CLINICAL_SCOPES,
-    SMART_V2_CLINICAL_SCOPES,
-    SmartConfiguration,
-    build_authorization_url,
-    build_smart_authorization_url,
-    create_oauth_state,
-    discover_smart_configuration,
-    generate_pkce_pair,
-    load_connection_tokens,
-    redact_smart_auth_secrets,
-    refresh_connection_token,
-    resolve_redirect_uri,
-    store_connection_tokens,
-    verify_oauth_state,
-    verify_pkce_challenge,
-)
-from carefold.connectors.sync import run_connection_sync
+from __future__ import annotations
 
-__all__ = [
-    "SMART_V1_CLINICAL_SCOPES",
-    "SMART_V2_CLINICAL_SCOPES",
-    "SmartConfiguration",
-    "build_authorization_url",
-    "build_smart_authorization_url",
-    "check_scope_and_terms_compatibility",
-    "check_under_13_connection_guard",
-    "create_oauth_state",
-    "discover_smart_configuration",
-    "generate_pkce_pair",
-    "get_connector_manifest",
-    "get_profile_data_flows",
-    "grant_connector_consent",
-    "list_connector_manifests",
-    "load_connection_tokens",
-    "record_sync_failure",
-    "redact_smart_auth_secrets",
-    "refresh_connection_token",
-    "resolve_redirect_uri",
-    "revoke_connection",
-    "run_connection_sync",
-    "serialize_connector_manifest",
-    "store_connection_tokens",
-    "verify_oauth_state",
-    "verify_pkce_challenge",
-]
+from yarvelle_core.connectors import *  # noqa: F401, F403
+from carefold.connectors.lifecycle import *  # noqa: F401, F403
+from carefold.connectors.oauth import *  # noqa: F401, F403
+from carefold.connectors.sync import run_connection_sync  # noqa: F401

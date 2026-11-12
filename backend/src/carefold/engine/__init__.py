@@ -9,29 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold engine package.
-
-Streamlined execution engine exposing AgentExecutionService,
-prompt assembly, and runtime execution facade.
-"""
+"""Package re-export shim delegating to yarvelle_core.engine."""
 
 from __future__ import annotations
 
-from carefold.engine.agent_factory import (
-    create_carefold_agent,
-    load_all_subagents,
-    load_subagent_from_yaml,
-)
-from carefold.engine.prompt_builder import build_system_prompt
-from carefold.engine.runner import ExecutionContext, execute_agent_run
-from carefold.engine.service import AgentExecutionService
+from typing import Any
+from yarvelle_core.engine import *  # noqa: F401, F403
+import yarvelle_core.engine as _target_module
 
-__all__ = [
-    "AgentExecutionService",
-    "ExecutionContext",
-    "build_system_prompt",
-    "create_carefold_agent",
-    "execute_agent_run",
-    "load_all_subagents",
-    "load_subagent_from_yaml",
-]
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

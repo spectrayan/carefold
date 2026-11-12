@@ -9,8 +9,11 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Alias re-export for ToolNode (tool_execution)."""
+"""Re-export shim delegating to yarvelle_core.workflows.nodes.tool_execution."""
 
-from carefold.workflows.nodes.tool_node import ToolNode
+from __future__ import annotations
 
-__all__ = ["ToolNode"]
+import sys as _sys
+import yarvelle_core.workflows.nodes.tool_execution as _target_module
+
+_sys.modules[__name__] = _target_module

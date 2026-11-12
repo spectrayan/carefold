@@ -9,48 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Re-export loader components."""
+"""Package re-export shim delegating to yarvelle_core.loaders."""
 
-from carefold.loaders.frontmatter import (
-    MANDATORY_INTENDED_USE_LINES,
-    ParsedFrontmatter,
-    check_mandatory_intended_use,
-    parse_frontmatter,
-)
-from carefold.loaders.union import (
-    ToolValidationError,
-    compute_effective_tools,
-    validate_tools_in_phase0,
-)
-from carefold.loaders.skill_loader import (
-    ManifestValidationError,
-    load_all_skills,
-    load_skill,
-)
-from carefold.loaders.agent_loader import (
-    load_agent,
-    load_agent_readme,
-    load_agent_starters,
-    load_all_agents,
-    load_subagent_from_yaml,
-)
-from carefold.loaders.context_loader import ContextLoader
+from __future__ import annotations
 
-__all__ = [
-    "MANDATORY_INTENDED_USE_LINES",
-    "ParsedFrontmatter",
-    "check_mandatory_intended_use",
-    "parse_frontmatter",
-    "ToolValidationError",
-    "compute_effective_tools",
-    "validate_tools_in_phase0",
-    "ManifestValidationError",
-    "load_all_skills",
-    "load_skill",
-    "load_agent",
-    "load_agent_readme",
-    "load_agent_starters",
-    "load_all_agents",
-    "load_subagent_from_yaml",
-    "ContextLoader",
-]
+from typing import Any
+from yarvelle_core.loaders import *  # noqa: F401, F403
+import yarvelle_core.loaders as _target_module
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

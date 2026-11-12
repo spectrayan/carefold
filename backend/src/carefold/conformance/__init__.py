@@ -9,19 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Scope Conformance Framework (Step C2e).
+"""Package re-export shim delegating to yarvelle_core.conformance."""
 
-Provides reusable, 11-layer domain-scope isolation verification across pack pairs.
-"""
+from __future__ import annotations
 
-from carefold.conformance.models import ConformanceResult, IsolationLayer, LayerViolation
-from carefold.conformance.protocol import ConformancePackProtocol
-from carefold.conformance.runner import ScopeConformanceRunner
+from typing import Any
+from yarvelle_core.conformance import *  # noqa: F401, F403
+import yarvelle_core.conformance as _target_module
 
-__all__ = [
-    "IsolationLayer",
-    "LayerViolation",
-    "ConformanceResult",
-    "ConformancePackProtocol",
-    "ScopeConformanceRunner",
-]
+
+def __getattr__(name: str) -> Any:
+    return getattr(_target_module, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals().keys()) | set(dir(_target_module)))

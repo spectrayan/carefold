@@ -9,8 +9,11 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Alias re-export for InputGuardrailNode."""
+"""Re-export shim delegating to yarvelle_core.workflows.nodes.input_guardrail."""
 
-from carefold.workflows.nodes.input_guardrail_node import InputGuardrailNode
+from __future__ import annotations
 
-__all__ = ["InputGuardrailNode"]
+import sys as _sys
+import yarvelle_core.workflows.nodes.input_guardrail as _target_module
+
+_sys.modules[__name__] = _target_module

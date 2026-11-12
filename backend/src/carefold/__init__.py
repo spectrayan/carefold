@@ -79,10 +79,12 @@ logger = logging.getLogger("carefold")
 
 __version__ = "0.5.0b2"
 
-# Eagerly register "clinical" on core AgentDomain when health pack is loaded
+# Eagerly register "clinical" on core AgentDomain and Carefold locale catalog when loaded
 try:
+    import yarvelle_core.i18n.catalog as _yc_catalog
     from yarvelle_core.schemas.manifest import AgentDomain
 
+    _yc_catalog.LOCALES_DIR = Path(__file__).resolve().parent / "resources" / "locales"
     if hasattr(AgentDomain, "register") and not hasattr(AgentDomain, "CLINICAL"):
         AgentDomain.CLINICAL = AgentDomain.register("clinical")
 except Exception:

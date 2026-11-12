@@ -9,32 +9,11 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Base class for all 11 scope isolation layer tests."""
+"""Re-export shim delegating to yarvelle_core.conformance.layers.base."""
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import Any, List
+import sys as _sys
+import yarvelle_core.conformance.layers.base as _target_module
 
-from carefold.conformance.models import IsolationLayer, LayerViolation
-
-
-class BaseIsolationLayerTest(ABC):
-    """Abstract base class for an isolation layer conformance test."""
-
-    layer: IsolationLayer
-
-    @abstractmethod
-    async def run(
-        self,
-        runner: Any,
-        pack_a: Any,
-        pack_b: Any,
-        profile_id: str,
-        user_id: str,
-    ) -> List[LayerViolation]:
-        """Executes isolation verification asserting pack_a cannot observe or corrupt pack_b data."""
-        ...
-
-
-__all__ = ["BaseIsolationLayerTest"]
+_sys.modules[__name__] = _target_module

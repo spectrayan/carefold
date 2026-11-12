@@ -9,8 +9,11 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Alias re-export for AgentNode."""
+"""Re-export shim delegating to yarvelle_core.workflows.nodes.agent."""
 
-from carefold.workflows.nodes.agent_node import AgentNode
+from __future__ import annotations
 
-__all__ = ["AgentNode"]
+import sys as _sys
+import yarvelle_core.workflows.nodes.agent as _target_module
+
+_sys.modules[__name__] = _target_module

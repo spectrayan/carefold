@@ -9,49 +9,16 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Hexagonal cognitive search subsystem for Carefold: ports, chunkers, adapters, and factory."""
+"""Search package re-exporting yarvelle_core search and Carefold chunker/Spector adapters."""
 
 from __future__ import annotations
 
-from carefold.search.adapters.spector import SpectorSearchIndex
-from carefold.search.adapters.sqlite import SqliteSearchIndex
-from carefold.search.base import SearchIndex, SearchResult
-from carefold.search.chunker import (
+from yarvelle_core.search import *  # noqa: F401, F403
+from carefold.search.adapters.spector import SpectorSearchIndex  # noqa: F401
+from carefold.search.chunker import (  # noqa: F401
     Chunker,
     ClinicalChunk,
     ClinicalChunker,
     DocumentChunk,
     StructuralChunker,
 )
-from carefold.search.factory import (
-    SEARCH_BACKEND_SPECTOR,
-    SEARCH_BACKEND_SQLITE,
-    SUPPORTED_SEARCH_BACKENDS,
-    create_search_index,
-    get_search_index,
-    is_spector_reachable,
-    reset_search_index,
-    reset_search_indexes,
-    set_search_index,
-)
-
-__all__ = [
-    "Chunker",
-    "ClinicalChunk",
-    "ClinicalChunker",
-    "DocumentChunk",
-    "SEARCH_BACKEND_SPECTOR",
-    "SEARCH_BACKEND_SQLITE",
-    "SUPPORTED_SEARCH_BACKENDS",
-    "SearchIndex",
-    "SearchResult",
-    "SpectorSearchIndex",
-    "SqliteSearchIndex",
-    "StructuralChunker",
-    "create_search_index",
-    "get_search_index",
-    "is_spector_reachable",
-    "reset_search_index",
-    "reset_search_indexes",
-    "set_search_index",
-]
