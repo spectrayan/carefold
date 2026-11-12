@@ -91,3 +91,13 @@ def test_pack_spec_omits_error_prefix_on_legacy_024_schema_without_swallowing_er
             error_prefix="CFD",
             unexpected_invalid_field=True,
         )
+
+
+def test_skills_middleware_fallback_template_renders_safety_boundary() -> None:
+    """When compose_skills_system_prompt is absent (yarvelle-core 0.2.4), render_template produces the prompt."""
+    from carefold.templates.engine import render_template
+
+    rendered = render_template("skills_middleware", {}) + "\n"
+    assert "CLINICAL SAFETY BOUNDARY" in rendered
+    assert "911" in rendered
+    assert "{skills_list}" in rendered
