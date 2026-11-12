@@ -134,44 +134,33 @@ COVID-19                 2025-10-15              Pediatric Booster
 
 
 @pytest.fixture
-async def batch6_stream2_env(tmp_path, monkeypatch):
-    """Creates an isolated in-memory SQLite DB and CAS directory for Stream 2 tests."""
+async def batch6_stream2_env(
+    tmp_path,
+    monkeypatch,
+    async_db_session_factory,
+    user_factory,
+    profile_factory,
+):
+    """Creates an isolated in-memory SQLite DB and CAS directory for Stream 2 tests via shared factories (#343)."""
     monkeypatch.setattr(settings, "home_dir", tmp_path)
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    factory = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
-
-    user_id = str(uuid.uuid4())
-    profile_id = str(uuid.uuid4())
-    async with factory() as session:
-        user = User(
-            id=user_id,
-            email="steward@example.com",
-            username="family_steward",
-            hashed_password="hashed_password",
-            role="steward",
-        )
-        profile = Profile(
-            id=profile_id,
-            user_id=user_id,
-            name="Leo Patel",
-            relationship="child",
-            role="guardian",
-            date_of_birth="2018-05-14",
-            is_primary=False,
-        )
-        session.add_all([user, profile])
-        await session.commit()
-
+    user = await user_factory(
+        email="steward@example.com",
+        username="family_steward",
+        role="steward",
+    )
+    profile = await profile_factory(
+        user_id=user.id,
+        name="Leo Patel",
+        relationship="child",
+        role="guardian",
+        date_of_birth="2018-05-14",
+        is_primary=False,
+    )
     yield {
-        "engine": engine,
-        "factory": factory,
-        "user_id": user_id,
-        "profile_id": profile_id,
+        "factory": async_db_session_factory,
+        "user_id": user.id,
+        "profile_id": profile.id,
     }
-    await engine.dispose()
 
 
 def test_parse_gmail_messages_filters_by_label_and_marks_untrusted():

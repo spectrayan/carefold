@@ -285,3 +285,269 @@ def speed_up_crypto_for_tests():
     except Exception:
         yield
 
+
+# ============================================================================
+# Shared Async SQLAlchemy & HTTP Factories (#343)
+# ============================================================================
+
+
+@pytest.fixture
+async def async_db_session_factory():
+    """Provides an isolated in-memory SQLite `async_sessionmaker` with schema DDL and clean teardown."""
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+    from yarvelle_core.db.base import Base
+    import carefold.models  # noqa: F401 — ensure pack ORM tables are registered
+
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    factory = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+    try:
+        yield factory
+    finally:
+        await engine.dispose()
+
+
+@pytest.fixture
+def user_factory(async_db_session_factory):
+    """Async factory creating persisted `User` ORM rows with sensible defaults (#343)."""
+    import uuid
+    from yarvelle_core.db.models import User
+
+    async def _create_user(
+        *,
+        session=None,
+        user_id: str | None = None,
+        email: str | None = None,
+        username: str | None = None,
+        hashed_password: str = "hashed_password",
+        role: str = "steward",
+        **kwargs,
+    ) -> User:
+        uid = user_id or str(uuid.uuid4())
+        short = uid.split("-")[0]
+        user = User(
+            id=uid,
+            email=email or f"user-{short}@carefold.test",
+            username=username or f"user_{short}",
+            hashed_password=hashed_password,
+            role=role,
+            **kwargs,
+        )
+        if session is not None:
+            session.add(user)
+            await session.flush()
+            return user
+        async with async_db_session_factory() as s:
+            s.add(user)
+            await s.commit()
+            return user
+
+    return _create_user
+
+
+@pytest.fixture
+def profile_factory(async_db_session_factory, user_factory):
+    """Async factory creating persisted `Profile` ORM rows, auto-creating an owner `User` when omitted (#343)."""
+    import uuid
+    from yarvelle_core.db.models import Profile
+
+    async def _create_profile(
+        *,
+        session=None,
+        profile_id: str | None = None,
+        user_id: str | None = None,
+        name: str = "Test Patient",
+        relationship: str = "self",
+        is_primary: bool = True,
+        **kwargs,
+    ) -> Profile:
+        pid = profile_id or str(uuid.uuid4())
+        owner_id = user_id
+        if owner_id is None:
+            owner = await user_factory(session=session)
+            owner_id = owner.id
+
+        profile = Profile(
+            id=pid,
+            user_id=owner_id,
+            name=name,
+            relationship=relationship,
+            is_primary=is_primary,
+            **kwargs,
+        )
+        if session is not None:
+            session.add(profile)
+            await session.flush()
+            return profile
+        async with async_db_session_factory() as s:
+            s.add(profile)
+            await s.commit()
+            return profile
+
+    return _create_profile
+
+
+@pytest.fixture
+def health_resource_factory(async_db_session_factory, profile_factory):
+    """Async factory creating persisted `HealthResource` rows scoped to a profile (#343)."""
+    from datetime import datetime, timezone
+    import hashlib
+    import json
+    import uuid
+    from carefold.models.health import HealthResource
+
+    async def _create_health_resource(
+        *,
+        session=None,
+        resource_id: str | None = None,
+        profile_id: str | None = None,
+        resource_type: str = "observation",
+        source_type: str = "manual",
+        status: str = "active",
+        scope: str = "health.clinical",
+        data: dict | None = None,
+        effective_at: datetime | None = None,
+        **kwargs,
+    ) -> HealthResource:
+        rid = resource_id or str(uuid.uuid4())
+        pid = profile_id
+        if pid is None:
+            prof = await profile_factory(session=session)
+            pid = prof.id
+
+        now = effective_at or datetime.now(timezone.utc)
+        fhir_payload = data or {
+            "resourceType": "Observation",
+            "id": rid,
+            "status": "final",
+            "code": {"coding": [{"system": "http://loinc.org", "code": "8867-4", "display": "Heart rate"}]},
+            "effectiveDateTime": now.isoformat(),
+            "valueQuantity": {"value": 72, "unit": "/min"},
+        }
+        content_hash = kwargs.pop(
+            "content_hash",
+            hashlib.sha256(json.dumps(fhir_payload, sort_keys=True).encode("utf-8")).hexdigest(),
+        )
+        hr = HealthResource(
+            id=rid,
+            profile_id=pid,
+            resource_type=resource_type,
+            source_type=source_type,
+            status=status,
+            scope=scope,
+            data=fhir_payload,
+            content_hash=content_hash,
+            effective_at=now,
+            recorded_at=now,
+            **kwargs,
+        )
+        if session is not None:
+            session.add(hr)
+            await session.flush()
+            return hr
+        async with async_db_session_factory() as s:
+            s.add(hr)
+            await s.commit()
+            return hr
+
+    return _create_health_resource
+
+
+@pytest.fixture
+def appointment_factory(async_db_session_factory, profile_factory):
+    """Async factory creating persisted `Appointment` ORM rows (#343)."""
+    from datetime import datetime, timedelta, timezone
+    import uuid
+    from carefold.models.health import Appointment
+
+    async def _create_appointment(
+        *,
+        session=None,
+        appointment_id: str | None = None,
+        profile_id: str | None = None,
+        title: str = "Primary Care Visit",
+        provider_name: str = "Dr. Maya Lin",
+        specialty: str = "Primary Care",
+        status: str = "scheduled",
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        **kwargs,
+    ) -> Appointment:
+        aid = appointment_id or str(uuid.uuid4())
+        pid = profile_id
+        if pid is None:
+            prof = await profile_factory(session=session)
+            pid = prof.id
+
+        st = start_time or datetime.now(timezone.utc) + timedelta(days=7)
+        et = end_time or (st + timedelta(minutes=30))
+        appt = Appointment(
+            id=aid,
+            profile_id=pid,
+            title=title,
+            provider_name=provider_name,
+            specialty=specialty,
+            status=status,
+            start_time=st,
+            end_time=et,
+            **kwargs,
+        )
+        if session is not None:
+            session.add(appt)
+            await session.flush()
+            return appt
+        async with async_db_session_factory() as s:
+            s.add(appt)
+            await s.commit()
+            return appt
+
+    return _create_appointment
+
+
+@pytest.fixture
+def auth_async_client(async_db_session_factory, user_factory):
+    """Async context-manager factory yielding an authenticated `httpx.AsyncClient` bound to `async_db_session_factory` (#343)."""
+    from contextlib import asynccontextmanager
+    from datetime import datetime, timezone
+    from httpx import ASGITransport, AsyncClient
+    from yarvelle_core.api.deps import get_current_user, get_db
+    from yarvelle_core.auth.ports import UserProfile
+
+    @asynccontextmanager
+    async def _make_client(*, user=None, fastapi_app=None, base_url: str = "http://testserver"):
+        target_app = fastapi_app or app
+        active_user = user or await user_factory()
+        now = datetime.now(timezone.utc)
+        user_profile = (
+            active_user
+            if isinstance(active_user, UserProfile)
+            else UserProfile(
+                id=active_user.id,
+                email=active_user.email,
+                username=active_user.username,
+                role=getattr(active_user, "role", "steward") or "steward",
+                status="active",
+                created_at=now,
+                updated_at=now,
+            )
+        )
+
+        async def _override_db():
+            async with async_db_session_factory() as s:
+                yield s
+
+        prev_overrides = dict(target_app.dependency_overrides)
+        target_app.dependency_overrides[get_db] = _override_db
+        target_app.dependency_overrides[get_current_user] = lambda: user_profile
+        try:
+            async with AsyncClient(transport=ASGITransport(app=target_app), base_url=base_url) as ac:
+                yield ac, user_profile
+        finally:
+            target_app.dependency_overrides.clear()
+            target_app.dependency_overrides.update(prev_overrides)
+
+    return _make_client
+
+

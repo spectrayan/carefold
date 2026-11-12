@@ -27,15 +27,18 @@ Implements:
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import functools
 import hashlib
 import json
 import logging
+from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Sequence
 import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+import yaml
 
 from carefold.models import (
     Appointment,
@@ -51,7 +54,34 @@ from yarvelle_core.db.models import (
 
 logger = logging.getLogger("carefold.connectors.gmail_mcp")
 
-ALLOWED_GMAIL_LABELS = ("appointments", "school-summaries", "healthcare", "INBOX")
+_GMAIL_HEURISTICS_PATH = (
+    Path(__file__).resolve().parent.parent / "resources" / "gmail_heuristics.yaml"
+)
+
+
+@functools.lru_cache(maxsize=1)
+def load_gmail_heuristics() -> Dict[str, Any]:
+    """Loads declarative Gmail classification keywords, specialty hints, and defaults (#343)."""
+    raw = yaml.safe_load(_GMAIL_HEURISTICS_PATH.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict):
+        raise ValueError(f"Invalid Gmail heuristics resource at {_GMAIL_HEURISTICS_PATH}")
+    return raw
+
+
+_HEURISTICS = load_gmail_heuristics()
+_DEFAULTS = _HEURISTICS.get("defaults") or {}
+
+ALLOWED_GMAIL_LABELS: tuple[str, ...] = tuple(_HEURISTICS.get("allowed_labels") or ())
+DEFAULT_APPOINTMENT_HOUR: int = int(_DEFAULTS.get("appointment_hour", 9))
+DEFAULT_APPOINTMENT_MINUTE: int = int(_DEFAULTS.get("appointment_minute", 0))
+DEFAULT_PROVIDER_FALLBACK: str = str(_DEFAULTS.get("provider_fallback", "Healthcare Provider"))
+DEFAULT_SPECIALTY_FALLBACK: str = str(_DEFAULTS.get("specialty_fallback", "General"))
+PROVIDER_LINE_PREFIXES: tuple[str, ...] = tuple(
+    str(p).lower() for p in (_HEURISTICS.get("provider_line_prefixes") or ())
+)
+SCHOOL_EXCLUSION_PHRASES: tuple[str, ...] = tuple(
+    str(p).lower() for p in (_HEURISTICS.get("school_exclusion_phrases") or ())
+)
 
 _CANONICAL_LABEL_MAP: Dict[str, str] = {
     lbl.lower(): lbl for lbl in ALLOWED_GMAIL_LABELS
@@ -62,53 +92,15 @@ _US_DATE_RE = re.compile(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b")
 _TIME_12H_RE = re.compile(r"\b(\d{1,2}):(\d{2})\s*(am|pm)\b", re.IGNORECASE)
 _TIME_24H_RE = re.compile(r"\b([01]?\d|2[0-3]):([0-5]\d)\b")
 
-_SCHOOL_KEYWORDS = (
-    "school",
-    "classroom",
-    "guardian",
-    "immunization",
-    "immunisation",
-    "physical form",
-    "health form",
-    "permission slip",
-    "nurse",
-    "camp",
-    "grade",
-    "homework",
-    "missing assignment",
+_SCHOOL_KEYWORDS: tuple[str, ...] = tuple(
+    str(k).lower() for k in (_HEURISTICS.get("school_keywords") or ())
 )
-
-_APPOINTMENT_KEYWORDS = (
-    "appointment",
-    "visit",
-    "scheduled",
-    "confirmation",
-    "check-in",
-    "clinic",
-    "dr.",
-    "doctor",
-    "pediatrics",
-    "cardiology",
-    "dermatology",
-    "dentist",
-    "ophthalmology",
-    "orthopedics",
+_APPOINTMENT_KEYWORDS: tuple[str, ...] = tuple(
+    str(k).lower() for k in (_HEURISTICS.get("appointment_keywords") or ())
 )
-
 _SPECIALTY_HINTS: Dict[str, str] = {
-    "cardiology": "Cardiology",
-    "pediatric": "Pediatrics",
-    "dermatology": "Dermatology",
-    "neurology": "Neurology",
-    "endocrinology": "Endocrinology",
-    "orthopedic": "Orthopedics",
-    "ophthalmology": "Ophthalmology",
-    "vision": "Ophthalmology",
-    "dental": "Dentistry",
-    "dentist": "Dentistry",
-    "oncology": "Oncology",
-    "gastro": "Gastroenterology",
-    "pulmonology": "Pulmonology",
+    str(k).lower(): str(v)
+    for k, v in (_HEURISTICS.get("specialty_hints") or {}).items()
 }
 
 
@@ -166,8 +158,8 @@ def _extract_date_and_time(text: str, fallback_date: Optional[str] = None) -> tu
     if not date_str:
         date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    hour = 9
-    minute = 0
+    hour = DEFAULT_APPOINTMENT_HOUR
+    minute = DEFAULT_APPOINTMENT_MINUTE
     m12 = _TIME_12H_RE.search(text)
     if m12:
         raw_h = int(m12.group(1))
@@ -205,7 +197,7 @@ def _extract_provider_name(msg: Dict[str, Any], combined_text: str) -> str:
         if not line:
             continue
         lower_line = line.lower()
-        for prefix in ("provider:", "doctor:", "clinic:", "with:", "physician:"):
+        for prefix in PROVIDER_LINE_PREFIXES:
             if lower_line.startswith(prefix):
                 val = line[len(prefix):].strip()
                 if val:
@@ -226,16 +218,16 @@ def _extract_provider_name(msg: Dict[str, Any], combined_text: str) -> str:
                 return sender_name[:255]
         return sender[:255]
 
-    return "Healthcare Provider"
+    return DEFAULT_PROVIDER_FALLBACK
 
 
 def _detect_specialty(combined_text: str) -> str:
-    """Detects clinical specialty from message text or defaults to 'General'."""
+    """Detects clinical specialty from message text or defaults to `DEFAULT_SPECIALTY_FALLBACK`."""
     lower = combined_text.lower()
     for token, spec_label in _SPECIALTY_HINTS.items():
         if token in lower:
             return spec_label
-    return "General"
+    return DEFAULT_SPECIALTY_FALLBACK
 
 
 def _is_school_message(msg: Dict[str, Any], label_filter: str, combined_text: str) -> bool:
@@ -246,7 +238,7 @@ def _is_school_message(msg: Dict[str, Any], label_filter: str, combined_text: st
         return True
     lower = combined_text.lower()
     if any(kw in lower for kw in _SCHOOL_KEYWORDS) and not any(
-        ak in lower for ak in ("appointment confirmation", "your visit with dr")
+        ak in lower for ak in SCHOOL_EXCLUSION_PHRASES
     ):
         return True
     return False
@@ -754,8 +746,15 @@ async def execute_gmail_send_message(
 
 __all__ = [
     "ALLOWED_GMAIL_LABELS",
+    "DEFAULT_APPOINTMENT_HOUR",
+    "DEFAULT_APPOINTMENT_MINUTE",
+    "DEFAULT_PROVIDER_FALLBACK",
+    "DEFAULT_SPECIALTY_FALLBACK",
+    "PROVIDER_LINE_PREFIXES",
+    "SCHOOL_EXCLUSION_PHRASES",
     "confirm_gmail_staged_item",
     "execute_gmail_send_message",
+    "load_gmail_heuristics",
     "parse_gmail_messages_to_staged_items",
     "prepare_gmail_send_approval_payload",
     "stage_gmail_extractions",

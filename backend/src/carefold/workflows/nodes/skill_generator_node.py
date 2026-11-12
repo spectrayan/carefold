@@ -33,6 +33,7 @@ from carefold.config import settings
 from carefold.constants.paths import SKILLS_DIR
 from carefold.resources.loader import get_resource_loader
 from carefold.schemas.manifest import RiskClass, SkillManifest
+from carefold.templates.engine import render_template
 from carefold.workflows.nodes.base import BaseNode
 from carefold.workflows.state import extract_text_content
 
@@ -278,21 +279,17 @@ class SkillGeneratorNode(BaseNode):
                 f"Prepare a concise 2-minute summary of your goals for the clinician to ensure all priorities are addressed.\n"
             )
 
-        context_section = f"\n## Clinical Context & User Inquiry\n{user_query}\n\n" if user_query else "\n"
-
-        return (
-            f"# {clean_stem}\n\n"
-            f"**Skill Domain**: {skill_title}  \n"
-            f"**Reference Document**: `{doc_name}`\n\n"
-            f"---{context_section}"
-            f"{body}\n"
-            f"---\n\n"
-            f"## ⚠️ Carefold Boundary & Safety Disclosures\n\n"
-            f"> **NON-CLINICAL INFORMATIONAL AID**: This reference document is an educational and organizational resource. "
-            f"It does **NOT** provide clinical diagnoses, prescribe or dose medications, or replace the clinical judgment of licensed medical professionals.\n"
-            f"> \n"
-            f"> **EMERGENCY WARNING**: If experiencing acute, life-threatening symptoms (e.g. acute chest pain, shortness of breath, sudden weakness/speech impairment, severe trauma), **immediately call 911 or visit the nearest emergency department**.\n"
+        rendered = render_template(
+            "skill_reference_doc.hbs",
+            {
+                "clean_stem": clean_stem,
+                "skill_title": skill_title,
+                "doc_name": doc_name,
+                "user_query": user_query,
+                "body": body,
+            },
         )
+        return f"{rendered}\n"
 
     def synthesize_reference_doc_content(
         self,
@@ -349,12 +346,14 @@ class SkillGeneratorNode(BaseNode):
         if self.model is not None:
             try:
                 sys_msg = SystemMessage(content=self._build_system_prompt())
-                prompt = (
-                    f"Generate a complete, structured reference markdown document named '{clean_doc}' "
-                    f"for the healthcare skill '{skill_id}'.\n"
-                    f"Target Specialist Agent: {target_agent}\n"
-                    f"User Inquiry Context: {user_query}\n\n"
-                    f"Include structured tables or checklists, action steps, and strict non-clinical disclaimers."
+                prompt = render_template(
+                    "skill_reference_synthesis_prompt.hbs",
+                    {
+                        "clean_doc": clean_doc,
+                        "skill_id": skill_id,
+                        "target_agent": target_agent,
+                        "user_query": user_query,
+                    },
                 )
                 resp = await self.model.ainvoke(
                     [sys_msg, HumanMessage(content=prompt)],
