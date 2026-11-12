@@ -35,11 +35,17 @@ from datetime import datetime, timezone
 import logging
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
-from sqlalchemy import func, select
+from sqlalchemy import func, not_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from carefold.db.scoped_session import register_scope_listeners
 from carefold.engine.tool_exec import TaintFlag, UntrustedResult
+from carefold.fhir.sql_pushdown import (
+    build_category_sql_filter,
+    build_code_sql_filter,
+    build_fhir_status_sql_filter,
+    get_session_dialect_name,
+)
 from carefold.fhir.registry import (
     CLINICAL_FHIR_RESOURCE_TYPES as CLINICAL_RESOURCE_TYPES,
     PAPERWORK_FHIR_RESOURCE_TYPES as PAPERWORK_RESOURCE_TYPES,
@@ -605,20 +611,7 @@ async def _query_fhir_search_resources(
     parsed_date_from = _parse_iso_filter(date_from)
     target_system, target_code = _parse_code_token(code, resource_type=canonical_rtype)
 
-    # First check indexed HealthResourceCoding if code/system filter is provided
-    indexed_ids: Optional[set[str]] = None
-    if target_code or target_system:
-        coding_stmt = select(HealthResourceCoding.resource_id).where(
-            HealthResourceCoding.profile_id == profile_id,
-            HealthResourceCoding.scope == REQUIRED_CLINICAL_SCOPE,
-        )
-        if target_code:
-            coding_stmt = coding_stmt.where(func.lower(HealthResourceCoding.code) == target_code.lower())
-        if target_system:
-            coding_stmt = coding_stmt.where(HealthResourceCoding.system == target_system)
-        coding_res = await session.execute(coding_stmt)
-        indexed_ids = set(coding_res.scalars().all())
-
+    dialect = get_session_dialect_name(session)
     stmt = (
         select(HealthResource)
         .where(
@@ -631,7 +624,20 @@ async def _query_fhir_search_resources(
     )
     if parsed_date_from is not None:
         stmt = stmt.where(HealthResource.effective_at >= parsed_date_from)
+    if category:
+        stmt = stmt.where(build_category_sql_filter(category, dialect_name=dialect))
+    if target_code or target_system:
+        stmt = stmt.where(
+            build_code_sql_filter(
+                target_code,
+                system=target_system,
+                scope=REQUIRED_CLINICAL_SCOPE,
+                match_display=True,
+                dialect_name=dialect,
+            )
+        )
 
+    stmt = stmt.limit(clamped_limit)
     res = await session.execute(stmt)
     candidate_rows = list(res.scalars().all())
 
@@ -647,7 +653,7 @@ async def _query_fhir_search_resources(
             continue
         if category and not _matches_category_filter(data, category):
             continue
-        if (target_code or target_system) and (indexed_ids is None or hr.id not in indexed_ids):
+        if target_code or target_system:
             if not _resource_matches_code(hr, target_system=target_system, target_code=target_code):
                 continue
 
@@ -685,17 +691,30 @@ async def _query_fhir_patient_summary(
 ) -> Dict[str, Any]:
     """Internal async query implementation for `fhir_get_patient_summary` (IPS digest)."""
     clamped_limit = max(1, min(int(limit_per_section or 15), 50))
-    stmt = (
-        select(HealthResource)
-        .where(
-            HealthResource.profile_id == profile_id,
-            HealthResource.scope == REQUIRED_CLINICAL_SCOPE,
-            HealthResource.status != "tombstone",
+    dialect = get_session_dialect_name(session)
+    section_type_groups: List[Tuple[str, ...]] = [
+        ("Condition",),
+        ("MedicationRequest", "MedicationStatement", "MedicationAdministration", "MedicationDispense"),
+        ("AllergyIntolerance",),
+        ("Observation", "DiagnosticReport"),
+        ("Immunization",),
+        ("Procedure",),
+    ]
+    all_rows: List[HealthResource] = []
+    for rt_group in section_type_groups:
+        sec_stmt = (
+            select(HealthResource)
+            .where(
+                HealthResource.profile_id == profile_id,
+                HealthResource.scope == REQUIRED_CLINICAL_SCOPE,
+                HealthResource.status != "tombstone",
+                func.lower(HealthResource.resource_type).in_([t.lower() for t in rt_group]),
+                not_(build_fhir_status_sql_filter("entered-in-error", dialect_name=dialect)),
+            )
+            .order_by(HealthResource.effective_at.desc(), HealthResource.updated_at.desc())
+            .limit(clamped_limit * 2)
         )
-        .order_by(HealthResource.effective_at.desc(), HealthResource.updated_at.desc())
-    )
-    res = await session.execute(stmt)
-    all_rows = list(res.scalars().all())
+        all_rows.extend((await session.execute(sec_stmt)).scalars().all())
 
     active_conditions: List[Dict[str, Any]] = []
     active_medications: List[Dict[str, Any]] = []
@@ -964,6 +983,7 @@ async def _query_fhir_observation_trends(
     target_system, target_code = _parse_code_token(loinc_or_code, resource_type="Observation")
     assert target_code is not None
 
+    dialect = get_session_dialect_name(session)
     stmt = (
         select(HealthResource)
         .where(
@@ -971,8 +991,16 @@ async def _query_fhir_observation_trends(
             HealthResource.scope == REQUIRED_CLINICAL_SCOPE,
             HealthResource.status != "tombstone",
             func.lower(HealthResource.resource_type) == "observation",
+            build_code_sql_filter(
+                target_code,
+                system=target_system,
+                scope=REQUIRED_CLINICAL_SCOPE,
+                match_display=True,
+                dialect_name=dialect,
+            ),
         )
         .order_by(HealthResource.effective_at.desc(), HealthResource.updated_at.desc())
+        .limit(clamped_limit)
     )
     res = await session.execute(stmt)
     obs_rows = list(res.scalars().all())
