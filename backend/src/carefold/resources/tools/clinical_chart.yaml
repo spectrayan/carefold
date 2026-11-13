@@ -1,0 +1,437 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan (https://spectrayan.com)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0 and the
+# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+# Personal and household local use only. Commercial use, hosted service
+# offering, rebranding, white-labeling, and redistribution of modified
+# forks are prohibited without a written commercial license from Spectrayan.
+#
+# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+
+api_version: yarvelle.tools/v1
+kind: ToolSet
+pack_id: health
+tools:
+- name: record_vitals
+  description: Record vital signs observations (blood pressure, heart rate, blood glucose, SpO2, weight,
+    height) for a patient profile with automated red-flag safety screening, adult BMI computation, and
+    CDC pediatric percentiles.
+  category: clinical
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: record_vitals
+    entity: health_resource
+    undoable: true
+    risk: write_local
+  input_schema:
+    type: object
+    properties:
+      vitals_data:
+        type: object
+        description: Key-value dictionary containing vital sign measurements.
+      reported_symptoms:
+        type: array
+        items:
+          type: string
+        description: Optional list of patient-reported concurrent acute or neurological symptoms.
+      recorded_at:
+        type: string
+        description: Optional ISO-8601 observation timestamp.
+      source_type:
+        type: string
+        enum:
+        - manual
+        - device
+        - note_extracted
+        default: manual
+      source_ref:
+        type: string
+      source_id:
+        type: string
+    required:
+    - vitals_data
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.record_vitals:execute_record_vitals
+- name: create_appointment
+  description: Schedule and record a clinical or administrative healthcare appointment for a patient profile
+    with validated start/end timestamps, provider specialty, clinic location, and pre-visit preparation
+    notes.
+  category: appointments
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: create_appointment
+    entity: appointment
+    undoable: true
+    risk: write_local
+  input_schema:
+    type: object
+    properties:
+      title:
+        type: string
+        description: Appointment title or encounter description (e.g. 'Cardiology Consultation').
+      start_time:
+        type: string
+        description: Scheduled start timestamp in ISO-8601 format (UTC or with timezone offset).
+      end_time:
+        type: string
+        description: Scheduled end timestamp in ISO-8601 format (must be strictly after start_time).
+      provider_name:
+        type: string
+        description: Optional name of clinician, physician, or practice (e.g. 'Dr. Sarah Connor').
+      specialty:
+        type: string
+        description: Medical specialty (e.g. 'Cardiology', 'Dermatology', 'Endocrinology').
+      location:
+        type: string
+        description: Physical clinic address, room/suite number, or telehealth URL.
+      clinic_phone:
+        type: string
+        description: Clinic or scheduling office phone number (e.g. '555-0144').
+      timezone:
+        type: string
+        description: 'Local appointment IANA timezone identifier (default: ''UTC'').'
+        default: UTC
+      status:
+        type: string
+        enum:
+        - requested
+        - scheduled
+        - confirmed
+        default: scheduled
+        description: 'Initial appointment status (default: ''scheduled'').'
+      reason:
+        type: string
+        description: Chief complaint or primary purpose of appointment.
+      preparation_notes:
+        type: string
+        description: Pre-visit instructions (e.g. fasting requirement, records to bring).
+    required:
+    - title
+    - start_time
+    - end_time
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.appointments:execute_create_appointment
+- name: list_appointments
+  description: List upcoming or historical healthcare appointments for a patient profile with optional
+    filtering by status, start date range, and pagination.
+  category: appointments
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: list_appointments
+    entity: appointment
+    risk: read
+  input_schema:
+    type: object
+    properties:
+      status:
+        type: string
+        enum:
+        - requested
+        - scheduled
+        - confirmed
+        - completed
+        - cancelled
+        description: Filter by appointment lifecycle status.
+      start_after:
+        type: string
+        description: Filter appointments starting on or after this ISO-8601 timestamp.
+      start_before:
+        type: string
+        description: Filter appointments starting on or before this ISO-8601 timestamp.
+      limit:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+        description: 'Maximum number of appointments to return (default: 20).'
+      offset:
+        type: integer
+        default: 0
+        minimum: 0
+        description: 'Number of records to skip for pagination (default: 0).'
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.appointments:execute_list_appointments
+- name: update_appointment_status
+  description: Update the status of an existing patient appointment (e.g. from 'requested' to 'confirmed',
+    or mark 'completed' or 'cancelled') with audit event tracking.
+  category: appointments
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: update_appointment_status
+    entity: appointment
+    undoable: true
+    risk: write_local
+  input_schema:
+    type: object
+    properties:
+      appointment_id:
+        type: string
+        description: Unique UUID of the appointment to update.
+      status:
+        type: string
+        enum:
+        - requested
+        - scheduled
+        - confirmed
+        - completed
+        - cancelled
+        description: Target status transition.
+      cancellation_reason:
+        type: string
+        description: Optional explanation if cancelling the appointment.
+    required:
+    - appointment_id
+    - status
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.appointments:execute_update_appointment_status
+- name: generate_prep_pack
+  description: Compile a comprehensive clinical visit preparation pack for an upcoming or planned consultation,
+    synthesizing chief visit reasons, recent symptoms timeline, 30/90-day vitals trends, active medications,
+    allergies, and prior clinical records into a structured Markdown dossier and persisted clinical note.
+  category: clinical
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: generate_prep_pack
+    entity: note
+    undoable: true
+    risk: write_local
+  input_schema:
+    type: object
+    properties:
+      appointment_id:
+        type: string
+        description: Optional UUID of the linked clinical appointment.
+      specialty:
+        type: string
+        description: Medical specialty of the encounter (e.g. 'Cardiology', 'Endocrinology').
+      visit_reason:
+        type: string
+        description: Primary complaint or purpose of visit (e.g. 'Hypertension follow-up').
+      doctor_questions:
+        type: array
+        items:
+          type: string
+        description: Optional prioritized list of clinical questions to include (max 5).
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.prep_pack:execute_generate_prep_pack
+- name: create_typed_note
+  description: Create and persist a typed clinical or navigation note across 7 canonical categories ('visit',
+    'symptom', 'question', 'after_visit', 'school', 'scratchpad', 'general') with optional appointment
+    linking, tag categorization, search indexing, and audit logging.
+  category: notes
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: create_typed_note
+    entity: note
+    undoable: true
+    risk: write_local
+  input_schema:
+    type: object
+    properties:
+      title:
+        type: string
+        description: Human-readable title for the note (min 1, max 255 chars).
+      content:
+        type: string
+        description: Markdown formatted note body content.
+      type:
+        type: string
+        enum:
+        - visit
+        - symptom
+        - question
+        - after_visit
+        - school
+        - scratchpad
+        - general
+        default: general
+        description: Standardized note classification type.
+      linked_appointment_id:
+        type: string
+        description: Optional UUID of an appointment to associate with this note.
+      tags:
+        type: array
+        items:
+          type: string
+        description: Optional list of tag strings for categorization.
+    required:
+    - title
+    - content
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.notes:execute_create_typed_note
+- name: fhir_search_resources
+  description: Query the active profile's local FHIR R4 clinical chart (Conditions, Medications, Allergies,
+    Observations, DiagnosticReports, Immunizations, Procedures, Encounters) with optional code ('system|code'
+    or code), category, and date_from filters. Returns structured summaries with Provenance citations
+    ('From <source>, <date>').
+  category: fhir
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_search_resources
+    entity: health_resource
+    risk: read
+  input_schema:
+    type: object
+    properties:
+      resource_type:
+        type: string
+        description: FHIR R4 clinical resource type to query (e.g. 'Condition', 'MedicationRequest', 'MedicationStatement',
+          'AllergyIntolerance', 'Observation', 'DiagnosticReport', 'Immunization', 'Procedure', 'Encounter',
+          'CarePlan').
+      code:
+        type: string
+        description: Optional clinical code or 'system|code' token (e.g. '4548-4' or 'http://loinc.org|4548-4').
+      category:
+        type: string
+        description: Optional FHIR category filter (e.g. 'laboratory', 'vital-signs', 'problem-list-item').
+      date_from:
+        type: string
+        description: Optional ISO-8601 lower bound date/timestamp (e.g. '2026-01-01').
+      limit:
+        type: integer
+        default: 25
+        minimum: 1
+        maximum: 100
+        description: Maximum number of resources to return (default 25).
+    required:
+    - resource_type
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.fhir_tools:execute_fhir_search_resources
+- name: fhir_get_patient_summary
+  description: Retrieve a structured International Patient Summary (IPS) clinical chart digest for the
+    active profile, including Active Conditions, Active Medications, Allergies & Intolerances, Recent
+    Labs & Vitals, and Immunizations with source provenance citations.
+  category: fhir
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_get_patient_summary
+    entity: health_resource
+    risk: read
+  input_schema:
+    type: object
+    properties:
+      limit_per_section:
+        type: integer
+        default: 15
+        minimum: 1
+        maximum: 50
+        description: Maximum number of items per IPS summary section (default 15).
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.fhir_tools:execute_fhir_get_patient_summary
+- name: fhir_get_observation_trends
+  description: Retrieve chronological observation data points, units, reference ranges, and trend statistics
+    for a specific LOINC or clinical observation code (e.g. '4548-4' for HbA1c, '85354-9' for blood pressure
+    panel, '8480-6' for systolic BP, '29463-7' for body weight).
+  category: fhir
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_get_observation_trends
+    entity: health_resource
+    risk: read
+  input_schema:
+    type: object
+    properties:
+      loinc_or_code:
+        type: string
+        description: LOINC code or 'system|code' token to trend (e.g. '4548-4', '85354-9', '29463-7').
+      limit:
+        type: integer
+        default: 12
+        minimum: 1
+        maximum: 100
+        description: Maximum number of chronological data points to return (default 12).
+    required:
+    - loinc_or_code
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.fhir_tools:execute_fhir_get_observation_trends

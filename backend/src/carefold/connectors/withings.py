@@ -32,7 +32,7 @@ from yarvelle_core.connectors.base import (
 from yarvelle_core.connectors.http import ScopedHttp
 from yarvelle_core.connectors.manifest import ConnectorManifest
 
-_MANIFEST_PATH = Path(__file__).resolve().parent / "manifests" / "withings.yaml"
+_MANIFEST_PATH = Path(__file__).resolve().parent / "starters" / "manifests" / "withings.yaml"
 
 WITHINGS_MEASURE_URL = "https://wbsapi.withings.net/measure?action=getmeas"
 
@@ -383,24 +383,18 @@ class WithingsConnector:
                 "observations": records[:limit],
             }
 
+        from carefold.tools import get_health_tool_spec
+
+        decl = get_health_tool_spec("withings_latest_vitals")
         return [
             ToolSpec(
-                name="withings_latest_vitals",
-                description="Retrieves the most recent normalized Withings vital sign observations.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "limit": {
-                            "type": "integer",
-                            "description": "Maximum number of recent vital observations to return",
-                            "default": 10,
-                        }
-                    },
-                },
+                name=decl.name,
+                description=decl.description,
+                parameters=dict(decl.parameters),
                 risk_class="read_only",
-                risk_tier="read",
-                trust="trusted",
-                data_flows=("wbsapi.withings.net",),
+                risk_tier=decl.risk_tier,
+                trust=decl.trust,
+                data_flows=tuple(decl.data_flows.allowed_hosts),
                 handler=_latest_vitals_handler,
             )
         ]

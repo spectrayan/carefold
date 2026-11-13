@@ -224,51 +224,12 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
     )
 
 
-SPEC = ToolSpec(
-    name="record_vitals",
-    description=(
-        "Record vital signs observations (blood pressure, heart rate, blood glucose, "
-        "SpO2, weight, height) for a patient profile with automated red-flag safety screening, "
-        "adult BMI computation, and CDC pediatric percentiles."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "vitals_data": {
-                "type": "object",
-                "description": "Key-value dictionary containing vital sign measurements.",
-            },
-            "reported_symptoms": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "Optional list of patient-reported concurrent acute or neurological symptoms.",
-            },
-            "recorded_at": {
-                "type": "string",
-                "description": "Optional ISO-8601 observation timestamp.",
-            },
-            "source_type": {
-                "type": "string",
-                "enum": ["manual", "device", "note_extracted"],
-                "default": "manual",
-            },
-            "source_ref": {"type": "string"},
-            "source_id": {"type": "string"},
-        },
-        "required": ["vitals_data"],
-    },
-    risk_tier="write_local",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_record_vitals,
-    metadata={
-        "action": "record_vitals",
-        "entity": "health_resource",
-        "undoable": True,
-        "risk": "write_local",
-    },
-    scopes={"health.clinical"},
-)
+def __getattr__(name: str) -> Any:
+    if name == "SPEC":
+        from carefold.tools import get_health_tool_spec
+
+        return get_health_tool_spec("record_vitals")
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = ["SPEC", "execute_record_vitals"]

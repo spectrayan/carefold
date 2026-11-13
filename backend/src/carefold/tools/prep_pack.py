@@ -86,47 +86,12 @@ async def execute_generate_prep_pack(args: Dict[str, Any], ctx: Any = None) -> T
         )
 
 
-SPEC = ToolSpec(
-    name="generate_prep_pack",
-    description=(
-        "Compile a comprehensive clinical visit preparation pack for an upcoming or planned consultation, "
-        "synthesizing chief visit reasons, recent symptoms timeline, 30/90-day vitals trends, active medications, "
-        "allergies, and prior clinical records into a structured Markdown dossier and persisted clinical note."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "appointment_id": {
-                "type": "string",
-                "description": "Optional UUID of the linked clinical appointment.",
-            },
-            "specialty": {
-                "type": "string",
-                "description": "Medical specialty of the encounter (e.g. 'Cardiology', 'Endocrinology').",
-            },
-            "visit_reason": {
-                "type": "string",
-                "description": "Primary complaint or purpose of visit (e.g. 'Hypertension follow-up').",
-            },
-            "doctor_questions": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "Optional prioritized list of clinical questions to include (max 5).",
-            },
-        },
-    },
-    risk_tier="write_local",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_generate_prep_pack,
-    metadata={
-        "action": "generate_prep_pack",
-        "entity": "note",
-        "undoable": True,
-        "risk": "write_local",
-    },
-    scopes={"health.clinical"},
-)
+def __getattr__(name: str) -> Any:
+    if name == "SPEC":
+        from carefold.tools import get_health_tool_spec
+
+        return get_health_tool_spec("generate_prep_pack")
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = ["SPEC", "execute_generate_prep_pack"]

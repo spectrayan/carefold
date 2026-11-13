@@ -324,6 +324,14 @@ def _register_native_pack_resources() -> None:
         error_prefix="CFD",
     )
     _yc_get_resource_loader().register_pack(bootstrap_spec)
+    try:
+        from yarvelle_core.tools.spec_loader import register_pack_tool_manifest as _yc_register_pack_tools
+
+        _tools_dir = Path(__file__).resolve().parent / "resources" / "tools"
+        if _tools_dir.is_dir():
+            _yc_register_pack_tools("health", _tools_dir)
+    except Exception:
+        pass
 
 
 _register_native_pack_resources()

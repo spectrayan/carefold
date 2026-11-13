@@ -1,0 +1,237 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan (https://spectrayan.com)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0 and the
+# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+# Personal and household local use only. Commercial use, hosted service
+# offering, rebranding, white-labeling, and redistribution of modified
+# forks are prohibited without a written commercial license from Spectrayan.
+#
+# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+
+api_version: yarvelle.tools/v1
+kind: ToolSet
+pack_id: health
+tools:
+- name: stage_clinical_import
+  description: Parse and stage a clinical or wearable export file (FHIR R4 Bundle JSON, C-CDA XML, or
+    Apple Health export.xml with daily summary aggregation) into an ImportBatch for Review-Before-Save.
+  category: imports
+  pack_id: health
+  risk_tier: write_local
+  trust: untrusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: stage_clinical_import
+    entity: import_batch
+    risk: write_local
+  input_schema:
+    type: object
+    properties:
+      filename:
+        type: string
+        description: Uploaded file name (e.g. 'bundle.json', 'ccda.xml', 'export.xml').
+      content:
+        type: string
+        description: Raw JSON or XML content to parse and stage.
+      format:
+        type: string
+        enum:
+        - fhir_r4
+        - ccda
+        - apple_health
+        description: Optional explicit file format override.
+      source_name:
+        type: string
+        description: Human-readable provenance origin (e.g. 'Epic MyChart', 'Apple Health').
+    required:
+    - filename
+    - content
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.imports:execute_stage_clinical_import
+- name: commit_clinical_import
+  description: Commit a user-reviewed staged ImportBatch into profile health_resources with provenance
+    attribution, idempotency, and search indexing.
+  category: imports
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: commit_clinical_import
+    entity: import_batch
+    undoable: true
+    risk: write_local
+  input_schema:
+    type: object
+    properties:
+      batch_id:
+        type: string
+        description: UUID of the staged ImportBatch to commit.
+      selected_indices:
+        type: array
+        items:
+          type: integer
+        description: Optional 0-based indices of staged records to commit; commits all if omitted.
+    required:
+    - batch_id
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.imports:execute_commit_clinical_import
+- name: verify_smart_health_card
+  description: Verify a W3C/HL7 SMART Health Card (.smart-health-card JSON or shc:/ QR URI) using ES256
+    JWS signature checks and stage FHIR R4 Immunizations and Observations.
+  category: imports
+  pack_id: health
+  risk_tier: write_local
+  trust: untrusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: verify_smart_health_card
+    entity: import_batch
+    risk: write_local
+    taints_context: true
+  input_schema:
+    type: object
+    properties:
+      content:
+        type: string
+        description: Raw .smart-health-card JSON or shc:/ URI.
+      source_name:
+        type: string
+        default: SMART Health Card
+    required:
+    - content
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.connectors:execute_verify_smart_health_card
+- name: withings_latest_vitals
+  description: Retrieve latest synchronized Withings blood pressure, heart rate, SpO2, and weight observations
+    for the active profile.
+  category: connectors
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts:
+  - wbsapi.withings.net
+  - account.withings.com
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: withings_latest_vitals
+    connector_id: withings
+    risk: read
+  input_schema:
+    type: object
+    properties:
+      limit:
+        type: integer
+        default: 10
+        minimum: 1
+        maximum: 50
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.connectors:execute_withings_latest_vitals
+- name: epic_smart_search_records
+  description: Search read-only USCDI FHIR R4 clinical records synchronized from Epic MyChart (SMART on
+    FHIR). Results carry provenance attribution and untrusted taint.
+  category: connectors
+  pack_id: health
+  risk_tier: read
+  trust: untrusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts:
+  - fhir.epic.com
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: epic_smart_search_records
+    connector_id: epic-smart
+    risk: read
+    taints_context: true
+  input_schema:
+    type: object
+    properties:
+      resource_type:
+        type: string
+        enum:
+        - Condition
+        - MedicationRequest
+        - AllergyIntolerance
+        - Immunization
+        - Observation
+        - Encounter
+        - DocumentReference
+      query:
+        type: string
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.connectors:execute_epic_smart_search_records
+- name: zocdoc_book_appointment
+  description: Book an external clinical appointment on Zocdoc. Classified as 'irreversible' and unconditionally
+    requires per-booking human approval even in A2 autonomy.
+  category: connectors
+  pack_id: health
+  risk_tier: irreversible
+  trust: untrusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts:
+  - api.zocdoc.com
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: zocdoc_book_appointment
+    connector_id: zocdoc
+    risk: irreversible
+    taints_context: true
+  input_schema:
+    type: object
+    properties:
+      provider_id:
+        type: string
+      provider_name:
+        type: string
+      specialty:
+        type: string
+      slot_id:
+        type: string
+      start_time:
+        type: string
+      insurance_carrier:
+        type: string
+    required:
+    - provider_id
+    - slot_id
+    - start_time
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.connectors:execute_zocdoc_book_appointment

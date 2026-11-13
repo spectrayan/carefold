@@ -39,7 +39,7 @@ from carefold.connectors.starters.calendar import (
     suggest_free_slots,
 )
 
-_MANIFESTS_DIR = Path(__file__).resolve().parent / "manifests"
+_MANIFESTS_DIR = Path(__file__).resolve().parent / "starters" / "manifests"
 _OURA_MANIFEST_PATH = _MANIFESTS_DIR / "oura.yaml"
 _GOOGLE_HEALTH_MANIFEST_PATH = _MANIFESTS_DIR / "google_health.yaml"
 _MSGRAPH_MANIFEST_PATH = _MANIFESTS_DIR / "microsoft_graph.yaml"

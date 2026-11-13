@@ -72,7 +72,7 @@ from yarvelle_core.connectors.errors import ConnectorError
 from yarvelle_core.connectors.http import ScopedHttp
 from yarvelle_core.connectors.manifest import ConnectorManifest
 
-_MANIFEST_PATH = Path(__file__).resolve().parent / "manifests" / "epic_smart.yaml"
+_MANIFEST_PATH = Path(__file__).resolve().parent / "starters" / "manifests" / "epic_smart.yaml"
 
 DEFAULT_EPIC_FHIR_BASE_URL = (
     "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4"
@@ -222,39 +222,17 @@ class EpicSmartConnector:
         return list(_USCDI_STREAMS)
 
     def tools(self) -> List[ToolSpec]:
+        from carefold.tools import get_health_tool_spec
+
+        decl = get_health_tool_spec("epic_smart_search_records")
         return [
             ToolSpec(
-                name="epic_smart_search_records",
-                description=(
-                    "Searches normalized USCDI FHIR R4 clinical records imported from "
-                    "Epic MyChart (SMART on FHIR). Output is marked untrusted."
-                ),
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "resource_type": {
-                            "type": "string",
-                            "description": (
-                                "Optional FHIR R4 resourceType filter (Condition, "
-                                "MedicationRequest, AllergyIntolerance, Immunization, "
-                                "Observation, DiagnosticReport, Procedure, CarePlan, "
-                                "Encounter, DocumentReference)."
-                            ),
-                        },
-                        "query": {
-                            "type": "string",
-                            "description": "Case-insensitive substring filter over display text or codes.",
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "default": 20,
-                            "minimum": 1,
-                            "maximum": 100,
-                        },
-                    },
-                },
+                name=decl.name,
+                description=decl.description,
+                parameters=dict(decl.parameters),
                 risk_class="read_only",
-                trust="untrusted",
+                risk_tier=decl.risk_tier,
+                trust=decl.trust,
                 data_flows=tuple(self._manifest.data_flows.allowed_hosts),
                 handler=self._handle_search_records,
             )

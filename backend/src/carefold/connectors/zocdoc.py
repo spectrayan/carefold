@@ -31,7 +31,7 @@ from yarvelle_core.connectors.base import (
 from yarvelle_core.connectors.http import ScopedHttp
 from yarvelle_core.connectors.manifest import ConnectorManifest
 
-_MANIFEST_PATH = Path(__file__).resolve().parent / "manifests" / "zocdoc.yaml"
+_MANIFEST_PATH = Path(__file__).resolve().parent / "starters" / "manifests" / "zocdoc.yaml"
 
 ZOCDOC_PROVIDERS_URL = "https://api.zocdoc.com/v1/providers"
 ZOCDOC_BOOKINGS_URL = "https://api.zocdoc.com/v1/bookings"
@@ -301,6 +301,9 @@ class ZocdocConnector:
                 "payload_hash": preview["payload_hash"],
             }
 
+        from carefold.tools import get_health_tool_spec
+
+        book_decl = get_health_tool_spec("zocdoc_book_appointment")
         return [
             ToolSpec(
                 name="zocdoc_search_providers",
@@ -319,24 +322,13 @@ class ZocdocConnector:
                 handler=_search_providers_handler,
             ),
             ToolSpec(
-                name="zocdoc_book_appointment",
-                description="Books a confirmed healthcare appointment on Zocdoc (irreversible action).",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "provider_id": {"type": "string"},
-                        "provider_name": {"type": "string"},
-                        "specialty": {"type": "string"},
-                        "slot_id": {"type": "string"},
-                        "start_time": {"type": "string"},
-                        "insurance_carrier": {"type": "string"},
-                    },
-                    "required": ["provider_id", "provider_name", "slot_id", "start_time"],
-                },
+                name=book_decl.name,
+                description=book_decl.description,
+                parameters=dict(book_decl.parameters),
                 risk_class="admin",
-                risk_tier="irreversible",
-                trust="untrusted",
-                data_flows=("api.zocdoc.com",),
+                risk_tier=book_decl.risk_tier,
+                trust=book_decl.trust,
+                data_flows=tuple(book_decl.data_flows.allowed_hosts),
                 handler=_book_appointment_handler,
             ),
         ]

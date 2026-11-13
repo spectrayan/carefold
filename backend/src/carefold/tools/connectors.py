@@ -9,268 +9,121 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Connectors ToolSpecs for Carefold Health Pack.
+"""Async execution handlers for Carefold connector and clinical import tools (#338).
 
-Provides native ToolSpec definitions and execution handlers for:
-- SPEC_WITHINGS: withings_latest_vitals
-- SPEC_EPIC: epic_smart_search_records
-- SPEC_SCHOOL_ICS: sync_school_ics
-- SPEC_ZOCDOC: zocdoc_book_appointment
-- SPEC_SHC: verify_smart_health_card
+Declarative ToolSpec metadata lives in `carefold/resources/tools/`; legacy
+`SPEC_*` attributes resolve lazily from the declarative loader.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Mapping
 
-from yarvelle_core.engine.tool_registry import DataFlows, ToolSpec
+from yarvelle_core.db.session import get_session_factory
 
 logger = logging.getLogger("carefold.tools.connectors")
 
+_SPEC_ATTRS: Dict[str, str] = {
+    "SPEC_WITHINGS": "withings_latest_vitals",
+    "SPEC_EPIC": "epic_smart_search_records",
+    "SPEC_SCHOOL_ICS": "sync_school_ics",
+    "SPEC_ZOCDOC": "zocdoc_book_appointment",
+    "SPEC_SHC": "verify_smart_health_card",
+}
 
-# 1. Withings Latest Vitals
+
+async def _invoke_connector_tool(connector: Any, tool_name: str, args: Any, ctx: Any) -> Any:
+    if isinstance(ctx, Mapping) and not isinstance(args, Mapping):
+        args, ctx = ctx, args
+    clean_args = dict(args) if isinstance(args, Mapping) else {}
+    for tool_spec in connector.tools():
+        if tool_spec.name == tool_name and tool_spec.handler is not None:
+            try:
+                return await tool_spec.handler(ctx, clean_args)
+            except TypeError:
+                return await tool_spec.handler(clean_args, ctx)
+    raise RuntimeError(f"Connector '{connector.manifest.id}' does not expose handler for '{tool_name}'.")
+
+
 async def execute_withings_latest_vitals(args: Dict[str, Any], ctx: Any = None) -> Any:
     """Retrieves latest synchronized Withings vital sign observations."""
-    try:
-        from carefold.connectors.withings import WithingsConnector
-    except ImportError:
-        try:
-            from carefold.connectors.starters.withings import WithingsConnector
-        except ImportError:
-            WithingsConnector = None
-    if WithingsConnector is not None:
-        connector = WithingsConnector()
-        for t in connector.tools():
-            if t.name == "withings_latest_vitals" and t.handler is not None:
-                try:
-                    return await t.handler(args or {}, ctx)
-                except TypeError:
-                    return await t.handler(ctx, args or {})
-    return {"status": "ok", "records": []}
+    from carefold.connectors.withings import WithingsConnector
+
+    return await _invoke_connector_tool(WithingsConnector(), "withings_latest_vitals", args or {}, ctx)
 
 
-SPEC_WITHINGS = ToolSpec(
-    name="withings_latest_vitals",
-    description=(
-        "Retrieve latest synchronized Withings blood pressure, heart rate, SpO2, "
-        "and weight observations for the active profile."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "limit": {
-                "type": "integer",
-                "default": 10,
-                "minimum": 1,
-                "maximum": 50,
-            },
-        },
-    },
-    risk_tier="read",
-    trust="trusted",
-    data_flows=DataFlows(
-        allowed_hosts=("wbsapi.withings.net", "account.withings.com"),
-        data_sensitivity="restricted",
-    ),
-    executor=execute_withings_latest_vitals,
-    metadata={
-        "action": "withings_latest_vitals",
-        "connector_id": "withings",
-        "risk": "read",
-    },
-    scopes={"health.clinical"},
-)
-
-
-# 2. Epic SMART Search Records
 async def execute_epic_smart_search_records(args: Dict[str, Any], ctx: Any = None) -> Any:
     """Searches read-only USCDI FHIR R4 clinical records from Epic MyChart."""
-    try:
-        from carefold.connectors.epic_smart import EpicSmartConnector
-    except ImportError:
-        try:
-            from carefold.connectors.starters.epic_smart import EpicSmartConnector
-        except ImportError:
-            EpicSmartConnector = None
-    if EpicSmartConnector is not None:
-        connector = EpicSmartConnector()
-        for t in connector.tools():
-            if t.name == "epic_smart_search_records" and t.handler is not None:
-                try:
-                    return await t.handler(args or {}, ctx)
-                except TypeError:
-                    return await t.handler(ctx, args or {})
-    return {"records": [], "trust": "untrusted"}
+    from carefold.connectors.epic_smart import EpicSmartConnector
+
+    return await _invoke_connector_tool(EpicSmartConnector(), "epic_smart_search_records", args or {}, ctx)
 
 
-SPEC_EPIC = ToolSpec(
-    name="epic_smart_search_records",
-    description=(
-        "Search read-only USCDI FHIR R4 clinical records synchronized from Epic MyChart "
-        "(SMART on FHIR). Results carry provenance attribution and untrusted taint."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "resource_type": {
-                "type": "string",
-                "enum": [
-                    "Condition",
-                    "MedicationRequest",
-                    "AllergyIntolerance",
-                    "Immunization",
-                    "Observation",
-                    "Encounter",
-                    "DocumentReference",
-                ],
-            },
-            "query": {"type": "string"},
-        },
-    },
-    risk_tier="read",
-    trust="untrusted",
-    data_flows=DataFlows(
-        allowed_hosts=("fhir.epic.com",),
-        data_sensitivity="restricted",
-    ),
-    executor=execute_epic_smart_search_records,
-    metadata={
-        "action": "epic_smart_search_records",
-        "connector_id": "epic-smart",
-        "risk": "read",
-        "taints_context": True,
-    },
-    scopes={"health.clinical"},
-)
-
-
-# 3. Sync School ICS
 async def execute_sync_school_ics(args: Dict[str, Any], ctx: Any = None) -> Any:
     """Synchronizes a child school RFC 5545 .ics calendar feed into profile appointments."""
-    if ctx is None or not getattr(ctx, "profile_id", None):
+    if isinstance(ctx, Mapping) and not isinstance(args, Mapping):
+        args, ctx = ctx, args
+    profile_id = getattr(ctx, "profile_id", None) if ctx is not None else None
+    if not profile_id or not isinstance(profile_id, str) or not profile_id.strip():
         raise ValueError("Missing profile_id in ToolContext")
-    return {"status": "ready", "profile_id": str(ctx.profile_id)}
+    clean_profile_id = profile_id.strip()
+
+    safe_args = dict(args) if isinstance(args, Mapping) else {}
+    feed_id = str(safe_args.get("feed_id") or "").strip()
+    if not feed_id:
+        raise ValueError("Missing required parameter 'feed_id' for sync_school_ics")
+
+    raw_ics_content = safe_args.get("raw_ics_content")
+    if raw_ics_content is not None:
+        raw_ics_content = str(raw_ics_content)
+
+    from carefold.clinical.school_ics import sync_school_ics_feed
+
+    ctx_extra = getattr(ctx, "extra", None) or {}
+    session_factory = (
+        getattr(ctx, "session_factory", None)
+        or (ctx_extra.get("session_factory") if isinstance(ctx_extra, Mapping) else None)
+        or get_session_factory()
+    )
+    async with session_factory() as session:
+        return await sync_school_ics_feed(
+            session=session,
+            profile_id=clean_profile_id,
+            feed_id=feed_id,
+            raw_ics_content=raw_ics_content,
+        )
 
 
-SPEC_SCHOOL_ICS = ToolSpec(
-    name="sync_school_ics",
-    description="Synchronize a child school RFC 5545 .ics calendar feed into local profile appointments.",
-    parameters={
-        "type": "object",
-        "properties": {
-            "feed_id": {"type": "string", "description": "School ICS feed UUID."},
-        },
-        "required": ["feed_id"],
-    },
-    risk_tier="write_local",
-    trust="untrusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="pii"),
-    executor=execute_sync_school_ics,
-    metadata={
-        "action": "sync_school_ics",
-        "entity": "school_ics_feed",
-        "risk": "write_local",
-        "taints_context": True,
-    },
-    scopes={"health.clinical"},
-)
-
-
-# 4. Zocdoc Book Appointment
 async def execute_zocdoc_book_appointment(args: Dict[str, Any], ctx: Any = None) -> Any:
     """Books an external clinical appointment on Zocdoc."""
-    try:
-        from carefold.connectors.zocdoc import ZocdocConnector
-    except ImportError:
-        try:
-            from carefold.connectors.starters.zocdoc import ZocdocConnector
-        except ImportError:
-            ZocdocConnector = None
-    if ZocdocConnector is not None:
-        connector = ZocdocConnector()
-        for t in connector.tools():
-            if t.name == "zocdoc_book_appointment" and t.handler is not None:
-                try:
-                    return await t.handler(args or {}, ctx)
-                except TypeError:
-                    return await t.handler(ctx, args or {})
-    return {"status": "booked", "risk_tier": "irreversible"}
+    from carefold.connectors.zocdoc import ZocdocConnector
+
+    return await _invoke_connector_tool(ZocdocConnector(), "zocdoc_book_appointment", args or {}, ctx)
 
 
-SPEC_ZOCDOC = ToolSpec(
-    name="zocdoc_book_appointment",
-    description=(
-        "Book an external clinical appointment on Zocdoc. Classified as 'irreversible' "
-        "and unconditionally requires per-booking human approval even in A2 autonomy."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "provider_id": {"type": "string"},
-            "provider_name": {"type": "string"},
-            "specialty": {"type": "string"},
-            "slot_id": {"type": "string"},
-            "start_time": {"type": "string"},
-            "insurance_carrier": {"type": "string"},
-        },
-        "required": ["provider_id", "slot_id", "start_time"],
-    },
-    risk_tier="irreversible",
-    trust="untrusted",
-    data_flows=DataFlows(
-        allowed_hosts=("api.zocdoc.com",),
-        data_sensitivity="restricted",
-    ),
-    executor=execute_zocdoc_book_appointment,
-    metadata={
-        "action": "zocdoc_book_appointment",
-        "connector_id": "zocdoc",
-        "risk": "irreversible",
-        "taints_context": True,
-    },
-    scopes={"health.clinical"},
-)
-
-
-# 5. Verify SMART Health Card
 async def execute_verify_smart_health_card(args: Dict[str, Any], ctx: Any = None) -> Any:
     """Verifies a W3C/HL7 SMART Health Card using ES256 JWS signature checks."""
-    if ctx is None or not getattr(ctx, "profile_id", None):
+    if isinstance(ctx, Mapping) and not isinstance(args, Mapping):
+        args, ctx = ctx, args
+    profile_id = getattr(ctx, "profile_id", None) if ctx is not None else None
+    if not profile_id or not isinstance(profile_id, str) or not profile_id.strip():
         raise ValueError("Missing profile_id in ToolContext")
     from carefold.importers.smart_health_card import verify_and_parse_smart_health_card
+
+    safe_args = dict(args) if isinstance(args, Mapping) else {}
     return verify_and_parse_smart_health_card(
-        raw_content=str((args or {}).get("content", "")),
-        source_name=str((args or {}).get("source_name", "SMART Health Card")),
+        raw_content=str(safe_args.get("content", "")),
+        source_name=str(safe_args.get("source_name", "SMART Health Card")),
     )
 
 
-SPEC_SHC = ToolSpec(
-    name="verify_smart_health_card",
-    description=(
-        "Verify a W3C/HL7 SMART Health Card (.smart-health-card JSON or shc:/ QR URI) "
-        "using ES256 JWS signature checks and stage FHIR R4 Immunizations and Observations."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "content": {"type": "string", "description": "Raw .smart-health-card JSON or shc:/ URI."},
-            "source_name": {"type": "string", "default": "SMART Health Card"},
-        },
-        "required": ["content"],
-    },
-    risk_tier="write_local",
-    trust="untrusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_verify_smart_health_card,
-    metadata={
-        "action": "verify_smart_health_card",
-        "entity": "import_batch",
-        "risk": "write_local",
-        "taints_context": True,
-    },
-    scopes={"health.clinical"},
-)
+def __getattr__(name: str) -> Any:
+    if name in _SPEC_ATTRS:
+        from carefold.tools import get_health_tool_spec
+
+        return get_health_tool_spec(_SPEC_ATTRS[name])
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = [

@@ -163,78 +163,15 @@ __all__ = [
 ]
 
 
-SPEC_STAGE = ToolSpec(
-    name="stage_clinical_import",
-    description=(
-        "Parse and stage a clinical or wearable export file (FHIR R4 Bundle JSON, C-CDA XML, "
-        "or Apple Health export.xml with daily summary aggregation) into an ImportBatch for Review-Before-Save."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "filename": {
-                "type": "string",
-                "description": "Uploaded file name (e.g. 'bundle.json', 'ccda.xml', 'export.xml').",
-            },
-            "content": {
-                "type": "string",
-                "description": "Raw JSON or XML content to parse and stage.",
-            },
-            "format": {
-                "type": "string",
-                "enum": ["fhir_r4", "ccda", "apple_health"],
-                "description": "Optional explicit file format override.",
-            },
-            "source_name": {
-                "type": "string",
-                "description": "Human-readable provenance origin (e.g. 'Epic MyChart', 'Apple Health').",
-            },
-        },
-        "required": ["filename", "content"],
-    },
-    risk_tier="write_local",
-    trust="untrusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_stage_clinical_import,
-    metadata={
-        "action": "stage_clinical_import",
-        "entity": "import_batch",
-        "risk": "write_local",
-    },
-    scopes={"health.clinical"},
-)
+_SPEC_ATTRS = {
+    "SPEC_STAGE": "stage_clinical_import",
+    "SPEC_COMMIT": "commit_clinical_import",
+}
 
 
-SPEC_COMMIT = ToolSpec(
-    name="commit_clinical_import",
-    description=(
-        "Commit a user-reviewed staged ImportBatch into profile health_resources with provenance attribution, "
-        "idempotency, and search indexing."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "batch_id": {
-                "type": "string",
-                "description": "UUID of the staged ImportBatch to commit.",
-            },
-            "selected_indices": {
-                "type": "array",
-                "items": {"type": "integer"},
-                "description": "Optional 0-based indices of staged records to commit; commits all if omitted.",
-            },
-        },
-        "required": ["batch_id"],
-    },
-    risk_tier="write_local",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_commit_clinical_import,
-    metadata={
-        "action": "commit_clinical_import",
-        "entity": "import_batch",
-        "undoable": True,
-        "risk": "write_local",
-    },
-    scopes={"health.clinical"},
-)
+def __getattr__(name: str) -> Any:
+    if name in _SPEC_ATTRS:
+        from carefold.tools import get_health_tool_spec
+
+        return get_health_tool_spec(_SPEC_ATTRS[name])
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

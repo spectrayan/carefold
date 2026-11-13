@@ -31,8 +31,8 @@ from yarvelle_core.connectors.base import (
 from yarvelle_core.connectors.http import ScopedHttp
 from yarvelle_core.connectors.manifest import ConnectorManifest
 
-_GOOGLE_MANIFEST_PATH = Path(__file__).resolve().parent / "manifests" / "google_calendar.yaml"
-_CALDAV_MANIFEST_PATH = Path(__file__).resolve().parent / "manifests" / "caldav.yaml"
+_GOOGLE_MANIFEST_PATH = Path(__file__).resolve().parent / "starters" / "manifests" / "google_calendar.yaml"
+_CALDAV_MANIFEST_PATH = Path(__file__).resolve().parent / "starters" / "manifests" / "caldav.yaml"
 
 GOOGLE_CALENDAR_EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
 CALDAV_DEFAULT_EVENTS_URL = "https://caldav.icloud.com/calendars/user/default"

@@ -9,77 +9,107 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Carefold tools package (re-exporting core tools and native health ToolSpec definitions)."""
+"""Carefold tools package loading declarative health ToolSpecs from YAML resources (#338)."""
 
 from __future__ import annotations
 
-from typing import Any, List
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
-from yarvelle_core.engine.tool_registry import ToolSpec
+import yaml
+from yarvelle_core.engine.tool_registry import ToolSpec, bound_declarative_to_tool_spec
 from yarvelle_core.tools import *  # noqa: F401, F403
 import yarvelle_core.tools as _core_tools
+from yarvelle_core.tools.spec_loader import get_tool_spec_loader, register_pack_tool_manifest
+
+_PACK_YAML_PATH = Path(__file__).resolve().parent.parent / "pack.yaml"
+_TOOLS_RESOURCES_DIR = Path(__file__).resolve().parent.parent / "resources" / "tools"
+
+_SPEC_ALIAS_TO_TOOL_NAME: Dict[str, str] = {
+    "SPEC_RECORD_VITALS": "record_vitals",
+    "SPEC_CREATE_APPOINTMENT": "create_appointment",
+    "SPEC_LIST_APPOINTMENTS": "list_appointments",
+    "SPEC_UPDATE_APPOINTMENT_STATUS": "update_appointment_status",
+    "SPEC_GENERATE_PREP_PACK": "generate_prep_pack",
+    "SPEC_CREATE_TYPED_NOTE": "create_typed_note",
+    "SPEC_CHECK_PREVENTIVE_CARE": "check_preventive_care",
+    "SPEC_UPDATE_PREVENTIVE_STATUS": "update_preventive_status",
+    "SPEC_STAGE_CLINICAL_IMPORT": "stage_clinical_import",
+    "SPEC_COMMIT_CLINICAL_IMPORT": "commit_clinical_import",
+    "SPEC_CREATE_SCHOOL_FORM": "create_school_form",
+    "SPEC_LIST_SCHOOL_FORMS": "list_school_forms",
+    "SPEC_WITHINGS": "withings_latest_vitals",
+    "SPEC_EPIC": "epic_smart_search_records",
+    "SPEC_SCHOOL_ICS": "sync_school_ics",
+    "SPEC_ZOCDOC": "zocdoc_book_appointment",
+    "SPEC_SHC": "verify_smart_health_card",
+    "SPEC_FHIR_SEARCH_RESOURCES": "fhir_search_resources",
+    "SPEC_FHIR_GET_PATIENT_SUMMARY": "fhir_get_patient_summary",
+    "SPEC_FHIR_GET_OBSERVATION_TRENDS": "fhir_get_observation_trends",
+}
+
+_CACHED_SPECS_TUPLE: Optional[Tuple[ToolSpec, ...]] = None
+_CACHED_SPECS_BY_NAME: Optional[Dict[str, ToolSpec]] = None
 
 
-from carefold.tools.appointments import (
-    SPEC_CREATE as SPEC_CREATE_APPOINTMENT,
-    SPEC_LIST as SPEC_LIST_APPOINTMENTS,
-    SPEC_UPDATE_STATUS as SPEC_UPDATE_APPOINTMENT_STATUS,
-)
-from carefold.tools.connectors import (
-    SPEC_EPIC,
-    SPEC_SCHOOL_ICS,
-    SPEC_SHC,
-    SPEC_WITHINGS,
-    SPEC_ZOCDOC,
-)
-from carefold.tools.imports import (
-    SPEC_COMMIT as SPEC_COMMIT_CLINICAL_IMPORT,
-    SPEC_STAGE as SPEC_STAGE_CLINICAL_IMPORT,
-)
-from carefold.tools.notes import SPEC as SPEC_CREATE_TYPED_NOTE
-from carefold.tools.prep_pack import SPEC as SPEC_GENERATE_PREP_PACK
-from carefold.tools.preventive import (
-    SPEC_CHECK as SPEC_CHECK_PREVENTIVE_CARE,
-    SPEC_UPDATE as SPEC_UPDATE_PREVENTIVE_STATUS,
-)
-from carefold.tools.record_vitals import SPEC as SPEC_RECORD_VITALS
-from carefold.tools.school_forms import (
-    SPEC_CREATE as SPEC_CREATE_SCHOOL_FORM,
-    SPEC_LIST as SPEC_LIST_SCHOOL_FORMS,
-)
-from carefold.tools.fhir_tools import (
-    SPEC_GET_OBSERVATION_TRENDS as SPEC_FHIR_GET_OBSERVATION_TRENDS,
-    SPEC_GET_PATIENT_SUMMARY as SPEC_FHIR_GET_PATIENT_SUMMARY,
-    SPEC_SEARCH_RESOURCES as SPEC_FHIR_SEARCH_RESOURCES,
-)
+def _declared_pack_tool_order() -> Tuple[str, ...]:
+    """Reads canonical tool ordering from pack.yaml so declarative specs match manifest order."""
+    if not _PACK_YAML_PATH.is_file():
+        return tuple(_SPEC_ALIAS_TO_TOOL_NAME.values())
+    raw = yaml.safe_load(_PACK_YAML_PATH.read_text(encoding="utf-8")) or {}
+    entries = (raw.get("provides") or {}).get("tools") or []
+    ordered = [str(item["id"]).strip() for item in entries if isinstance(item, dict) and item.get("id")]
+    return tuple(ordered) if ordered else tuple(_SPEC_ALIAS_TO_TOOL_NAME.values())
 
-HEALTH_TOOL_SPECS: List[ToolSpec] = [
-    SPEC_RECORD_VITALS,
-    SPEC_CREATE_APPOINTMENT,
-    SPEC_LIST_APPOINTMENTS,
-    SPEC_UPDATE_APPOINTMENT_STATUS,
-    SPEC_GENERATE_PREP_PACK,
-    SPEC_CREATE_TYPED_NOTE,
-    SPEC_CHECK_PREVENTIVE_CARE,
-    SPEC_UPDATE_PREVENTIVE_STATUS,
-    SPEC_STAGE_CLINICAL_IMPORT,
-    SPEC_COMMIT_CLINICAL_IMPORT,
-    SPEC_CREATE_SCHOOL_FORM,
-    SPEC_LIST_SCHOOL_FORMS,
-    SPEC_WITHINGS,
-    SPEC_EPIC,
-    SPEC_SCHOOL_ICS,
-    SPEC_ZOCDOC,
-    SPEC_SHC,
-    SPEC_FHIR_SEARCH_RESOURCES,
-    SPEC_FHIR_GET_PATIENT_SUMMARY,
-    SPEC_FHIR_GET_OBSERVATION_TRENDS,
-]
+
+def _ensure_cached_health_specs() -> Tuple[Tuple[ToolSpec, ...], Dict[str, ToolSpec]]:
+    global _CACHED_SPECS_TUPLE, _CACHED_SPECS_BY_NAME
+    if _CACHED_SPECS_TUPLE is not None and _CACHED_SPECS_BY_NAME is not None:
+        return _CACHED_SPECS_TUPLE, _CACHED_SPECS_BY_NAME
+
+    loader = get_tool_spec_loader()
+    if "health" not in loader.registered_pack_ids():
+        register_pack_tool_manifest("health", _TOOLS_RESOURCES_DIR)
+
+    by_name: Dict[str, ToolSpec] = {
+        bound.spec.name: bound_declarative_to_tool_spec(bound)
+        for bound in loader.load_pack_tools("health")
+    }
+    ordered: List[ToolSpec] = []
+    seen = set()
+    for tool_id in _declared_pack_tool_order():
+        if tool_id in by_name:
+            ordered.append(by_name[tool_id])
+            seen.add(tool_id)
+    for remaining in sorted(k for k in by_name if k not in seen):
+        ordered.append(by_name[remaining])
+
+    _CACHED_SPECS_TUPLE = tuple(ordered)
+    _CACHED_SPECS_BY_NAME = by_name
+    return _CACHED_SPECS_TUPLE, _CACHED_SPECS_BY_NAME
+
+
+def get_health_tool_spec(name: str) -> ToolSpec:
+    """Returns a single declarative Carefold ToolSpec by canonical tool name."""
+    _, by_name = _ensure_cached_health_specs()
+    clean = (name or "").strip()
+    if clean not in by_name:
+        raise KeyError(f"Unknown Carefold declarative tool '{name}'.")
+    return by_name[clean]
 
 
 def get_health_tool_specs() -> List[ToolSpec]:
-    """Returns the 20 clinical and health ToolSpecs defined natively in carefold."""
-    return list(HEALTH_TOOL_SPECS)
+    """Returns the 20 declarative clinical, FHIR, and connector ToolSpecs for Carefold."""
+    ordered, _ = _ensure_cached_health_specs()
+    return list(ordered)
+
+
+def __getattr__(name: str) -> Any:
+    if name == "HEALTH_TOOL_SPECS":
+        return get_health_tool_specs()
+    if name in _SPEC_ALIAS_TO_TOOL_NAME:
+        return get_health_tool_spec(_SPEC_ALIAS_TO_TOOL_NAME[name])
+    return getattr(_core_tools, name)
 
 
 __all__ = [
@@ -105,5 +135,6 @@ __all__ = [
     "SPEC_WITHINGS",
     "SPEC_ZOCDOC",
     "ToolSpec",
+    "get_health_tool_spec",
     "get_health_tool_specs",
 ]

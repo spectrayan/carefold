@@ -77,7 +77,7 @@ from yarvelle_core.connectors.errors import ConnectorError
 from yarvelle_core.connectors.http import ScopedHttp
 from yarvelle_core.connectors.manifest import ConnectorManifest
 
-_MANIFESTS_DIR = Path(__file__).resolve().parent / "manifests"
+_MANIFESTS_DIR = Path(__file__).resolve().parent / "starters" / "manifests"
 
 DEFAULT_ORACLE_HEALTH_FHIR_BASE_URL = (
     "https://fhir-myrecord.cerner.com/r4/ec2458f2-1e24-41c8-b71b-0e701af7583d"
