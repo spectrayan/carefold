@@ -1,0 +1,7 @@
+# Root Docker Compose wrapper for local development convenience.
+# The canonical definition lives in deploy/docker/docker-compose.yml
+
+name: carefold
+
+include:
+- deploy/docker/docker-compose.yml
