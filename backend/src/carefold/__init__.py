@@ -338,6 +338,12 @@ def _register_native_pack_resources() -> None:
             _yc_register_pack_tools("health", _tools_dir)
     except Exception:
         pass
+    try:
+        from carefold.clinical.db_hooks import register_carefold_db_toolbox as _register_cfd_db_toolbox
+
+        _register_cfd_db_toolbox()
+    except Exception:
+        pass
 
 
 _register_native_pack_resources()

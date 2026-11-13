@@ -604,9 +604,17 @@ async def test_rest_and_mcp_parity_and_isolation_contracts(
         "fhir_get_bulk_export_status",
         "fhir_download_bulk_export_file",
     }
+    from carefold.engine.tool_registry import create_default_registry
+
+    default_registry = create_default_registry()
     for tool_name in expected_mcp_tools:
         assert tool_name in FHIR_MCP_TOOL_REGISTRY
-        assert toolbox.get_tool_config(tool_name) is not None
+        if tool_name == "fhir_get_capabilities":
+            # #344: fhir_get_capabilities is a zero-SQL declarative MCP tool, not a dummy db_tools.yaml SQL query
+            assert tool_name not in toolbox.manifest.tools
+            assert default_registry.get(tool_name) is not None
+        else:
+            assert toolbox.get_tool_config(tool_name) is not None
 
     # Verify MCP annotations (readOnlyHint, destructiveHint, idempotentHint)
     for spec in FHIR_OPERATION_SPECS:

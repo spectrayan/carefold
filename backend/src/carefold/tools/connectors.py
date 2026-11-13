@@ -9,11 +9,7 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Async execution handlers for Carefold connector and clinical import tools (#338).
-
-Declarative ToolSpec metadata lives in `carefold/resources/tools/`; legacy
-`SPEC_*` attributes resolve lazily from the declarative loader.
-"""
+"""Async execution handlers for Carefold connector and calendar tools via McpDatabaseToolbox (#338, #344)."""
 
 from __future__ import annotations
 
@@ -22,8 +18,9 @@ from typing import Any, Dict, Mapping
 
 import httpx
 
-from carefold.errors import CarefoldToolError, YarvelleError
-from yarvelle_core.db.session import get_session_factory
+from carefold.clinical.db_hooks import execute_governed_db_operation
+from carefold.errors import CarefoldToolError
+from yarvelle_core.db.session import get_session_factory  # noqa: F401
 
 logger = logging.getLogger("carefold.tools.connectors")
 
@@ -64,7 +61,7 @@ async def execute_epic_smart_search_records(args: Dict[str, Any], ctx: Any = Non
 
 
 async def execute_sync_school_ics(args: Dict[str, Any], ctx: Any = None) -> Any:
-    """Synchronizes a child school RFC 5545 .ics calendar feed into profile appointments."""
+    """Synchronizes a child school RFC 5545 .ics calendar feed via McpDatabaseToolbox."""
     if isinstance(ctx, Mapping) and not isinstance(args, Mapping):
         args, ctx = ctx, args
     profile_id = getattr(ctx, "profile_id", None) if ctx is not None else None
@@ -81,22 +78,18 @@ async def execute_sync_school_ics(args: Dict[str, Any], ctx: Any = None) -> Any:
     if raw_ics_content is not None:
         raw_ics_content = str(raw_ics_content)
 
-    from carefold.clinical.school_ics import sync_school_ics_feed
-
-    ctx_extra = getattr(ctx, "extra", None) or {}
-    session_factory = (
-        getattr(ctx, "session_factory", None)
-        or (ctx_extra.get("session_factory") if isinstance(ctx_extra, Mapping) else None)
-        or get_session_factory()
-    )
     try:
-        async with session_factory() as session:
-            return await sync_school_ics_feed(
-                session=session,
-                profile_id=clean_profile_id,
-                feed_id=feed_id,
-                raw_ics_content=raw_ics_content,
-            )
+        return await execute_governed_db_operation(
+            "tool.sync_school_ics",
+            {
+                "feed_id": feed_id,
+                "raw_ics_content": raw_ics_content,
+            },
+            ctx=ctx,
+            profile_id=clean_profile_id,
+            risk_tier="write_local",
+            caller_module_name=__name__,
+        )
     except CarefoldToolError:
         raise
     except httpx.HTTPError as exc:

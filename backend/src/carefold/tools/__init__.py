@@ -99,7 +99,7 @@ def get_health_tool_spec(name: str) -> ToolSpec:
 
 
 def get_health_tool_specs() -> List[ToolSpec]:
-    """Returns the 20 declarative clinical, FHIR, and connector ToolSpecs for Carefold."""
+    """Returns all declarative clinical, FHIR, connector, and domain API parity ToolSpecs."""
     ordered, _ = _ensure_cached_health_specs()
     return list(ordered)
 
@@ -109,6 +109,11 @@ def __getattr__(name: str) -> Any:
         return get_health_tool_specs()
     if name in _SPEC_ALIAS_TO_TOOL_NAME:
         return get_health_tool_spec(_SPEC_ALIAS_TO_TOOL_NAME[name])
+    if name.startswith("SPEC_"):
+        candidate = name[5:].lower()
+        _, by_name = _ensure_cached_health_specs()
+        if candidate in by_name:
+            return by_name[candidate]
     return getattr(_core_tools, name)
 
 

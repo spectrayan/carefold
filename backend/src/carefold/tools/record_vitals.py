@@ -9,11 +9,11 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Closed tool: record_vitals (AU-30, AU-31, AU-32).
+"""Closed tool: record_vitals (AU-30, AU-31, AU-32, #344).
 
 Records patient physiological vitals (BP, HR, SpO2, glucose, weight, height)
 with automated clinical red-flag boundary check, adult BMI computation,
-and CDC pediatric percentiles.
+and governed persistence via McpDatabaseToolbox.
 """
 
 from __future__ import annotations
@@ -22,16 +22,14 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 import uuid
 
-from carefold.clinical.bmi import calculate_adult_bmi, calculate_pediatric_bmi_percentile
+from carefold.clinical.bmi import calculate_adult_bmi
+from carefold.clinical.db_hooks import execute_governed_db_operation
 from carefold.clinical.vitals import normalize_fhir_vitals
-from carefold.fhir.sql_pushdown import build_observation_coding_rows
-from carefold.models import HealthResource
-from yarvelle_core.db.session import get_session_factory
-from yarvelle_core.engine.tool_registry import DataFlows, ToolSpec
 from carefold.safety.vitals import check_vitals_red_flags
+from yarvelle_core.db.session import get_session_factory  # noqa: F401
 from yarvelle_core.schemas.tool import ToolResult
 
 logger = logging.getLogger("carefold.tools.record_vitals")
@@ -53,8 +51,7 @@ RECOGNIZED_VITALS_KEYS = frozenset({
 
 
 async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolResult:
-    """Executes profile-scoped vitals observation recording with fail-closed security."""
-    # 1. Fail-closed profile verification
+    """Executes profile-scoped vitals observation recording via McpDatabaseToolbox."""
     profile_id = getattr(ctx, "profile_id", None) if ctx is not None else None
     if not profile_id or not isinstance(profile_id, str) or not profile_id.strip():
         logger.warning("record_vitals rejected: invalid or missing profile_id in ToolContext")
@@ -67,7 +64,6 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
         )
     clean_profile_id = profile_id.strip()
 
-    # 2. Parameter validation
     vitals_data = args.get("vitals_data") if isinstance(args, dict) else None
     if not vitals_data or not isinstance(vitals_data, dict):
         return ToolResult(
@@ -88,7 +84,6 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
             retryable=False,
         )
 
-    # Validate Blood Pressure pairing and order
     sys_val = vitals_data.get("systolic")
     dia_val = vitals_data.get("diastolic")
     if (sys_val is not None and dia_val is None) or (dia_val is not None and sys_val is None):
@@ -120,13 +115,11 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
                 retryable=False,
             )
 
-    # 3. Clinical Non-Boundary Red Flags Evaluation
     reported_symptoms = args.get("reported_symptoms") or []
     if isinstance(reported_symptoms, str):
         reported_symptoms = [reported_symptoms]
     flag = check_vitals_red_flags(vitals_data, reported_symptoms=reported_symptoms)
 
-    # 4. Adult / Pediatric BMI Calculation
     bmi_info = None
     wt = vitals_data.get("weight") or vitals_data.get("body_weight")
     ht = vitals_data.get("height") or vitals_data.get("body_height")
@@ -143,7 +136,6 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
         except Exception as e:
             logger.debug("BMI calculation failed: %s", e)
 
-    # 5. Effective date & FHIR R4 Normalization
     rec_at_str = args.get("recorded_at")
     if rec_at_str:
         try:
@@ -155,45 +147,37 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
 
     fhir_obs = normalize_fhir_vitals(vitals_data, effective_dt=rec_dt)
 
-    # 6. ID & Persistence
     resource_id = str(uuid.uuid4())
     source_type = str(args.get("source_type", "manual"))
     source_ref = args.get("source_ref")
     source_id = args.get("source_id")
     content_hash = hashlib.sha256(json.dumps(fhir_obs, sort_keys=True).encode("utf-8")).hexdigest()
+    recorded_now = datetime.now(timezone.utc)
 
     try:
-        factory = getattr(ctx, "session_factory", None) or get_session_factory()
-        async with factory() as session:
-            hr = HealthResource(
-                id=resource_id,
-                profile_id=clean_profile_id,
-                resource_type="observation",
-                source_type=source_type,
-                source_ref=source_ref,
-                source_id=source_id,
-                content_hash=content_hash,
-                data=fhir_obs,
-                status="active",
-                effective_at=rec_dt,
-                recorded_at=datetime.now(timezone.utc),
-            )
-            session.add(hr)
-            coding_rows = build_observation_coding_rows(
-                resource_id=resource_id,
-                profile_id=clean_profile_id,
-                fhir_data=fhir_obs,
-                resource_type="Observation",
-            )
-            if coding_rows:
-                session.add_all(coding_rows)
-            await session.commit()
+        await execute_governed_db_operation(
+            "tool.record_vitals",
+            {
+                "resource_id": resource_id,
+                "fhir_obs": fhir_obs,
+                "source_type": source_type,
+                "source_ref": source_ref,
+                "source_id": source_id,
+                "content_hash": content_hash,
+                "effective_at": rec_dt.isoformat(),
+                "recorded_at": recorded_now.isoformat(),
+            },
+            ctx=ctx,
+            profile_id=clean_profile_id,
+            risk_tier="write_local",
+            caller_module_name=__name__,
+        )
     except Exception as exc:
-        logger.warning("Database persistence for HealthResource failed: %s", exc)
+        logger.warning("Governed McpDatabaseToolbox persistence for HealthResource failed: %s", exc)
 
-    # 7. Audit Logging for Undoability
     try:
         from yarvelle_core.audit.logger import record_audit
+
         actor_id = getattr(ctx, "user_id", "user") or "user"
         await record_audit(
             {
@@ -224,7 +208,7 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
             "profile_id": clean_profile_id,
             "resource_type": "observation",
             "effective_at": rec_dt.isoformat(),
-            "recorded_at": datetime.now(timezone.utc).isoformat(),
+            "recorded_at": recorded_now.isoformat(),
             "status": "active",
             "loinc_code": loinc_code,
             "display": display,

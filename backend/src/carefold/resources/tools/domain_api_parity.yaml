@@ -1,0 +1,6565 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan (https://spectrayan.com)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0 and the
+# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+# Personal and household local use only. Commercial use, hosted service
+# offering, rebranding, white-labeling, and redistribution of modified
+# forks are prohibited without a written commercial license from Spectrayan.
+#
+# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+
+api_version: yarvelle.tools/v1
+kind: ToolSet
+pack_id: health
+tools:
+- name: activity_list_timeline
+  description: Retrieves chronological activity timeline items for a profile with human-readable descriptions.
+  category: activity
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: activity_list_timeline
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/activity
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      limit:
+        default: 50
+        description: Page limit
+        maximum: 100
+        minimum: 1
+        type: integer
+      offset:
+        default: 0
+        description: Page offset
+        minimum: 0
+        type: integer
+      undoable_only:
+        default: false
+        description: Filter for undoable actions only
+        type: boolean
+      event:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by event type
+      tool:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by tool name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_activity_list_timeline
+- name: activity_undo_event
+  description: Executes single-click undo for an eligible write_local audit event within 7 days.
+  category: activity
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: activity_undo_event
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/activity/{event_id}/undo
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      event_id:
+        type: string
+    required:
+    - event_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_activity_undo_event
+- name: handover_get_viewer_sections
+  description: Returns effective permitted sections across `VALID_VIEWER_SECTIONS` for `(profile_id, target_user_id)`.
+  category: handover
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: handover_get_viewer_sections
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/access/{target_user_id}/sections
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      target_user_id:
+        type: string
+    required:
+    - target_user_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_handover_get_viewer_sections
+- name: handover_update_viewer_sections
+  description: Updates `ProfileAccess.allowed_sections_json` for `(profile_id, target_user_id)` (`E12.3`).
+  category: handover
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: handover_update_viewer_sections
+    http_method: PUT
+    http_path: /api/v1/profiles/{profile_id}/access/{target_user_id}/sections
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      target_user_id:
+        type: string
+      allowed_sections:
+        description: Permitted viewer sections (vitals, preventive, appointments, reminders, connections,
+          school_forms, notes, documents)
+        items:
+          type: string
+        type: array
+    required:
+    - target_user_id
+    - allowed_sections
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_handover_update_viewer_sections
+- name: handover_execute_teen_handover
+  description: Promotes `teen_user_id` to profile steward, revokes rejected connections, and re-encrypts
+    kept credentials under a rotated DEK (`E12.4`).
+  category: handover
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: handover_execute_teen_handover
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/handover
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      teen_user_id:
+        description: User ID of the teen assuming profile stewardship
+        minLength: 1
+        type: string
+      connection_decisions:
+        additionalProperties:
+          enum:
+          - keep
+          - revoke
+          type: string
+        description: Per-connection keep/revoke map keyed by connection_id
+        type: object
+    required:
+    - teen_user_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_handover_execute_teen_handover
+- name: companion_list_devices
+  description: Lists all `CompanionDevice` records for `profile_id`.
+  category: companion
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: companion_list_devices
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/companion/devices
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_companion_list_devices
+- name: companion_revoke_device
+  description: Revokes `device_id` on `profile_id`, clears `token_hash`, and revokes the companion `ConsentGrant`.
+  category: companion
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: companion_revoke_device
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/companion/devices/{device_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      device_id:
+        type: string
+    required:
+    - device_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_companion_revoke_device
+- name: companion_pair_initiate
+  description: Enforces Mode S network guard and creates a `pending_pair` `CompanionDevice` with a 10-minute
+    code.
+  category: companion
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: companion_pair_initiate
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/companion/pair/initiate
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      device_name:
+        description: Human-readable companion device name
+        maxLength: 255
+        minLength: 1
+        type: string
+      platform:
+        default: ios
+        description: Companion device platform ('ios' or 'android')
+        enum:
+        - ios
+        - android
+        type: string
+      host:
+        default: 127.0.0.1
+        description: Carefold host/IP encoded in QR
+        maxLength: 255
+        minLength: 1
+        type: string
+      port:
+        default: 8000
+        description: Carefold port encoded in QR
+        maximum: 65535
+        minimum: 1
+        type: integer
+      cert_fingerprint_sha256:
+        description: Pinned TLS server certificate SHA-256 fingerprint
+        maxLength: 128
+        minLength: 1
+        type: string
+      allowed_categories:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+        description: Consented companion categories (vitals, clinical_records, reminders)
+      auth_provider:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional override for active auth_provider
+      bind_host:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional override for server network bind host
+      explicit_lan_opt_in:
+        default: false
+        description: Whether Mode L LAN opt-in is explicitly enabled
+        type: boolean
+    required:
+    - device_name
+    - cert_fingerprint_sha256
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_companion_pair_initiate
+- name: companion_pair_complete
+  description: Verifies the one-time pairing code and pinned TLS fingerprint, issuing a scoped companion
+    token.
+  category: companion
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: companion_pair_complete
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/companion/pair/complete
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      device_id:
+        description: CompanionDevice UUID from QR payload
+        minLength: 1
+        type: string
+      pairing_code:
+        description: One-time pairing code from QR payload
+        minLength: 1
+        type: string
+      client_cert_fingerprint_sha256:
+        description: Observed TLS server certificate SHA-256 fingerprint verified by the companion client
+        minLength: 1
+        type: string
+    required:
+    - device_id
+    - pairing_code
+    - client_cert_fingerprint_sha256
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_companion_pair_complete
+- name: companion_list_reminders
+  description: Returns PHI-redacted local notification schedules (`E4.5`) for a paired companion device.
+  category: companion
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: companion_list_reminders
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/companion/reminders
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      device_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional CompanionDevice ID
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_companion_list_reminders
+- name: companion_sync_records
+  description: Validates and ingests HealthKit / Android Health Connect `Observation` readings and clinical
+    resources.
+  category: companion
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: companion_sync_records
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/companion/sync
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      device_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: CompanionDevice ID when authenticated via user session
+      device_token:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional companion bearer token
+      observations:
+        description: Aggregated HealthKit / companion Observation payloads
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      clinical_records:
+        description: HKClinicalRecord FHIR R4 resources (Condition, MedicationRequest, AllergyIntolerance,
+          Immunization, Observation)
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      health_connect_records:
+        description: Android Health Connect records (StepsRecord, HeartRateRecord, BloodPressureRecord,
+          WeightRecord, BloodGlucoseRecord, OxygenSaturationRecord, SleepSessionRecord, MedicalResource)
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_companion_sync_records
+- name: routines_list
+  description: Lists all `Routine` records for `profile_id`.
+  category: routines
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: routines_list
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/routines
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_routines_list
+- name: routines_create
+  description: Creates a standing routine and schedules its recurring `Job`.
+  category: routines
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: routines_create
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/routines
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      name:
+        maxLength: 255
+        minLength: 1
+        type: string
+      tool_name:
+        maxLength: 128
+        minLength: 1
+        type: string
+      rrule:
+        maxLength: 255
+        minLength: 1
+        type: string
+      timezone:
+        default: UTC
+        maxLength: 64
+        type: string
+      args:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+      connection_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      expires_in_days:
+        default: 30
+        type: integer
+      description:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    required:
+    - name
+    - tool_name
+    - rrule
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_routines_create
+- name: routines_update
+  description: Updates routine status (`active`, `paused`, `revoked`).
+  category: routines
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: routines_update
+    http_method: PATCH
+    http_path: /api/v1/profiles/{profile_id}/routines/{routine_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      routine_id:
+        type: string
+      status:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: 'Target status: active, paused, or revoked'
+      action:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: 'Alias action: pause, resume, or revoke'
+    required:
+    - routine_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_routines_update
+- name: routines_run
+  description: Executes `execute_standing_routine` with fire-time permission, expiry, and taint checks
+    (`E1.10`).
+  category: routines
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: routines_run
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/routines/{routine_id}/run
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      routine_id:
+        type: string
+      taint:
+        default: false
+        description: Simulated or propagated taint flag
+        type: boolean
+    required:
+    - routine_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_routines_run
+- name: connectors_get_v2_catalog
+  description: Lists the 7 Batch 7 v2 starter connectors (`zocdoc`, `oracle-health`, `athenahealth`, `cms-blue-button`,
+    `oura`, `google-health`, `microsoft-graph`).
+  category: coordinated
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: public
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: connectors_get_v2_catalog
+    http_method: GET
+    http_path: /api/v1/connectors/v2-catalog
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_connectors_get_v2_catalog
+- name: coordinated_verify_audit_chain
+  description: Verifies the profile's `AuditEventRecord` SHA-256 hash chain (`AU-78`).
+  category: coordinated
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: coordinated_verify_audit_chain
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/audit/verify
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_coordinated_verify_audit_chain
+- name: coordinated_send_email_draft
+  description: Executes `execute_gmail_send_message` when `approval_id` is provided, or creates a pending
+    `Approval` row (`AU-76`).
+  category: coordinated
+  pack_id: health
+  risk_tier: write_external
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  - run_id
+  metadata:
+    action: coordinated_send_email_draft
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/email-drafts/{draft_id}/send
+    risk: write_external
+  input_schema:
+    additionalProperties: false
+    properties:
+      draft_id:
+        type: string
+      approval_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Approved Approval ID; when omitted, creates a pending irreversible Approval request
+    required:
+    - draft_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_coordinated_send_email_draft
+- name: coordinated_discover_smart_slots
+  description: Discovers free SMART Scheduling Links slots and marks calendar conflicts against profile
+    appointments (`AU-72`).
+  category: coordinated
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: coordinated_discover_smart_slots
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/scheduling/smart-slots
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      manifest_payload:
+        additionalProperties: true
+        description: HL7 SMART Scheduling Links $bulk-publish payload containing schedules and slots
+        type: object
+      specialty_filter:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional clinical specialty filter
+      busy_windows:
+        anyOf:
+        - items:
+            additionalProperties:
+              type: string
+            type: object
+          type: array
+        - type: 'null'
+        default: null
+        description: Optional additional busy calendar windows
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_coordinated_discover_smart_slots
+- name: coordinated_zocdoc_preview
+  description: Prepares a canonical Zocdoc booking payload and creates a pending `irreversible` `Approval`
+    row (`AU-71`).
+  category: coordinated
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: coordinated_zocdoc_preview
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/scheduling/zocdoc-preview
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      provider_id:
+        minLength: 1
+        type: string
+      provider_name:
+        minLength: 1
+        type: string
+      specialty:
+        default: General
+        minLength: 1
+        type: string
+      slot_id:
+        minLength: 1
+        type: string
+      start_time:
+        minLength: 1
+        type: string
+      insurance_carrier:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      preview_run_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    required:
+    - provider_id
+    - provider_name
+    - slot_id
+    - start_time
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_coordinated_zocdoc_preview
+- name: approvals_list
+  description: Lists pending tool execution approvals for a given profile.  Requires explicit 'manage'
+    access on the target profile. Admin bypass is denied.
+  category: approvals
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: approvals_list
+    http_method: GET
+    http_path: /api/v1/approvals
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      status_filter:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: pending
+        description: 'Filter status: ''pending'', ''approved'', ''rejected'', ''consumed'', ''expired'',
+          or ''all'''
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_approvals_list
+- name: approvals_get
+  description: Retrieves a specific approval request by ID.
+  category: approvals
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: approvals_get
+    http_method: GET
+    http_path: /api/v1/approvals/{approval_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      approval_id:
+        type: string
+    required:
+    - approval_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_approvals_get
+- name: approvals_decide
+  description: 'Decides (approves or rejects) a pending tool approval request.  - decision: ''approved''
+    or ''rejected'' - edited_args: optional dictionary of modified tool arguments.   If supplied, recomputes
+    and updates payload_hash = compute_payload_hash(edited_args)   and updates args_redacted = canonical_json(edited_args).
+    - Requires explicit ''manage'' permission on the profile. Admin bypass is denied.'
+  category: approvals
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: approvals_decide
+    http_method: POST
+    http_path: /api/v1/approvals/{approval_id}/decide
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      approval_id:
+        type: string
+      decision:
+        description: 'Decision: approved or rejected'
+        enum:
+        - approved
+        - rejected
+        - approve
+        - reject
+        type: string
+      edited_args:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        description: Optional edited arguments replacing original proposed tool arguments
+    required:
+    - approval_id
+    - decision
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_approvals_decide
+- name: memory_recall
+  description: Recalls or lists cognitive memories matching query, tier filter, namespace, and profile.
+  category: memory
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: memory_recall
+    http_method: GET
+    http_path: /api/v1/memory
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      query:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: ''
+        description: Search query or keywords for memory recall
+      q:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Alias for query parameter
+      tier:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional cognitive memory tier filter (working, episodic, semantic, procedural)
+      namespace:
+        default: default
+        description: Memory isolation namespace
+        type: string
+      limit:
+        default: 10
+        description: Maximum number of memories to return
+        maximum: 100
+        minimum: 1
+        type: integer
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_memory_recall
+- name: memory_delete_all
+  description: Bulk forgets/deletes all memories within the specified namespace.
+  category: memory
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: memory_delete_all
+    http_method: DELETE
+    http_path: /api/v1/memory
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      namespace:
+        default: default
+        description: Memory isolation namespace
+        type: string
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_memory_delete_all
+- name: memory_get_status
+  description: Returns active cognitive memory backend health, fallback state, and configuration.
+  category: memory
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: memory_get_status
+    http_method: GET
+    http_path: /api/v1/memory/status
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_memory_get_status
+- name: memory_get
+  description: Retrieves a single memory record by key in the specified namespace.
+  category: memory
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: memory_get
+    http_method: GET
+    http_path: /api/v1/memory/{key}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      key:
+        description: Unique key of the memory record to retrieve
+        type: string
+      namespace:
+        default: default
+        description: Memory isolation namespace
+        type: string
+    required:
+    - key
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_memory_get
+- name: memory_put
+  description: Updates or upserts a memory record in the specified namespace.
+  category: memory
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: memory_put
+    http_method: PUT
+    http_path: /api/v1/memory/{key}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      key:
+        description: Unique key of the memory record to update
+        type: string
+      namespace:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: default
+        description: Memory isolation namespace
+      value:
+        description: Memory payload content or structured value
+      tier:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional cognitive tier (working, episodic, semantic, procedural)
+      metadata:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        description: Optional metadata dictionary, tags, and provenance
+    required:
+    - key
+    - value
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_memory_put
+- name: memory_delete
+  description: Forgets/deletes a memory record identified by key in the specified namespace.
+  category: memory
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: memory_delete
+    http_method: DELETE
+    http_path: /api/v1/memory/{key}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      key:
+        description: Unique key of the memory record to forget
+        type: string
+      namespace:
+        default: default
+        description: Memory isolation namespace
+        type: string
+    required:
+    - key
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_memory_delete
+- name: vitals_create
+  description: Records a new vital signs observation with FHIR normalization, safety evaluation, and BMI
+    calculation.
+  category: vitals
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: vitals_create
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/vitals
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      vitals:
+        description: Key-value dictionary of vital signs
+        properties:
+          systolic:
+            anyOf:
+            - type: number
+            - type: 'null'
+            default: null
+            description: Systolic blood pressure in mmHg
+          diastolic:
+            anyOf:
+            - type: number
+            - type: 'null'
+            default: null
+            description: Diastolic blood pressure in mmHg
+          heart_rate:
+            anyOf:
+            - type: number
+            - type: 'null'
+            default: null
+            description: Heart rate in beats per minute
+          blood_glucose:
+            anyOf:
+            - type: number
+            - type: 'null'
+            default: null
+            description: Blood glucose concentration
+          unit:
+            anyOf:
+            - type: string
+            - type: 'null'
+            default: mg/dL
+            description: 'Unit: mg/dL, mmol/L, kg, lbs, cm, in'
+          spo2:
+            anyOf:
+            - type: number
+            - type: 'null'
+            default: null
+            description: Oxygen saturation %
+          oxygen_saturation:
+            anyOf:
+            - type: number
+            - type: 'null'
+            default: null
+            description: Alias for spo2
+          weight:
+            anyOf:
+            - type: number
+            - type: 'null'
+            default: null
+            description: Body weight in kg or lbs
+          height:
+            anyOf:
+            - type: number
+            - type: 'null'
+            default: null
+            description: Body height in cm or inches
+        type: object
+      reported_symptoms:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        description: Concurrent symptoms
+      effective_at:
+        anyOf:
+        - format: date-time
+          type: string
+        - type: 'null'
+        default: null
+        description: Clinical observation timestamp (UTC)
+      source_type:
+        default: manual
+        description: Observation origin
+        enum:
+        - manual
+        - device
+        - note_extracted
+        type: string
+      source_ref:
+        anyOf:
+        - maxLength: 255
+          type: string
+        - type: 'null'
+        default: null
+        description: Source URI or document reference
+      source_id:
+        anyOf:
+        - maxLength: 255
+          type: string
+        - type: 'null'
+        default: null
+        description: External reading ID for idempotency
+    required:
+    - vitals
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_vitals_create
+- name: vitals_list
+  description: Lists historical vitals observations with SQL filtering, pagination, and privacy suppression.
+  category: vitals
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: vitals_list
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/vitals
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      resource_type:
+        default: observation
+        type: string
+      loinc_code:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      start_date:
+        anyOf:
+        - format: date-time
+          type: string
+        - type: 'null'
+        default: null
+      end_date:
+        anyOf:
+        - format: date-time
+          type: string
+        - type: 'null'
+        default: null
+      status_filter:
+        default: active
+        type: string
+      limit:
+        default: 50
+        maximum: 200
+        minimum: 1
+        type: integer
+      offset:
+        default: 0
+        minimum: 0
+        type: integer
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_vitals_list
+- name: vitals_get_trends
+  description: Calculates 7/30/90-day diurnal AM/PM blood pressure trends per AHA/ACC 2025 guidelines.
+  category: vitals
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: vitals_get_trends
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/vitals/trends
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      metric:
+        default: blood_pressure
+        type: string
+      tz_param:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      days:
+        anyOf:
+        - type: integer
+        - type: 'null'
+        default: null
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_vitals_get_trends
+- name: appointments_create
+  description: Creates a new appointment for a profile with validation and audit logging.
+  category: appointments
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: appointments_create
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/appointments
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      title:
+        description: Appointment title or encounter description
+        maxLength: 255
+        minLength: 1
+        type: string
+      start_time:
+        description: Scheduled start timestamp (ISO-8601)
+        format: date-time
+        type: string
+      end_time:
+        description: Scheduled end timestamp (ISO-8601)
+        format: date-time
+        type: string
+      timezone:
+        default: UTC
+        description: Local IANA timezone identifier
+        maxLength: 64
+        type: string
+      provider_name:
+        anyOf:
+        - maxLength: 255
+          type: string
+        - type: 'null'
+        default: null
+        description: Healthcare provider or clinic name
+      specialty:
+        anyOf:
+        - maxLength: 128
+          type: string
+        - type: 'null'
+        default: null
+        description: Medical specialty (e.g. Cardiology)
+      location:
+        anyOf:
+        - maxLength: 255
+          type: string
+        - type: 'null'
+        default: null
+        description: Clinic address or telehealth link
+      clinic_phone:
+        anyOf:
+        - maxLength: 64
+          type: string
+        - type: 'null'
+        default: null
+        description: Clinic telephone contact
+      status:
+        default: scheduled
+        description: Initial lifecycle status
+        enum:
+        - requested
+        - scheduled
+        - confirmed
+        type: string
+      reason:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Chief complaint or purpose of appointment
+      preparation_notes:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Pre-visit preparation checklist or draft script
+    required:
+    - title
+    - start_time
+    - end_time
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_appointments_create
+- name: appointments_list
+  description: Lists appointments with filtering and automatically sweeps post-visit transitions.
+  category: appointments
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: appointments_list
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/appointments
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      status_filter:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by status
+      start_after:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: ISO-8601 start lower bound
+      start_before:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: ISO-8601 start upper bound
+      specialty:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by specialty
+      limit:
+        default: 20
+        maximum: 100
+        minimum: 1
+        type: integer
+      offset:
+        default: 0
+        minimum: 0
+        type: integer
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_appointments_list
+- name: appointments_draft_booking
+  description: Generates structured call script, portal draft, and creates appointment row with status
+    'requested'.
+  category: appointments
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: appointments_draft_booking
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/appointments/draft-booking
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      title:
+        maxLength: 255
+        minLength: 1
+        type: string
+      provider_name:
+        maxLength: 255
+        minLength: 1
+        type: string
+      specialty:
+        maxLength: 128
+        minLength: 1
+        type: string
+      clinic_phone:
+        maxLength: 64
+        minLength: 1
+        type: string
+      reason:
+        minLength: 1
+        type: string
+      insurance_name:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: Carefold Health Plan
+      insurance_member_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      insurance_group_number:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      preferred_days:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+      preferred_time_of_day:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: Morning
+      visit_mode:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: in-person
+      tentative_start_time:
+        anyOf:
+        - format: date-time
+          type: string
+        - type: 'null'
+        default: null
+      tentative_end_time:
+        anyOf:
+        - format: date-time
+          type: string
+        - type: 'null'
+        default: null
+    required:
+    - title
+    - provider_name
+    - specialty
+    - clinic_phone
+    - reason
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_appointments_draft_booking
+- name: appointments_evaluate_transitions
+  description: Manually triggers evaluation of concluded visits past end_time.
+  category: appointments
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: appointments_evaluate_transitions
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/appointments/evaluate-transitions
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_appointments_evaluate_transitions
+- name: appointments_get
+  description: Fetches single appointment record by ID.
+  category: appointments
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: appointments_get
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/appointments/{appointment_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      appointment_id:
+        type: string
+    required:
+    - appointment_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_appointments_get
+- name: appointments_update
+  description: Updates appointment fields with state machine validation and temporal consistency.
+  category: appointments
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: appointments_update
+    http_method: PATCH
+    http_path: /api/v1/profiles/{profile_id}/appointments/{appointment_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      appointment_id:
+        type: string
+      title:
+        anyOf:
+        - maxLength: 255
+          minLength: 1
+          type: string
+        - type: 'null'
+        default: null
+      start_time:
+        anyOf:
+        - format: date-time
+          type: string
+        - type: 'null'
+        default: null
+      end_time:
+        anyOf:
+        - format: date-time
+          type: string
+        - type: 'null'
+        default: null
+      timezone:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      provider_name:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      specialty:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      location:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      clinic_phone:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      status:
+        anyOf:
+        - enum:
+          - requested
+          - scheduled
+          - confirmed
+          - completed
+          - cancelled
+          type: string
+        - type: 'null'
+        default: null
+      reason:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      preparation_notes:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    required:
+    - appointment_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_appointments_update
+- name: appointments_delete
+  description: Cancels (soft) or permanently deletes (hard) an appointment.
+  category: appointments
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: appointments_delete
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/appointments/{appointment_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      appointment_id:
+        type: string
+      hard_delete:
+        default: false
+        description: Set True to permanently remove record
+        type: boolean
+    required:
+    - appointment_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_appointments_delete
+- name: notes_list_workspace
+  description: Lists all clinical notes from carefold.db with strict user and profile scoping.
+  category: notes
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: notes_list_workspace
+    http_method: GET
+    http_path: /api/v1/notes
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_list_workspace
+- name: notes_create_workspace
+  description: Creates a new note strictly in carefold.db with zero filesystem disk write.
+  category: notes
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: notes_create_workspace
+    http_method: POST
+    http_path: /api/v1/notes
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      title:
+        type: string
+      content:
+        type: string
+      slug:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      type:
+        default: scratchpad
+        type: string
+      linked_appointment_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      tags:
+        items:
+          type: string
+        type: array
+      note_locale:
+        anyOf:
+        - maxLength: 16
+          type: string
+        - type: 'null'
+        default: null
+        description: Optional IETF BCP 47 locale tag
+    required:
+    - title
+    - content
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_create_workspace
+- name: notes_get_workspace
+  description: Reads a note from carefold.db by slug with strict access validation and zero filesystem
+    fallback.
+  category: notes
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: notes_get_workspace
+    http_method: GET
+    http_path: /api/v1/notes/{slug}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      slug:
+        type: string
+    required:
+    - slug
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_get_workspace
+- name: notes_update_workspace
+  description: Updates a note in carefold.db with strict access control and zero filesystem disk update.
+  category: notes
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: notes_update_workspace
+    http_method: PUT
+    http_path: /api/v1/notes/{slug}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      slug:
+        type: string
+      title:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      content:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      type:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      target_profile_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      linked_appointment_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      tags:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+      note_locale:
+        anyOf:
+        - maxLength: 16
+          type: string
+        - type: 'null'
+        default: null
+        description: Optional IETF BCP 47 locale tag
+    required:
+    - slug
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_update_workspace
+- name: notes_delete_workspace
+  description: Deletes a note from carefold.db with zero filesystem unlink operations.
+  category: notes
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: notes_delete_workspace
+    http_method: DELETE
+    http_path: /api/v1/notes/{slug}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      slug:
+        type: string
+    required:
+    - slug
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_delete_workspace
+- name: notes_extract_by_slug
+  description: Extracts after-visit clinical entities with citations and disclaimer by slug.
+  category: notes
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: notes_extract_by_slug
+    http_method: POST
+    http_path: /api/v1/notes/{slug}/extract
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      slug:
+        type: string
+    required:
+    - slug
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_extract_by_slug
+- name: notes_create_profile_typed
+  description: Creates a typed note scoped to a specific profile with category and appointment validation.
+  category: notes
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: notes_create_profile_typed
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/notes
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      title:
+        description: Note title
+        maxLength: 255
+        minLength: 1
+        type: string
+      content:
+        description: Markdown body content
+        minLength: 1
+        type: string
+      type:
+        default: general
+        description: Note category (one of 7 valid types)
+        enum:
+        - visit
+        - symptom
+        - question
+        - after_visit
+        - school
+        - scratchpad
+        - general
+        type: string
+      slug:
+        anyOf:
+        - maxLength: 128
+          type: string
+        - type: 'null'
+        default: null
+        description: Optional custom slug
+      linked_appointment_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional linked appointment UUID
+      tags:
+        description: Optional tags list
+        items:
+          type: string
+        type: array
+      note_locale:
+        anyOf:
+        - maxLength: 16
+          type: string
+        - type: 'null'
+        default: null
+        description: Optional IETF BCP 47 locale tag
+    required:
+    - title
+    - content
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_create_profile_typed
+- name: notes_list_profile_typed
+  description: Lists typed notes for a profile with filtering by type, linked appointment, and pagination.
+  category: notes
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: notes_list_profile_typed
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/notes
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      type:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional note category filter
+      linked_appointment_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional appointment link filter
+      limit:
+        default: 20
+        maximum: 100
+        minimum: 1
+        type: integer
+      offset:
+        default: 0
+        minimum: 0
+        type: integer
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_list_profile_typed
+- name: notes_extract_profile_adhoc
+  description: Ad-hoc extraction from raw text payload for a profile.
+  category: notes
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: notes_extract_profile_adhoc
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/notes/extract
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      content:
+        default: ''
+        description: Raw clinical note markdown or text content to extract entities from.
+        type: string
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_extract_profile_adhoc
+- name: notes_get_profile_typed
+  description: Retrieves full detail of a typed note by ID or slug within a profile.
+  category: notes
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: notes_get_profile_typed
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/notes/{note_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      note_id:
+        type: string
+    required:
+    - note_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_get_profile_typed
+- name: notes_update_profile_typed
+  description: Updates fields of an existing note within a profile.
+  category: notes
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: notes_update_profile_typed
+    http_method: PATCH
+    http_path: /api/v1/profiles/{profile_id}/notes/{note_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      note_id:
+        type: string
+      title:
+        anyOf:
+        - maxLength: 255
+          minLength: 1
+          type: string
+        - type: 'null'
+        default: null
+      content:
+        anyOf:
+        - minLength: 1
+          type: string
+        - type: 'null'
+        default: null
+      type:
+        anyOf:
+        - enum:
+          - visit
+          - symptom
+          - question
+          - after_visit
+          - school
+          - scratchpad
+          - general
+          type: string
+        - type: 'null'
+        default: null
+      linked_appointment_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      tags:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+      note_locale:
+        anyOf:
+        - maxLength: 16
+          type: string
+        - type: 'null'
+        default: null
+        description: Optional IETF BCP 47 locale tag
+    required:
+    - note_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_update_profile_typed
+- name: notes_delete_profile_typed
+  description: Deletes a note by ID or slug within a profile, queuing search index purge.
+  category: notes
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: notes_delete_profile_typed
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/notes/{note_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      note_id:
+        type: string
+    required:
+    - note_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_delete_profile_typed
+- name: notes_extract_profile_note
+  description: Extracts after-visit clinical entities with citations and disclaimer from a profile note.
+  category: notes
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: notes_extract_profile_note
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/notes/{note_id}/extract
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      note_id:
+        type: string
+    required:
+    - note_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_extract_profile_note
+- name: reminders_create
+  description: Creates a new reminder and enqueues matching wall-clock Job in the jobs table.
+  category: reminders
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: reminders_create
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/reminders
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      title:
+        description: Reminder prompt or directive title
+        maxLength: 255
+        minLength: 1
+        type: string
+      next_due_at:
+        description: Scheduled next execution timestamp (ISO-8601)
+        format: date-time
+        type: string
+      description:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Detailed context or instructions
+      category:
+        default: general
+        description: Reminder category
+        enum:
+        - medication
+        - vitals
+        - appointment
+        - prep
+        - general
+        type: string
+      rrule:
+        anyOf:
+        - maxLength: 255
+          type: string
+        - type: 'null'
+        default: null
+        description: RFC 5545 recurrence rule specification string
+      timezone:
+        default: UTC
+        description: Local profile IANA timezone identifier
+        maxLength: 64
+        type: string
+    required:
+    - title
+    - next_due_at
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_reminders_create
+- name: reminders_list
+  description: Lists reminders, automatically sweeps overdue items past 24 hours to missed.
+  category: reminders
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: reminders_list
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/reminders
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      status_filter:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by status
+      category:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by category
+      due_before:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter reminders due on or before ISO-8601 timestamp
+      limit:
+        default: 50
+        maximum: 100
+        minimum: 1
+        type: integer
+      offset:
+        default: 0
+        minimum: 0
+        type: integer
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_reminders_list
+- name: reminders_export_ics
+  description: Exports active reminders in standards-compliant RFC 5545 iCalendar stream.
+  category: reminders
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: reminders_export_ics
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/reminders/export.ics
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      sanitize_phi:
+        default: true
+        description: Default-on PHI masking for external calendars
+        type: boolean
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_reminders_export_ics
+- name: reminders_get
+  description: Fetches single reminder record by ID.
+  category: reminders
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: reminders_get
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/reminders/{reminder_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      reminder_id:
+        type: string
+    required:
+    - reminder_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_reminders_get
+- name: reminders_update
+  description: Updates reminder fields and advances recurrence if completed.
+  category: reminders
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: reminders_update
+    http_method: PATCH
+    http_path: /api/v1/profiles/{profile_id}/reminders/{reminder_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      reminder_id:
+        type: string
+      title:
+        anyOf:
+        - maxLength: 255
+          minLength: 1
+          type: string
+        - type: 'null'
+        default: null
+      description:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      category:
+        anyOf:
+        - enum:
+          - medication
+          - vitals
+          - appointment
+          - prep
+          - general
+          type: string
+        - type: 'null'
+        default: null
+      rrule:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      timezone:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      next_due_at:
+        anyOf:
+        - format: date-time
+          type: string
+        - type: 'null'
+        default: null
+      status:
+        anyOf:
+        - enum:
+          - pending
+          - completed
+          - snoozed
+          - missed
+          - cancelled
+          type: string
+        - type: 'null'
+        default: null
+    required:
+    - reminder_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_reminders_update
+- name: reminders_delete
+  description: Cancels (soft) or permanently deletes (hard) a reminder and associated Job.
+  category: reminders
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: reminders_delete
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/reminders/{reminder_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      reminder_id:
+        type: string
+      hard_delete:
+        default: false
+        description: Set True to permanently delete record
+        type: boolean
+    required:
+    - reminder_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_reminders_delete
+- name: reminders_snooze
+  description: Applies preset snooze (+15m, +1h, +24h) to reminder and reschedules wall-clock Job.
+  category: reminders
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: reminders_snooze
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/reminders/{reminder_id}/snooze
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      reminder_id:
+        type: string
+      interval:
+        description: Snooze increment preset (+15m, +1h, +24h)
+        type: string
+    required:
+    - reminder_id
+    - interval
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_reminders_snooze
+- name: preventive_get_checklist
+  description: Evaluates age-appropriate USPSTF screenings or AAP/CDC pediatric immunisations.
+  category: preventive
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: preventive_get_checklist
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/preventive
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      schedule_source:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: 'Schedule variant: aap_2026 or cdc'
+      sex:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: 'Optional biological sex filter: female, male, any'
+      category:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: 'Optional category filter: screening, immunisation, well_visit'
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_preventive_get_checklist
+- name: preventive_update_settings
+  description: Switches the profile's pediatric immunisation schedule source between 'aap_2026' and 'cdc'.
+  category: preventive
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: preventive_update_settings
+    http_method: PUT
+    http_path: /api/v1/profiles/{profile_id}/preventive-settings
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      schedule_source:
+        description: Pediatric immunisation schedule source ('aap_2026' or 'cdc')
+        enum:
+        - aap_2026
+        - cdc
+        type: string
+    required:
+    - schedule_source
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_preventive_update_settings
+- name: preventive_update_rule_status
+  description: Marks a preventive screening or immunisation as completed, due, not_applicable, or declined.
+  category: preventive
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: preventive_update_rule_status
+    http_method: PATCH
+    http_path: /api/v1/profiles/{profile_id}/preventive/{rule_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      rule_id:
+        type: string
+      status:
+        description: 'Target status: due, completed, not_applicable, declined'
+        enum:
+        - due
+        - completed
+        - not_applicable
+        - declined
+        type: string
+      notes:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional patient or clinician notes
+      completed_at:
+        anyOf:
+        - format: date-time
+          type: string
+        - type: 'null'
+        default: null
+        description: Completion timestamp (UTC)
+      schedule_source:
+        anyOf:
+        - enum:
+          - aap_2026
+          - cdc
+          type: string
+        - type: 'null'
+        default: null
+        description: Schedule variant override
+    required:
+    - rule_id
+    - status
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_preventive_update_rule_status
+- name: preventive_trigger_action
+  description: Creates a reminder or appends a clinician discussion question to an upcoming appointment.
+  category: preventive
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: preventive_trigger_action
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/preventive/{rule_id}/action
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      rule_id:
+        type: string
+      action_type:
+        description: 'Action conversion type: ''reminder'' or ''prep_question'''
+        enum:
+        - reminder
+        - prep_question
+        type: string
+      due_at:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional ISO-8601 due timestamp for reminder
+      appointment_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional target appointment ID for prep question
+    required:
+    - rule_id
+    - action_type
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_preventive_trigger_action
+- name: prep_pack_generate
+  description: Compiles a clinical visit prep pack, persists as a visit Note, and enqueues indexing.
+  category: prep_pack
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: prep_pack_generate
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/prep-pack
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      appointment_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Linked appointment UUID
+      specialty:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Medical specialty (e.g. Cardiology)
+      visit_reason:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Chief complaint or purpose of visit
+      doctor_questions:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+        description: Prioritized questions list (max 5)
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_prep_pack_generate
+- name: prep_pack_get
+  description: Retrieves the generated prep pack note associated with an appointment.
+  category: prep_pack
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: prep_pack_get
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/prep-pack/{appointment_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      appointment_id:
+        type: string
+    required:
+    - appointment_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_prep_pack_get
+- name: imports_list_batches
+  description: Returns all staged, committed, or discarded import batches for the profile.
+  category: imports
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: imports_list_batches
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/imports
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      status_filter:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by batch status
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_imports_list_batches
+- name: imports_stage_batch
+  description: Parses and stages a FHIR R4 Bundle, C-CDA XML, or Apple Health export.
+  category: imports
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: imports_stage_batch
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/imports/stage
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      filename:
+        description: Uploaded filename
+        maxLength: 255
+        minLength: 1
+        type: string
+      content:
+        description: Raw file content (JSON or XML string)
+        minLength: 1
+        type: string
+      format:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional explicit format ('fhir_r4', 'ccda', 'apple_health')
+      source_name:
+        anyOf:
+        - maxLength: 255
+          type: string
+        - type: 'null'
+        default: null
+        description: Optional human-readable provenance source label
+    required:
+    - filename
+    - content
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_imports_stage_batch
+- name: imports_get_batch
+  description: Returns full details and staged records for an import batch.
+  category: imports
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: imports_get_batch
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/imports/{batch_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      batch_id:
+        type: string
+    required:
+    - batch_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_imports_get_batch
+- name: imports_discard_batch
+  description: Marks an `ImportBatch` as `'discarded'`.
+  category: imports
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: imports_discard_batch
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/imports/{batch_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      batch_id:
+        type: string
+    required:
+    - batch_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_imports_discard_batch
+- name: imports_commit_batch
+  description: Commits all or selected staged records from an `ImportBatch` into `HealthResource`.
+  category: imports
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: imports_commit_batch
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/imports/{batch_id}/commit
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      batch_id:
+        type: string
+      selected_indices:
+        anyOf:
+        - items:
+            type: integer
+          type: array
+        - type: 'null'
+        default: null
+        description: Optional 0-based indices of staged records to commit; commits all if omitted
+    required:
+    - batch_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_imports_commit_batch
+- name: imports_stage_gmail
+  description: Stages candidate appointments or school action items from read-only Gmail messages.
+  category: imports
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: imports_stage_gmail
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/gmail/stage
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      messages:
+        description: Gmail messages from curated MCP
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      label_filter:
+        default: appointments
+        description: Allowed Gmail label filter
+        type: string
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_imports_stage_gmail
+- name: imports_confirm_gmail_item
+  description: Confirms a single extracted Gmail candidate item at `item_index`.
+  category: imports
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: imports_confirm_gmail_item
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/gmail/batches/{batch_id}/confirm/{item_index}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      batch_id:
+        type: string
+      item_index:
+        type: integer
+    required:
+    - batch_id
+    - item_index
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_imports_confirm_gmail_item
+- name: school_forms_list
+  description: Lists all school/camp health forms for a profile alongside under-13 safeguard status.
+  category: school
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: school_forms_list
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/school-forms
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      status_filter:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by form status
+      form_type:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by form type
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_school_forms_list
+- name: school_forms_create
+  description: Creates a school form, compiles draft prefill from health_resources, and schedules renewal
+    reminder.
+  category: school
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: school_forms_create
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/school-forms
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      title:
+        description: School or camp health form title
+        maxLength: 255
+        minLength: 1
+        type: string
+      school_or_camp_name:
+        anyOf:
+        - maxLength: 255
+          type: string
+        - type: 'null'
+        default: null
+        description: Institution name
+      form_type:
+        default: general
+        description: Form classification
+        enum:
+        - physical
+        - immunization
+        - medication_authorization
+        - sports_clearance
+        - general
+        type: string
+      attachment_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional CAS attachment ID
+      expires_at:
+        anyOf:
+        - format: date-time
+          type: string
+        - type: 'null'
+        default: null
+        description: Optional expiration/renewal timestamp (UTC)
+      status:
+        default: draft
+        description: Initial form lifecycle status
+        enum:
+        - draft
+        - active
+        - expired
+        - archived
+        type: string
+    required:
+    - title
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_school_forms_create
+- name: school_forms_get
+  description: Retrieves a single school health form and its draft prefill packet.
+  category: school
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: school_forms_get
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/school-forms/{form_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      form_id:
+        type: string
+    required:
+    - form_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_school_forms_get
+- name: school_forms_update
+  description: Updates a school health form and creates/updates its renewal reminder if expires_at changes.
+  category: school
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: school_forms_update
+    http_method: PATCH
+    http_path: /api/v1/profiles/{profile_id}/school-forms/{form_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      form_id:
+        type: string
+      title:
+        anyOf:
+        - maxLength: 255
+          minLength: 1
+          type: string
+        - type: 'null'
+        default: null
+      school_or_camp_name:
+        anyOf:
+        - maxLength: 255
+          type: string
+        - type: 'null'
+        default: null
+      form_type:
+        anyOf:
+        - enum:
+          - physical
+          - immunization
+          - medication_authorization
+          - sports_clearance
+          - general
+          type: string
+        - type: 'null'
+        default: null
+      attachment_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      expires_at:
+        anyOf:
+        - format: date-time
+          type: string
+        - type: 'null'
+        default: null
+      status:
+        anyOf:
+        - enum:
+          - draft
+          - active
+          - expired
+          - archived
+          type: string
+        - type: 'null'
+        default: null
+      prefill_draft:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+    required:
+    - form_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_school_forms_update
+- name: school_forms_delete
+  description: Deletes a school health form record and logs an audit event.
+  category: school
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: school_forms_delete
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/school-forms/{form_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      form_id:
+        type: string
+    required:
+    - form_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_school_forms_delete
+- name: school_forms_regenerate_prefill
+  description: Recompiles the draft prefill JSON from the profile's latest active HealthResources.
+  category: school
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: school_forms_regenerate_prefill
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/school-forms/{form_id}/prefill
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      form_id:
+        type: string
+    required:
+    - form_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_school_forms_regenerate_prefill
+- name: school_ics_list_feeds
+  description: Returns all registered `SchoolIcsFeed` subscriptions for `profile_id`.
+  category: school
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: school_ics_list_feeds
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/school-ics
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_school_ics_list_feeds
+- name: school_ics_create_feed
+  description: Validates `feed_url` (`https://` or `webcal://`) and registers a `SchoolIcsFeed`.
+  category: school
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: school_ics_create_feed
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/school-ics
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      label:
+        description: School or calendar feed display name
+        maxLength: 255
+        minLength: 1
+        type: string
+      feed_url:
+        description: HTTPS or webcal .ics subscription URL
+        maxLength: 1024
+        minLength: 1
+        type: string
+    required:
+    - label
+    - feed_url
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_school_ics_create_feed
+- name: school_ics_delete_feed
+  description: Deletes a `SchoolIcsFeed` subscription.
+  category: school
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: school_ics_delete_feed
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/school-ics/{feed_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      feed_id:
+        type: string
+    required:
+    - feed_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_school_ics_delete_feed
+- name: school_ics_sync_feed
+  description: Parses RFC 5545 VEVENTs and upserts school calendar events into `Appointment` rows.
+  category: school
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: school_ics_sync_feed
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/school-ics/{feed_id}/sync
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      feed_id:
+        type: string
+      raw_ics_content:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional raw RFC 5545 .ics content
+    required:
+    - feed_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_school_ics_sync_feed
+- name: connectors_get_catalog
+  description: Returns all starter connector manifests (`withings`, `google-calendar`, `caldav`, `epic-smart`).
+  category: connections
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: public
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: connectors_get_catalog
+    http_method: GET
+    http_path: /api/v1/connectors/catalog
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_connectors_get_catalog
+- name: connections_list
+  description: Lists all `Connection` rows for `profile_id` with their most recent `SyncRun` telemetry.
+  category: connections
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: connections_list
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/connections
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_list
+- name: connections_create
+  description: Creates a `Connection` + `ConsentGrant`, schedules a recurring `sync` `Job` (at most 1
+    per connection), and returns the OAuth 2.0 PKCE authorization URL and signed `state`.
+  category: connections
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: connections_create
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/connections
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      connector_id:
+        description: Connector manifest ID
+        maxLength: 128
+        minLength: 1
+        type: string
+      label:
+        anyOf:
+        - maxLength: 255
+          type: string
+        - type: 'null'
+        default: null
+        description: Optional human-readable label
+      categories:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+        description: Consented data categories
+      scopes:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+        description: Consented OAuth/API scopes
+      allowed_hosts:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+        description: Consented outbound network hosts
+      purpose:
+        default: sync_and_assist
+        description: Consent purpose
+        maxLength: 64
+        type: string
+      terms_version:
+        default: 1.0.0
+        description: Terms version string
+        maxLength: 32
+        type: string
+      client_id:
+        anyOf:
+        - maxLength: 255
+          type: string
+        - type: 'null'
+        default: null
+        description: Optional BYO OAuth client ID
+      client_secret:
+        anyOf:
+        - maxLength: 512
+          type: string
+        - type: 'null'
+        default: null
+        description: Optional BYO OAuth client secret
+      redirect_uri:
+        anyOf:
+        - maxLength: 512
+          type: string
+        - type: 'null'
+        default: null
+        description: Optional explicit redirect URI
+      deployment_mode:
+        default: local
+        description: Deployment mode ('local' or 'server')
+        type: string
+      external_base_url:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: HTTPS external base URL in server mode
+      initial_tokens:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        description: Optional initial token or Basic/API key credentials to store immediately in Vault
+      config:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        description: Optional non-secret connector configuration dictionary
+    required:
+    - connector_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_create
+- name: connections_update_autonomy
+  description: Updates `Connection.autonomy_level` (`AU-58`).
+  category: connections
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: connections_update_autonomy
+    http_method: PATCH
+    http_path: /api/v1/profiles/{profile_id}/connections/{connection_id}/autonomy
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      connection_id:
+        type: string
+      autonomy_level:
+        description: 'Target autonomy level: inherit, A0, A1, or A2'
+        type: string
+    required:
+    - connection_id
+    - autonomy_level
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_update_autonomy
+- name: connections_list_mcp_pins
+  description: Lists all `McpToolPin` records for `(profile_id, connection_id)` (`AU-57`).
+  category: connections
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: connections_list_mcp_pins
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/connections/{connection_id}/mcp-pins
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      connection_id:
+        type: string
+    required:
+    - connection_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_list_mcp_pins
+- name: connections_reapprove_mcp_pin
+  description: Re-approves an `McpToolPin` after upstream schema drift and restores connection status
+    (`Titan S7`).
+  category: connections
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: connections_reapprove_mcp_pin
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/connections/{connection_id}/mcp-pins/{tool_name}/reapprove
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      connection_id:
+        type: string
+      tool_name:
+        type: string
+      description:
+        default: ''
+        description: Updated MCP tool description
+        type: string
+      input_schema:
+        additionalProperties: true
+        description: Updated MCP tool input schema
+        type: object
+    required:
+    - connection_id
+    - tool_name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_reapprove_mcp_pin
+- name: connections_revoke
+  description: Runs the 4-step `revoke_connection` cascade (`Titan S2`).
+  category: connections
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: connections_revoke
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/connections/{connection_id}/revoke
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      connection_id:
+        type: string
+      delete_imported_data:
+        default: false
+        description: When True, also deletes imported HealthResource records from this connection
+        type: boolean
+    required:
+    - connection_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_revoke
+- name: connections_trigger_sync
+  description: Triggers `run_connection_sync` for `(profile_id, connection_id)` and returns the `SyncRun`
+    summary.
+  category: connections
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: connections_trigger_sync
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/connections/{connection_id}/sync
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      connection_id:
+        type: string
+    required:
+    - connection_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_trigger_sync
+- name: connections_list_sync_runs
+  description: Returns `SyncRun` history for `(profile_id, connection_id)` ordered by `started_at` descending
+    (`AU-52`).
+  category: connections
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: connections_list_sync_runs
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/connections/{connection_id}/sync-runs
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      connection_id:
+        type: string
+    required:
+    - connection_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_list_sync_runs
+- name: connections_list_consents
+  description: Lists all `ConsentGrant` records for `profile_id` (`AU-53`).
+  category: connections
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: connections_list_consents
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/consents
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_list_consents
+- name: connections_get_data_flows
+  description: Returns the Settings › Data Flows inventory (`model_provider`, `search_provider`, `connections`)
+    (`AU-53`).
+  category: connections
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: connections_get_data_flows
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/data-flows
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_get_data_flows
+- name: profiles_list
+  description: Lists all family / care profiles owned by or shared with the authenticated user.
+  category: profiles
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_list
+    http_method: GET
+    http_path: /api/v1/profiles
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_list
+- name: profiles_create
+  description: Creates a new care profile in the user's household with manage access and default consent.
+  category: profiles
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_create
+    http_method: POST
+    http_path: /api/v1/profiles
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      name:
+        description: Profile full name
+        maxLength: 255
+        minLength: 1
+        type: string
+      short_name:
+        anyOf:
+        - maxLength: 64
+          type: string
+        - type: 'null'
+        default: null
+        description: Optional nickname or short name
+      relationship:
+        default: self
+        description: 'Relationship: self, child, parent, partner, spouse, other'
+        type: string
+      role:
+        default: self
+        description: 'Profile role: self, guardian, viewer'
+        enum:
+        - self
+        - guardian
+        - viewer
+        type: string
+      date_of_birth:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Date of birth YYYY-MM-DD
+      avatar_color:
+        default: '1'
+        description: Color slot 1-5 or auto
+        type: string
+      avatar_url:
+        anyOf:
+        - maxLength: 512
+          type: string
+        - type: 'null'
+        default: null
+        description: Avatar image URL or path
+      preferred_locale:
+        anyOf:
+        - maxLength: 16
+          type: string
+        - type: 'null'
+        default: null
+        description: Preferred IETF BCP 47 locale tag (e.g. en-US, es-ES, fr-FR, hi-IN, ar-SA)
+    required:
+    - name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_create
+- name: profiles_list_all_invites
+  description: Lists all active viewer invitations for all profiles managed or issued by the authenticated
+    user.
+  category: profiles
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_list_all_invites
+    http_method: GET
+    http_path: /api/v1/profiles/invites
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      include_expired:
+        default: false
+        type: boolean
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_list_all_invites
+- name: profiles_accept_invite
+  description: Accepts a viewer invitation code, validating expiration and creating ProfileAccess with
+    role='viewer'.
+  category: profiles
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_accept_invite
+    http_method: POST
+    http_path: /api/v1/profiles/invites/accept
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      invite_code:
+        description: Cryptographic invitation code
+        maxLength: 128
+        minLength: 1
+        type: string
+    required:
+    - invite_code
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_accept_invite
+- name: profiles_get
+  description: Retrieves full detail of a specific profile, including consent and access grants.
+  category: profiles
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_get
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_get
+- name: profiles_update
+  description: Updates attributes of an existing profile (requires 'manage' access).
+  category: profiles
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_update
+    http_method: PUT
+    http_path: /api/v1/profiles/{profile_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      name:
+        anyOf:
+        - maxLength: 255
+          minLength: 1
+          type: string
+        - type: 'null'
+        default: null
+      short_name:
+        anyOf:
+        - maxLength: 64
+          type: string
+        - type: 'null'
+        default: null
+      relationship:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      role:
+        anyOf:
+        - enum:
+          - self
+          - guardian
+          - viewer
+          type: string
+        - type: 'null'
+        default: null
+      date_of_birth:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      avatar_color:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      avatar_url:
+        anyOf:
+        - maxLength: 512
+          type: string
+        - type: 'null'
+        default: null
+      preferred_locale:
+        anyOf:
+        - maxLength: 16
+          type: string
+        - type: 'null'
+        default: null
+        description: Preferred IETF BCP 47 locale tag (e.g. en-US, es-ES, fr-FR, hi-IN, ar-SA)
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_update
+- name: profiles_delete
+  description: Deletes a secondary care profile and associated data. Primary 'Me' profile deletion is
+    strictly blocked.
+  category: profiles
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_delete
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_delete
+- name: profiles_list_access
+  description: Lists all access grants for a profile (requires 'manage' access).
+  category: profiles
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_list_access
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/access
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_list_access
+- name: profiles_grant_access
+  description: Grants or updates profile access for another user (requires 'manage' access).
+  category: profiles
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_grant_access
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/access
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      target_user_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      email:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      access_level:
+        default: view_records
+        enum:
+        - manage
+        - view_records
+        - view_paperwork
+        type: string
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_grant_access
+- name: profiles_revoke_access
+  description: Revokes profile access from a user (requires 'manage' access). Cannot revoke account owner.
+  category: profiles
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_revoke_access
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/access/{target_user_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      target_user_id:
+        type: string
+    required:
+    - target_user_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_revoke_access
+- name: profiles_get_consent
+  description: Retrieves consent state for a profile.
+  category: profiles
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_get_consent
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/consent
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_get_consent
+- name: profiles_update_consent
+  description: Updates consent authorization for a profile (requires 'manage' access).
+  category: profiles
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_update_consent
+    http_method: PUT
+    http_path: /api/v1/profiles/{profile_id}/consent
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      allow_assist:
+        type: boolean
+      terms_version:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: v1.0
+    required:
+    - allow_assist
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_update_consent
+- name: profiles_list_invites
+  description: Lists active viewer invitations for the profile (requires 'manage' access).
+  category: profiles
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_list_invites
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/invites
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      include_expired:
+        default: false
+        type: boolean
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_list_invites
+- name: profiles_create_invite
+  description: Creates a cryptographically secure viewer invite with 7-day expiration (requires 'manage'
+    access).
+  category: profiles
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_create_invite
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/invites
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      invitee_name:
+        description: Name or label of the invited viewer
+        maxLength: 255
+        minLength: 1
+        type: string
+      role:
+        default: viewer
+        description: Role granted upon acceptance
+        enum:
+        - self
+        - guardian
+        - viewer
+        type: string
+      view_records:
+        default: true
+        description: Whether viewer can see visits, prep, and notes
+        type: boolean
+      view_paperwork:
+        default: false
+        description: Whether viewer can see paperwork, bills, and insurance
+        type: boolean
+    required:
+    - invitee_name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_create_invite
+- name: profiles_revoke_invite
+  description: Revokes an outstanding viewer invitation (requires 'manage' access).
+  category: profiles
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: profiles_revoke_invite
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/invites/{invite_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      invite_id:
+        type: string
+    required:
+    - invite_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_revoke_invite
+- name: attachments_list
+  description: Lists attachments scoped to user and profile, reconciling DB records with storage.
+  category: attachments
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: attachments_list
+    http_method: GET
+    http_path: /api/v1/attachments
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_attachments_list
+- name: attachments_delete
+  description: Deletes attachment file from StoragePort and removes record from yarvelle_core.db.
+  category: attachments
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: attachments_delete
+    http_method: DELETE
+    http_path: /api/v1/attachments/{attachment_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      attachment_id:
+        type: string
+    required:
+    - attachment_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_attachments_delete
+- name: email_drafts_list
+  description: Lists all local email drafts for `profile_id`.
+  category: email_drafts
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: email_drafts_list
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/email-drafts
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      category:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional category filter
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_email_drafts_list
+- name: email_drafts_create
+  description: Creates a local email draft and returns its `mailto:` URI.
+  category: email_drafts
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: email_drafts_create
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/email-drafts
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      recipient:
+        anyOf:
+        - maxLength: 320
+          type: string
+        - type: 'null'
+        default: null
+        description: Optional recipient email address
+      subject:
+        description: Email subject line
+        maxLength: 500
+        minLength: 1
+        type: string
+      body:
+        description: Email plaintext body
+        minLength: 1
+        type: string
+      category:
+        default: general
+        description: 'Draft category: appointment, school, insurance, general'
+        maxLength: 64
+        type: string
+    required:
+    - subject
+    - body
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_email_drafts_create
+- name: email_drafts_delete
+  description: Deletes a local `EmailDraft` row.
+  category: email_drafts
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: email_drafts_delete
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/email-drafts/{draft_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      draft_id:
+        type: string
+    required:
+    - draft_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_email_drafts_delete
+- name: email_drafts_export_eml
+  description: 'Exports an `EmailDraft` as an RFC 5322 `.eml` message with `X-Unsent: 1`.'
+  category: email_drafts
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: email_drafts_export_eml
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/email-drafts/{draft_id}/eml
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      draft_id:
+        type: string
+      raw:
+        default: false
+        description: Return raw message/rfc822 response body instead of JSON wrapper
+        type: boolean
+    required:
+    - draft_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_email_drafts_export_eml
+- name: search_profile_records
+  description: Searches notes, uploaded attachments, and extracted records for a specific profile.  Enforces
+    fail-closed multi-profile isolation and permissions via get_user_profile_access.
+  category: search
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: search_profile_records
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/search
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      q:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Search query string or keywords
+      query:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Alias for query parameter
+      limit:
+        default: 10
+        description: Maximum number of search results to retrieve
+        maximum: 100
+        minimum: 1
+        type: integer
+      mode:
+        default: hybrid
+        description: 'Retrieval mode: ''hybrid'', ''lexical'', or ''semantic'''
+        type: string
+      source:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional filter by record source
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_search_profile_records
+- name: agents_list
+  description: Lists all available agents from the database (falling back to disk if unseeded).
+  category: agents
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: agents_list
+    http_method: GET
+    http_path: /api/v1/agents
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      risk_class:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by risk class
+      search:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Search term for title/id
+      allow_assist:
+        default: false
+        description: Enable clinical agents
+        type: boolean
+      include_hidden:
+        default: false
+        description: Include internal helper agents
+        type: boolean
+      domain:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by domain
+      category:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by category or prefix
+      page:
+        anyOf:
+        - minimum: 1
+          type: integer
+        - type: 'null'
+        default: null
+        description: Page number (1-based)
+      per_page:
+        default: 20
+        description: Items per page
+        minimum: 1
+        type: integer
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_agents_list
+- name: agents_create
+  description: Creates a new user-defined specialist agent in the database.
+  category: agents
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: agents_create
+    http_method: POST
+    http_path: /api/v1/agents
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+      description:
+        default: ''
+        type: string
+      persona:
+        default: ''
+        type: string
+      model:
+        default: ollama:llama3.2
+        type: string
+      skills:
+        items:
+          type: string
+        type: array
+      tools:
+        items:
+          type: string
+        type: array
+      starters:
+        items:
+          type: string
+        type: array
+      domain:
+        enum:
+        - wellness
+        - care
+        - therapy
+        - navigation
+        - education
+        - finance
+        - retail
+        - operations
+        - general
+        - clinical
+        type: string
+        default: general
+      category:
+        default: general
+        type: string
+      risk_class:
+        enum:
+        - wellness
+        - admin
+        - education
+        - assist
+        - clinical_assist
+        type: string
+        default: assist
+      tags:
+        items:
+          type: string
+        type: array
+      icon:
+        default: Bot
+        type: string
+      can_delegate:
+        default: false
+        type: boolean
+      max_iterations:
+        default: 3
+        type: integer
+      is_public:
+        default: true
+        type: boolean
+    required:
+    - id
+    - title
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_agents_create
+- name: agents_list_categories
+  description: Returns the full hierarchical category tree and agent counts across all domains.
+  category: agents
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: public
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: agents_list_categories
+    http_method: GET
+    http_path: /api/v1/agents/categories
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_agents_list_categories
+- name: agents_get
+  description: Returns detailed configuration, persona, tools, and resolved skills for a specific agent.
+  category: agents
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: agents_get
+    http_method: GET
+    http_path: /api/v1/agents/{agent_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      agent_id:
+        type: string
+      allow_assist:
+        default: false
+        description: Explicit consent for clinical assist
+        type: boolean
+    required:
+    - agent_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_agents_get
+- name: agents_update
+  description: Updates metadata, persona, and skill attachments for an agent.
+  category: agents
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: agents_update
+    http_method: PUT
+    http_path: /api/v1/agents/{agent_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      agent_id:
+        type: string
+      title:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      description:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      persona:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      model:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      skills:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+      tools:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+      starters:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+      domain:
+        anyOf:
+        - enum:
+          - wellness
+          - care
+          - therapy
+          - navigation
+          - education
+          - finance
+          - retail
+          - operations
+          - general
+          - clinical
+          type: string
+        - type: 'null'
+        default: null
+      category:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      risk_class:
+        anyOf:
+        - enum:
+          - wellness
+          - admin
+          - education
+          - assist
+          - clinical_assist
+          type: string
+        - type: 'null'
+        default: null
+      tags:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+      icon:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      can_delegate:
+        anyOf:
+        - type: boolean
+        - type: 'null'
+        default: null
+      max_iterations:
+        anyOf:
+        - type: integer
+        - type: 'null'
+        default: null
+      is_public:
+        anyOf:
+        - type: boolean
+        - type: 'null'
+        default: null
+    required:
+    - agent_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_agents_update
+- name: agents_delete
+  description: Deletes a user-defined agent and attached direct documents from the database.
+  category: agents
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: agents_delete
+    http_method: DELETE
+    http_path: /api/v1/agents/{agent_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      agent_id:
+        type: string
+    required:
+    - agent_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_agents_delete
+- name: agents_list_docs
+  description: Lists both direct knowledge base documents and attached skill documents for an agent.
+  category: agents
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: agents_list_docs
+    http_method: GET
+    http_path: /api/v1/agents/{agent_id}/docs
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      agent_id:
+        type: string
+    required:
+    - agent_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_agents_list_docs
+- name: agents_create_doc
+  description: Adds a new direct reference document to this agent's knowledge base.
+  category: agents
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: agents_create_doc
+    http_method: POST
+    http_path: /api/v1/agents/{agent_id}/docs
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      agent_id:
+        type: string
+      name:
+        type: string
+      title:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      content:
+        default: ''
+        type: string
+      format:
+        default: markdown
+        type: string
+    required:
+    - agent_id
+    - name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_agents_create_doc
+- name: agents_get_doc
+  description: Reads a direct reference document from the agent's knowledge base.
+  category: agents
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: agents_get_doc
+    http_method: GET
+    http_path: /api/v1/agents/{agent_id}/docs/{doc_name}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      agent_id:
+        type: string
+      doc_name:
+        type: string
+    required:
+    - agent_id
+    - doc_name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_agents_get_doc
+- name: agents_update_doc
+  description: Updates a direct reference document in the agent's knowledge base.
+  category: agents
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: agents_update_doc
+    http_method: PUT
+    http_path: /api/v1/agents/{agent_id}/docs/{doc_name}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      agent_id:
+        type: string
+      doc_name:
+        type: string
+      title:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      content:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      format:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    required:
+    - agent_id
+    - doc_name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_agents_update_doc
+- name: agents_delete_doc
+  description: Deletes a direct reference document from the agent's knowledge base.
+  category: agents
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: agents_delete_doc
+    http_method: DELETE
+    http_path: /api/v1/agents/{agent_id}/docs/{doc_name}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      agent_id:
+        type: string
+      doc_name:
+        type: string
+    required:
+    - agent_id
+    - doc_name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_agents_delete_doc
+- name: skills_list
+  description: Lists all skills stored in the database (falling back to disk if database is unseeded).
+  category: skills
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: skills_list
+    http_method: GET
+    http_path: /api/v1/skills
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      risk_class:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by risk class
+      allow_assist:
+        default: false
+        description: Include assist skills
+        type: boolean
+      domain:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by domain
+      category:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by category or prefix
+      page:
+        anyOf:
+        - minimum: 1
+          type: integer
+        - type: 'null'
+        default: null
+        description: Page number (1-based)
+      per_page:
+        default: 20
+        description: Items per page
+        minimum: 1
+        type: integer
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_skills_list
+- name: skills_create
+  description: Creates a new user-defined skill in the database with mandatory safety boundaries.
+  category: skills
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: skills_create
+    http_method: POST
+    http_path: /api/v1/skills
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      title:
+        default: ''
+        type: string
+      description:
+        default: ''
+        type: string
+      domain:
+        enum:
+        - wellness
+        - care
+        - therapy
+        - navigation
+        - education
+        - finance
+        - retail
+        - operations
+        - general
+        - clinical
+        type: string
+        default: general
+      category:
+        default: general
+        type: string
+      risk_class:
+        enum:
+        - wellness
+        - admin
+        - education
+        - assist
+        - clinical_assist
+        type: string
+        default: assist
+      tags:
+        items:
+          type: string
+        type: array
+      tools:
+        items:
+          type: string
+        type: array
+      instructions:
+        default: ''
+        type: string
+      forbidden:
+        items:
+          type: string
+        type: array
+      is_public:
+        default: true
+        type: boolean
+    required:
+    - id
+    - name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_skills_create
+- name: skills_get
+  description: Returns detailed information, instructions, and references for a specific skill.
+  category: skills
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: skills_get
+    http_method: GET
+    http_path: /api/v1/skills/{skill_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      skill_id:
+        type: string
+    required:
+    - skill_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_skills_get
+- name: skills_update
+  description: Updates metadata and instructions for a user-defined skill.
+  category: skills
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: skills_update
+    http_method: PUT
+    http_path: /api/v1/skills/{skill_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      skill_id:
+        type: string
+      title:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      description:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      domain:
+        anyOf:
+        - enum:
+          - wellness
+          - care
+          - therapy
+          - navigation
+          - education
+          - finance
+          - retail
+          - operations
+          - general
+          - clinical
+          type: string
+        - type: 'null'
+        default: null
+      category:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      risk_class:
+        anyOf:
+        - enum:
+          - wellness
+          - admin
+          - education
+          - assist
+          - clinical_assist
+          type: string
+        - type: 'null'
+        default: null
+      tags:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+      tools:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+      instructions:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      forbidden:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+      is_public:
+        anyOf:
+        - type: boolean
+        - type: 'null'
+        default: null
+    required:
+    - skill_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_skills_update
+- name: skills_delete
+  description: Deletes a user-defined skill and associated knowledge base documents from the database.
+  category: skills
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: skills_delete
+    http_method: DELETE
+    http_path: /api/v1/skills/{skill_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      skill_id:
+        type: string
+    required:
+    - skill_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_skills_delete
+- name: skills_list_docs
+  description: Lists all reference documents in the knowledge base attached to this skill.
+  category: skills
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: skills_list_docs
+    http_method: GET
+    http_path: /api/v1/skills/{skill_id}/docs
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      skill_id:
+        type: string
+    required:
+    - skill_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_skills_list_docs
+- name: skills_create_doc
+  description: Adds a new reference document to this skill's knowledge base.
+  category: skills
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: skills_create_doc
+    http_method: POST
+    http_path: /api/v1/skills/{skill_id}/docs
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      skill_id:
+        type: string
+      name:
+        type: string
+      title:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      content:
+        default: ''
+        type: string
+      format:
+        default: markdown
+        type: string
+    required:
+    - skill_id
+    - name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_skills_create_doc
+- name: skills_get_doc
+  description: Reads a reference document from the skill's knowledge base.
+  category: skills
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: skills_get_doc
+    http_method: GET
+    http_path: /api/v1/skills/{skill_id}/docs/{doc_name}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      skill_id:
+        type: string
+      doc_name:
+        type: string
+    required:
+    - skill_id
+    - doc_name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_skills_get_doc
+- name: skills_update_doc
+  description: Updates a reference document in the knowledge base.
+  category: skills
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: skills_update_doc
+    http_method: PUT
+    http_path: /api/v1/skills/{skill_id}/docs/{doc_name}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      skill_id:
+        type: string
+      doc_name:
+        type: string
+      title:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      content:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      format:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    required:
+    - skill_id
+    - doc_name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_skills_update_doc
+- name: skills_delete_doc
+  description: Deletes a reference document from the knowledge base.
+  category: skills
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: internal
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: skills_delete_doc
+    http_method: DELETE
+    http_path: /api/v1/skills/{skill_id}/docs/{doc_name}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      skill_id:
+        type: string
+      doc_name:
+        type: string
+    required:
+    - skill_id
+    - doc_name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_skills_delete_doc
+- name: audit_list_events
+  description: Retrieves recent audit log events directly from SQL audit_events with strict profile scoping.
+  category: audit
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: audit_list_events
+    http_method: GET
+    http_path: /api/v1/audit
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      limit:
+        default: 50
+        description: Max number of recent events to return
+        maximum: 1000
+        minimum: 1
+        type: integer
+      agent_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by agent ID
+      event:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Filter by event type (run, tool, refuse, error)
+      full:
+        default: false
+        description: Include message bodies if stored
+        type: boolean
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_audit_list_events
+- name: models_list
+  description: Lists available models for a given provider.  Dynamically queries Ollama /api/tags when
+    provider is 'ollama', filtering out embedding-only models.
+  category: models
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: public
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: models_list
+    http_method: GET
+    http_path: /api/v1/models
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      provider:
+        default: ollama
+        type: string
+      endpoint:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_models_list
+- name: chat_get_threads
+  description: Retrieves conversation history and checkpoints for a given thread ID.
+  category: chat
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: chat_get_threads
+    http_method: GET
+    http_path: /api/v1/chat/threads
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      thread_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_chat_get_threads
+- name: chat_delete_threads
+  description: Deletes conversation thread tracking entity.
+  category: chat
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: chat_delete_threads
+    http_method: DELETE
+    http_path: /api/v1/chat/threads
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      thread_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_chat_delete_threads
+- name: chat_get_thread
+  description: Retrieves conversation history and checkpoints for a given thread ID.
+  category: chat
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: chat_get_thread
+    http_method: GET
+    http_path: /api/v1/chat/threads/{thread_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      thread_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+    required:
+    - thread_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_chat_get_thread
+- name: chat_delete_thread
+  description: Deletes conversation thread tracking entity.
+  category: chat
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: chat_delete_thread
+    http_method: DELETE
+    http_path: /api/v1/chat/threads/{thread_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      thread_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+    required:
+    - thread_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_chat_delete_thread
+- name: fhir_get_capabilities
+  description: Returns Carefold's validated `fhir.resources.R4B.capabilitystatement.CapabilityStatement`.
+  category: fhir
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: public
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_get_capabilities
+    http_method: GET
+    http_path: /api/v1/fhir/r4/metadata
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_get_capabilities
+- name: fhir_r4_search_resources
+  description: Search FHIR R4 Resources
+  category: fhir
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_r4_search_resources
+    http_method: GET
+    http_path: /api/v1/fhir/r4/{resource_type}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      resource_type:
+        description: FHIR R4 resource type
+        type: string
+      patient:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Patient reference filter
+      subject:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Subject reference filter
+      category:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Category token filter
+      code:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Coded concept filter (system|code or code)
+      date:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+        description: Effective date filter(s) with eq/ge/le/gt/lt prefix
+      status:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Lifecycle status filter
+      clinical_status:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Clinical status filter
+      _lastUpdated:
+        anyOf:
+        - items:
+            type: string
+          type: array
+        - type: 'null'
+        default: null
+        description: Last updated timestamp filter(s)
+      _include:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Outbound reference include expression
+      _sort:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: -date
+        description: Sort expression
+      _count:
+        default: 50
+        description: Page size (1..100)
+        type: integer
+      _cursor:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Opaque pagination cursor
+    required:
+    - resource_type
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_r4_search_resources
+- name: fhir_read_resource
+  description: Read FHIR R4 Resource by ID
+  category: fhir
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_read_resource
+    http_method: GET
+    http_path: /api/v1/fhir/r4/{resource_type}/{id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      resource_type:
+        description: FHIR R4 resource type
+        type: string
+      id:
+        description: Logical FHIR resource ID
+        type: string
+    required:
+    - resource_type
+    - id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_read_resource
+- name: fhir_create_resource
+  description: Create FHIR R4 Resource (User-Confirmed)
+  category: fhir
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_create_resource
+    http_method: POST
+    http_path: /api/v1/fhir/r4/{resource_type}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      resource_type:
+        description: FHIR R4 resource type
+        type: string
+      confirmed:
+        default: false
+        description: Explicit user confirmation flag
+        type: boolean
+      resource:
+        additionalProperties: true
+        description: Complete HL7 FHIR R4 JSON resource object.
+        type: object
+      if_match:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional weak ETag (W/"{versionId}").
+      idempotency_key:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional idempotency key.
+    required:
+    - resource_type
+    - resource
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_create_resource
+- name: fhir_upsert_resource
+  description: Update or Create FHIR R4 Resource by ID (User-Confirmed)
+  category: fhir
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_upsert_resource
+    http_method: PUT
+    http_path: /api/v1/fhir/r4/{resource_type}/{id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      resource_type:
+        description: FHIR R4 resource type
+        type: string
+      id:
+        description: Logical FHIR resource ID
+        type: string
+      confirmed:
+        default: false
+        description: Explicit user confirmation flag
+        type: boolean
+      resource:
+        additionalProperties: true
+        description: Complete HL7 FHIR R4 JSON resource object.
+        type: object
+      if_match:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional weak ETag (W/"{versionId}") for optimistic concurrency.
+      idempotency_key:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional idempotency key for safe retries.
+    required:
+    - resource_type
+    - id
+    - resource
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_upsert_resource
+- name: fhir_get_resource_history
+  description: Get FHIR R4 Resource Version History (_history)
+  category: fhir
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_get_resource_history
+    http_method: GET
+    http_path: /api/v1/fhir/r4/{resource_type}/{id}/_history
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      resource_type:
+        description: FHIR R4 resource type
+        type: string
+      id:
+        description: Logical FHIR resource ID
+        type: string
+      _count:
+        default: 50
+        description: Max revisions per page (1..100)
+        type: integer
+      _cursor:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Opaque pagination cursor
+    required:
+    - resource_type
+    - id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_get_resource_history
+- name: fhir_get_patient_everything
+  description: Patient/$everything Longitudinal Record Export
+  category: fhir
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_get_patient_everything
+    http_method: GET
+    http_path: /api/v1/fhir/r4/Patient/{id}/$everything
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      id:
+        description: Patient / Profile logical ID
+        type: string
+      _type:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Comma-separated FHIR resource types
+      _since:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: ISO-8601 lower bound timestamp
+      _count:
+        default: 50
+        description: Maximum entries per page (1..100)
+        type: integer
+      _cursor:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Opaque pagination cursor
+    required:
+    - id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_get_patient_everything
+- name: fhir_r4_patient_summary
+  description: Patient/$summary HL7 International Patient Summary (IPS)
+  category: fhir
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_r4_patient_summary
+    http_method: GET
+    http_path: /api/v1/fhir/r4/Patient/{id}/$summary
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      id:
+        description: Patient / Profile logical ID
+        type: string
+    required:
+    - id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_r4_patient_summary
+- name: fhir_start_bulk_export
+  description: Start Patient/$export Bulk FHIR NDJSON Export Job
+  category: fhir
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_start_bulk_export
+    http_method: POST
+    http_path: /api/v1/fhir/r4/Patient/{id}/$export
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      id:
+        description: Patient / Profile logical ID
+        type: string
+      _type:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Comma-separated FHIR resource types
+      _since:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: ISO-8601 lower bound timestamp
+      _async:
+        anyOf:
+        - type: boolean
+        - type: 'null'
+        default: null
+        description: Force async 202 response when true
+      confirmed:
+        default: false
+        description: Explicit user confirmation flag
+        type: boolean
+      idempotency_key:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Optional idempotency key.
+    required:
+    - id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_start_bulk_export
+- name: fhir_get_bulk_export_status
+  description: Poll Bulk FHIR $export Job Status
+  category: fhir
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_get_bulk_export_status
+    http_method: GET
+    http_path: /api/v1/fhir/r4/$export-status/{job_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      job_id:
+        description: Bulk export job UUID
+        type: string
+    required:
+    - job_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_get_bulk_export_status
+- name: fhir_download_bulk_export_file
+  description: Download Bulk FHIR $export NDJSON File
+  category: fhir
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_download_bulk_export_file
+    http_method: GET
+    http_path: /api/v1/fhir/r4/$export-status/{job_id}/files/{resource_file}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      job_id:
+        description: Bulk export job UUID
+        type: string
+      resource_file:
+        description: Resource NDJSON filename (e.g. 'Observation.ndjson')
+        type: string
+    required:
+    - job_id
+    - resource_file
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_download_bulk_export_file

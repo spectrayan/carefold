@@ -57,13 +57,13 @@ def test_declarative_tool_yaml_manifests_validate_and_match_pack_yaml_1_to_1() -
             )
             declarative_by_name[spec.name] = spec
 
-    assert len(declarative_by_name) == 20
+    assert len(declarative_by_name) == 173
 
     pack_raw = yaml.safe_load(PACK_YAML_PATH.read_text(encoding="utf-8"))
     pack_tools: List[Dict[str, Any]] = pack_raw["provides"]["tools"]
     pack_ids = [t["id"] for t in pack_tools]
     assert set(pack_ids) == set(declarative_by_name.keys())
-    assert len(pack_ids) == 20
+    assert len(pack_ids) == 173
 
     # Verify get_health_tool_specs() returns cached singletons matching declarative specs
     specs_first = get_health_tool_specs()

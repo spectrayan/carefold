@@ -657,7 +657,7 @@ def _verify_patient_id_matches_profile(requested_patient_id: Optional[str], acti
 
 
 async def handle_fhir_capabilities(
-    session: AsyncSession,
+    session: Optional[AsyncSession],
     ctx: FhirExecutionContext,
     params: Dict[str, Any],
 ) -> Dict[str, Any]:
@@ -2185,7 +2185,7 @@ async def execute_fhir_mcp_operation(
     tool_name_or_op_id: str,
     params: Dict[str, Any],
     *,
-    session: AsyncSession,
+    session: Optional[AsyncSession] = None,
     profile_id: str,
     user_id: Optional[str] = None,
     scopes: Optional[Sequence[str]] = None,
@@ -2196,6 +2196,8 @@ async def execute_fhir_mcp_operation(
     spec = FHIR_MCP_TOOL_REGISTRY.get(tool_name_or_op_id) or FHIR_OPERATION_REGISTRY.get(tool_name_or_op_id)
     if spec is None:
         raise ValueError(f"Unknown FHIR operation or MCP tool '{tool_name_or_op_id}'.")
+    if session is None and spec.operation_id != "fhir_capabilities":
+        raise ValueError(f"AsyncSession is required for FHIR operation '{spec.operation_id}'.")
 
     effective_scopes = frozenset(scopes) if scopes is not None else frozenset({"health.clinical", "health.paperwork"})
     ctx = FhirExecutionContext(

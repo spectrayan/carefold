@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from typing import List, Optional, Sequence
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Request
 
 from yarvelle_core.api.errors import ProblemDetailsRoute
 from yarvelle_core.api.router import (
@@ -23,6 +23,7 @@ from yarvelle_core.api.router import (
     mount_router_contributions,
 )
 from yarvelle_core.pack.spec import RouterContribution
+from carefold.errors import YarvelleError
 
 from carefold.api.activity import router as activity_router
 from carefold.api.admin import router as admin_router
@@ -110,11 +111,43 @@ def get_default_router_contributions() -> List[RouterContribution]:
     ]
 
 
+_AGENT_HTTP_PRINCIPALS = frozenset({"agent", "db-operator", "mcp_agent", "autonomous_agent"})
+_HTTP_MUTATION_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+
+
+def enforce_user_intended_http_mutation(request: Request) -> None:
+    """Blocks agent principals from invoking HTTP mutation routes directly (#344).
+
+    HTTP POST/PUT/PATCH/DELETE endpoints are reserved for explicit user-intended
+    updates. Agent-originated database reads and writes must execute through
+    McpDatabaseToolbox / db-operator.
+    """
+    if request.method.upper() not in _HTTP_MUTATION_METHODS:
+        return
+    raw_principal = (
+        request.headers.get("x-carefold-principal")
+        or request.headers.get("x-yarvelle-principal")
+        or getattr(request.state, "principal", None)
+        or ""
+    )
+    if str(raw_principal).strip().lower() in _AGENT_HTTP_PRINCIPALS:
+        raise YarvelleError(
+            "YRV-300-013",
+            detail=(
+                "HTTP mutation endpoints are reserved for explicit user-intended updates; "
+                "agent database writes must execute through McpDatabaseToolbox / db-operator."
+            ),
+        )
+
+
 def create_api_router(
     contributions: Optional[Sequence[RouterContribution]] = None,
 ) -> APIRouter:
     """Builds and returns the composite APIRouter enforcing require_pack_scope via mount_router_contributions."""
-    router = APIRouter(route_class=ProblemDetailsRoute)
+    router = APIRouter(
+        route_class=ProblemDetailsRoute,
+        dependencies=[Depends(enforce_user_intended_http_mutation)],
+    )
     items = contributions if contributions is not None else get_default_router_contributions()
     return mount_router_contributions(router, items)
 
@@ -127,6 +160,7 @@ __all__ = [
     "api_router",
     "build_contribution_dependencies",
     "create_api_router",
+    "enforce_user_intended_http_mutation",
     "get_default_router_contributions",
     "mount_router_contributions",
 ]
