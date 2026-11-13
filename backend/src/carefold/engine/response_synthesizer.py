@@ -14,7 +14,7 @@
 
 yarvelle-core's synthesizer appends a generic product disclaimer and labels
 persisted turns with the core product name. This module rebrands core wording
-to Carefold's clinical navigation wording, preserves leading Markdown formatting
+to Carefold's pack navigation wording, preserves leading Markdown formatting
 when stripping robotic reference preambles, and strips constituent specialist
 disclaimers so degraded multi-agent listings never leave a disclaimer in the
 middle between specialist sections.
@@ -80,10 +80,7 @@ def _carefold_guardrail_header() -> str:
             return header
     except Exception:
         pass
-    return (
-        "Carefold agents provide wellness and care navigation assistance. "
-        "They do not provide clinical diagnosis, medical treatment, or emergency care."
-    )
+    return ""
 
 
 def _core_guardrail_header() -> str:
