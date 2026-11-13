@@ -76,6 +76,7 @@ nav:
   - Safety & Guardrails:
       - Safety Boundaries: safety/boundaries.md
       - Emergency Red Flags: safety/emergency-triage.md
+      - Clinical Safety Evals & Benchmarking: safety/evals-and-benchmarking.md
   # Compliance packs consolidate threat-model.md / asvs-l2-checklist.md and hipaa-readiness.md / dpdp-readiness.md / wellness-positioning.md
   - Compliance & Security:
       - Google OAuth & OWASP ASVS / CASA Readiness: compliance/google-verification-and-casa.md
