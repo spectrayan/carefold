@@ -70,9 +70,11 @@ class ResponseSynthesizerNode(BaseNode):
         if not text:
             return ""
         pattern = r"^(?:(?:\*|_){0,2}(?:(?:Based on|According to|From) (?:the )?(?:provided )?reference (?:document|guide|material|checklist|information|docs?)(?: provided)?)[,:]?(?:\*|_){0,2}[,:]?\s*)"
-        cleaned = re.sub(pattern, "", text.lstrip(), flags=re.IGNORECASE)
-        cleaned = cleaned.lstrip("*_ \t")
-        if cleaned and cleaned != text:
+        trimmed = text.lstrip()
+        if not re.match(pattern, trimmed, flags=re.IGNORECASE):
+            return text
+        cleaned = re.sub(pattern, "", trimmed, flags=re.IGNORECASE).lstrip("*_ \t")
+        if cleaned:
             cleaned = cleaned[0].upper() + cleaned[1:] if len(cleaned) > 1 else cleaned.upper()
         return cleaned
 

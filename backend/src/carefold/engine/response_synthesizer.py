@@ -10,21 +10,25 @@
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
 
-"""Response synthesizer that keeps Carefold's canonical disclaimer footer.
+"""Response synthesizer and disclaimer deduplication utilities for Carefold.
 
 yarvelle-core's synthesizer appends a generic product disclaimer and labels
-persisted turns with the core product name. This subclass reuses core's
-synthesis unchanged and swaps those strings for Carefold's wording in the
-returned output, messages, and the turn it persists to the memory store.
+persisted turns with the core product name. This module rebrands core wording
+to Carefold's clinical navigation wording, preserves leading Markdown formatting
+when stripping robotic reference preambles, and strips constituent specialist
+disclaimers so degraded multi-agent listings never leave a disclaimer in the
+middle between specialist sections.
 """
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, Optional
 
 from langchain_core.messages import AIMessage
 from langgraph.store.base import BaseStore
 
+from yarvelle_core.resources.loader import get_resource_loader
 from yarvelle_core.workflows.nodes.response_synthesizer_node import (
     CANONICAL_DISCLAIMER as CORE_CANONICAL_DISCLAIMER,
     ResponseSynthesizerNode,
@@ -39,12 +43,123 @@ CAREFOLD_CANONICAL_DISCLAIMER = (
 _CORE_TURN_LABEL = "\nYarvelle Core: "
 _CAREFOLD_TURN_LABEL = "\nCarefold: "
 
+_REFERENCE_PREAMBLE_RE = re.compile(
+    r"^(?:(?:\*|_){0,2}(?:(?:Based on|According to|From) (?:the )?(?:provided )?"
+    r"reference (?:document|guide|material|checklist|information|docs?)(?: provided)?)"
+    r"[,:]?(?:\*|_){0,2}[,:]?\s*)",
+    re.IGNORECASE,
+)
+
+# Constituent specialist/guardrail disclaimer patterns (single-paragraph blocks).
+_CONSTITUENT_DISCLAIMER_PATTERNS = (
+    re.compile(r"\n*\s*(?:\*|_){1,2}Disclaimer:[^\n]*?(?:\*|_){1,2}(?=\s*(?:\n\n|\Z))", re.IGNORECASE),
+    re.compile(r"(?:^|\n+)\s*(?:\*|_){0,2}DISCLAIMER:.*?(?=\n\n|\Z)", re.IGNORECASE | re.DOTALL),
+    re.compile(
+        r"(?:^|\n+)\s*NOTE:\s*I am not a (?:doctor|licensed physician|clinician|healthcare provider).*?(?=\n\n|\Z)",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"(?:^|\n+)\s*Please consult your (?:doctor|physician|clinician) before.*?(?=\n\n|\Z)",
+        re.IGNORECASE | re.DOTALL,
+    ),
+)
+
+_INLINE_DISCLAIMER_BLOCK_RE = re.compile(
+    r"(?:\*|_){1,2}Disclaimer:[^\n]+?(?:\*|_){1,2}"
+    r"|(?:^|\n)[ \t]*(?:\*|_){0,2}DISCLAIMER:[^\n]+(?:\n(?![ \t]*\n)[^\n]+)*",
+    re.IGNORECASE,
+)
+
+
+def _carefold_guardrail_header() -> str:
+    try:
+        from carefold.resources.loader import get_resource_loader as get_carefold_loader
+
+        header = get_carefold_loader().get_disclaimer_header_text()
+        if header and "yarvelle" not in header.lower():
+            return header
+    except Exception:
+        pass
+    return (
+        "Carefold agents provide wellness and care navigation assistance. "
+        "They do not provide clinical diagnosis, medical treatment, or emergency care."
+    )
+
+
+def _core_guardrail_header() -> str:
+    try:
+        return get_resource_loader().get_disclaimer_header_text() or ""
+    except Exception:
+        return ""
+
+
+def strip_safe_reference_preamble(text: str) -> str:
+    """Strips robotic 'Based on the provided reference document...' preambles without eating leading ``**``."""
+    if not text:
+        return text
+    trimmed = text.lstrip()
+    match = _REFERENCE_PREAMBLE_RE.match(trimmed)
+    if not match:
+        return text
+    cleaned = trimmed[match.end() :].lstrip("*_ \t")
+    if cleaned:
+        cleaned = cleaned[0].upper() + cleaned[1:] if len(cleaned) > 1 else cleaned.upper()
+    return cleaned
+
 
 def rebrand_text(text: str) -> str:
-    """Replace core's disclaimer footer and turn label with Carefold's."""
-    return text.replace(CORE_CANONICAL_DISCLAIMER, CAREFOLD_CANONICAL_DISCLAIMER).replace(
+    """Replaces core's disclaimer footers and turn labels with Carefold's."""
+    if not text:
+        return text
+    out = text.replace(CORE_CANONICAL_DISCLAIMER, CAREFOLD_CANONICAL_DISCLAIMER).replace(
         _CORE_TURN_LABEL, _CAREFOLD_TURN_LABEL
     )
+    core_hdr = _core_guardrail_header()
+    if core_hdr and core_hdr in out:
+        out = out.replace(core_hdr, _carefold_guardrail_header())
+    return out
+
+
+def strip_constituent_disclaimers(text: str) -> str:
+    """Removes constituent specialist and guardrail disclaimers from text."""
+    if not text:
+        return ""
+    cleaned = rebrand_text(strip_safe_reference_preamble(text)).strip()
+    for canonical in (CORE_CANONICAL_DISCLAIMER, CAREFOLD_CANONICAL_DISCLAIMER):
+        if canonical in cleaned:
+            cleaned = cleaned.replace(canonical, "").strip()
+    for pat in _CONSTITUENT_DISCLAIMER_PATTERNS:
+        cleaned = pat.sub("", cleaned).strip()
+    cleaned = re.sub(
+        r"(?m)^\s*(?:\*|_){0,2}Disclaimer\s*:.*$",
+        "",
+        cleaned,
+        flags=re.IGNORECASE,
+    ).strip()
+    return cleaned
+
+
+def deduplicate_middle_disclaimers(text: str) -> str:
+    """Removes in-the-middle disclaimers while preserving a single trailing disclaimer if one existed."""
+    if not text:
+        return text
+    rebranded = rebrand_text(text)
+    matches = list(_INLINE_DISCLAIMER_BLOCK_RE.finditer(rebranded))
+    if not matches:
+        return rebranded
+
+    last_end = matches[-1].end()
+    trailing_tail = rebranded[last_end:].strip()
+    # Clean only when there are >=2 disclaimers OR a disclaimer sits in the middle before more prose.
+    if len(matches) == 1 and not trailing_tail:
+        return rebranded
+
+    last_block = matches[-1].group(0).strip()
+    body = strip_constituent_disclaimers(rebranded)
+    if not body:
+        return last_block
+    footer = last_block if "yarvelle" not in last_block.lower() else f"*Disclaimer: {_carefold_guardrail_header()}*"
+    return f"{body}\n\n{footer}"
 
 
 def _rebrand(value: Any) -> Any:
@@ -78,14 +193,12 @@ class _RebrandingStore:
 
 
 class CarefoldResponseSynthesizerNode(ResponseSynthesizerNode):
-    """Core response synthesizer with Carefold's canonical disclaimer."""
+    """Core response synthesizer with Carefold's canonical disclaimer and constituent-footer stripping."""
 
     @staticmethod
     def _without_footer(text: str) -> str:
         body = ResponseSynthesizerNode._without_footer(text)
-        if body.endswith(CAREFOLD_CANONICAL_DISCLAIMER):
-            body = body[: -len(CAREFOLD_CANONICAL_DISCLAIMER)].rstrip()
-        return body
+        return strip_constituent_disclaimers(body)
 
     async def execute(
         self, state: Dict[str, Any], *, store: Optional[BaseStore] = None, **kwargs: Any
@@ -102,5 +215,8 @@ class CarefoldResponseSynthesizerNode(ResponseSynthesizerNode):
 __all__ = [
     "CAREFOLD_CANONICAL_DISCLAIMER",
     "CarefoldResponseSynthesizerNode",
+    "deduplicate_middle_disclaimers",
     "rebrand_text",
+    "strip_constituent_disclaimers",
+    "strip_safe_reference_preamble",
 ]
