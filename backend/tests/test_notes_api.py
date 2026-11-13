@@ -316,9 +316,10 @@ async def test_get_note_detail_dot_slugs_raise_400():
     """Verifies that dot slugs raise 400 when processed directly by get_note_detail."""
     from fastapi import HTTPException
     from carefold.api.notes import get_note_detail
+    from carefold.errors import YarvelleError
 
     for dot_slug in ("..", ".", "", "   "):
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises((HTTPException, YarvelleError)) as exc_info:
             await get_note_detail(dot_slug)
         assert exc_info.value.status_code == 400
         assert "Invalid note slug" in exc_info.value.detail

@@ -62,6 +62,8 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed record_vitals.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -72,6 +74,8 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
             success=False,
             output=None,
             error="Parameter 'vitals_data' must not be empty and must include at least one recognizable vital sign.",
+            error_code="CFD-100-002",
+            retryable=False,
         )
 
     has_recognized = any(k in vitals_data and vitals_data[k] is not None for k in RECOGNIZED_VITALS_KEYS)
@@ -80,6 +84,8 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
             success=False,
             output=None,
             error="Parameter 'vitals_data' must not be empty and must include at least one recognizable vital sign.",
+            error_code="CFD-100-002",
+            retryable=False,
         )
 
     # Validate Blood Pressure pairing and order
@@ -90,6 +96,8 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
             success=False,
             output=None,
             error="Both systolic and diastolic blood pressure must be provided together.",
+            error_code="CFD-100-002",
+            retryable=False,
         )
     if sys_val is not None and dia_val is not None:
         try:
@@ -100,12 +108,16 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
                     success=False,
                     output=None,
                     error="Systolic blood pressure must be strictly greater than diastolic blood pressure.",
+                    error_code="CFD-100-002",
+                    retryable=False,
                 )
         except (ValueError, TypeError):
             return ToolResult(
                 success=False,
                 output=None,
                 error="Systolic and diastolic blood pressure must be numeric values.",
+                error_code="CFD-100-002",
+                retryable=False,
             )
 
     # 3. Clinical Non-Boundary Red Flags Evaluation

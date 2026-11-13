@@ -16,22 +16,24 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from yarvelle_core.api.deps import get_current_user, resolve_owner_user_id
+from yarvelle_core.api.errors import ProblemDetailsRoute
 from yarvelle_core.api.profiles import get_user_profile_access
 from yarvelle_core.auth.ports import UserProfile
 from carefold.clinical.prep_pack import generate_and_persist_prep_pack
+from carefold.errors import YarvelleError
 from carefold.models import Appointment
 from yarvelle_core.db.models import Note, Profile
 from yarvelle_core.db.session import get_db
 
 logger = logging.getLogger("carefold.api.prep_pack")
 
-router = APIRouter(tags=["PrepPack"])
+router = APIRouter(tags=["PrepPack"], route_class=ProblemDetailsRoute)
 
 
 class PrepPackGenerateRequest(BaseModel):
@@ -67,36 +69,39 @@ async def _verify_profile_access(
     """Helper verifying that the profile exists and the user has appropriate permissions."""
     clean_id = (profile_id or "").strip()
     if not clean_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "YRV-100-004",
             detail="profile_id must be a non-empty string.",
+            context={'parameter': "profile_id"},
         )
 
     stmt = select(Profile).where(Profile.id == clean_id)
     res = await db.execute(stmt)
     prof = res.scalar_one_or_none()
     if prof is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-002",
             detail=f"Profile '{clean_id}' not found.",
+            context={'profile_id': clean_id},
         )
 
     access = await get_user_profile_access(prof, user, db)
     if access is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "YRV-300-007",
             detail="Access denied: no permissions for requested profile.",
+            context={'profile_id': clean_id},
         )
 
     if access == "view_paperwork":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "CFD-300-003",
             detail="Access denied: clinical view permissions required to inspect clinical prep packs.",
         )
 
     if required_level == "manage" and access != "manage":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "CFD-300-003",
             detail="Access denied: management permissions required to generate prep packs for this profile.",
         )
 
@@ -140,17 +145,21 @@ async def generate_prep_pack_endpoint(
             undo_reference=res.get("undo_reference"),
             status="compiled",
         )
+    except YarvelleError:
+        raise
     except ValueError as val_err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-011",
             detail=str(val_err),
-        )
+            cause=val_err,
+        ) from val_err
     except Exception as exc:
-        logger.exception("Failed to generate prep pack: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate prep pack: {exc}",
-        )
+        logger.exception("Failed to generate prep pack")
+        raise YarvelleError(
+            "CFD-900-002",
+            detail="Failed to generate appointment preparation pack.",
+            cause=exc,
+        ) from exc
 
 
 @router.get(
@@ -175,9 +184,10 @@ async def get_prep_pack_for_appointment(
     )
     appt_res = await db.execute(appt_stmt)
     if appt_res.scalar_one_or_none() is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "CFD-500-002",
             detail=f"Appointment '{clean_aid}' not found for profile '{clean_pid}'.",
+            context={'appointment_id': clean_aid},
         )
 
     # Find most recent visit note linked to this appointment
@@ -190,9 +200,10 @@ async def get_prep_pack_for_appointment(
     note_res = await db.execute(note_stmt)
     note = note_res.scalar_one_or_none()
     if note is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "CFD-500-007",
             detail=f"No preparation pack found for appointment '{clean_aid}'.",
+            context={'appointment_id': clean_aid},
         )
 
     return PrepPackResponse(

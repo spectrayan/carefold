@@ -20,6 +20,9 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Mapping
 
+import httpx
+
+from carefold.errors import CarefoldToolError, YarvelleError
 from yarvelle_core.db.session import get_session_factory
 
 logger = logging.getLogger("carefold.tools.connectors")
@@ -66,13 +69,13 @@ async def execute_sync_school_ics(args: Dict[str, Any], ctx: Any = None) -> Any:
         args, ctx = ctx, args
     profile_id = getattr(ctx, "profile_id", None) if ctx is not None else None
     if not profile_id or not isinstance(profile_id, str) or not profile_id.strip():
-        raise ValueError("Missing profile_id in ToolContext")
+        raise CarefoldToolError("YRV-300-014", detail="Missing profile_id in ToolContext")
     clean_profile_id = profile_id.strip()
 
     safe_args = dict(args) if isinstance(args, Mapping) else {}
     feed_id = str(safe_args.get("feed_id") or "").strip()
     if not feed_id:
-        raise ValueError("Missing required parameter 'feed_id' for sync_school_ics")
+        raise CarefoldToolError("CFD-100-008", detail="Missing required parameter 'feed_id' for sync_school_ics")
 
     raw_ics_content = safe_args.get("raw_ics_content")
     if raw_ics_content is not None:
@@ -86,13 +89,26 @@ async def execute_sync_school_ics(args: Dict[str, Any], ctx: Any = None) -> Any:
         or (ctx_extra.get("session_factory") if isinstance(ctx_extra, Mapping) else None)
         or get_session_factory()
     )
-    async with session_factory() as session:
-        return await sync_school_ics_feed(
-            session=session,
-            profile_id=clean_profile_id,
-            feed_id=feed_id,
-            raw_ics_content=raw_ics_content,
-        )
+    try:
+        async with session_factory() as session:
+            return await sync_school_ics_feed(
+                session=session,
+                profile_id=clean_profile_id,
+                feed_id=feed_id,
+                raw_ics_content=raw_ics_content,
+            )
+    except CarefoldToolError:
+        raise
+    except httpx.HTTPError as exc:
+        raise CarefoldToolError(
+            "CFD-600-003",
+            detail="Failed to fetch school calendar ICS feed from upstream server.",
+            cause=exc,
+        ) from exc
+    except ValueError as exc:
+        msg = str(exc)
+        err_code = "CFD-500-005" if "not found" in msg.lower() else "CFD-100-008"
+        raise CarefoldToolError(err_code, detail=msg, cause=exc) from exc
 
 
 async def execute_zocdoc_book_appointment(args: Dict[str, Any], ctx: Any = None) -> Any:
@@ -108,14 +124,17 @@ async def execute_verify_smart_health_card(args: Dict[str, Any], ctx: Any = None
         args, ctx = ctx, args
     profile_id = getattr(ctx, "profile_id", None) if ctx is not None else None
     if not profile_id or not isinstance(profile_id, str) or not profile_id.strip():
-        raise ValueError("Missing profile_id in ToolContext")
+        raise CarefoldToolError("YRV-300-014", detail="Missing profile_id in ToolContext")
     from carefold.importers.smart_health_card import verify_and_parse_smart_health_card
 
     safe_args = dict(args) if isinstance(args, Mapping) else {}
-    return verify_and_parse_smart_health_card(
-        raw_content=str(safe_args.get("content", "")),
-        source_name=str(safe_args.get("source_name", "SMART Health Card")),
-    )
+    try:
+        return verify_and_parse_smart_health_card(
+            raw_content=str(safe_args.get("content", "")),
+            source_name=str(safe_args.get("source_name", "SMART Health Card")),
+        )
+    except ValueError as exc:
+        raise CarefoldToolError("CFD-100-006", detail=str(exc), cause=exc) from exc
 
 
 def __getattr__(name: str) -> Any:

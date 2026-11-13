@@ -38,6 +38,8 @@ async def execute_generate_prep_pack(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed generate_prep_pack.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -72,17 +74,23 @@ async def execute_generate_prep_pack(args: Dict[str, Any], ctx: Any = None) -> T
             )
     except ValueError as val_err:
         logger.warning("generate_prep_pack validation error: %s", val_err)
+        msg = str(val_err)
+        err_code = "CFD-500-002" if "not found" in msg.lower() else "CFD-100-011"
         return ToolResult(
             success=False,
             output=None,
-            error=str(val_err),
+            error=msg,
+            error_code=err_code,
+            retryable=False,
         )
     except Exception as exc:
         logger.exception("generate_prep_pack failed: %s", exc)
         return ToolResult(
             success=False,
             output=None,
-            error=f"generate_prep_pack failed: {exc}",
+            error="Failed to generate appointment preparation pack.",
+            error_code="CFD-900-002",
+            retryable=False,
         )
 
 

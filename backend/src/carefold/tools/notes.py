@@ -54,6 +54,8 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed create_typed_note.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -63,6 +65,8 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
             success=False,
             output=None,
             error="Parameters must be provided as a dictionary.",
+            error_code="CFD-100-014",
+            retryable=False,
         )
 
     title = str(args.get("title", "")).strip()
@@ -72,6 +76,8 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
             success=False,
             output=None,
             error="Parameters 'title' and 'content' must be non-empty strings.",
+            error_code="CFD-100-014",
+            retryable=False,
         )
 
     raw_type = str(args.get("type", "general")).strip()
@@ -82,6 +88,8 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
             success=False,
             output=None,
             error=str(type_err),
+            error_code="CFD-100-014",
+            retryable=False,
         )
 
     linked_appt_id = args.get("linked_appointment_id")
@@ -116,6 +124,8 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
                         success=False,
                         output=None,
                         error="Security violation: Linked appointment does not exist or does not belong to profile.",
+                        error_code="CFD-100-003",
+                        retryable=False,
                     )
 
             # 4. Insert Note
@@ -205,7 +215,9 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
         return ToolResult(
             success=False,
             output=None,
-            error=f"create_typed_note failed: {exc}",
+            error="Failed to persist clinical note.",
+            error_code="CFD-900-001",
+            retryable=False,
         )
 
 

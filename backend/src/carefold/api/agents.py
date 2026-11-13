@@ -16,18 +16,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from yarvelle_core.api.errors import ProblemDetailsRoute
 
 from carefold.api.deps import get_current_user, resolve_owner_user_id
 from carefold.auth.ports import UserProfile
 from carefold.config import settings
 from carefold.constants.api import (
-    HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
-    HTTP_500_INTERNAL_SERVER_ERROR,
     ROUTE_AGENT_DETAIL,
     ROUTE_AGENT_DOC_DETAIL,
     ROUTE_AGENT_DOCS,
@@ -38,6 +35,7 @@ from carefold.constants.defaults import BUNDLED_AGENT_IDS
 from carefold.constants.paths import SYSTEM_AGENTS_DIR
 from carefold.db.models import Agent, KnowledgeBase, Skill
 from carefold.db.session import get_db
+from carefold.errors import YarvelleError
 from carefold.loaders.agent_loader import (
     ManifestValidationError,
     compute_effective_tools,
@@ -75,7 +73,7 @@ from carefold.tools.registry import CLOSED_TOOL_DEFINITIONS
 
 logger = get_logger("carefold.api.agents")
 
-router = APIRouter(tags=["Agents"])
+router = APIRouter(tags=["Agents"], route_class=ProblemDetailsRoute)
 
 
 @router.get(ROUTE_AGENTS, response_model=List[AgentSummary])
@@ -241,9 +239,10 @@ async def create_agent(
     stmt = select(Agent).where(Agent.id == payload.id)
     res = await db.execute(stmt)
     if res.scalar_one_or_none() is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
+        raise YarvelleError(
+            "YRV-800-002",
             detail=f"Agent with ID '{payload.id}' already exists.",
+            context={'agent_id': payload.id},
         )
 
     domain_val = payload.domain.value if hasattr(payload.domain, "value") else str(payload.domain)
@@ -349,7 +348,11 @@ async def get_agent(
 ) -> AgentDetailResponse:
     """Returns detailed configuration, persona, tools, and resolved skills for a specific agent."""
     if not SLUG_REGEX.match(agent_id) or agent_id.startswith((".", "_")):
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Agent '{agent_id}' not found.")
+        raise YarvelleError(
+            "YRV-800-001",
+            detail=f"Agent '{agent_id}' not found.",
+            context={'agent_id': agent_id},
+        )
 
     # 1. Query database
     db_agent = None
@@ -362,9 +365,10 @@ async def get_agent(
 
     if db_agent is not None:
         if db_agent.risk_class == RiskClass.ASSIST.value and not allow_assist:
-            raise HTTPException(
-                status_code=HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-001",
                 detail=f"Agent '{agent_id}' is an assist agent. Explicit user consent (allow_assist=true) is required.",
+                context={'agent_id': agent_id},
             )
 
         agent_skills = db_agent.get_skills()
@@ -445,7 +449,11 @@ async def get_agent(
     agent_dir = find_agent_dir(agents_dir, agent_id)
 
     if not agent_dir or not agent_dir.is_dir():
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Agent '{agent_id}' not found.")
+        raise YarvelleError(
+            "YRV-800-001",
+            detail=f"Agent '{agent_id}' not found.",
+            context={'agent_id': agent_id},
+        )
 
     is_system = agent_dir.parent.name == SYSTEM_AGENTS_DIR
 
@@ -454,14 +462,25 @@ async def get_agent(
         if is_system:
             agent.hidden = True
     except ManifestValidationError as err:
-        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail=str(err))
+        raise YarvelleError(
+            "YRV-200-002",
+            detail=str(err),
+            cause=err,
+        ) from err
     except Exception as err:
-        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to load agent: {err}")
+        logger.exception("Failed to load agent '%s'", agent_id)
+        raise YarvelleError(
+            "YRV-800-004",
+            detail="Failed to load agent definition.",
+            cause=err,
+            context={'error': "internal_error"},
+        ) from err
 
     if agent.risk_class == RiskClass.ASSIST and not allow_assist:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "CFD-300-001",
             detail=f"Agent '{agent_id}' is an assist agent. Explicit user consent (allow_assist=true) is required.",
+            context={'agent_id': agent_id},
         )
 
     starters = load_agent_starters(agent_dir)
@@ -545,11 +564,15 @@ async def update_agent(
     agent = res.scalar_one_or_none()
 
     if agent is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Agent '{agent_id}' not found.")
+        raise YarvelleError(
+            "YRV-800-001",
+            detail=f"Agent '{agent_id}' not found.",
+            context={'agent_id': agent_id},
+        )
 
     if agent.type in ("bundled", "system") and getattr(user, "role", "member") != "admin":
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "YRV-300-004",
             detail=f"Cannot modify system/bundled agent '{agent_id}'. Only custom agents can be updated.",
         )
 
@@ -625,11 +648,15 @@ async def delete_agent(
     agent = res.scalar_one_or_none()
 
     if agent is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Agent '{agent_id}' not found.")
+        raise YarvelleError(
+            "YRV-800-001",
+            detail=f"Agent '{agent_id}' not found.",
+            context={'agent_id': agent_id},
+        )
 
     if agent.type in ("bundled", "system"):
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "YRV-300-004",
             detail=f"Cannot delete bundled or system agent '{agent_id}'.",
         )
 
@@ -759,8 +786,8 @@ async def create_agent_doc(
     )
     res = await db.execute(stmt)
     if res.scalar_one_or_none() is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
+        raise YarvelleError(
+            "YRV-500-012",
             detail=f"Document '{payload.name}' already exists for agent '{agent_id}'.",
         )
 
@@ -806,8 +833,8 @@ async def get_agent_doc(
 ) -> DocDetailResponse:
     """Reads a direct reference document from the agent's knowledge base."""
     if not DOC_FILENAME_REGEX.match(doc_name):
-        raise HTTPException(
-            status_code=HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "YRV-100-011",
             detail="Invalid document filename.",
         )
 
@@ -854,8 +881,8 @@ async def get_agent_doc(
                 type="bundled",
             )
 
-    raise HTTPException(
-        status_code=HTTP_404_NOT_FOUND,
+    raise YarvelleError(
+        "YRV-500-001",
         detail=f"Document '{doc_name}' not found for agent '{agent_id}'.",
     )
 
@@ -878,14 +905,14 @@ async def update_agent_doc(
     doc = res.scalar_one_or_none()
 
     if doc is None:
-        raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-001",
             detail=f"Document '{doc_name}' not found for agent '{agent_id}'.",
         )
 
     if doc.type == "bundled" and getattr(user, "role", "member") != "admin":
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "YRV-300-006",
             detail="Cannot modify bundled reference document without administrative privileges.",
         )
 
@@ -932,14 +959,14 @@ async def delete_agent_doc(
     doc = res.scalar_one_or_none()
 
     if doc is None:
-        raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-001",
             detail=f"Document '{doc_name}' not found for agent '{agent_id}'.",
         )
 
     if doc.type == "bundled" and getattr(user, "role", "member") != "admin":
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "YRV-300-006",
             detail="Cannot delete bundled reference document without administrative privileges.",
         )
 

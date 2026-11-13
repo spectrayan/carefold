@@ -21,18 +21,20 @@ from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional
 import uuid
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from yarvelle_core.api.deps import get_current_user, get_db, resolve_owner_user_id
+from yarvelle_core.api.errors import ProblemDetailsRoute
 from yarvelle_core.api.profiles import get_user_profile_access
 from yarvelle_core.audit.logger import record_audit
 from yarvelle_core.auth.ports import UserProfile
 from carefold.clinical.bmi import calculate_adult_bmi, calculate_pediatric_bmi_percentile
 from carefold.clinical.vitals import calculate_diurnal_bp_trends, normalize_fhir_vitals
+from carefold.errors import YarvelleError
 from carefold.fhir.sql_pushdown import (
     build_code_sql_filter,
     build_observation_coding_rows,
@@ -45,7 +47,7 @@ from carefold.safety.vitals import check_vitals_red_flags
 
 logger = get_logger("carefold.api.vitals")
 
-router = APIRouter(tags=["vitals"])
+router = APIRouter(tags=["vitals"], route_class=ProblemDetailsRoute)
 
 
 # ============================================================================
@@ -189,36 +191,39 @@ def require_profile_access(
     ) -> Profile:
         clean_id = (profile_id or "").strip()
         if not clean_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            raise YarvelleError(
+                "YRV-100-004",
                 detail="profile_id path parameter is required.",
+                context={'parameter': "profile_id"},
             )
 
         stmt = select(Profile).where(Profile.id == clean_id)
         res = await db.execute(stmt)
         profile = res.scalar_one_or_none()
         if profile is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+            raise YarvelleError(
+                "YRV-500-002",
                 detail=f"Profile '{clean_id}' not found.",
+                context={'profile_id': clean_id},
             )
 
         access = await get_user_profile_access(profile, user, db)
         if access is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "YRV-300-007",
                 detail="Access denied: you do not have permission for this profile.",
+                context={'profile_id': clean_id},
             )
 
         if required_access == "manage" and access != "manage":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: management permissions required to modify this profile's clinical data.",
             )
 
         if required_access == "view_records" and access not in ("manage", "view_records"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: clinical view permissions required to inspect clinical vitals.",
             )
 
@@ -315,27 +320,27 @@ async def create_profile_vitals(
         ]
     )
     if not has_any:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-002",
             detail="At least one vital measurement must be provided.",
         )
 
     if (v.systolic is not None and v.diastolic is None) or (v.diastolic is not None and v.systolic is None):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-002",
             detail="Both systolic and diastolic blood pressure must be provided together.",
         )
 
     if v.systolic is not None and v.diastolic is not None:
         if v.systolic <= v.diastolic:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            raise YarvelleError(
+                "CFD-100-002",
                 detail="Systolic blood pressure must be strictly greater than diastolic blood pressure.",
             )
 
     if (v.weight is not None and v.weight <= 0) or (v.height is not None and v.height <= 0):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-002",
             detail="Weight and height must be strictly positive.",
         )
 
@@ -447,8 +452,8 @@ async def create_profile_vitals(
         )
         dup_res = await db.execute(dup_stmt)
         if dup_res.scalar_one_or_none() is not None:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
+            raise YarvelleError(
+                "CFD-500-009",
                 detail="Duplicate vital observation reading with identical source identifiers.",
             )
 
@@ -478,12 +483,13 @@ async def create_profile_vitals(
         db.add_all(coding_rows)
     try:
         await db.commit()
-    except IntegrityError:
+    except IntegrityError as integrity_err:
         await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
+        raise YarvelleError(
+            "CFD-500-009",
             detail="Duplicate vital observation reading with identical source identifiers.",
-        )
+            cause=integrity_err,
+        ) from integrity_err
 
     # 7. Audit Event Recording for Undoability
     actor_id = resolve_owner_user_id(user) or getattr(user, "id", "user") or "user"
@@ -616,11 +622,12 @@ async def get_profile_vitals_trends(
     tz_name = tz_param or getattr(profile, "timezone", None) or "UTC"
     try:
         ZoneInfo(tz_name)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+    except Exception as tz_err:
+        raise YarvelleError(
+            "CFD-100-002",
             detail=f"Invalid IANA timezone identifier: {tz_name!r}",
-        )
+            cause=tz_err,
+        ) from tz_err
 
     now_utc = datetime.now(dt_timezone.utc)
     lookback_days = days if days is not None else 90

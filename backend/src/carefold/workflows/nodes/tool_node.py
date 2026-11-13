@@ -201,22 +201,37 @@ class ToolNode(BaseNode):
             is_allowed = name in allowed
             if not is_allowed:
                 error_msg = f"Tool '{name}' execution denied: undeclared tool for agent '{agent_id}'. Tool '{name}' is not permitted or undeclared for agent '{agent_id}'."
+                denied_payload = {
+                    "error": error_msg,
+                    "code": "YRV-700-002",
+                    "error_code": "YRV-700-002",
+                    "retryable": False,
+                    "success": False,
+                }
                 tool_traces.append({
                     "tool": name,
                     "allowed": False,
                     "status": "denied",
                     "error": error_msg,
+                    "code": "YRV-700-002",
+                    "error_code": "YRV-700-002",
+                    "retryable": False,
                     "duration_ms": 0.0,
                 })
                 tool_messages.append(
                     ToolMessage(
-                        content=json.dumps({"error": error_msg, "success": False}),
+                        content=json.dumps(denied_payload),
                         tool_call_id=call_id,
                         status="error",
                         name=name,
                     )
                 )
-                last_tool_output = {"error": error_msg}
+                last_tool_output = {
+                    "error": error_msg,
+                    "code": "YRV-700-002",
+                    "error_code": "YRV-700-002",
+                    "retryable": False,
+                }
                 continue
 
             # Resolve ToolSpec
@@ -252,22 +267,37 @@ class ToolNode(BaseNode):
                 dest_hosts = verify_egress_firewall(spec, args)
             except EgressBlockedError as egress_err:
                 error_msg = f"EgressBlockedError: {egress_err}"
+                egress_payload = {
+                    "error": error_msg,
+                    "code": "YRV-600-002",
+                    "error_code": "YRV-600-002",
+                    "retryable": False,
+                    "success": False,
+                }
                 tool_traces.append({
                     "tool": name,
                     "allowed": False,
                     "status": "denied",
                     "error": error_msg,
+                    "code": "YRV-600-002",
+                    "error_code": "YRV-600-002",
+                    "retryable": False,
                     "duration_ms": 0.0,
                 })
                 tool_messages.append(
                     ToolMessage(
-                        content=json.dumps({"error": error_msg, "success": False}),
+                        content=json.dumps(egress_payload),
                         tool_call_id=call_id,
                         status="error",
                         name=name,
                     )
                 )
-                last_tool_output = {"error": error_msg}
+                last_tool_output = {
+                    "error": error_msg,
+                    "code": "YRV-600-002",
+                    "error_code": "YRV-600-002",
+                    "retryable": False,
+                }
                 continue
 
             # Evaluate policy gate
@@ -411,11 +441,28 @@ class ToolNode(BaseNode):
                         ctx, spec, effective_args, approval_store=app_store, approval_id=resuming_approval_id
                     )
                     dur_ms = round((time.time() - t0) * 1000, 2)
-                    output_val = res.output if res.success else {"error": res.error}
+                    err_code = getattr(res, "error_code", None) or "YRV-700-009"
+                    err_retry = bool(getattr(res, "retryable", False))
+                    output_val = (
+                        res.output
+                        if res.success
+                        else {
+                            "error": res.error,
+                            "code": err_code,
+                            "error_code": err_code,
+                            "retryable": err_retry,
+                        }
+                    )
                     status = "success" if res.success else "error"
                 else:
                     dur_ms = 0.0
-                    output_val = {"error": "Tool execution was rejected by user.", "rejected": True}
+                    output_val = {
+                        "error": "Tool execution was rejected by user.",
+                        "code": "YRV-700-005",
+                        "error_code": "YRV-700-005",
+                        "retryable": False,
+                        "rejected": True,
+                    }
                     status = "error"
                     res = None
 
@@ -442,16 +489,29 @@ class ToolNode(BaseNode):
                 t0 = time.time()
                 res = await execute_tool_call(ctx, spec, args, approval_store=app_store)
                 dur_ms = round((time.time() - t0) * 1000, 2)
+                err_code = getattr(res, "error_code", None) or "YRV-700-009"
+                err_retry = bool(getattr(res, "retryable", False))
+                output_val = (
+                    res.output
+                    if res.success
+                    else {
+                        "error": res.error,
+                        "code": err_code,
+                        "error_code": err_code,
+                        "retryable": err_retry,
+                    }
+                )
 
                 tool_traces.append({
                     "tool": name,
                     "allowed": True,
                     "success": res.success,
                     "duration_ms": dur_ms,
-                    "output": res.output if res.success else {"error": res.error},
+                    "output": output_val,
+                    "error_code": None if res.success else err_code,
+                    "retryable": None if res.success else err_retry,
                     "audit_logged": True,
                 })
-                output_val = res.output if res.success else {"error": res.error}
                 tool_messages.append(
                     ToolMessage(
                         content=wrap_tool_output(name, output_val, trust=getattr(spec, "trust", None)),

@@ -32,6 +32,9 @@ categories:
   900: internal
 
 errors:
+  # --------------------------------------------------------------------------
+  # 100 — Clinical, Chart & Paperwork Validation
+  # --------------------------------------------------------------------------
   fhir_validation_error:
     code: CFD-100-001
     category: validation
@@ -44,6 +47,177 @@ errors:
     message: "FHIR R4 resource validation failed: {detail}"
     description: "Submitted clinical or FHIR R4 payload failed structural or code validation."
 
+  vitals_validation_error:
+    code: CFD-100-002
+    category: validation
+    http_status: 400
+    status_code: 400
+    jsonrpc_code: -32602
+    retryable: false
+    title: "Vitals Validation Error"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Submitted vital sign measurement, blood pressure pairing, positive range, or timezone failed validation."
+
+  appointment_validation_error:
+    code: CFD-100-003
+    category: validation
+    http_status: 400
+    status_code: 400
+    jsonrpc_code: -32602
+    retryable: false
+    title: "Appointment Validation Error"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Appointment time window, lifecycle transition, or linked appointment ownership failed validation."
+
+  appointment_unprocessable_error:
+    code: CFD-100-004
+    category: validation
+    http_status: 422
+    status_code: 422
+    jsonrpc_code: -32602
+    retryable: false
+    title: "Unprocessable Appointment Update"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Syntactically valid appointment update failed semantic scheduling or timezone validation."
+
+  preventive_validation_error:
+    code: CFD-100-005
+    category: validation
+    http_status: 400
+    status_code: 400
+    jsonrpc_code: -32602
+    retryable: false
+    title: "Preventive Care Validation Error"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Preventive care schedule source, status, or action payload failed validation."
+
+  clinical_import_validation_error:
+    code: CFD-100-006
+    category: validation
+    http_status: 400
+    status_code: 400
+    jsonrpc_code: -32602
+    retryable: false
+    title: "Clinical Import Validation Error"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Clinical or wearable import file, staged item index, or Gmail staging filter failed validation."
+
+  school_form_validation_error:
+    code: CFD-100-007
+    category: validation
+    http_status: 400
+    status_code: 400
+    jsonrpc_code: -32602
+    retryable: false
+    title: "School Health Form Validation Error"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Pediatric school or camp health form type, status, or field payload failed validation."
+
+  school_ics_validation_error:
+    code: CFD-100-008
+    category: validation
+    http_status: 400
+    status_code: 400
+    jsonrpc_code: -32602
+    retryable: false
+    title: "School Calendar Feed Validation Error"
+    template: "{detail}"
+    message: "{detail}"
+    description: "School calendar RFC 5545 ICS URL or VCALENDAR payload failed validation."
+
+  companion_validation_error:
+    code: CFD-100-009
+    category: validation
+    http_status: 400
+    status_code: 400
+    jsonrpc_code: -32602
+    retryable: false
+    title: "Companion Device Validation Error"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Mobile companion pairing token, device payload, or sync batch failed validation."
+
+  handover_validation_error:
+    code: CFD-100-010
+    category: validation
+    http_status: 400
+    status_code: 400
+    jsonrpc_code: -32602
+    retryable: false
+    title: "Care Handover Validation Error"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Caregiver handover or emergency summary packet request failed validation."
+
+  prep_pack_validation_error:
+    code: CFD-100-011
+    category: validation
+    http_status: 400
+    status_code: 400
+    jsonrpc_code: -32602
+    retryable: false
+    title: "Visit Prep Pack Validation Error"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Visit preparation pack compilation parameters failed validation."
+
+  fhir_payload_too_large:
+    code: CFD-100-012
+    category: validation
+    http_status: 413
+    status_code: 413
+    jsonrpc_code: -32013
+    retryable: false
+    title: "FHIR Payload Too Large"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Submitted FHIR R4 write payload exceeds the configured maximum byte size."
+
+  fhir_unprocessable_entity:
+    code: CFD-100-013
+    category: validation
+    http_status: 422
+    status_code: 422
+    jsonrpc_code: -32602
+    retryable: false
+    title: "Unprocessable FHIR Resource"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Syntactically valid FHIR R4 resource failed clinical schema or profile invariants."
+
+  clinical_note_validation_error:
+    code: CFD-100-014
+    category: validation
+    http_status: 400
+    status_code: 400
+    jsonrpc_code: -32602
+    retryable: false
+    title: "Clinical Note Validation Error"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Typed clinical note category, content, or metadata failed validation."
+
+  coordinated_action_validation_error:
+    code: CFD-100-015
+    category: validation
+    http_status: 400
+    status_code: 400
+    jsonrpc_code: -32602
+    retryable: false
+    title: "Coordinated Care Action Validation Error"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Coordinated scheduling, calendar conflict check, or draft approval payload failed validation."
+
+  # --------------------------------------------------------------------------
+  # 300 — Clinical Consent, Companion Auth & Health Scope Access
+  # --------------------------------------------------------------------------
   clinical_consent_required:
     code: CFD-300-001
     category: auth
@@ -68,6 +242,57 @@ errors:
     message: "Agent '{agent_id}' is classified as assist. Execution is forbidden without explicit consent (allow_assist=True)."
     description: "Execution blocked for clinical assist agent without consent."
 
+  clinical_permission_denied:
+    code: CFD-300-003
+    category: auth
+    http_status: 403
+    status_code: 403
+    jsonrpc_code: -32002
+    retryable: false
+    title: "Clinical Data Permission Denied"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Caller lacks required clinical view or clinical management permissions on the profile."
+
+  companion_auth_failed:
+    code: CFD-300-004
+    category: auth
+    http_status: 401
+    status_code: 401
+    jsonrpc_code: -32001
+    retryable: false
+    title: "Companion Device Authentication Failed"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Mobile companion bearer credential or pairing signature is invalid, expired, or revoked."
+
+  companion_access_denied:
+    code: CFD-300-005
+    category: auth
+    http_status: 403
+    status_code: 403
+    jsonrpc_code: -32002
+    retryable: false
+    title: "Companion Device Access Denied"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Companion device operation denied by pairing policy, revocation status, or profile scope."
+
+  fhir_access_denied:
+    code: CFD-300-006
+    category: auth
+    http_status: 403
+    status_code: 403
+    jsonrpc_code: -32002
+    retryable: false
+    title: "FHIR Scope Access Denied"
+    template: "{detail}"
+    message: "{detail}"
+    description: "FHIR R4 clinical/paperwork scope or cross-profile resource URI access is forbidden."
+
+  # --------------------------------------------------------------------------
+  # 500 — Health Records, Appointments, Imports & Optimistic Concurrency
+  # --------------------------------------------------------------------------
   health_record_not_found:
     code: CFD-500-001
     category: storage
@@ -80,6 +305,129 @@ errors:
     message: "Health record '{resource_id}' not found."
     description: "Requested FHIR or health resource record does not exist in the profile."
 
+  appointment_not_found:
+    code: CFD-500-002
+    category: storage
+    http_status: 404
+    status_code: 404
+    jsonrpc_code: -32003
+    retryable: false
+    title: "Appointment Not Found"
+    template: "Appointment '{appointment_id}' not found."
+    message: "Appointment '{appointment_id}' not found."
+    description: "Requested clinical appointment record does not exist in the profile."
+
+  import_batch_not_found:
+    code: CFD-500-003
+    category: storage
+    http_status: 404
+    status_code: 404
+    jsonrpc_code: -32003
+    retryable: false
+    title: "Clinical Import Batch Not Found"
+    template: "ImportBatch '{batch_id}' not found for profile '{profile_id}'."
+    message: "ImportBatch '{batch_id}' not found for profile '{profile_id}'."
+    description: "Requested staged clinical import batch does not exist in the profile."
+
+  school_form_not_found:
+    code: CFD-500-004
+    category: storage
+    http_status: 404
+    status_code: 404
+    jsonrpc_code: -32003
+    retryable: false
+    title: "School Health Form Not Found"
+    template: "School form '{form_id}' not found."
+    message: "School form '{form_id}' not found."
+    description: "Requested school or camp health form does not exist in the profile."
+
+  school_ics_feed_not_found:
+    code: CFD-500-005
+    category: storage
+    http_status: 404
+    status_code: 404
+    jsonrpc_code: -32003
+    retryable: false
+    title: "School Calendar Feed Not Found"
+    template: "SchoolIcsFeed '{feed_id}' not found for profile '{profile_id}'."
+    message: "SchoolIcsFeed '{feed_id}' not found for profile '{profile_id}'."
+    description: "Requested school calendar ICS subscription feed does not exist in the profile."
+
+  companion_device_not_found:
+    code: CFD-500-006
+    category: storage
+    http_status: 404
+    status_code: 404
+    jsonrpc_code: -32003
+    retryable: false
+    title: "Companion Device Not Found"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Requested paired mobile companion device does not exist or is inactive for the profile."
+
+  prep_pack_not_found:
+    code: CFD-500-007
+    category: storage
+    http_status: 404
+    status_code: 404
+    jsonrpc_code: -32003
+    retryable: false
+    title: "Visit Prep Pack Not Found"
+    template: "{detail}"
+    message: "{detail}"
+    description: "No compiled visit preparation pack exists for the requested appointment."
+
+  preventive_rule_not_found:
+    code: CFD-500-008
+    category: storage
+    http_status: 404
+    status_code: 404
+    jsonrpc_code: -32003
+    retryable: false
+    title: "Preventive Care Item Not Found"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Requested preventive care rule or linked target record does not exist in the profile."
+
+  duplicate_vital_reading:
+    code: CFD-500-009
+    category: storage
+    http_status: 409
+    status_code: 409
+    jsonrpc_code: -32004
+    retryable: false
+    title: "Duplicate Vital Reading"
+    template: "Duplicate vital observation reading with identical source identifiers."
+    message: "Duplicate vital observation reading with identical source identifiers."
+    description: "Submitted vital observation conflicts with an existing reading sharing identical source identifiers."
+
+  fhir_resource_conflict:
+    code: CFD-500-010
+    category: storage
+    http_status: 409
+    status_code: 409
+    jsonrpc_code: -32004
+    retryable: false
+    title: "FHIR Resource Conflict"
+    template: "{detail}"
+    message: "{detail}"
+    description: "FHIR R4 write or idempotency key conflicted with existing resource state."
+
+  fhir_precondition_failed:
+    code: CFD-500-011
+    category: storage
+    http_status: 412
+    status_code: 412
+    jsonrpc_code: -32004
+    retryable: false
+    title: "FHIR Version Precondition Failed"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Supplied If-Match ETag did not match the current FHIR resource versionId."
+
+  # --------------------------------------------------------------------------
+  # 600 — Health Connectors, SMART-on-FHIR & Rate Limits
+  # --------------------------------------------------------------------------
   fhir_upstream_error:
     code: CFD-600-001
     category: connector
@@ -92,6 +440,84 @@ errors:
     message: "Upstream SMART-on-FHIR endpoint returned error: {detail}"
     description: "Transient or upstream failure communicating with a SMART-on-FHIR server."
 
+  fhir_rate_limited:
+    code: CFD-600-002
+    category: connector
+    http_status: 429
+    status_code: 429
+    jsonrpc_code: -32006
+    retryable: true
+    title: "FHIR Rate Limit Exceeded"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Per-profile FHIR R4 API sliding-window request rate limit was exceeded."
+
+  school_ics_upstream_error:
+    code: CFD-600-003
+    category: connector
+    http_status: 502
+    status_code: 502
+    jsonrpc_code: -32007
+    retryable: true
+    title: "School Calendar Feed Upstream Error"
+    template: "Failed to fetch school calendar ICS feed from upstream server."
+    message: "Failed to fetch school calendar ICS feed from upstream server."
+    description: "Transient upstream HTTP failure while fetching a school calendar ICS feed."
+
+  clinical_connector_config_error:
+    code: CFD-600-004
+    category: connector
+    http_status: 400
+    status_code: 400
+    jsonrpc_code: -32602
+    retryable: false
+    title: "Health Connector Configuration Error"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Health or EHR connector parameters, PKCE verifier, or OAuth state failed validation."
+
+  # --------------------------------------------------------------------------
+  # 700 — Clinical Tools, Activity Undo & FHIR Confirmation Gates
+  # --------------------------------------------------------------------------
+  fhir_confirmation_required:
+    code: CFD-700-001
+    category: mcp_tools
+    http_status: 428
+    status_code: 428
+    jsonrpc_code: -32008
+    retryable: false
+    title: "FHIR Confirmation Required"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Explicit user confirmation or approved HITL token is required for FHIR write or bulk export."
+
+  clinical_activity_undo_invalid:
+    code: CFD-700-002
+    category: mcp_tools
+    http_status: 400
+    status_code: 400
+    jsonrpc_code: -32602
+    retryable: false
+    title: "Activity Undo Not Permitted"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Clinical activity action cannot be undone because the undo window expired, it was already undone, or it is non-reversible."
+
+  clinical_activity_entity_not_found:
+    code: CFD-700-003
+    category: mcp_tools
+    http_status: 404
+    status_code: 404
+    jsonrpc_code: -32003
+    retryable: false
+    title: "Activity Undo Target Not Found"
+    template: "{detail}"
+    message: "{detail}"
+    description: "Audit event or referenced clinical entity for single-click undo does not exist."
+
+  # --------------------------------------------------------------------------
+  # 800 — Clinical Safety & Workflow Guardrails
+  # --------------------------------------------------------------------------
   clinical_safety_refusal:
     code: CFD-800-001
     category: workflow
@@ -116,6 +542,9 @@ errors:
     message: "Extracted clinical dossier failed numerical grounding validation: {detail}"
     description: "Extracted clinical or benefits figure is not grounded in raw document text."
 
+  # --------------------------------------------------------------------------
+  # 900 — Clinical Runtime Internal Errors
+  # --------------------------------------------------------------------------
   clinical_internal_error:
     code: CFD-900-001
     category: internal
@@ -128,7 +557,63 @@ errors:
     message: "An internal clinical pack error occurred: {detail}"
     description: "Unhandled internal runtime failure inside the health domain pack."
 
+  prep_pack_generation_failed:
+    code: CFD-900-002
+    category: internal
+    http_status: 500
+    status_code: 500
+    jsonrpc_code: -32603
+    retryable: false
+    title: "Visit Prep Pack Generation Failed"
+    template: "Failed to generate appointment preparation pack."
+    message: "Failed to generate appointment preparation pack."
+    description: "Internal failure while compiling or persisting an appointment preparation pack."
+
+  clinical_timeline_failed:
+    code: CFD-900-003
+    category: internal
+    http_status: 500
+    status_code: 500
+    jsonrpc_code: -32603
+    retryable: false
+    title: "Activity Timeline Retrieval Failed"
+    template: "Failed to retrieve activity timeline."
+    message: "Failed to retrieve activity timeline."
+    description: "Internal failure while loading the profile clinical activity timeline."
+
 schemas:
+  problem_details:
+    type: "object"
+    required: ["type", "title", "status", "detail", "code", "retryable"]
+    properties:
+      type:
+        type: "string"
+        format: "uri"
+        description: "RFC 7807 problem type URI"
+      title:
+        type: "string"
+        description: "Short human-readable summary of the problem type"
+      status:
+        type: "integer"
+        description: "HTTP status code"
+      detail:
+        type: "string"
+        description: "Human-readable explanation specific to this occurrence"
+      instance:
+        type: "string"
+        description: "URI reference identifying the specific request occurrence"
+      code:
+        type: "string"
+        description: "Immutable namespaced error code (e.g. CFD-100-002)"
+      slug:
+        type: "string"
+        description: "Canonical snake_case error slug"
+      retryable:
+        type: "boolean"
+        description: "Whether callers or circuit breakers may safely retry"
+      context:
+        type: "object"
+        description: "Sanitized structured error context"
   error_response:
     type: "object"
     required: ["error", "message", "status_code"]

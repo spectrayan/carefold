@@ -21,15 +21,17 @@ from typing import Any, Dict, List, Literal, Optional
 import uuid
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Response, status
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from yarvelle_core.api.errors import ProblemDetailsRoute
 
 from carefold.api.deps import get_current_user, get_db
 from carefold.api.profiles import get_user_profile_access
 from carefold.audit.logger import record_audit
 from carefold.auth.ports import UserProfile
+from carefold.errors import YarvelleError
 from carefold.platform.reminders import (
     SNOOZE_DELTAS,
     advance_rrule_occurrence,
@@ -40,7 +42,7 @@ from carefold.db.models import Job, Profile, Reminder
 
 logger = logging.getLogger("carefold.api.reminders")
 
-router = APIRouter(tags=["reminders"])
+router = APIRouter(tags=["reminders"], route_class=ProblemDetailsRoute)
 
 ReminderCategoryLiteral = Literal["medication", "vitals", "appointment", "prep", "general"]
 ReminderStatusLiteral = Literal["pending", "completed", "snoozed", "missed", "cancelled"]
@@ -60,36 +62,39 @@ def require_profile_access(required_access: str):
     ) -> Profile:
         clean_id = (profile_id or "").strip()
         if not clean_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            raise YarvelleError(
+                "YRV-100-004",
                 detail="profile_id path parameter is required.",
+                context={'parameter': "profile_id"},
             )
 
         stmt = select(Profile).where(Profile.id == clean_id)
         res = await db.execute(stmt)
         profile = res.scalar_one_or_none()
         if profile is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+            raise YarvelleError(
+                "YRV-500-002",
                 detail=f"Profile '{clean_id}' not found.",
+                context={'profile_id': clean_id},
             )
 
         access = await get_user_profile_access(profile, user, db)
         if access is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "YRV-300-007",
                 detail="Access denied: you do not have permission for this profile.",
+                context={'profile_id': clean_id},
             )
 
         if required_access == "manage" and access != "manage":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: management permissions required to modify reminders for this profile.",
             )
 
         if required_access == "view_records" and access not in ("manage", "view_records"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: clinical view permissions required to inspect reminders.",
             )
 
@@ -445,13 +450,21 @@ async def calendar_subscription_feed(
     """Provides an authenticated live calendar feed for OS/mobile calendar apps."""
     clean_id = (profile_id or "").strip()
     if not clean_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing profile_id.")
+        raise YarvelleError(
+            "YRV-100-004",
+            detail="Missing profile_id.",
+            context={'parameter': "profile_id"},
+        )
 
     stmt = select(Profile).where(Profile.id == clean_id)
     res = await db.execute(stmt)
     profile = res.scalar_one_or_none()
     if profile is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found.")
+        raise YarvelleError(
+            "YRV-500-002",
+            detail="Profile not found.",
+            context={'profile_id': clean_id},
+        )
 
     # Validate feed token against profile preferences
     auth_token = token
@@ -471,8 +484,8 @@ async def calendar_subscription_feed(
 
     # If no feed token configured, or provided token does not match
     if not auth_token or not expected_token or not secrets.compare_digest(auth_token, expected_token):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+        raise YarvelleError(
+            "YRV-300-002",
             detail="Invalid calendar feed token.",
         )
 
@@ -513,9 +526,10 @@ async def get_reminder(
     res = await db.execute(stmt)
     rem = res.scalar_one_or_none()
     if rem is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-007",
             detail=f"Reminder '{reminder_id}' not found.",
+            context={'reminder_id': reminder_id},
         )
 
     return ReminderResponse(
@@ -556,9 +570,10 @@ async def update_reminder(
     res = await db.execute(stmt)
     rem = res.scalar_one_or_none()
     if rem is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-007",
             detail=f"Reminder '{reminder_id}' not found.",
+            context={'reminder_id': reminder_id},
         )
 
     now_utc = datetime.now(timezone.utc)
@@ -679,9 +694,10 @@ async def delete_reminder(
     res = await db.execute(stmt)
     rem = res.scalar_one_or_none()
     if rem is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-007",
             detail=f"Reminder '{reminder_id}' not found.",
+            context={'reminder_id': reminder_id},
         )
 
     job_stmt = select(Job).where(
@@ -747,9 +763,10 @@ async def snooze_reminder(
     res = await db.execute(stmt)
     rem = res.scalar_one_or_none()
     if rem is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-007",
             detail=f"Reminder '{reminder_id}' not found.",
+            context={'reminder_id': reminder_id},
         )
 
     now_utc = datetime.now(timezone.utc)
@@ -763,10 +780,11 @@ async def snooze_reminder(
     try:
         snoozed_data = apply_reminder_snooze(rem_dict, payload.interval, now_utc)
     except ValueError as val_err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "YRV-100-002",
             detail=str(val_err),
-        )
+            cause=val_err,
+        ) from val_err
 
     snooze_dt = datetime.fromisoformat(snoozed_data["snooze_until"])
     rem.status = "snoozed"

@@ -325,6 +325,12 @@ def _register_native_pack_resources() -> None:
     )
     _yc_get_resource_loader().register_pack(bootstrap_spec)
     try:
+        from carefold.errors import register_carefold_error_catalog as _register_cfd_errors
+
+        _register_cfd_errors()
+    except Exception:
+        pass
+    try:
         from yarvelle_core.tools.spec_loader import register_pack_tool_manifest as _yc_register_pack_tools
 
         _tools_dir = Path(__file__).resolve().parent / "resources" / "tools"

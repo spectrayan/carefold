@@ -19,12 +19,13 @@ from pathlib import Path
 from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional
 import uuid
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from yarvelle_core.api.deps import get_current_user, get_db, resolve_owner_user_id
+from yarvelle_core.api.errors import ProblemDetailsRoute
 from yarvelle_core.api.profiles import get_user_profile_access
 from yarvelle_core.audit.hash_chain import verify_profile_audit_chain
 from yarvelle_core.auth.ports import UserProfile
@@ -33,6 +34,7 @@ from carefold.connectors.gmail_mcp import (
     execute_gmail_send_message,
     prepare_gmail_send_approval_payload,
 )
+from carefold.errors import YarvelleError
 from carefold.models import Appointment
 from yarvelle_core.db.models import Approval, EmailDraft, Profile, utc_now
 from yarvelle_core.packaging.service import list_os_service_descriptors
@@ -41,7 +43,7 @@ from carefold.connectors.starters.zocdoc import prepare_zocdoc_booking_payload
 
 logger = logging.getLogger("carefold.api.coordinated")
 
-router = APIRouter(tags=["coordinated-v2"])
+router = APIRouter(tags=["coordinated-v2"], route_class=ProblemDetailsRoute)
 
 _V2_MANIFEST_FILES = (
     ("zocdoc", "zocdoc.yaml"),
@@ -66,36 +68,39 @@ def require_profile_access(
     ) -> Profile:
         clean_id = (profile_id or "").strip()
         if not clean_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            raise YarvelleError(
+                "YRV-100-004",
                 detail="profile_id path parameter is required.",
+                context={'parameter': "profile_id"},
             )
 
         stmt = select(Profile).where(Profile.id == clean_id)
         res = await db.execute(stmt)
         profile = res.scalar_one_or_none()
         if profile is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+            raise YarvelleError(
+                "YRV-500-002",
                 detail=f"Profile '{clean_id}' not found.",
+                context={'profile_id': clean_id},
             )
 
         access = await get_user_profile_access(profile, user, db)
         if access is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "YRV-300-007",
                 detail="Access denied: you do not have permission for this profile.",
+                context={'profile_id': clean_id},
             )
 
         if required_access == "manage" and access != "manage":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: management permissions required.",
             )
 
         if required_access == "view_records" and access not in ("manage", "view_records"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: clinical view permissions required.",
             )
 
@@ -179,9 +184,10 @@ async def post_discover_smart_scheduling_slots(
             busy_windows=combined_busy,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-015",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
     return {
@@ -215,9 +221,10 @@ async def post_zocdoc_booking_preview(
             insurance_carrier=payload.insurance_carrier,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-015",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
     now = utc_now()
@@ -270,14 +277,26 @@ async def post_send_profile_email_draft(
                 actor_user_id=actor_id,
             )
         except PermissionError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "YRV-300-004",
                 detail=str(exc),
+                cause=exc,
             ) from exc
         except ValueError as exc:
             msg = str(exc)
-            code = status.HTTP_404_NOT_FOUND if "not found" in msg.lower() else status.HTTP_400_BAD_REQUEST
-            raise HTTPException(status_code=code, detail=msg) from exc
+            if "not found" in msg.lower():
+                err_code = "YRV-700-004" if "approval" in msg.lower() else "YRV-500-010"
+                raise YarvelleError(
+                    err_code,
+                    detail=msg,
+                    cause=exc,
+                    context={'approval_id': req.approval_id, 'draft_id': draft_id, 'profile_id': profile.id},
+                ) from exc
+            raise YarvelleError(
+                "CFD-100-015",
+                detail=msg,
+                cause=exc,
+            ) from exc
 
     stmt = select(EmailDraft).where(
         EmailDraft.id == (draft_id or "").strip(),
@@ -286,9 +305,10 @@ async def post_send_profile_email_draft(
     res = await db.execute(stmt)
     draft = res.scalar_one_or_none()
     if draft is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-010",
             detail=f"EmailDraft '{draft_id}' not found for profile '{profile.id}'.",
+            context={'draft_id': draft_id, 'profile_id': profile.id},
         )
 
     try:
@@ -299,9 +319,10 @@ async def post_send_profile_email_draft(
             body=draft.body,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-015",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
     now = utc_now()

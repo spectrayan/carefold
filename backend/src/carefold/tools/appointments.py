@@ -44,6 +44,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed create_appointment.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -53,6 +55,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error="Parameter 'title' must be a non-empty string.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     start_raw = args.get("start_time") if isinstance(args, dict) else None
@@ -62,6 +66,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error="Both 'start_time' and 'end_time' parameters are required.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     try:
@@ -72,6 +78,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error=f"Invalid ISO-8601 datetime format: {exc}",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     if start_dt.tzinfo is None:
@@ -84,6 +92,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error="Parameter 'end_time' must be strictly after 'start_time'.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     tz_str = str(args.get("timezone", "UTC")).strip() or "UTC"
@@ -94,6 +104,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error=f"Invalid IANA timezone identifier: '{tz_str}'.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     status_str = str(args.get("status", "scheduled")).strip().lower()
@@ -104,6 +116,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error=f"Invalid appointment status '{status_str}'. Permitted: requested, scheduled, confirmed.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     appt_id = str(uuid.uuid4())
@@ -183,6 +197,8 @@ async def execute_list_appointments(args: Dict[str, Any], ctx: Any = None) -> To
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed list_appointments.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -268,6 +284,8 @@ async def execute_update_appointment_status(args: Dict[str, Any], ctx: Any = Non
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed update_appointment_status.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -277,6 +295,8 @@ async def execute_update_appointment_status(args: Dict[str, Any], ctx: Any = Non
             success=False,
             output=None,
             error="Parameter 'appointment_id' is required.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     target_status = str(args.get("status", "")).strip().lower() if isinstance(args, dict) else ""
@@ -285,6 +305,8 @@ async def execute_update_appointment_status(args: Dict[str, Any], ctx: Any = Non
             success=False,
             output=None,
             error="Parameter 'status' is required.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     now_utc = datetime.now(timezone.utc)
@@ -302,6 +324,8 @@ async def execute_update_appointment_status(args: Dict[str, Any], ctx: Any = Non
                 success=False,
                 output=None,
                 error=f"Appointment '{appointment_id}' not found for profile '{clean_profile_id}'.",
+                error_code="CFD-500-002",
+                retryable=False,
             )
 
         previous_status = appt.status
@@ -312,12 +336,16 @@ async def execute_update_appointment_status(args: Dict[str, Any], ctx: Any = Non
                 success=False,
                 output=None,
                 error=str(err),
+                error_code="CFD-100-003",
+                retryable=False,
             )
         except ValueError as val_err:
             return ToolResult(
                 success=False,
                 output=None,
                 error=str(val_err),
+                error_code="CFD-100-003",
+                retryable=False,
             )
 
         appt.status = target_status

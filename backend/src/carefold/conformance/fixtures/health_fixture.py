@@ -15,10 +15,12 @@ from __future__ import annotations
 
 import hashlib
 from typing import Any, Dict, List, Tuple
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
+from yarvelle_core.api.errors import ProblemDetailsRoute
 
 from carefold.db.models import Note
 from carefold.engine.tool_registry import DataFlows, ToolSpec
+from carefold.errors import YarvelleError
 from carefold.schemas.tool import ToolResult
 from carefold.scope.context import require_scope
 
@@ -44,13 +46,19 @@ def _check_health_scope() -> None:
     try:
         require_scope("health.clinical", level="read")
     except Exception as exc:
-        raise HTTPException(
-            status_code=403,
+        raise YarvelleError(
+            "YRV-300-008",
             detail=f"Scope grant 'health.clinical:read' required: {exc}",
+            cause=exc,
+            context={'scope': "health.clinical", 'level': "read"},
         ) from exc
 
 
-health_conformance_router = APIRouter(prefix="/test-health", tags=["test_health"])
+health_conformance_router = APIRouter(
+    prefix="/test-health",
+    tags=["test_health"],
+    route_class=ProblemDetailsRoute,
+)
 
 
 @health_conformance_router.get("/vitals", dependencies=[Depends(_check_health_scope)])

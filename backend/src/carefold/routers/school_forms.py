@@ -19,12 +19,14 @@ import logging
 from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional
 import uuid
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, Query, status
+import httpx
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from yarvelle_core.api.deps import get_current_user, get_db, resolve_owner_user_id
+from yarvelle_core.api.errors import ProblemDetailsRoute
 from yarvelle_core.api.profiles import get_user_profile_access
 from yarvelle_core.auth.ports import UserProfile
 from carefold.clinical.school_forms import (
@@ -37,12 +39,13 @@ from carefold.clinical.school_forms import (
     regenerate_school_form_prefill,
     serialize_school_form,
 )
+from carefold.errors import YarvelleError
 from carefold.models import SchoolForm
 from yarvelle_core.db.models import AuditEventRecord, Job, Profile, Reminder
 
 logger = logging.getLogger("carefold.api.school_forms")
 
-router = APIRouter(tags=["school-forms"])
+router = APIRouter(tags=["school-forms"], route_class=ProblemDetailsRoute)
 
 
 # ============================================================================
@@ -61,36 +64,39 @@ def require_profile_access(
     ) -> Profile:
         clean_id = (profile_id or "").strip()
         if not clean_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            raise YarvelleError(
+                "YRV-100-004",
                 detail="profile_id path parameter is required.",
+                context={'parameter': "profile_id"},
             )
 
         stmt = select(Profile).where(Profile.id == clean_id)
         res = await db.execute(stmt)
         profile = res.scalar_one_or_none()
         if profile is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+            raise YarvelleError(
+                "YRV-500-002",
                 detail=f"Profile '{clean_id}' not found.",
+                context={'profile_id': clean_id},
             )
 
         access = await get_user_profile_access(profile, user, db)
         if access is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "YRV-300-007",
                 detail="Access denied: you do not have permission for this profile.",
+                context={'profile_id': clean_id},
             )
 
         if required_access == "manage" and access != "manage":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: management permissions required to modify school forms.",
             )
 
         if required_access == "view_records" and access not in ("manage", "view_records"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: clinical view permissions required to inspect school forms.",
             )
 
@@ -216,9 +222,10 @@ async def create_profile_school_form(
             actor_user_id=actor_id,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-007",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
     safeguards = check_under_13_safeguards(profile, action="create_school_form")
@@ -244,9 +251,10 @@ async def get_profile_school_form(
     res = await db.execute(stmt)
     form = res.scalar_one_or_none()
     if form is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "CFD-500-004",
             detail=f"School form '{form_id}' not found.",
+            context={'form_id': form_id},
         )
 
     safeguards = check_under_13_safeguards(profile, action="view")
@@ -275,9 +283,11 @@ async def post_regenerate_school_form_prefill(
             actor_user_id=actor_id,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "CFD-500-004",
             detail=str(exc),
+            cause=exc,
+            context={'form_id': form_id},
         ) from exc
 
     safeguards = check_under_13_safeguards(profile, action="prefill")
@@ -305,9 +315,10 @@ async def patch_profile_school_form(
     res = await db.execute(stmt)
     form = res.scalar_one_or_none()
     if form is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "CFD-500-004",
             detail=f"School form '{form_id}' not found.",
+            context={'form_id': form_id},
         )
 
     now_utc = datetime.now(timezone.utc)
@@ -317,13 +328,13 @@ async def patch_profile_school_form(
         form.school_or_camp_name = payload.school_or_camp_name.strip() if payload.school_or_camp_name else None
     if payload.form_type is not None:
         if payload.form_type not in VALID_SCHOOL_FORM_TYPES:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid form_type.")
+            raise YarvelleError("CFD-100-007", detail="Invalid form_type.")
         form.form_type = payload.form_type
     if payload.attachment_id is not None:
         form.attachment_id = payload.attachment_id
     if payload.status is not None:
         if payload.status not in VALID_SCHOOL_FORM_STATUSES:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status.")
+            raise YarvelleError("CFD-100-007", detail="Invalid status.")
         form.status = payload.status
     if payload.prefill_draft is not None:
         form.prefill_draft_json = json.dumps(payload.prefill_draft)
@@ -422,9 +433,10 @@ async def delete_profile_school_form(
     res = await db.execute(stmt)
     form = res.scalar_one_or_none()
     if form is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "CFD-500-004",
             detail=f"School form '{form_id}' not found.",
+            context={'form_id': form_id},
         )
 
     actor_id = resolve_owner_user_id(user) or getattr(user, "id", "user") or "user"
@@ -510,9 +522,10 @@ async def post_profile_school_ics_feed(
             actor_user_id=actor_id,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-008",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
     return serialize_school_ics_feed(feed)
@@ -540,10 +553,21 @@ async def post_sync_profile_school_ics_feed(
             feed_id=feed_id,
             raw_ics_content=raw_ics,
         )
+    except httpx.HTTPError as exc:
+        raise YarvelleError(
+            "CFD-600-003",
+            detail="Failed to fetch school calendar ICS feed from upstream server.",
+            cause=exc,
+        ) from exc
     except ValueError as exc:
         msg = str(exc)
-        code = status.HTTP_404_NOT_FOUND if "not found" in msg.lower() else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=code, detail=msg) from exc
+        err_code = "CFD-500-005" if "not found" in msg.lower() else "CFD-100-008"
+        raise YarvelleError(
+            err_code,
+            detail=msg,
+            cause=exc,
+            context={'feed_id': feed_id, 'profile_id': profile.id},
+        ) from exc
 
 
 @router.delete(
@@ -561,9 +585,10 @@ async def delete_profile_school_ics_feed(
 
     deleted = await delete_school_ics_feed(db, profile_id=profile.id, feed_id=feed_id)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "CFD-500-005",
             detail=f"SchoolIcsFeed '{feed_id}' not found for profile '{profile.id}'.",
+            context={'feed_id': feed_id, 'profile_id': profile.id},
         )
     return {
         "id": feed_id,

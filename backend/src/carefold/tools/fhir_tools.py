@@ -119,6 +119,10 @@ class FhirToolResult(ToolResult):
             "taint": self.taint,
             "trust": self.trust,
         }
+        if not self.success:
+            base["code"] = self.error_code
+            base["error_code"] = self.error_code
+            base["retryable"] = self.retryable
         if isinstance(self.output, dict):
             for k, v in self.output.items():
                 if k not in base:
@@ -1084,12 +1088,25 @@ def _resolve_session_or_factory(args: Optional[Dict[str, Any]], ctx: Any) -> Tup
     return None, session_factory
 
 
+def _classify_fhir_tool_denial_code(err: Optional[str]) -> str:
+    msg = (err or "").lower()
+    if "profile_id is required" in msg:
+        return "YRV-300-014"
+    return "CFD-300-006"
+
+
 async def execute_fhir_search_resources(args: Dict[str, Any], ctx: Any = None) -> FhirToolResult:
     """Executes `fhir_search_resources` with fail-closed `profile_id` and `health.clinical` scope enforcement."""
     clean_profile_id, err = _verify_profile_and_clinical_scope(args, ctx, "fhir_search_resources")
     if err or not clean_profile_id:
         logger.warning("fhir_search_resources rejected: %s", err)
-        return FhirToolResult(success=False, output=None, error=err)
+        return FhirToolResult(
+            success=False,
+            output=None,
+            error=err,
+            error_code=_classify_fhir_tool_denial_code(err),
+            retryable=False,
+        )
 
     safe_args = args if isinstance(args, dict) else {}
     resource_type = str(safe_args.get("resource_type") or "").strip()
@@ -1122,7 +1139,15 @@ async def execute_fhir_search_resources(args: Dict[str, Any], ctx: Any = None) -
                     limit=limit,
                 )
     except ValueError as exc:
-        return FhirToolResult(success=False, output=None, error=str(exc))
+        msg = str(exc)
+        err_code = "CFD-300-006" if "paperwork" in msg.lower() or "scope" in msg.lower() else "CFD-100-001"
+        return FhirToolResult(
+            success=False,
+            output=None,
+            error=msg,
+            error_code=err_code,
+            retryable=False,
+        )
 
     is_tainted = bool(payload.get("tainted"))
     if is_tainted:
@@ -1143,7 +1168,13 @@ async def execute_fhir_get_patient_summary(args: Optional[Dict[str, Any]] = None
     clean_profile_id, err = _verify_profile_and_clinical_scope(args, ctx, "fhir_get_patient_summary")
     if err or not clean_profile_id:
         logger.warning("fhir_get_patient_summary rejected: %s", err)
-        return FhirToolResult(success=False, output=None, error=err)
+        return FhirToolResult(
+            success=False,
+            output=None,
+            error=err,
+            error_code=_classify_fhir_tool_denial_code(err),
+            retryable=False,
+        )
 
     safe_args = args if isinstance(args, dict) else {}
     limit_per_section = safe_args.get("limit_per_section", 15)
@@ -1164,7 +1195,13 @@ async def execute_fhir_get_patient_summary(args: Optional[Dict[str, Any]] = None
                     limit_per_section=limit_per_section,
                 )
     except ValueError as exc:
-        return FhirToolResult(success=False, output=None, error=str(exc))
+        return FhirToolResult(
+            success=False,
+            output=None,
+            error=str(exc),
+            error_code="CFD-100-001",
+            retryable=False,
+        )
 
     is_tainted = bool(payload.get("tainted"))
     if is_tainted:
@@ -1185,7 +1222,13 @@ async def execute_fhir_get_observation_trends(args: Dict[str, Any], ctx: Any = N
     clean_profile_id, err = _verify_profile_and_clinical_scope(args, ctx, "fhir_get_observation_trends")
     if err or not clean_profile_id:
         logger.warning("fhir_get_observation_trends rejected: %s", err)
-        return FhirToolResult(success=False, output=None, error=err)
+        return FhirToolResult(
+            success=False,
+            output=None,
+            error=err,
+            error_code=_classify_fhir_tool_denial_code(err),
+            retryable=False,
+        )
 
     safe_args = args if isinstance(args, dict) else {}
     loinc_or_code = str(safe_args.get("loinc_or_code") or safe_args.get("code") or "").strip()
@@ -1209,7 +1252,13 @@ async def execute_fhir_get_observation_trends(args: Dict[str, Any], ctx: Any = N
                     limit=limit,
                 )
     except ValueError as exc:
-        return FhirToolResult(success=False, output=None, error=str(exc))
+        return FhirToolResult(
+            success=False,
+            output=None,
+            error=str(exc),
+            error_code="CFD-100-001",
+            retryable=False,
+        )
 
     is_tainted = bool(payload.get("tainted"))
     if is_tainted:
