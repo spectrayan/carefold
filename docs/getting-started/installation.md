@@ -92,7 +92,7 @@ If you want to use local LLMs via Ollama, start the stack with the `local-ai` pr
    docker compose --profile local-ai up -d
    ```
 
-For more detailed instructions (including how to pull models and check healthchecks), see the [Docker README](../../deploy/docker/README.md).
+For more detailed instructions (including how to pull models and check healthchecks), see the [Docker README](https://github.com/spectrayan/carefold/blob/main/deploy/docker/README.md).
 
 ---
 

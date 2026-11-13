@@ -115,6 +115,7 @@ It pairs a **5-phase LangGraph orchestration engine** with **25 specialist clini
 
 Get a local Carefold runtime and household companion running in seconds:
 
+
 ### 1. Instant Launch via Prebuilt Docker Container
 Run Carefold with a single command using the published multi-architecture image (supports Apple Silicon `arm64` and Intel/AMD `amd64` automatically):
 
@@ -138,19 +139,20 @@ Visit `http://localhost:3000` to browse specialist helpers and launch private ho
 > - **Legacy tags on Apple Silicon**: If pulling older single-architecture tags (e.g. `0.3.0-beta.1`), append `--platform linux/amd64` to `docker pull` and `docker run`.
 
 ### 2. Launch via Docker Compose (Build from Source)
-Images can also be built locally from [`deploy/docker/Dockerfile`](deploy/docker/Dockerfile):
+
+To build and run the entire stack locally:
 
 ```bash
-# From the repository root: build and start the FastAPI backend (:8000) and Next.js UI (:3000)
-docker compose -f deploy/docker/docker-compose.yml up -d --build
+# 1. Set up the environment variables
+cp deploy/docker/.env.example deploy/docker/.env
+echo "CAREFOLD_VAULT_KEK=$(openssl rand -hex 32)" >> deploy/docker/.env
 
-# Or also start a local Ollama container for on-device LLM inference:
-docker compose -f deploy/docker/docker-compose.yml --profile ollama up -d --build
+# 2. Start the stack
+docker compose up -d
 
-# Pull the default model into the Ollama container (first run only)
-docker compose -f deploy/docker/docker-compose.yml exec ollama ollama pull llama3.2
+# 3. (Optional) Start with local Ollama AI
+docker compose --profile local-ai up -d
 ```
-Visit `http://localhost:3000` to browse specialist helpers and launch private consultations.
 
 ### 3. Local Monorepo Development
 

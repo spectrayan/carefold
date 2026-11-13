@@ -11,55 +11,47 @@ This directory contains the canonical Docker Compose configuration for running t
 
 Carefold encrypts chat history locally. You must generate a Vault Key (KEK) before starting the services.
 
-1. Copy the example environment file:2
-
-   ```bash
-   cp deploy/docker/.env.example deploy/docker/.env
-   ```
+1. Copy the example environment file:
+```bash
+cp deploy/docker/.env.example deploy/docker/.env
+```
 
 2. Generate a secure key and add it to your `.env` file:
-
-    ```bash
-
-    echo "CAREFOLD_VAULT_KEK=$(openssl rand -hex 32)" >> deploy/docker/.env
-    ```
-    > Warning: Keep this key safe. If you lose it, previously saved encrypted chats cannot be recovered.
+```bash
+echo "CAREFOLD_VAULT_KEK=$(openssl rand -hex 32)" >> deploy/docker/.env
+```
+> [!WARNING]: Keep this key safe. If you lose it, previously saved encrypted chats cannot be recovered.
 
 ## Starting the Stack
 
 To start the backend and frontend from the repository root:
-
-    ```bash
-    docker compose up -d
-    ```
+```bash
+docker compose up -d
+```
 
 To start the stack with local AI (Ollama), use the `local-ai` profile:
-
-    ```bash
-    docker compose --profile local-ai up -d
-    ```
+```bash
+docker compose --profile local-ai up -d
+```
 
 ## Pulling AI Models (Ollama)
 
 If you started the stack with the local-ai profile, you can pull a lightweight model into the Ollama container:
-
-    ```bash
-    docker compose exec ollama ollama run llama3.2
-    ```
+```bash
+docker compose exec ollama ollama pull llama3.2
+```
 
 ## Verifying Healthchecks
 
 To confirm all services are running and healthy:
-
-    ```bash
-    docker compose ps
-    ```
-The `STATUS` column should show `(healthy)` for the backend and web services.
+```bash
+docker compose ps
+```
+The `STATUS` column should show `(healthy)` for the backend web, and ollama services (if started with the `local-ai` profile).
 
 ## Stopping the Stack
 
 To stop and remove the containers:
-
-    ```bash
-    docker compose down
-    ```
+```bash
+docker compose down
+```
