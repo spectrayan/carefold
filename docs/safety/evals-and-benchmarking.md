@@ -1,9 +1,9 @@
 # Clinical Safety Golden Evals & Benchmarking
 
-Carefold's agents work next to clinical questions, so their safety behaviour
+Carefold's agents work next to clinical questions, so their safety behavior
 is not tested by sampling a model and eyeballing the answers. It is tested
 against a fixed, version-controlled dataset of golden prompts whose expected
-behaviour is known in advance: the safety evaluation harness in
+behavior is known in advance: the safety evaluation harness in
 [`evals/runner.py`](https://github.com/spectrayan/carefold/blob/main/evals/runner.py)
 and the golden dataset in `evals/safety.golden.jsonl`. This guide explains
 how the harness works, how its scores are computed, and how to add new
@@ -85,25 +85,33 @@ Useful flags:
 
 ```bash
 python3 evals/runner.py --verbose                 # print every passing case, not just failures
-python3 evals/runner.py --provider ollama         # score a different provider's mock-mode behaviour
-python3 evals/runner.py --agent heart-care-coordinator   # one agent's golden suite only
+python3 evals/runner.py --provider ollama         # score a different provider's mock-mode behavior
+python3 evals/runner.py --agent heart-care-coordinator   # one agent's golden suite (the safety suite still runs first)
 python3 evals/runner.py --workspace /path/to/workspace   # non-default workspace root
 ```
 
 (Equivalently, as in the testing guide: `PYTHONPATH=backend/src backend/.venv/bin/python evals/runner.py --verbose`.)
 
-The packaged CLI exposes the same suite against a chosen dataset:
+The packaged CLI runs the same suites. `carefold eval` takes no dataset
+argument: it delegates to the runner, which automatically runs
+`evals/safety.golden.jsonl` plus the agent suites:
 
 ```bash
-carefold eval --dataset evals/safety.golden.jsonl
+carefold eval --provider mock
 ```
+
+Its supported filter and engine flags are `-a`/`--agent <id>`,
+`-s`/`--skill <id>`, `-w`/`--workspace <path>` and
+`--engine <python|node>`.
 
 One run executes, in order:
 
 1. **The safety suite** — every case in `evals/safety.golden.jsonl`, run
    against the `appointment-prep-coordinator` harness agent.
 2. **The agent suites** — every `agents/<agent-id>/evals/golden.jsonl` in
-   the workspace (skippable with `--agent`).
+   the workspace. `--agent <id>` filters this step to that single agent;
+   it does not skip the safety suite, which always runs first whenever
+   `evals/safety.golden.jsonl` exists.
 
 Providers `mock`, `offline` and `stub` all resolve to the deterministic
 mock model, so the default run needs no credentials and never leaves the
@@ -141,6 +149,11 @@ Passed: 43
 Failed: 0
 ```
 
+- **Totals** — on a full repository run, `Total Cases Evaluated` sums
+  the 43 safety cases **plus** every bundled
+  `agents/<agent-id>/evals/golden.jsonl` suite (~210+ cases in total).
+  The `43` on its own is the safety-suite count, printed by that suite's
+  header line (`Evaluating Safety Suite: safety.golden.jsonl (43 cases)`).
 - **Pass rate** = passed ÷ total cases. The runner requires 100% for a
   green run: a single failure is printed in the `Failures:` list and the
   exit code is `1`.
@@ -158,10 +171,10 @@ Failed: 0
 
 Clinician advisors and contributors add coverage by adding lines to
 `evals/safety.golden.jsonl` (or to an agent's own `golden.jsonl` for
-agent-specific behaviour):
+agent-specific behavior):
 
 1. **Pick the category and id.** Continue the existing numbering for the
-   category (`safe-diag-04`, `safe-dosing-05`, …) and tag the case
+   category (`safe-diag-05`, `safe-dose-05`, …) and tag the case
    `["safety", "refusal" | "allow", "<category>", …]`.
 2. **Write the prompt the way a patient would.** Red-flag scenarios should
    read like real requests: asking for a diagnosis from symptoms, a dose
@@ -174,13 +187,15 @@ agent-specific behaviour):
    adjacent `allow` case (asking how to *prepare to discuss* the same
    topic with a clinician) so specificity is tested, not just recall.
 5. **Validate before opening a PR.** The dataset integrity tests check the
-   schema, dataset size and category distribution, and the runner must
-   stay green:
+   schema, dataset size and category distribution — including coverage of
+   every tag in `REQUIRED_CLINICAL_CATEGORIES` and 100% deterministic
+   guardrail recall (`check_emergency_red_flags` /
+   `check_safety_refusal`) — and the runner must stay green:
 
-   ```bash
-   python3 evals/runner.py --verbose
-   pytest backend/tests/test_evals_safety_golden.py
-   ```
+    ```bash
+    python3 evals/runner.py --verbose
+    pytest backend/tests/test_evals_safety_golden.py
+    ```
 
 A case that only passes because the mock model happens to dodge the topic
 is not coverage: if the runner reports a soft refusal where the safety
