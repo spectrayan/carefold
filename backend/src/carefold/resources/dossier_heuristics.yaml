@@ -1,0 +1,56 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan (https://spectrayan.com)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0 and the
+# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+# Personal and household local use only. Commercial use, hosted service
+# offering, rebranding, white-labeling, and redistribution of modified
+# forks are prohibited without a written commercial license from Spectrayan.
+#
+# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+
+# ============================================================================
+# Carefold Dossier Extraction Heuristics (#343)
+# ============================================================================
+
+clinical_visit:
+  aliases:
+    - clinical_visit
+    - clinical
+    - ClinicalVisitDossier
+  patterns:
+    reason_for_visit: 'reason\s*for\s*visit\s*:\s*([^\n\.]+)'
+    follow_up_timeline: 'follow[- ]up\s*(?:is|:)?\s*(?:return\s*in\s*)?(\d+\s*(?:weeks?|days?|months?))'
+    physician_instructions: 'physician\s*instructions\s*:\s*([^\n]+)'
+    questions_to_ask: 'questions?\s*(?:to\s*ask)?\s*:\s*([^\n]+)'
+  list_delimiter: ","
+
+insurance_benefits:
+  aliases:
+    - insurance_benefits
+    - insurance
+    - InsuranceBenefitsDossier
+  patterns:
+    deductible: 'deductible\s*(?:is|:)?\s*(\$?\d+(?:,\d{3})*)'
+    coinsurance: 'coinsurance\s*(?:is|:)?\s*(\d+(?:\.\d+)?%|\d+(?:\.\d+)?\s*percent)'
+    out_of_pocket_maximum: 'out[- ]of[- ]pocket\s*max(?:imum)?\s*(?:is|:)?\s*(\$?\d+(?:,\d{3})*)'
+    in_out_network_rules: '([^\n]*in-network[^\n]*)'
+  copays:
+    primary_care: 'primary\s*care\s*(?:visit)?(?:\s*copay)?(?:\s*[:is]+)?\s*(\$?\d+)'
+    specialist: 'specialist\s*(?:visit)?(?:\s*copay)?(?:\s*[:is]+)?\s*(\$?\d+)'
+  fallback_copay:
+    key: office_visit
+    pattern: 'copay\s*(?:is|:)?\s*(\$?\d+)'
+  prior_authorization_flags:
+    - label: MRI
+      pattern: '\bMRI\b'
+      ignore_case: false
+    - label: CT
+      pattern: '\bCT\b'
+      ignore_case: false
+    - label: PET
+      pattern: '\bPET\b'
+      ignore_case: false
+    - label: physical therapy
+      pattern: '\bphysical\s*therapy\b'
+      ignore_case: true

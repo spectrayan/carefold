@@ -16,9 +16,10 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from yarvelle_core.api.errors import ProblemDetailsRoute
 
 from carefold.api.deps import get_current_user, get_db
 from carefold.api.profiles import get_user_profile_access
@@ -36,6 +37,7 @@ from carefold.clinical.undo import (
     execute_single_click_undo,
     execute_single_click_undo_async,
 )
+from carefold.errors import YarvelleError
 
 from carefold.db.models import Profile
 from carefold.schemas.activity import (
@@ -45,7 +47,7 @@ from carefold.schemas.activity import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["activity"])
+router = APIRouter(tags=["activity"], route_class=ProblemDetailsRoute)
 
 
 # ============================================================================
@@ -61,36 +63,39 @@ def require_profile_access(required_access: str):
     ) -> Profile:
         clean_id = (profile_id or "").strip()
         if not clean_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            raise YarvelleError(
+                "YRV-100-004",
                 detail="profile_id path parameter is required.",
+                context={'parameter': "profile_id"},
             )
 
         stmt = select(Profile).where(Profile.id == clean_id)
         res = await db.execute(stmt)
         profile = res.scalar_one_or_none()
         if profile is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+            raise YarvelleError(
+                "YRV-500-002",
                 detail=f"Profile '{clean_id}' not found.",
+                context={'profile_id': clean_id},
             )
 
         access = await get_user_profile_access(profile, user, db)
         if access is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "YRV-300-007",
                 detail="Access denied: you do not have permission for this profile.",
+                context={'profile_id': clean_id},
             )
 
         if required_access == "manage" and access != "manage":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: management permissions required to undo actions for this profile.",
             )
 
         if required_access == "view_records" and access not in ("manage", "view_records"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: clinical view permissions required to inspect activity timeline.",
             )
 
@@ -130,12 +135,15 @@ async def get_activity_timeline(
             event=event,
             tool=tool,
         )
-    except Exception:
+    except YarvelleError:
+        raise
+    except Exception as exc:
         logger.exception("Failed to retrieve activity timeline")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        raise YarvelleError(
+            "CFD-900-003",
             detail="Failed to retrieve activity timeline.",
-        )
+            cause=exc,
+        ) from exc
 
 
 @router.post(
@@ -160,18 +168,17 @@ async def post_activity_undo(
         )
         return ActivityUndoResponse(**result)
     except tuple({UndoWindowExpiredError, _resolve_undo_window_expired_error()}) as err:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
+        raise YarvelleError("CFD-700-002", detail=str(err), cause=err) from err
     except tuple({ActionNotUndoableError, _resolve_action_not_undoable_error()}) as err:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
-
+        raise YarvelleError("CFD-700-002", detail=str(err), cause=err) from err
     except AlreadyUndoneError as err:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
+        raise YarvelleError("CFD-700-002", detail=str(err), cause=err) from err
     except InvalidExternalRefError as err:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
+        raise YarvelleError("CFD-700-002", detail=str(err), cause=err) from err
     except EntityNotFoundError as err:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err))
+        raise YarvelleError("CFD-700-003", detail=str(err), cause=err) from err
     except ValueError as err:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
+        raise YarvelleError("CFD-700-002", detail=str(err), cause=err) from err
 
 
 __all__ = [

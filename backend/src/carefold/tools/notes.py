@@ -54,6 +54,8 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed create_typed_note.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -63,6 +65,8 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
             success=False,
             output=None,
             error="Parameters must be provided as a dictionary.",
+            error_code="CFD-100-014",
+            retryable=False,
         )
 
     title = str(args.get("title", "")).strip()
@@ -72,6 +76,8 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
             success=False,
             output=None,
             error="Parameters 'title' and 'content' must be non-empty strings.",
+            error_code="CFD-100-014",
+            retryable=False,
         )
 
     raw_type = str(args.get("type", "general")).strip()
@@ -82,6 +88,8 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
             success=False,
             output=None,
             error=str(type_err),
+            error_code="CFD-100-014",
+            retryable=False,
         )
 
     linked_appt_id = args.get("linked_appointment_id")
@@ -116,6 +124,8 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
                         success=False,
                         output=None,
                         error="Security violation: Linked appointment does not exist or does not belong to profile.",
+                        error_code="CFD-100-003",
+                        retryable=False,
                     )
 
             # 4. Insert Note
@@ -205,66 +215,18 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
         return ToolResult(
             success=False,
             output=None,
-            error=f"create_typed_note failed: {exc}",
+            error="Failed to persist clinical note.",
+            error_code="CFD-900-001",
+            retryable=False,
         )
 
 
-SPEC = ToolSpec(
-    name="create_typed_note",
-    description=(
-        "Create and persist a typed clinical or navigation note across 7 canonical categories "
-        "('visit', 'symptom', 'question', 'after_visit', 'school', 'scratchpad', 'general') "
-        "with optional appointment linking, tag categorization, search indexing, and audit logging."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "title": {
-                "type": "string",
-                "description": "Human-readable title for the note (min 1, max 255 chars).",
-            },
-            "content": {
-                "type": "string",
-                "description": "Markdown formatted note body content.",
-            },
-            "type": {
-                "type": "string",
-                "enum": [
-                    "visit",
-                    "symptom",
-                    "question",
-                    "after_visit",
-                    "school",
-                    "scratchpad",
-                    "general",
-                ],
-                "default": "general",
-                "description": "Standardized note classification type.",
-            },
-            "linked_appointment_id": {
-                "type": "string",
-                "description": "Optional UUID of an appointment to associate with this note.",
-            },
-            "tags": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "Optional list of tag strings for categorization.",
-            },
-        },
-        "required": ["title", "content"],
-    },
-    risk_tier="write_local",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_create_typed_note,
-    metadata={
-        "action": "create_typed_note",
-        "entity": "note",
-        "undoable": True,
-        "risk": "write_local",
-    },
-    scopes={"health.clinical"},
-)
+def __getattr__(name: str) -> Any:
+    if name == "SPEC":
+        from carefold.tools import get_health_tool_spec
+
+        return get_health_tool_spec("create_typed_note")
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = ["SPEC", "execute_create_typed_note"]

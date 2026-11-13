@@ -106,8 +106,12 @@ export function formatMessageTimestamp(timestamp?: string): string | null {
 export function stripReferencePreamble(text: string): string {
   if (!text) return text;
   const pattern = /^(?:(?:\*|_){0,2}(?:(?:Based on|According to|From) (?:the )?(?:provided )?reference (?:document|guide|material|checklist|information|docs?)(?: provided)?)[,:]?(?:\*|_){0,2}[,:]?\s*)/i;
-  let cleaned = text.trimStart().replace(pattern, '').replace(/^[*_\s]+/, '');
-  if (cleaned && cleaned !== text) {
+  const trimmed = text.trimStart();
+  if (!pattern.test(trimmed)) {
+    return text;
+  }
+  let cleaned = trimmed.replace(pattern, '').replace(/^[*_\s]+/, '');
+  if (cleaned) {
     cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
   }
   return cleaned;

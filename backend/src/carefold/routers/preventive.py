@@ -17,12 +17,13 @@ from datetime import datetime
 import logging
 from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from yarvelle_core.api.deps import get_current_user, get_db, resolve_owner_user_id
+from yarvelle_core.api.errors import ProblemDetailsRoute
 from yarvelle_core.api.profiles import get_user_profile_access
 from yarvelle_core.auth.ports import UserProfile
 from carefold.clinical.preventive import (
@@ -34,11 +35,12 @@ from carefold.clinical.preventive import (
     set_profile_schedule_source,
     update_preventive_record,
 )
+from carefold.errors import YarvelleError
 from yarvelle_core.db.models import Profile
 
 logger = logging.getLogger("carefold.api.preventive")
 
-router = APIRouter(tags=["preventive"])
+router = APIRouter(tags=["preventive"], route_class=ProblemDetailsRoute)
 
 
 # ============================================================================
@@ -57,36 +59,39 @@ def require_profile_access(
     ) -> Profile:
         clean_id = (profile_id or "").strip()
         if not clean_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            raise YarvelleError(
+                "YRV-100-004",
                 detail="profile_id path parameter is required.",
+                context={'parameter': "profile_id"},
             )
 
         stmt = select(Profile).where(Profile.id == clean_id)
         res = await db.execute(stmt)
         profile = res.scalar_one_or_none()
         if profile is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+            raise YarvelleError(
+                "YRV-500-002",
                 detail=f"Profile '{clean_id}' not found.",
+                context={'profile_id': clean_id},
             )
 
         access = await get_user_profile_access(profile, user, db)
         if access is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "YRV-300-007",
                 detail="Access denied: you do not have permission for this profile.",
+                context={'profile_id': clean_id},
             )
 
         if required_access == "manage" and access != "manage":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: management permissions required to modify preventive care records.",
             )
 
         if required_access == "view_records" and access not in ("manage", "view_records"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: clinical view permissions required to inspect preventive care.",
             )
 
@@ -205,9 +210,10 @@ async def get_profile_preventive_care(
             category=category,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-005",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
     return PreventiveChecklistResponse(**result)
@@ -240,9 +246,10 @@ async def patch_profile_preventive_rule(
             actor_user_id=actor_id,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-005",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
     return PreventiveRecordResponse(
@@ -280,9 +287,10 @@ async def put_profile_preventive_settings(
             actor_user_id=actor_id,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-005",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
     return PreventiveSettingsResponse(
@@ -318,8 +326,8 @@ async def post_profile_preventive_action(
         )
     except ValueError as exc:
         detail_msg = str(exc)
-        code = status.HTTP_404_NOT_FOUND if "not found" in detail_msg.lower() else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=code, detail=detail_msg) from exc
+        err_code = "CFD-500-008" if "not found" in detail_msg.lower() else "CFD-100-005"
+        raise YarvelleError(err_code, detail=detail_msg, cause=exc) from exc
 
     return action_res
 

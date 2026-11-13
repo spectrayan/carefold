@@ -62,6 +62,8 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed record_vitals.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -72,6 +74,8 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
             success=False,
             output=None,
             error="Parameter 'vitals_data' must not be empty and must include at least one recognizable vital sign.",
+            error_code="CFD-100-002",
+            retryable=False,
         )
 
     has_recognized = any(k in vitals_data and vitals_data[k] is not None for k in RECOGNIZED_VITALS_KEYS)
@@ -80,6 +84,8 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
             success=False,
             output=None,
             error="Parameter 'vitals_data' must not be empty and must include at least one recognizable vital sign.",
+            error_code="CFD-100-002",
+            retryable=False,
         )
 
     # Validate Blood Pressure pairing and order
@@ -90,6 +96,8 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
             success=False,
             output=None,
             error="Both systolic and diastolic blood pressure must be provided together.",
+            error_code="CFD-100-002",
+            retryable=False,
         )
     if sys_val is not None and dia_val is not None:
         try:
@@ -100,12 +108,16 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
                     success=False,
                     output=None,
                     error="Systolic blood pressure must be strictly greater than diastolic blood pressure.",
+                    error_code="CFD-100-002",
+                    retryable=False,
                 )
         except (ValueError, TypeError):
             return ToolResult(
                 success=False,
                 output=None,
                 error="Systolic and diastolic blood pressure must be numeric values.",
+                error_code="CFD-100-002",
+                retryable=False,
             )
 
     # 3. Clinical Non-Boundary Red Flags Evaluation
@@ -224,51 +236,12 @@ async def execute_record_vitals(args: Dict[str, Any], ctx: Any = None) -> ToolRe
     )
 
 
-SPEC = ToolSpec(
-    name="record_vitals",
-    description=(
-        "Record vital signs observations (blood pressure, heart rate, blood glucose, "
-        "SpO2, weight, height) for a patient profile with automated red-flag safety screening, "
-        "adult BMI computation, and CDC pediatric percentiles."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "vitals_data": {
-                "type": "object",
-                "description": "Key-value dictionary containing vital sign measurements.",
-            },
-            "reported_symptoms": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "Optional list of patient-reported concurrent acute or neurological symptoms.",
-            },
-            "recorded_at": {
-                "type": "string",
-                "description": "Optional ISO-8601 observation timestamp.",
-            },
-            "source_type": {
-                "type": "string",
-                "enum": ["manual", "device", "note_extracted"],
-                "default": "manual",
-            },
-            "source_ref": {"type": "string"},
-            "source_id": {"type": "string"},
-        },
-        "required": ["vitals_data"],
-    },
-    risk_tier="write_local",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_record_vitals,
-    metadata={
-        "action": "record_vitals",
-        "entity": "health_resource",
-        "undoable": True,
-        "risk": "write_local",
-    },
-    scopes={"health.clinical"},
-)
+def __getattr__(name: str) -> Any:
+    if name == "SPEC":
+        from carefold.tools import get_health_tool_spec
+
+        return get_health_tool_spec("record_vitals")
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = ["SPEC", "execute_record_vitals"]

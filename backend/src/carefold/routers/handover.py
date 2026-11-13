@@ -15,12 +15,13 @@ from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, Dict, List, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from yarvelle_core.api.deps import get_current_user, get_db, resolve_owner_user_id
+from yarvelle_core.api.errors import ProblemDetailsRoute
 from yarvelle_core.api.profiles import get_user_profile_access
 from yarvelle_core.auth.ports import UserProfile
 from carefold.clinical.handover import (
@@ -29,9 +30,10 @@ from carefold.clinical.handover import (
     execute_teen_handover,
     update_viewer_sections,
 )
+from carefold.errors import YarvelleError
 from yarvelle_core.db.models import Profile, ProfileAccess
 
-router = APIRouter(tags=["handover"])
+router = APIRouter(tags=["handover"], route_class=ProblemDetailsRoute)
 
 
 # ============================================================================
@@ -75,30 +77,33 @@ def require_profile_access(
     ) -> Profile:
         clean_id = (profile_id or "").strip()
         if not clean_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            raise YarvelleError(
+                "YRV-100-004",
                 detail="profile_id path parameter is required.",
+                context={'parameter': "profile_id"},
             )
 
         stmt = select(Profile).where(Profile.id == clean_id)
         res = await db.execute(stmt)
         profile = res.scalar_one_or_none()
         if profile is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+            raise YarvelleError(
+                "YRV-500-002",
                 detail=f"Profile '{clean_id}' not found.",
+                context={'profile_id': clean_id},
             )
 
         access = await get_user_profile_access(profile, user, db)
         if access is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "YRV-300-007",
                 detail="Access denied: you do not have permission for this profile.",
+                context={'profile_id': clean_id},
             )
 
         if required_access == "manage" and access != "manage":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: management permissions required.",
             )
 
@@ -135,9 +140,10 @@ async def update_profile_viewer_sections_endpoint(
             grantor_user_id=owner_id,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-010",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
     return {
@@ -208,9 +214,10 @@ async def execute_profile_teen_handover_endpoint(
             actor_user_id=owner_id,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-010",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
 

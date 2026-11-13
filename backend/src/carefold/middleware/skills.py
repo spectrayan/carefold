@@ -27,15 +27,20 @@ import carefold  # noqa: F401 - ensures health pack template overrides are regis
 logger = logging.getLogger(__name__)
 
 
-def _build_carefold_skills_prompt() -> str:
+def render_carefold_skills_prompt(safety_boundary_notice: Optional[str] = None) -> str:
+    """Renders Carefold's SkillsMiddleware system prompt from ``skills_middleware.hbs``."""
+    notice = (safety_boundary_notice or "").strip()
     if compose_skills_system_prompt is not None:
-        return compose_skills_system_prompt(pack_id="health") + "\n"
+        return compose_skills_system_prompt(
+            safety_boundary_notice=notice or None,
+            pack_id="health",
+        ) + "\n"
     from carefold.templates.engine import render_template
 
-    return render_template("middleware/skills_system_prompt.md.hbs", {"product_name": "Carefold"}) + "\n"
+    return render_template("skills_middleware.hbs", {"safety_boundary_notice": notice}) + "\n"
 
 
-CAREFOLD_SKILLS_PROMPT = _build_carefold_skills_prompt()
+CAREFOLD_SKILLS_PROMPT = render_carefold_skills_prompt()
 
 try:
     from deepagents.backends.filesystem import FilesystemBackend
@@ -143,4 +148,5 @@ __all__ = [
     "CarefoldSkillsMiddleware",
     "create_carefold_skills_middleware",
     "create_skills_middleware",
+    "render_carefold_skills_prompt",
 ]

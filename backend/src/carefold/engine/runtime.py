@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any, AsyncGenerator, AsyncIterator, Dict, Optional, Union
 
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import AIMessage
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.store.base import BaseStore
@@ -36,10 +37,22 @@ from langgraph.store.base import BaseStore
 from yarvelle_core.engine.builder import GraphBuilder
 from yarvelle_core.engine.graph import create_async_sqlite_saver, resolve_checkpointer_path
 from yarvelle_core.engine.safety_policy import SafetyPolicy
-from yarvelle_core.engine.service import AgentExecutionService as CoreAgentExecutionService
+from yarvelle_core.engine.service import (
+    AgentExecutionService as CoreAgentExecutionService,
+    strip_internal_suggestion_leakage,
+)
 
+from carefold.engine.output_guardrail import (
+    CarefoldOutputGuardrailNode,
+    extract_latest_turn_messages,
+)
 from carefold.engine.refusal_node import CarefoldRefusalNode
-from carefold.engine.response_synthesizer import CarefoldResponseSynthesizerNode
+from carefold.engine.response_synthesizer import (
+    CarefoldResponseSynthesizerNode,
+    deduplicate_middle_disclaimers,
+    rebrand_text,
+    strip_safe_reference_preamble,
+)
 from carefold.safety.policy import CarefoldHealthSafetyPolicy
 from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
 
@@ -179,16 +192,94 @@ class CarefoldAgentExecutionService(CoreAgentExecutionService):
             logger.debug("write-queued checkpointer unavailable, using core default: %s", err)
             return None
 
+    async def _reconcile_final_turn_text(
+        self,
+        checkpointer: Optional[Any],
+        thread_id: Optional[str],
+        raw_text: str,
+    ) -> str:
+        """Prevents multi-step tool/subagent token concatenation, middle disclaimers, and stripped ``**``."""
+        cleaned_fallback = deduplicate_middle_disclaimers(rebrand_text(raw_text))
+        if checkpointer is None or not thread_id:
+            return cleaned_fallback
+
+        try:
+            cfg = {"configurable": {"thread_id": str(thread_id)}}
+            cp_tuple = None
+            if hasattr(checkpointer, "aget_tuple"):
+                cp_tuple = await checkpointer.aget_tuple(cfg)
+            elif hasattr(checkpointer, "get_tuple"):
+                cp_tuple = checkpointer.get_tuple(cfg)
+            if not cp_tuple or not getattr(cp_tuple, "checkpoint", None):
+                return cleaned_fallback
+
+            channel_values = cp_tuple.checkpoint.get("channel_values", {}) or {}
+            turn_msgs = extract_latest_turn_messages(channel_values.get("messages", []))
+            ai_msgs = [
+                m
+                for m in turn_msgs
+                if isinstance(m, AIMessage) and isinstance(m.content, str) and m.content.strip()
+            ]
+            final_non_tool_ai = next(
+                (
+                    m
+                    for m in reversed(turn_msgs)
+                    if isinstance(m, AIMessage)
+                    and not getattr(m, "tool_calls", None)
+                    and isinstance(m.content, str)
+                    and m.content.strip()
+                ),
+                None,
+            )
+
+            # Case 1: Multi-step turn emitted pre-tool_calls prose AND a post-tool_calls final AIMessage,
+            # or core's strip_reference_doc_preamble stripped leading Markdown (`**`) on the final AIMessage.
+            if final_non_tool_ai is not None:
+                candidate = strip_safe_reference_preamble(
+                    strip_internal_suggestion_leakage(str(final_non_tool_ai.content))
+                )
+                if len(ai_msgs) >= 2 or candidate.lstrip("*_ \t") == raw_text.lstrip("*_ \t"):
+                    return deduplicate_middle_disclaimers(rebrand_text(candidate))
+
+            # Case 2: MainAgentNode delegated to specialists via `task` but emitted an empty final AIMessage,
+            # and CarefoldOutputGuardrailNode synthesized the specialist outputs into state["output"].
+            if final_non_tool_ai is None and isinstance(channel_values.get("output"), str):
+                state_out = strip_safe_reference_preamble(
+                    strip_internal_suggestion_leakage(str(channel_values["output"]))
+                )
+                if state_out.strip():
+                    return deduplicate_middle_disclaimers(rebrand_text(state_out))
+        except Exception as err:
+            logger.debug("turn text reconciliation skipped: %s", err)
+
+        return cleaned_fallback
+
     async def _order_buffered_events(
-        self, stream: AsyncGenerator[Dict[str, Any], None]
+        self,
+        stream: AsyncGenerator[Dict[str, Any], None],
+        *,
+        checkpointer: Optional[Any] = None,
+        thread_id: Optional[str] = None,
     ) -> AsyncGenerator[Dict[str, Any], None]:
-        """Keep suggestions after the buffered answer token (and drop them on refusal)."""
+        """Keep suggestions after the buffered answer token, drop on refusal, and reconcile multi-step text."""
         try:
             if not getattr(self, "_buffer_answer", False):
                 async for event in stream:
+                    if (
+                        event.get("type") == "done"
+                        and not event.get("refused")
+                        and not event.get("approvalRequired")
+                    ):
+                        reconciled = await self._reconcile_final_turn_text(
+                            checkpointer,
+                            thread_id or event.get("threadId"),
+                            str(event.get("fullText") or ""),
+                        )
+                        event = {**event, "fullText": reconciled}
                     yield event
                 return
             held_suggestions: list[Dict[str, Any]] = []
+            held_tokens: list[Dict[str, Any]] = []
             refused = False
             async for event in stream:
                 ev_type = event.get("type")
@@ -198,26 +289,49 @@ class CarefoldAgentExecutionService(CoreAgentExecutionService):
                 if ev_type == "refusal":
                     refused = True
                     held_suggestions.clear()
+                    held_tokens.clear()
                 if ev_type == "token":
-                    yield event
-                    for sug in held_suggestions:
-                        yield sug
-                    held_suggestions.clear()
+                    held_tokens.append(event)
                     continue
-                if ev_type == "done" and not refused and not event.get("refused"):
-                    for sug in held_suggestions:
-                        yield sug
-                    held_suggestions.clear()
+                if ev_type == "done":
+                    if not refused and not event.get("refused") and not event.get("approvalRequired"):
+                        reconciled = await self._reconcile_final_turn_text(
+                            checkpointer,
+                            thread_id or event.get("threadId"),
+                            str(event.get("fullText") or ""),
+                        )
+                        event = {**event, "fullText": reconciled}
+                        if held_tokens:
+                            yield {**held_tokens[-1], "content": reconciled}
+                            held_tokens.clear()
+                        elif reconciled:
+                            yield self.format_token_event(reconciled)
+                        for sug in held_suggestions:
+                            yield sug
+                        held_suggestions.clear()
+                    else:
+                        for tok in held_tokens:
+                            yield tok
+                        held_tokens.clear()
+                        if not refused and not event.get("refused"):
+                            for sug in held_suggestions:
+                                yield sug
+                        held_suggestions.clear()
                 yield event
         finally:
             await stream.aclose()
 
     async def execute_turn(self, *args: Any, **kwargs: Any) -> AsyncGenerator[Dict[str, Any], None]:
         """Run core's turn with a write-queued checkpointer when none was injected."""
+        req_thread_id = kwargs.get("thread_id") or (args[0] if args else None)
         async with AsyncExitStack() as stack:
             saver = None if self.checkpointer is not None else await self._open_serialized_saver(stack)
             if saver is None:
-                async for event in self._order_buffered_events(super().execute_turn(*args, **kwargs)):
+                async for event in self._order_buffered_events(
+                    super().execute_turn(*args, **kwargs),
+                    checkpointer=self.checkpointer,
+                    thread_id=req_thread_id,
+                ):
                     yield event
                 return
             # Shallow per-turn copy so concurrent turns on one service never
@@ -225,7 +339,9 @@ class CarefoldAgentExecutionService(CoreAgentExecutionService):
             turn_service = copy.copy(self)
             turn_service.checkpointer = saver
             async for event in self._order_buffered_events(
-                CoreAgentExecutionService.execute_turn(turn_service, *args, **kwargs)
+                CoreAgentExecutionService.execute_turn(turn_service, *args, **kwargs),
+                checkpointer=saver,
+                thread_id=req_thread_id,
             ):
                 yield event
 
@@ -268,12 +384,23 @@ class CarefoldAgentExecutionService(CoreAgentExecutionService):
             checkpointer=checkpointer,
             orchestration_audit_sink=self._soft_orchestration_audit,
         )
-        builder = builder.with_node("refusal", CarefoldRefusalNode()).with_node(
-            "response_synthesizer",
-            CarefoldResponseSynthesizerNode(
-                model=active_model,
-                agent_titles=builder._agent_titles(),
-            ),
+        agent_titles = builder._agent_titles()
+        builder = (
+            builder.with_node("refusal", CarefoldRefusalNode())
+            .with_node(
+                "response_synthesizer",
+                CarefoldResponseSynthesizerNode(
+                    model=active_model,
+                    agent_titles=agent_titles,
+                ),
+            )
+            .with_node(
+                "output_guardrail",
+                CarefoldOutputGuardrailNode(
+                    safety_policy=self.safety_policy,
+                    agent_titles=agent_titles,
+                ),
+            )
         )
         if effective_store is not None:
             builder = builder.with_store(effective_store)

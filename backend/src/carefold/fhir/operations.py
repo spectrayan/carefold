@@ -156,6 +156,23 @@ def check_fhir_rate_limit(
     bucket.append(now_mono)
 
 
+_FHIR_STATUS_TO_CFD_CODE: Dict[int, str] = {
+    400: "CFD-100-001",
+    401: "YRV-300-001",
+    403: "CFD-300-006",
+    404: "CFD-500-001",
+    409: "CFD-500-010",
+    412: "CFD-500-011",
+    413: "CFD-100-012",
+    422: "CFD-100-013",
+    428: "CFD-700-001",
+    429: "CFD-600-002",
+    502: "CFD-600-001",
+    503: "CFD-600-001",
+    504: "CFD-600-001",
+}
+
+
 class FhirOperationError(Exception):
     """Structured error convertible to both FHIR R4 `OperationOutcome` and RFC 9457 `problem+json`."""
 
@@ -169,15 +186,35 @@ class FhirOperationError(Exception):
         title: Optional[str] = None,
         instance: Optional[str] = None,
         headers: Optional[Dict[str, str]] = None,
+        error_code: Optional[str] = None,
     ) -> None:
         super().__init__(diagnostics)
+        from carefold.errors import (
+            CAREFOLD_ERROR_TYPE_BASE_URI,
+            get_error_catalog,
+            register_carefold_error_catalog,
+        )
+
         self.status_code = int(status_code)
         self.issue_code = issue_code
         self.diagnostics = diagnostics
         self.severity = severity
-        self.title = title or self._default_title(status_code)
+        self.title = title or self._default_title(self.status_code)
         self.instance = instance or "/api/v1/fhir/r4"
         self.headers = dict(headers or {})
+
+        resolved_code = error_code or _FHIR_STATUS_TO_CFD_CODE.get(self.status_code, "CFD-900-001")
+        catalog = get_error_catalog()
+        spec = catalog.get(resolved_code)
+        if spec is None:
+            register_carefold_error_catalog()
+            spec = catalog.get(resolved_code) or catalog.resolve("YRV-900-001")
+        self.error_spec = spec
+        self.error_code: str = spec.code
+        self.retryable: bool = bool(spec.retryable)
+        self._error_system: str = (
+            CAREFOLD_ERROR_TYPE_BASE_URI if spec.code.startswith("CFD-") else spec.type_base_uri
+        )
 
     @staticmethod
     def _default_title(status_code: int) -> str:
@@ -198,17 +235,21 @@ class FhirOperationError(Exception):
     def to_problem_details(self) -> Dict[str, Any]:
         """Serializes the error to an RFC 9457 Problem Details JSON object (`application/problem+json`)."""
         return {
-            "type": f"urn:carefold:problem:fhir:{self.issue_code}",
+            "type": self.error_spec.type_uri(self._error_system),
             "title": self.title,
             "status": self.status_code,
             "detail": self.diagnostics,
             "instance": self.instance,
             "code": self.issue_code,
+            "error_code": self.error_code,
+            "cfd_code": self.error_code,
+            "slug": self.error_spec.slug,
+            "retryable": self.retryable,
             "fhir_issue_code": self.issue_code,
         }
 
     def to_operation_outcome(self) -> Dict[str, Any]:
-        """Serializes the error to a validated FHIR R4 `OperationOutcome` with RFC 9457 metadata."""
+        """Serializes the error to a validated FHIR R4 `OperationOutcome` with `CFD-XXX-YYY` coding."""
         problem = self.to_problem_details()
         candidate: Dict[str, Any] = {
             "resourceType": "OperationOutcome",
@@ -218,7 +259,14 @@ class FhirOperationError(Exception):
                     "code": self.issue_code,
                     "diagnostics": self.diagnostics,
                     "details": {
-                        "text": f"[{problem['status']} {problem['title']}] {self.diagnostics}"
+                        "coding": [
+                            {
+                                "system": self._error_system,
+                                "code": self.error_code,
+                                "display": self.error_spec.title,
+                            }
+                        ],
+                        "text": f"[{problem['status']} {problem['title']}] {self.diagnostics}",
                     },
                 }
             ],

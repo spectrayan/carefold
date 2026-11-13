@@ -276,7 +276,6 @@ def list_connector_manifests() -> List[ConnectorManifest]:
         local_root = Path(__file__).resolve().parent
         candidate_dirs = (
             pkg_root / "starters" / "manifests",
-            local_root / "manifests",
             local_root / "starters" / "manifests",
         )
         for manifests_dir in candidate_dirs:

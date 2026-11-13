@@ -15,12 +15,13 @@ from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from yarvelle_core.api.deps import get_auth, get_current_user, get_db, resolve_owner_user_id
+from yarvelle_core.api.errors import ProblemDetailsRoute
 from yarvelle_core.api.profiles import get_user_profile_access
 from yarvelle_core.auth.ports import AuthPort, UserProfile
 from carefold.companion.pairing import (
@@ -34,11 +35,12 @@ from carefold.companion.sync import (
     ingest_companion_sync,
     list_companion_reminders,
 )
+from carefold.errors import YarvelleError
 from yarvelle_core.config import settings
 from carefold.models import CompanionDevice
 from yarvelle_core.db.models import Profile
 
-router = APIRouter(tags=["companion"])
+router = APIRouter(tags=["companion"], route_class=ProblemDetailsRoute)
 
 
 # ============================================================================
@@ -142,36 +144,39 @@ def require_profile_access(
     ) -> Profile:
         clean_id = (profile_id or "").strip()
         if not clean_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            raise YarvelleError(
+                "YRV-100-004",
                 detail="profile_id path parameter is required.",
+                context={'parameter': "profile_id"},
             )
 
         stmt = select(Profile).where(Profile.id == clean_id)
         res = await db.execute(stmt)
         profile = res.scalar_one_or_none()
         if profile is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+            raise YarvelleError(
+                "YRV-500-002",
                 detail=f"Profile '{clean_id}' not found.",
+                context={'profile_id': clean_id},
             )
 
         access = await get_user_profile_access(profile, user, db)
         if access is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "YRV-300-007",
                 detail="Access denied: you do not have permission for this profile.",
+                context={'profile_id': clean_id},
             )
 
         if required_access == "manage" and access != "manage":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: management permissions required for companion device administration.",
             )
 
         if required_access == "view_records" and access not in ("manage", "view_records"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: clinical view permissions required.",
             )
 
@@ -220,9 +225,10 @@ async def _resolve_sync_companion_device(
                 device_token=comp_token,
             )
         except CompanionPairingError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+            raise YarvelleError(
+                "CFD-300-004",
                 detail=str(exc),
+                cause=exc,
             ) from exc
 
     # Fall back to standard user session authentication
@@ -230,16 +236,18 @@ async def _resolve_sync_companion_device(
     prof_res = await db.execute(select(Profile).where(Profile.id == clean_profile_id))
     profile = prof_res.scalar_one_or_none()
     if profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-002",
             detail=f"Profile '{clean_profile_id}' not found.",
+            context={'profile_id': clean_profile_id},
         )
 
     access = await get_user_profile_access(profile, user, db)
     if access not in ("manage", "view_records"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "YRV-300-007",
             detail="Access denied for this profile.",
+            context={'profile_id': clean_profile_id},
         )
 
     stmt = select(CompanionDevice).where(CompanionDevice.profile_id == clean_profile_id)
@@ -251,8 +259,8 @@ async def _resolve_sync_companion_device(
     res = await db.execute(stmt)
     device = res.scalars().first()
     if device is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "CFD-500-006",
             detail="Active companion device not found for this profile.",
         )
     return device
@@ -296,14 +304,16 @@ async def initiate_companion_pairing_endpoint(
             platform=payload.platform,
         )
     except PermissionError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "CFD-300-005",
             detail=str(exc),
+            cause=exc,
         ) from exc
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-009",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
 
@@ -323,8 +333,8 @@ async def complete_companion_pairing_endpoint(
     )
     device = dev_res.scalar_one_or_none()
     if device is None or device.profile_id != clean_profile_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "CFD-500-006",
             detail=f"Companion device '{payload.device_id}' not found for profile '{clean_profile_id}'.",
         )
 
@@ -336,9 +346,10 @@ async def complete_companion_pairing_endpoint(
             client_cert_fingerprint_sha256=payload.client_cert_fingerprint_sha256,
         )
     except CompanionPairingError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "CFD-300-005",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
 
@@ -387,9 +398,10 @@ async def revoke_profile_companion_device(
             actor_user_id=owner_id,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "CFD-500-006",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
     return {
@@ -428,14 +440,16 @@ async def sync_companion_records_endpoint(
             health_connect_records=payload.health_connect_records,
         )
     except CompanionPairingError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "CFD-300-005",
             detail=str(exc),
+            cause=exc,
         ) from exc
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-009",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
 
@@ -462,9 +476,10 @@ async def list_companion_reminders_endpoint(
     try:
         items = await list_companion_reminders(session=db, device=device)
     except CompanionPairingError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "CFD-300-005",
             detail=str(exc),
+            cause=exc,
         ) from exc
 
     return {

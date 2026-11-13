@@ -1,0 +1,216 @@
+# Carefold — Healthcare AI Agent Marketplace & Runtime
+# Copyright 2026 Spectrayan (https://spectrayan.com)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0 and the
+# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
+# Personal and household local use only. Commercial use, hosted service
+# offering, rebranding, white-labeling, and redistribution of modified
+# forks are prohibited without a written commercial license from Spectrayan.
+#
+# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
+
+api_version: yarvelle.tools/v1
+kind: ToolSet
+pack_id: health
+tools:
+- name: check_preventive_care
+  description: Evaluate preventive care screenings and immunisations for a patient profile against cited
+    USPSTF Grade A/B and AAP/CDC pediatric schedules.
+  category: preventive
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: check_preventive_care
+    entity: preventive_record
+    risk: read
+  input_schema:
+    type: object
+    properties:
+      schedule_source:
+        type: string
+        enum:
+        - aap_2026
+        - cdc
+        description: Optional pediatric immunisation schedule source ('aap_2026' or 'cdc').
+      sex:
+        type: string
+        enum:
+        - any
+        - female
+        - male
+        description: Optional biological sex filter for adult screening rules.
+      category:
+        type: string
+        enum:
+        - screening
+        - immunisation
+        - well_visit
+        description: Optional category filter.
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.preventive:execute_check_preventive_care
+- name: update_preventive_status
+  description: Update the status of a preventive care screening or immunisation item ('due', 'completed',
+    'not_applicable', 'declined') for the active profile.
+  category: preventive
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: update_preventive_status
+    entity: preventive_record
+    undoable: true
+    risk: write_local
+  input_schema:
+    type: object
+    properties:
+      rule_id:
+        type: string
+        description: Preventive rule ID from the cited YAML rule pack.
+      status:
+        type: string
+        enum:
+        - due
+        - completed
+        - not_applicable
+        - declined
+        description: Updated preventive item status.
+      notes:
+        type: string
+        description: Optional clinical or patient notes.
+      completed_at:
+        type: string
+        description: Optional ISO-8601 completion timestamp.
+    required:
+    - rule_id
+    - status
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.preventive:execute_update_preventive_status
+- name: create_school_form
+  description: Create a pediatric school or camp health form with compiled draft prefill from profile
+    immunisations, allergies, medications, and vitals, plus automatic 30-day renewal reminder scheduling
+    when expires_at is set.
+  category: school
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: create_school_form
+    entity: school_form
+    undoable: true
+    risk: write_local
+  input_schema:
+    type: object
+    properties:
+      title:
+        type: string
+        description: Form title (e.g. 'Annual School Physical & Immunisation Form').
+      school_or_camp_name:
+        type: string
+        description: Name of school, daycare, or camp institution.
+      form_type:
+        type: string
+        enum:
+        - physical
+        - immunization
+        - medication_authorization
+        - sports_clearance
+        - general
+        default: general
+      expires_at:
+        type: string
+        description: Optional ISO-8601 expiration or renewal date.
+      attachment_id:
+        type: string
+        description: Optional linked CAS attachment ID.
+    required:
+    - title
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.school_forms:execute_create_school_form
+- name: list_school_forms
+  description: List tracked pediatric school and camp health forms and their draft prefill data.
+  category: school
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: list_school_forms
+    entity: school_form
+    risk: read
+  input_schema:
+    type: object
+    properties:
+      status:
+        type: string
+        enum:
+        - draft
+        - active
+        - expired
+        - archived
+        description: Optional status filter.
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.school_forms:execute_list_school_forms
+- name: sync_school_ics
+  description: Synchronize a child school RFC 5545 .ics calendar feed into local profile appointments.
+  category: school
+  pack_id: health
+  risk_tier: write_local
+  trust: untrusted
+  data_sensitivity: pii
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: sync_school_ics
+    entity: school_ics_feed
+    risk: write_local
+    taints_context: true
+  input_schema:
+    type: object
+    properties:
+      feed_id:
+        type: string
+        description: School ICS feed UUID.
+      raw_ics_content:
+        type: string
+        description: Optional inline RFC 5545 .ics calendar payload; when omitted, fetches the feed URL.
+    required:
+    - feed_id
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.connectors:execute_sync_school_ics

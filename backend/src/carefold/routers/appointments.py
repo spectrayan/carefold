@@ -19,12 +19,13 @@ from typing import Any, Dict, List, Literal, Optional
 import uuid
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from yarvelle_core.api.deps import get_current_user, get_db
+from yarvelle_core.api.errors import ProblemDetailsRoute
 from yarvelle_core.api.profiles import get_user_profile_access
 from yarvelle_core.audit.logger import record_audit
 from yarvelle_core.auth.ports import UserProfile
@@ -35,12 +36,13 @@ from carefold.clinical.appointments import (
     sweep_post_visit_transitions,
     validate_status_transition,
 )
+from carefold.errors import YarvelleError
 from carefold.models import Appointment
 from yarvelle_core.db.models import Profile
 
 logger = logging.getLogger("carefold.api.appointments")
 
-router = APIRouter(tags=["appointments"])
+router = APIRouter(tags=["appointments"], route_class=ProblemDetailsRoute)
 
 AppointmentStatusLiteral = Literal["requested", "scheduled", "confirmed", "completed", "cancelled"]
 
@@ -59,36 +61,39 @@ def require_profile_access(required_access: str):
     ) -> Profile:
         clean_id = (profile_id or "").strip()
         if not clean_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            raise YarvelleError(
+                "YRV-100-004",
                 detail="profile_id path parameter is required.",
+                context={'parameter': "profile_id"},
             )
 
         stmt = select(Profile).where(Profile.id == clean_id)
         res = await db.execute(stmt)
         profile = res.scalar_one_or_none()
         if profile is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+            raise YarvelleError(
+                "YRV-500-002",
                 detail=f"Profile '{clean_id}' not found.",
+                context={'profile_id': clean_id},
             )
 
         access = await get_user_profile_access(profile, user, db)
         if access is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "YRV-300-007",
                 detail="Access denied: you do not have permission for this profile.",
+                context={'profile_id': clean_id},
             )
 
         if required_access == "manage" and access != "manage":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: management permissions required to modify appointments for this profile.",
             )
 
         if required_access == "view_records" and access not in ("manage", "view_records"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "CFD-300-003",
                 detail="Access denied: clinical view permissions required to inspect appointments.",
             )
 
@@ -404,9 +409,10 @@ async def get_appointment(
     res = await db.execute(stmt)
     appt = res.scalar_one_or_none()
     if appt is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "CFD-500-002",
             detail=f"Appointment '{appointment_id}' not found.",
+            context={'appointment_id': appointment_id},
         )
 
     return AppointmentResponse(
@@ -449,9 +455,10 @@ async def update_appointment(
     res = await db.execute(stmt)
     appt = res.scalar_one_or_none()
     if appt is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "CFD-500-002",
             detail=f"Appointment '{appointment_id}' not found.",
+            context={'appointment_id': appointment_id},
         )
 
     now_utc = datetime.now(timezone.utc)
@@ -462,15 +469,17 @@ async def update_appointment(
         try:
             validate_status_transition(previous_status, payload.status)
         except InvalidStatusTransitionError as err:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            raise YarvelleError(
+                "CFD-100-004",
                 detail=str(err),
-            )
+                cause=err,
+            ) from err
         except ValueError as err:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            raise YarvelleError(
+                "CFD-100-003",
                 detail=str(err),
-            )
+                cause=err,
+            ) from err
         appt.status = payload.status
 
     # Validate and update temporal fields
@@ -488,8 +497,8 @@ async def update_appointment(
         effective_end = effective_end.astimezone(timezone.utc)
 
     if effective_end <= effective_start:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-003",
             detail=f"Updated start_time ({effective_start.isoformat()}) would be after end_time ({effective_end.isoformat()}).",
         )
 
@@ -578,9 +587,10 @@ async def delete_appointment(
     res = await db.execute(stmt)
     appt = res.scalar_one_or_none()
     if appt is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "CFD-500-002",
             detail=f"Appointment '{appointment_id}' not found.",
+            context={'appointment_id': appointment_id},
         )
 
     now_utc = datetime.now(timezone.utc)

@@ -23,12 +23,13 @@ import re
 from typing import Any, Dict, List, Optional
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import Field
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncSession
 import yaml
+from yarvelle_core.api.errors import ProblemDetailsRoute
 
 from carefold.api.deps import get_current_user, resolve_owner_user_id
 from carefold.api.profiles import get_user_profile_access
@@ -42,6 +43,7 @@ from carefold.config import settings
 from carefold.constants.api import ROUTE_NOTE_DETAIL, ROUTE_NOTES
 from carefold.db.models import Appointment, Job, Note, Profile, ProfileAccess
 from carefold.db.session import get_db
+from carefold.errors import YarvelleError
 from carefold.i18n.locale import (
     DEFAULT_LOCALE,
     canonicalize_locale,
@@ -100,7 +102,7 @@ class TypedNoteListResponse(_BaseTypedNoteListResponse):
 
 logger = get_logger("carefold.api.notes")
 
-router = APIRouter(tags=["Notes"])
+router = APIRouter(tags=["Notes"], route_class=ProblemDetailsRoute)
 
 FRONTMATTER_PATTERN = re.compile(r"^---\s*\r?\n(.*?)\r?\n---\s*\r?\n?(.*)$", re.DOTALL)
 HEADING_PATTERN = re.compile(r"^#\s+(.+)$", re.MULTILINE)
@@ -206,8 +208,8 @@ def get_user_notes_dir(owner_id: Optional[str], profile_id: Optional[str] = None
 def _clean_and_validate_slug(slug: str) -> str:
     """Validates slug for security, stripping any .md extension."""
     if "/" in slug or "\\" in slug:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "YRV-100-011",
             detail="Invalid note slug: must contain only alphanumeric characters, dashes, and underscores.",
         )
     clean_slug = os.path.basename(slug.strip())
@@ -215,8 +217,8 @@ def _clean_and_validate_slug(slug: str) -> str:
         clean_slug = clean_slug[:-3]
 
     if not clean_slug or not SAFE_SLUG_PATTERN.match(clean_slug):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "YRV-100-011",
             detail="Invalid note slug: must contain only alphanumeric characters, dashes, and underscores.",
         )
     return clean_slug
@@ -308,36 +310,39 @@ async def _verify_profile_access(
     """Helper verifying that the profile exists and the user has appropriate permissions."""
     clean_id = (profile_id or "").strip()
     if not clean_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "YRV-100-004",
             detail="profile_id is required",
+            context={'parameter': "profile_id"},
         )
 
     stmt = select(Profile).where(Profile.id == clean_id)
     res = await db.execute(stmt)
     prof = res.scalar_one_or_none()
     if prof is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-002",
             detail="Profile not found.",
+            context={'profile_id': clean_id},
         )
 
     access = await get_user_profile_access(prof, user, db)
     if access is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "YRV-300-007",
             detail="Access denied: no permissions for requested profile.",
+            context={'profile_id': clean_id},
         )
 
     if access == "view_paperwork":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "CFD-300-003",
             detail="Access denied: clinical view permissions required to inspect clinical notes.",
         )
 
     if required_level == "manage" and access != "manage":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+        raise YarvelleError(
+            "CFD-300-003",
             detail="Access denied: management permissions required to modify clinical notes for this profile.",
         )
 
@@ -425,7 +430,7 @@ async def create_note(
         slug = re.sub(r"\s+", "-", raw_slug).lower()[:64] or "note"
 
     if not SAFE_SLUG_PATTERN.match(slug):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid note slug.")
+        raise YarvelleError("YRV-100-011", detail="Invalid note slug.")
 
     # 3-tier title resolution
     if title == slug:
@@ -450,9 +455,10 @@ async def create_note(
         try:
             note_locale = canonicalize_locale(payload.locale, strict=True)
         except ValueError as loc_err:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            raise YarvelleError(
+                "YRV-100-009",
                 detail=str(loc_err),
+                cause=loc_err,
             ) from loc_err
     else:
         note_locale = getattr(prof, "preferred_locale", None) or DEFAULT_LOCALE
@@ -462,10 +468,11 @@ async def create_note(
     try:
         note_type = validate_note_type(raw_type, allow_legacy=True)
     except ValueError as type_err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+        raise YarvelleError(
+            "CFD-100-014",
             detail=str(type_err),
-        )
+            cause=type_err,
+        ) from type_err
 
     # Validate linked appointment if present
     linked_appt_id = payload.linked_appointment_id
@@ -478,8 +485,8 @@ async def create_note(
             )
             appt_res = await db.execute(appt_stmt)
             if appt_res.scalar_one_or_none() is None:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                raise YarvelleError(
+                    "CFD-100-003",
                     detail="Security violation: Linked appointment does not exist or does not belong to profile.",
                 )
 
@@ -580,24 +587,26 @@ async def _find_note_for_user(
             try:
                 resolved = candidate_file.resolve()
                 if not resolved.is_relative_to(notes_dir.resolve()):
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
+                    raise YarvelleError(
+                        "YRV-100-011",
                         detail="Invalid note path: symlink escape detected.",
                     )
-            except (ValueError, RuntimeError):
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+            except (ValueError, RuntimeError) as sym_err:
+                raise YarvelleError(
+                    "YRV-100-011",
                     detail="Invalid note path: symlink escape detected.",
-                )
+                    cause=sym_err,
+                ) from sym_err
 
     stmt = select(Note).where(Note.slug == clean_slug)
     res = await db.execute(stmt)
     matching_notes = list(res.scalars().all())
 
     if not matching_notes:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-005",
             detail=f"Note '{clean_slug}' not found.",
+            context={'note_id': clean_slug},
         )
 
     accessible_notes: list[tuple[Note, str]] = []
@@ -629,13 +638,14 @@ async def _find_note_for_user(
 
     if not accessible_notes:
         if has_forbidden:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise YarvelleError(
+                "YRV-300-004",
                 detail="Access denied: note belongs to another user or profile.",
             )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-005",
             detail=f"Note '{clean_slug}' not found.",
+            context={'note_id': clean_slug},
         )
 
     if len(accessible_notes) > 1 and owner_id:
@@ -674,7 +684,11 @@ async def update_note(
     if payload.profile_id is not None:
         clean_target_pid = payload.profile_id.strip()
         if not clean_target_pid:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="profile_id cannot be null or empty.")
+            raise YarvelleError(
+                "YRV-100-004",
+                detail="profile_id cannot be null or empty.",
+                context={'parameter': "profile_id"},
+            )
         if clean_target_pid != note.profile_id:
             await _verify_profile_access(clean_target_pid, user, db, required_level="manage")
             note.profile_id = clean_target_pid
@@ -683,7 +697,7 @@ async def update_note(
         try:
             note.type = validate_note_type(payload.type, allow_legacy=True)
         except ValueError as err:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
+            raise YarvelleError("CFD-100-014", detail=str(err), cause=err) from err
 
     if payload.linked_appointment_id is not None:
         clean_aid = payload.linked_appointment_id.strip() or None
@@ -694,8 +708,8 @@ async def update_note(
             )
             appt_res = await db.execute(appt_stmt)
             if appt_res.scalar_one_or_none() is None:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                raise YarvelleError(
+                    "CFD-100-003",
                     detail="Security violation: Linked appointment does not exist or does not belong to profile.",
                 )
         note.linked_appointment_id = clean_aid
@@ -704,9 +718,10 @@ async def update_note(
         try:
             note.locale = canonicalize_locale(payload.locale, strict=True)
         except ValueError as loc_err:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            raise YarvelleError(
+                "YRV-100-009",
                 detail=str(loc_err),
+                cause=loc_err,
             ) from loc_err
 
     if payload.title is not None:
@@ -869,14 +884,18 @@ async def create_profile_typed_note(
         try:
             note_locale = canonicalize_locale(payload.locale, strict=True)
         except ValueError as loc_err:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            raise YarvelleError(
+                "YRV-100-009",
                 detail=str(loc_err),
+                cause=loc_err,
             ) from loc_err
     else:
         note_locale = getattr(prof, "preferred_locale", None) or DEFAULT_LOCALE
 
-    note_type = validate_note_type(payload.type)
+    try:
+        note_type = validate_note_type(payload.type)
+    except ValueError as type_err:
+        raise YarvelleError("CFD-100-014", detail=str(type_err), cause=type_err) from type_err
     title_nfc = normalize_text_nfc(payload.title)
     content_nfc = normalize_text_nfc(payload.content)
 
@@ -889,8 +908,8 @@ async def create_profile_typed_note(
         )
         appt_res = await db.execute(appt_stmt)
         if appt_res.scalar_one_or_none() is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            raise YarvelleError(
+                "CFD-100-003",
                 detail="Security violation: Linked appointment does not exist or does not belong to profile.",
             )
 
@@ -1046,9 +1065,10 @@ async def get_profile_note_detail(
     res = await db.execute(stmt)
     note = res.scalar_one_or_none()
     if note is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-005",
             detail=f"Note '{clean_target}' not found in profile '{clean_pid}'.",
+            context={'note_id': clean_target},
         )
 
     return _build_typed_note_detail(note)
@@ -1077,16 +1097,17 @@ async def patch_profile_note(
     res = await db.execute(stmt)
     note = res.scalar_one_or_none()
     if note is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-005",
             detail=f"Note '{clean_target}' not found in profile '{clean_pid}'.",
+            context={'note_id': clean_target},
         )
 
     if payload.type is not None:
         try:
             note.type = validate_note_type(payload.type, allow_legacy=True)
         except ValueError as err:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
+            raise YarvelleError("CFD-100-014", detail=str(err), cause=err) from err
 
     if payload.linked_appointment_id is not None:
         clean_aid = payload.linked_appointment_id.strip() or None
@@ -1097,8 +1118,8 @@ async def patch_profile_note(
             )
             appt_res = await db.execute(appt_stmt)
             if appt_res.scalar_one_or_none() is None:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                raise YarvelleError(
+                    "CFD-100-003",
                     detail="Security violation: Linked appointment does not exist or does not belong to profile.",
                 )
         note.linked_appointment_id = clean_aid
@@ -1107,9 +1128,10 @@ async def patch_profile_note(
         try:
             note.locale = canonicalize_locale(payload.locale, strict=True)
         except ValueError as loc_err:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            raise YarvelleError(
+                "YRV-100-009",
                 detail=str(loc_err),
+                cause=loc_err,
             ) from loc_err
 
     if payload.title is not None:
@@ -1185,9 +1207,10 @@ async def delete_profile_note(
     res = await db.execute(stmt)
     note = res.scalar_one_or_none()
     if note is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-005",
             detail=f"Note '{clean_target}' not found in profile '{clean_pid}'.",
+            context={'note_id': clean_target},
         )
 
     # Queue delete_doc job
@@ -1252,9 +1275,10 @@ async def extract_profile_note(
     res = await db.execute(stmt)
     note = res.scalar_one_or_none()
     if note is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+        raise YarvelleError(
+            "YRV-500-005",
             detail=f"Note '{clean_target}' not found in profile '{clean_pid}'.",
+            context={'note_id': clean_target},
         )
 
     res_dict = extract_after_visit_summary(note.content)

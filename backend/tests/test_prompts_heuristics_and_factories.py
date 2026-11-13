@@ -148,3 +148,90 @@ async def test_shared_conftest_factories_end_to_end(
         resp = await ac.get("/whoami")
         assert resp.status_code == 200
         assert resp.json() == {"id": user.id, "email": user_profile.email}
+
+
+def test_carefold_skills_prompt_renders_skills_middleware_hbs(monkeypatch):
+    """Verifies CAREFOLD_SKILLS_PROMPT renders skills_middleware.hbs cleanly across primary and fallback paths."""
+    import inspect
+    import carefold.middleware.skills as skills_mod
+    from carefold.middleware.skills import CAREFOLD_SKILLS_PROMPT, render_carefold_skills_prompt
+
+    assert "## Carefold Clinical Skill Catalog" in CAREFOLD_SKILLS_PROMPT
+    assert "CLINICAL SAFETY BOUNDARY" in CAREFOLD_SKILLS_PROMPT
+    assert "{skills_locations}" in CAREFOLD_SKILLS_PROMPT
+    assert "{skills_list}" in CAREFOLD_SKILLS_PROMPT
+    assert '{{path}}' in CAREFOLD_SKILLS_PROMPT
+    assert "skills_system_prompt.md.hbs" not in inspect.getsource(skills_mod)
+
+    custom = render_carefold_skills_prompt("Custom non-diagnostic clinical scope notice.")
+    assert "Custom non-diagnostic clinical scope notice." in custom
+    assert "You do NOT provide formal medical diagnoses" not in custom
+
+    # Verify fallback path (when compose_skills_system_prompt is unavailable) renders the exact same template
+    monkeypatch.setattr(skills_mod, "compose_skills_system_prompt", None)
+    fallback_default = render_carefold_skills_prompt()
+    assert fallback_default == CAREFOLD_SKILLS_PROMPT
+
+
+def test_dossier_heuristics_externalized_from_package_init():
+    """Verifies clinical_visit and insurance_benefits heuristics live in dossier_heuristics.yaml + module, not __init__.py."""
+    import ast
+    from pathlib import Path
+
+    import carefold
+    from carefold.clinical.dossier_heuristics import (
+        extract_clinical_visit_heuristic,
+        extract_insurance_benefits_heuristic,
+        load_dossier_heuristics,
+    )
+    from carefold.dossiers import ClinicalVisitDossier, InsuranceBenefitsDossier
+
+    init_src = Path(carefold.__file__).read_text(encoding="utf-8")
+    tree = ast.parse(init_src)
+    imported_modules = {
+        alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    }
+    assert "re" not in imported_modules
+    assert "_extract_clinical_visit_heuristic" not in init_src
+    assert "_extract_insurance_benefits_heuristic" not in init_src
+
+    raw = load_dossier_heuristics()
+    assert "clinical_visit" in raw
+    assert "insurance_benefits" in raw
+
+    visit = extract_clinical_visit_heuristic(
+        "Reason for visit: Persistent morning headaches.\n"
+        "Physician instructions: Track hydration, bring blood pressure cuff, avoid NSAID overuse\n"
+        "Follow-up: return in 4 weeks\n"
+        "Questions to ask: Should we check ferritin, is an ophthalmology referral needed\n",
+        ClinicalVisitDossier,
+    )
+    assert visit.reason_for_visit == "Persistent morning headaches"
+    assert visit.follow_up_timeline == "4 weeks"
+    assert visit.physician_instructions == [
+        "Track hydration",
+        "bring blood pressure cuff",
+        "avoid NSAID overuse",
+    ]
+    assert visit.questions_to_ask == [
+        "Should we check ferritin",
+        "is an ophthalmology referral needed",
+    ]
+
+    benefits = extract_insurance_benefits_heuristic(
+        "Annual deductible: 1500. Primary care copay: $25. Specialist visit copay is 50.\n"
+        "Coinsurance: 20%. Out-of-pocket maximum: $6,500.\n"
+        "All in-network preventive visits are covered at 100%.\n"
+        "Prior auth required for MRI, PET, and physical therapy.",
+        InsuranceBenefitsDossier,
+    )
+    assert benefits.deductible == "$1500"
+    assert benefits.copays == {"primary_care": "$25", "specialist": "$50"}
+    assert benefits.coinsurance == "20%"
+    assert benefits.out_of_pocket_maximum == "$6,500"
+    assert "in-network" in benefits.in_out_network_rules.lower()
+    assert benefits.prior_authorization_flags == ["MRI", "PET", "physical therapy"]
+

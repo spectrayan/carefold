@@ -38,6 +38,8 @@ async def execute_generate_prep_pack(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed generate_prep_pack.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -72,61 +74,32 @@ async def execute_generate_prep_pack(args: Dict[str, Any], ctx: Any = None) -> T
             )
     except ValueError as val_err:
         logger.warning("generate_prep_pack validation error: %s", val_err)
+        msg = str(val_err)
+        err_code = "CFD-500-002" if "not found" in msg.lower() else "CFD-100-011"
         return ToolResult(
             success=False,
             output=None,
-            error=str(val_err),
+            error=msg,
+            error_code=err_code,
+            retryable=False,
         )
     except Exception as exc:
         logger.exception("generate_prep_pack failed: %s", exc)
         return ToolResult(
             success=False,
             output=None,
-            error=f"generate_prep_pack failed: {exc}",
+            error="Failed to generate appointment preparation pack.",
+            error_code="CFD-900-002",
+            retryable=False,
         )
 
 
-SPEC = ToolSpec(
-    name="generate_prep_pack",
-    description=(
-        "Compile a comprehensive clinical visit preparation pack for an upcoming or planned consultation, "
-        "synthesizing chief visit reasons, recent symptoms timeline, 30/90-day vitals trends, active medications, "
-        "allergies, and prior clinical records into a structured Markdown dossier and persisted clinical note."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "appointment_id": {
-                "type": "string",
-                "description": "Optional UUID of the linked clinical appointment.",
-            },
-            "specialty": {
-                "type": "string",
-                "description": "Medical specialty of the encounter (e.g. 'Cardiology', 'Endocrinology').",
-            },
-            "visit_reason": {
-                "type": "string",
-                "description": "Primary complaint or purpose of visit (e.g. 'Hypertension follow-up').",
-            },
-            "doctor_questions": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "Optional prioritized list of clinical questions to include (max 5).",
-            },
-        },
-    },
-    risk_tier="write_local",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_generate_prep_pack,
-    metadata={
-        "action": "generate_prep_pack",
-        "entity": "note",
-        "undoable": True,
-        "risk": "write_local",
-    },
-    scopes={"health.clinical"},
-)
+def __getattr__(name: str) -> Any:
+    if name == "SPEC":
+        from carefold.tools import get_health_tool_spec
+
+        return get_health_tool_spec("generate_prep_pack")
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = ["SPEC", "execute_generate_prep_pack"]

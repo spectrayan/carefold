@@ -39,6 +39,10 @@ class SchoolFormToolResult(ToolResult):
             "output": self.output,
             "error": self.error,
         }
+        if not self.success:
+            base["code"] = self.error_code
+            base["error_code"] = self.error_code
+            base["retryable"] = self.retryable
         if isinstance(self.output, dict):
             for k, v in self.output.items():
                 if k not in base:
@@ -76,6 +80,8 @@ async def execute_create_school_form(args: Dict[str, Any], ctx: Any = None) -> S
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed create_school_form.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -86,6 +92,8 @@ async def execute_create_school_form(args: Dict[str, Any], ctx: Any = None) -> S
             success=False,
             output=None,
             error="Parameter 'title' must be a non-empty string.",
+            error_code="CFD-100-007",
+            retryable=False,
         )
 
     school_or_camp_name = safe_args.get("school_or_camp_name")
@@ -111,10 +119,14 @@ async def execute_create_school_form(args: Dict[str, Any], ctx: Any = None) -> S
             )
             serialized = serialize_school_form(form)
         except ValueError as exc:
+            msg = str(exc)
+            err_code = "CFD-500-004" if "not found" in msg.lower() else "CFD-100-007"
             return SchoolFormToolResult(
                 success=False,
                 output=None,
-                error=str(exc),
+                error=msg,
+                error_code=err_code,
+                retryable=False,
             )
 
     ext_ref = f"school_form:{serialized['id']}"
@@ -137,6 +149,8 @@ async def execute_list_school_forms(args: Dict[str, Any], ctx: Any = None) -> Sc
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed list_school_forms.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -177,80 +191,15 @@ __all__ = [
 ]
 
 
-SPEC_CREATE = ToolSpec(
-    name="create_school_form",
-    description=(
-        "Create a pediatric school or camp health form with compiled draft prefill from profile immunisations, "
-        "allergies, medications, and vitals, plus automatic 30-day renewal reminder scheduling when expires_at is set."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "title": {
-                "type": "string",
-                "description": "Form title (e.g. 'Annual School Physical & Immunisation Form').",
-            },
-            "school_or_camp_name": {
-                "type": "string",
-                "description": "Name of school, daycare, or camp institution.",
-            },
-            "form_type": {
-                "type": "string",
-                "enum": [
-                    "physical",
-                    "immunization",
-                    "medication_authorization",
-                    "sports_clearance",
-                    "general",
-                ],
-                "default": "general",
-            },
-            "expires_at": {
-                "type": "string",
-                "description": "Optional ISO-8601 expiration or renewal date.",
-            },
-            "attachment_id": {
-                "type": "string",
-                "description": "Optional linked CAS attachment ID.",
-            },
-        },
-        "required": ["title"],
-    },
-    risk_tier="write_local",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_create_school_form,
-    metadata={
-        "action": "create_school_form",
-        "entity": "school_form",
-        "undoable": True,
-        "risk": "write_local",
-    },
-    scopes={"health.clinical"},
-)
+_SPEC_ATTRS = {
+    "SPEC_CREATE": "create_school_form",
+    "SPEC_LIST": "list_school_forms",
+}
 
 
-SPEC_LIST = ToolSpec(
-    name="list_school_forms",
-    description="List tracked pediatric school and camp health forms and their draft prefill data.",
-    parameters={
-        "type": "object",
-        "properties": {
-            "status": {
-                "type": "string",
-                "enum": ["draft", "active", "expired", "archived"],
-                "description": "Optional status filter.",
-            },
-        },
-    },
-    risk_tier="read",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_list_school_forms,
-    metadata={
-        "action": "list_school_forms",
-        "entity": "school_form",
-        "risk": "read",
-    },
-    scopes={"health.clinical"},
-)
+def __getattr__(name: str) -> Any:
+    if name in _SPEC_ATTRS:
+        from carefold.tools import get_health_tool_spec
+
+        return get_health_tool_spec(_SPEC_ATTRS[name])
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -44,6 +44,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed create_appointment.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -53,6 +55,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error="Parameter 'title' must be a non-empty string.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     start_raw = args.get("start_time") if isinstance(args, dict) else None
@@ -62,6 +66,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error="Both 'start_time' and 'end_time' parameters are required.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     try:
@@ -72,6 +78,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error=f"Invalid ISO-8601 datetime format: {exc}",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     if start_dt.tzinfo is None:
@@ -84,6 +92,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error="Parameter 'end_time' must be strictly after 'start_time'.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     tz_str = str(args.get("timezone", "UTC")).strip() or "UTC"
@@ -94,6 +104,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error=f"Invalid IANA timezone identifier: '{tz_str}'.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     status_str = str(args.get("status", "scheduled")).strip().lower()
@@ -104,6 +116,8 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
             success=False,
             output=None,
             error=f"Invalid appointment status '{status_str}'. Permitted: requested, scheduled, confirmed.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     appt_id = str(uuid.uuid4())
@@ -183,6 +197,8 @@ async def execute_list_appointments(args: Dict[str, Any], ctx: Any = None) -> To
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed list_appointments.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -268,6 +284,8 @@ async def execute_update_appointment_status(args: Dict[str, Any], ctx: Any = Non
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed update_appointment_status.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -277,6 +295,8 @@ async def execute_update_appointment_status(args: Dict[str, Any], ctx: Any = Non
             success=False,
             output=None,
             error="Parameter 'appointment_id' is required.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     target_status = str(args.get("status", "")).strip().lower() if isinstance(args, dict) else ""
@@ -285,6 +305,8 @@ async def execute_update_appointment_status(args: Dict[str, Any], ctx: Any = Non
             success=False,
             output=None,
             error="Parameter 'status' is required.",
+            error_code="CFD-100-003",
+            retryable=False,
         )
 
     now_utc = datetime.now(timezone.utc)
@@ -302,6 +324,8 @@ async def execute_update_appointment_status(args: Dict[str, Any], ctx: Any = Non
                 success=False,
                 output=None,
                 error=f"Appointment '{appointment_id}' not found for profile '{clean_profile_id}'.",
+                error_code="CFD-500-002",
+                retryable=False,
             )
 
         previous_status = appt.status
@@ -312,12 +336,16 @@ async def execute_update_appointment_status(args: Dict[str, Any], ctx: Any = Non
                 success=False,
                 output=None,
                 error=str(err),
+                error_code="CFD-100-003",
+                retryable=False,
             )
         except ValueError as val_err:
             return ToolResult(
                 success=False,
                 output=None,
                 error=str(val_err),
+                error_code="CFD-100-003",
+                retryable=False,
             )
 
         appt.status = target_status
@@ -368,164 +396,16 @@ __all__ = [
 ]
 
 
-SPEC_CREATE = ToolSpec(
-    name="create_appointment",
-    description=(
-        "Schedule and record a clinical or administrative healthcare appointment for a patient "
-        "profile with validated start/end timestamps, provider specialty, clinic location, "
-        "and pre-visit preparation notes."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "title": {
-                "type": "string",
-                "description": "Appointment title or encounter description (e.g. 'Cardiology Consultation').",
-            },
-            "start_time": {
-                "type": "string",
-                "description": "Scheduled start timestamp in ISO-8601 format (UTC or with timezone offset).",
-            },
-            "end_time": {
-                "type": "string",
-                "description": "Scheduled end timestamp in ISO-8601 format (must be strictly after start_time).",
-            },
-            "provider_name": {
-                "type": "string",
-                "description": "Optional name of clinician, physician, or practice (e.g. 'Dr. Sarah Connor').",
-            },
-            "specialty": {
-                "type": "string",
-                "description": "Medical specialty (e.g. 'Cardiology', 'Dermatology', 'Endocrinology').",
-            },
-            "location": {
-                "type": "string",
-                "description": "Physical clinic address, room/suite number, or telehealth URL.",
-            },
-            "clinic_phone": {
-                "type": "string",
-                "description": "Clinic or scheduling office phone number (e.g. '555-0144').",
-            },
-            "timezone": {
-                "type": "string",
-                "description": "Local appointment IANA timezone identifier (default: 'UTC').",
-                "default": "UTC",
-            },
-            "status": {
-                "type": "string",
-                "enum": ["requested", "scheduled", "confirmed"],
-                "default": "scheduled",
-                "description": "Initial appointment status (default: 'scheduled').",
-            },
-            "reason": {
-                "type": "string",
-                "description": "Chief complaint or primary purpose of appointment.",
-            },
-            "preparation_notes": {
-                "type": "string",
-                "description": "Pre-visit instructions (e.g. fasting requirement, records to bring).",
-            },
-        },
-        "required": ["title", "start_time", "end_time"],
-    },
-    risk_tier="write_local",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_create_appointment,
-    metadata={
-        "action": "create_appointment",
-        "entity": "appointment",
-        "undoable": True,
-        "risk": "write_local",
-    },
-    scopes={"health.clinical"},
-)
+_SPEC_ATTRS = {
+    "SPEC_CREATE": "create_appointment",
+    "SPEC_LIST": "list_appointments",
+    "SPEC_UPDATE_STATUS": "update_appointment_status",
+}
 
 
-SPEC_LIST = ToolSpec(
-    name="list_appointments",
-    description=(
-        "List upcoming or historical healthcare appointments for a patient profile with optional "
-        "filtering by status, start date range, and pagination."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "status": {
-                "type": "string",
-                "enum": ["requested", "scheduled", "confirmed", "completed", "cancelled"],
-                "description": "Filter by appointment lifecycle status.",
-            },
-            "start_after": {
-                "type": "string",
-                "description": "Filter appointments starting on or after this ISO-8601 timestamp.",
-            },
-            "start_before": {
-                "type": "string",
-                "description": "Filter appointments starting on or before this ISO-8601 timestamp.",
-            },
-            "limit": {
-                "type": "integer",
-                "default": 20,
-                "minimum": 1,
-                "maximum": 100,
-                "description": "Maximum number of appointments to return (default: 20).",
-            },
-            "offset": {
-                "type": "integer",
-                "default": 0,
-                "minimum": 0,
-                "description": "Number of records to skip for pagination (default: 0).",
-            },
-        },
-    },
-    risk_tier="read",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_list_appointments,
-    metadata={
-        "action": "list_appointments",
-        "entity": "appointment",
-        "risk": "read",
-    },
-    scopes={"health.clinical"},
-)
+def __getattr__(name: str) -> Any:
+    if name in _SPEC_ATTRS:
+        from carefold.tools import get_health_tool_spec
 
-
-SPEC_UPDATE_STATUS = ToolSpec(
-    name="update_appointment_status",
-    description=(
-        "Update the status of an existing patient appointment (e.g. from 'requested' to 'confirmed', "
-        "or mark 'completed' or 'cancelled') with audit event tracking."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "appointment_id": {
-                "type": "string",
-                "description": "Unique UUID of the appointment to update.",
-            },
-            "status": {
-                "type": "string",
-                "enum": ["requested", "scheduled", "confirmed", "completed", "cancelled"],
-                "description": "Target status transition.",
-            },
-            "cancellation_reason": {
-                "type": "string",
-                "description": "Optional explanation if cancelling the appointment.",
-            },
-        },
-        "required": ["appointment_id", "status"],
-    },
-    risk_tier="write_local",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_update_appointment_status,
-    metadata={
-        "action": "update_appointment_status",
-        "entity": "appointment",
-        "undoable": True,
-        "risk": "write_local",
-    },
-    scopes={"health.clinical"},
-)
+        return get_health_tool_spec(_SPEC_ATTRS[name])
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

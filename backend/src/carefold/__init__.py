@@ -115,84 +115,9 @@ try:
     register_dossier_type("insurance_benefits", InsuranceBenefitsDossier)
     register_dossier_type("insurance", InsuranceBenefitsDossier)
 
-    from yarvelle_core.workflows.subgraphs.extraction.tool import register_heuristic_extractor
-    import re
+    from carefold.clinical.dossier_heuristics import register_carefold_dossier_heuristics
 
-    def _extract_clinical_visit_heuristic(text: str, dossier_cls: Any) -> Any:
-        m_reason = re.search(r"reason\s*for\s*visit\s*:\s*([^\n\.]+)", text, re.I)
-        reason = m_reason.group(1).strip() if m_reason else ""
-        m_time = re.search(
-            r"follow[- ]up\s*(?:is|:)?\s*(?:return\s*in\s*)?(\d+\s*(?:weeks?|days?|months?))",
-            text,
-            re.I,
-        )
-        timeline = m_time.group(1) if m_time else ""
-        instructions = []
-        m_inst = re.search(r"physician\s*instructions\s*:\s*([^\n]+)", text, re.I)
-        if m_inst:
-            raw_inst = [s.strip() for s in m_inst.group(1).split(",") if s.strip()]
-            if raw_inst:
-                instructions = raw_inst
-        questions = []
-        m_q = re.search(r"questions?\s*(?:to\s*ask)?\s*:\s*([^\n]+)", text, re.I)
-        if m_q:
-            raw_q = [s.strip() for s in m_q.group(1).split(",") if s.strip()]
-            if raw_q:
-                questions = raw_q
-        return dossier_cls(
-            reason_for_visit=reason,
-            physician_instructions=instructions,
-            follow_up_timeline=timeline,
-            questions_to_ask=questions,
-        )
-
-    def _extract_insurance_benefits_heuristic(text: str, dossier_cls: Any) -> Any:
-        m_ded = re.search(r"deductible\s*(?:is|:)?\s*(\$?\d+(?:,\d{3})*)", text, re.I)
-        deductible = m_ded.group(1) if m_ded else ""
-        if deductible and not deductible.startswith("$") and deductible.isdigit():
-            deductible = f"${deductible}"
-        copays: dict[str, str] = {}
-        m_pc = re.search(r"primary\s*care\s*(?:visit)?(?:\s*copay)?(?:\s*[:is]+)?\s*(\$?\d+)", text, re.I)
-        if m_pc:
-            copays["primary_care"] = m_pc.group(1) if m_pc.group(1).startswith("$") else f"${m_pc.group(1)}"
-        m_sp = re.search(r"specialist\s*(?:visit)?(?:\s*copay)?(?:\s*[:is]+)?\s*(\$?\d+)", text, re.I)
-        if m_sp:
-            copays["specialist"] = m_sp.group(1) if m_sp.group(1).startswith("$") else f"${m_sp.group(1)}"
-        if not copays:
-            m_gen_copay = re.search(r"copay\s*(?:is|:)?\s*(\$?\d+)", text, re.I)
-            if m_gen_copay:
-                val = m_gen_copay.group(1)
-                copays["office_visit"] = val if val.startswith("$") else f"${val}"
-        m_coin = re.search(r"coinsurance\s*(?:is|:)?\s*(\d+(?:\.\d+)?%|\d+(?:\.\d+)?\s*percent)", text, re.I)
-        coinsurance = m_coin.group(1) if m_coin else ""
-        m_oop = re.search(r"out[- ]of[- ]pocket\s*max(?:imum)?\s*(?:is|:)?\s*(\$?\d+(?:,\d{3})*)", text, re.I)
-        oop = m_oop.group(1) if m_oop else ""
-        m_rules = re.search(r"([^\n]*in-network[^\n]*)", text, re.I)
-        rules = m_rules.group(1).strip() if m_rules else ""
-        prior_auth = []
-        if re.search(r"\bMRI\b", text):
-            prior_auth.append("MRI")
-        if re.search(r"\bCT\b", text):
-            prior_auth.append("CT")
-        if re.search(r"\bPET\b", text):
-            prior_auth.append("PET")
-        if re.search(r"\bphysical\s*therapy\b", text, re.I):
-            prior_auth.append("physical therapy")
-        return dossier_cls(
-            deductible=deductible,
-            copays=copays,
-            coinsurance=coinsurance,
-            out_of_pocket_maximum=oop,
-            in_out_network_rules=rules,
-            prior_authorization_flags=prior_auth,
-        )
-
-    register_heuristic_extractor("clinical_visit", _extract_clinical_visit_heuristic)
-    register_heuristic_extractor("clinical", _extract_clinical_visit_heuristic)
-    register_heuristic_extractor("ClinicalVisitDossier", _extract_clinical_visit_heuristic)
-    register_heuristic_extractor("insurance_benefits", _extract_insurance_benefits_heuristic)
-    register_heuristic_extractor("insurance", _extract_insurance_benefits_heuristic)
-    register_heuristic_extractor("InsuranceBenefitsDossier", _extract_insurance_benefits_heuristic)
+    register_carefold_dossier_heuristics()
 except Exception:
     pass
 
@@ -399,6 +324,20 @@ def _register_native_pack_resources() -> None:
         error_prefix="CFD",
     )
     _yc_get_resource_loader().register_pack(bootstrap_spec)
+    try:
+        from carefold.errors import register_carefold_error_catalog as _register_cfd_errors
+
+        _register_cfd_errors()
+    except Exception:
+        pass
+    try:
+        from yarvelle_core.tools.spec_loader import register_pack_tool_manifest as _yc_register_pack_tools
+
+        _tools_dir = Path(__file__).resolve().parent / "resources" / "tools"
+        if _tools_dir.is_dir():
+            _yc_register_pack_tools("health", _tools_dir)
+    except Exception:
+        pass
 
 
 _register_native_pack_resources()

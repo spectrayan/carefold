@@ -119,6 +119,10 @@ class FhirToolResult(ToolResult):
             "taint": self.taint,
             "trust": self.trust,
         }
+        if not self.success:
+            base["code"] = self.error_code
+            base["error_code"] = self.error_code
+            base["retryable"] = self.retryable
         if isinstance(self.output, dict):
             for k, v in self.output.items():
                 if k not in base:
@@ -1084,12 +1088,25 @@ def _resolve_session_or_factory(args: Optional[Dict[str, Any]], ctx: Any) -> Tup
     return None, session_factory
 
 
+def _classify_fhir_tool_denial_code(err: Optional[str]) -> str:
+    msg = (err or "").lower()
+    if "profile_id is required" in msg:
+        return "YRV-300-014"
+    return "CFD-300-006"
+
+
 async def execute_fhir_search_resources(args: Dict[str, Any], ctx: Any = None) -> FhirToolResult:
     """Executes `fhir_search_resources` with fail-closed `profile_id` and `health.clinical` scope enforcement."""
     clean_profile_id, err = _verify_profile_and_clinical_scope(args, ctx, "fhir_search_resources")
     if err or not clean_profile_id:
         logger.warning("fhir_search_resources rejected: %s", err)
-        return FhirToolResult(success=False, output=None, error=err)
+        return FhirToolResult(
+            success=False,
+            output=None,
+            error=err,
+            error_code=_classify_fhir_tool_denial_code(err),
+            retryable=False,
+        )
 
     safe_args = args if isinstance(args, dict) else {}
     resource_type = str(safe_args.get("resource_type") or "").strip()
@@ -1122,7 +1139,15 @@ async def execute_fhir_search_resources(args: Dict[str, Any], ctx: Any = None) -
                     limit=limit,
                 )
     except ValueError as exc:
-        return FhirToolResult(success=False, output=None, error=str(exc))
+        msg = str(exc)
+        err_code = "CFD-300-006" if "paperwork" in msg.lower() or "scope" in msg.lower() else "CFD-100-001"
+        return FhirToolResult(
+            success=False,
+            output=None,
+            error=msg,
+            error_code=err_code,
+            retryable=False,
+        )
 
     is_tainted = bool(payload.get("tainted"))
     if is_tainted:
@@ -1143,7 +1168,13 @@ async def execute_fhir_get_patient_summary(args: Optional[Dict[str, Any]] = None
     clean_profile_id, err = _verify_profile_and_clinical_scope(args, ctx, "fhir_get_patient_summary")
     if err or not clean_profile_id:
         logger.warning("fhir_get_patient_summary rejected: %s", err)
-        return FhirToolResult(success=False, output=None, error=err)
+        return FhirToolResult(
+            success=False,
+            output=None,
+            error=err,
+            error_code=_classify_fhir_tool_denial_code(err),
+            retryable=False,
+        )
 
     safe_args = args if isinstance(args, dict) else {}
     limit_per_section = safe_args.get("limit_per_section", 15)
@@ -1164,7 +1195,13 @@ async def execute_fhir_get_patient_summary(args: Optional[Dict[str, Any]] = None
                     limit_per_section=limit_per_section,
                 )
     except ValueError as exc:
-        return FhirToolResult(success=False, output=None, error=str(exc))
+        return FhirToolResult(
+            success=False,
+            output=None,
+            error=str(exc),
+            error_code="CFD-100-001",
+            retryable=False,
+        )
 
     is_tainted = bool(payload.get("tainted"))
     if is_tainted:
@@ -1185,7 +1222,13 @@ async def execute_fhir_get_observation_trends(args: Dict[str, Any], ctx: Any = N
     clean_profile_id, err = _verify_profile_and_clinical_scope(args, ctx, "fhir_get_observation_trends")
     if err or not clean_profile_id:
         logger.warning("fhir_get_observation_trends rejected: %s", err)
-        return FhirToolResult(success=False, output=None, error=err)
+        return FhirToolResult(
+            success=False,
+            output=None,
+            error=err,
+            error_code=_classify_fhir_tool_denial_code(err),
+            retryable=False,
+        )
 
     safe_args = args if isinstance(args, dict) else {}
     loinc_or_code = str(safe_args.get("loinc_or_code") or safe_args.get("code") or "").strip()
@@ -1209,7 +1252,13 @@ async def execute_fhir_get_observation_trends(args: Dict[str, Any], ctx: Any = N
                     limit=limit,
                 )
     except ValueError as exc:
-        return FhirToolResult(success=False, output=None, error=str(exc))
+        return FhirToolResult(
+            success=False,
+            output=None,
+            error=str(exc),
+            error_code="CFD-100-001",
+            retryable=False,
+        )
 
     is_tainted = bool(payload.get("tainted"))
     if is_tainted:
@@ -1296,127 +1345,19 @@ async def fhir_get_observation_trends(
     return await execute_fhir_get_observation_trends(call_args, ctx=ctx)
 
 
-SPEC_SEARCH_RESOURCES = ToolSpec(
-    name="fhir_search_resources",
-    description=(
-        "Query the active profile's local FHIR R4 clinical chart (Conditions, Medications, "
-        "Allergies, Observations, DiagnosticReports, Immunizations, Procedures, Encounters) "
-        "with optional code ('system|code' or code), category, and date_from filters. "
-        "Returns structured summaries with Provenance citations ('From <source>, <date>')."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "resource_type": {
-                "type": "string",
-                "description": (
-                    "FHIR R4 clinical resource type to query (e.g. 'Condition', 'MedicationRequest', "
-                    "'MedicationStatement', 'AllergyIntolerance', 'Observation', 'DiagnosticReport', "
-                    "'Immunization', 'Procedure', 'Encounter', 'CarePlan')."
-                ),
-            },
-            "code": {
-                "type": "string",
-                "description": "Optional clinical code or 'system|code' token (e.g. '4548-4' or 'http://loinc.org|4548-4').",
-            },
-            "category": {
-                "type": "string",
-                "description": "Optional FHIR category filter (e.g. 'laboratory', 'vital-signs', 'problem-list-item').",
-            },
-            "date_from": {
-                "type": "string",
-                "description": "Optional ISO-8601 lower bound date/timestamp (e.g. '2026-01-01').",
-            },
-            "limit": {
-                "type": "integer",
-                "default": 25,
-                "minimum": 1,
-                "maximum": 100,
-                "description": "Maximum number of resources to return (default 25).",
-            },
-        },
-        "required": ["resource_type"],
-    },
-    risk_tier="read",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_fhir_search_resources,
-    metadata={
-        "action": "fhir_search_resources",
-        "entity": "health_resource",
-        "risk": "read",
-    },
-    scopes={REQUIRED_CLINICAL_SCOPE},
-)
+_SPEC_ATTRS = {
+    "SPEC_SEARCH_RESOURCES": "fhir_search_resources",
+    "SPEC_GET_PATIENT_SUMMARY": "fhir_get_patient_summary",
+    "SPEC_GET_OBSERVATION_TRENDS": "fhir_get_observation_trends",
+}
 
 
-SPEC_GET_PATIENT_SUMMARY = ToolSpec(
-    name="fhir_get_patient_summary",
-    description=(
-        "Retrieve a structured International Patient Summary (IPS) clinical chart digest "
-        "for the active profile, including Active Conditions, Active Medications, Allergies "
-        "& Intolerances, Recent Labs & Vitals, and Immunizations with source provenance citations."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "limit_per_section": {
-                "type": "integer",
-                "default": 15,
-                "minimum": 1,
-                "maximum": 50,
-                "description": "Maximum number of items per IPS summary section (default 15).",
-            },
-        },
-    },
-    risk_tier="read",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_fhir_get_patient_summary,
-    metadata={
-        "action": "fhir_get_patient_summary",
-        "entity": "health_resource",
-        "risk": "read",
-    },
-    scopes={REQUIRED_CLINICAL_SCOPE},
-)
+def __getattr__(name: str) -> Any:
+    if name in _SPEC_ATTRS:
+        from carefold.tools import get_health_tool_spec
 
-
-SPEC_GET_OBSERVATION_TRENDS = ToolSpec(
-    name="fhir_get_observation_trends",
-    description=(
-        "Retrieve chronological observation data points, units, reference ranges, and trend "
-        "statistics for a specific LOINC or clinical observation code (e.g. '4548-4' for HbA1c, "
-        "'85354-9' for blood pressure panel, '8480-6' for systolic BP, '29463-7' for body weight)."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "loinc_or_code": {
-                "type": "string",
-                "description": "LOINC code or 'system|code' token to trend (e.g. '4548-4', '85354-9', '29463-7').",
-            },
-            "limit": {
-                "type": "integer",
-                "default": 12,
-                "minimum": 1,
-                "maximum": 100,
-                "description": "Maximum number of chronological data points to return (default 12).",
-            },
-        },
-        "required": ["loinc_or_code"],
-    },
-    risk_tier="read",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_fhir_get_observation_trends,
-    metadata={
-        "action": "fhir_get_observation_trends",
-        "entity": "health_resource",
-        "risk": "read",
-    },
-    scopes={REQUIRED_CLINICAL_SCOPE},
-)
+        return get_health_tool_spec(_SPEC_ATTRS[name])
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = [

@@ -38,6 +38,10 @@ class PreventiveToolResult(ToolResult):
             "output": self.output,
             "error": self.error,
         }
+        if not self.success:
+            base["code"] = self.error_code
+            base["error_code"] = self.error_code
+            base["retryable"] = self.retryable
         if isinstance(self.output, dict):
             for k, v in self.output.items():
                 if k not in base:
@@ -75,6 +79,8 @@ async def execute_check_preventive_care(args: Dict[str, Any], ctx: Any = None) -
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed check_preventive_care.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -87,6 +93,8 @@ async def execute_check_preventive_care(args: Dict[str, Any], ctx: Any = None) -
                 success=False,
                 output=None,
                 error=f"Invalid schedule_source '{schedule_source}'. Permitted: 'aap_2026', 'cdc'.",
+                error_code="CFD-100-005",
+                retryable=False,
             )
     else:
         clean_sched = None
@@ -105,10 +113,14 @@ async def execute_check_preventive_care(args: Dict[str, Any], ctx: Any = None) -
                 category=category_filter,
             )
         except ValueError as exc:
+            msg = str(exc)
+            err_code = "CFD-500-008" if "not found" in msg.lower() else "CFD-100-005"
             return PreventiveToolResult(
                 success=False,
                 output=None,
-                error=str(exc),
+                error=msg,
+                error_code=err_code,
+                retryable=False,
             )
 
     return PreventiveToolResult(
@@ -127,6 +139,8 @@ async def execute_update_preventive_status(args: Dict[str, Any], ctx: Any = None
             success=False,
             output=None,
             error="Security violation: profile_id is required; profile_id must be a non-empty string for fail-closed update_preventive_status.",
+            error_code="YRV-300-014",
+            retryable=False,
         )
     clean_profile_id = profile_id.strip()
 
@@ -137,6 +151,8 @@ async def execute_update_preventive_status(args: Dict[str, Any], ctx: Any = None
             success=False,
             output=None,
             error="Parameter 'rule_id' must be a non-empty string.",
+            error_code="CFD-100-005",
+            retryable=False,
         )
 
     status_val = str(safe_args.get("status") or "").strip().lower()
@@ -145,6 +161,8 @@ async def execute_update_preventive_status(args: Dict[str, Any], ctx: Any = None
             success=False,
             output=None,
             error=f"Invalid status '{status_val}'. Permitted: {sorted(VALID_PREVENTIVE_STATUSES)}.",
+            error_code="CFD-100-005",
+            retryable=False,
         )
 
     notes = safe_args.get("notes")
@@ -166,10 +184,14 @@ async def execute_update_preventive_status(args: Dict[str, Any], ctx: Any = None
                 actor_user_id=actor_id,
             )
         except ValueError as exc:
+            msg = str(exc)
+            err_code = "CFD-500-008" if "not found" in msg.lower() else "CFD-100-005"
             return PreventiveToolResult(
                 success=False,
                 output=None,
-                error=str(exc),
+                error=msg,
+                error_code=err_code,
+                retryable=False,
             )
 
     ext_ref = f"preventive_record:{record.id}"
@@ -201,83 +223,15 @@ __all__ = [
 ]
 
 
-SPEC_CHECK = ToolSpec(
-    name="check_preventive_care",
-    description=(
-        "Evaluate preventive care screenings and immunisations for a patient profile against "
-        "cited USPSTF Grade A/B and AAP/CDC pediatric schedules."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "schedule_source": {
-                "type": "string",
-                "enum": ["aap_2026", "cdc"],
-                "description": "Optional pediatric immunisation schedule source ('aap_2026' or 'cdc').",
-            },
-            "sex": {
-                "type": "string",
-                "enum": ["any", "female", "male"],
-                "description": "Optional biological sex filter for adult screening rules.",
-            },
-            "category": {
-                "type": "string",
-                "enum": ["screening", "immunisation", "well_visit"],
-                "description": "Optional category filter.",
-            },
-        },
-    },
-    risk_tier="read",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_check_preventive_care,
-    metadata={
-        "action": "check_preventive_care",
-        "entity": "preventive_record",
-        "risk": "read",
-    },
-    scopes={"health.clinical"},
-)
+_SPEC_ATTRS = {
+    "SPEC_CHECK": "check_preventive_care",
+    "SPEC_UPDATE": "update_preventive_status",
+}
 
 
-SPEC_UPDATE = ToolSpec(
-    name="update_preventive_status",
-    description=(
-        "Update the status of a preventive care screening or immunisation item "
-        "('due', 'completed', 'not_applicable', 'declined') for the active profile."
-    ),
-    parameters={
-        "type": "object",
-        "properties": {
-            "rule_id": {
-                "type": "string",
-                "description": "Preventive rule ID from the cited YAML rule pack.",
-            },
-            "status": {
-                "type": "string",
-                "enum": ["due", "completed", "not_applicable", "declined"],
-                "description": "Updated preventive item status.",
-            },
-            "notes": {
-                "type": "string",
-                "description": "Optional clinical or patient notes.",
-            },
-            "completed_at": {
-                "type": "string",
-                "description": "Optional ISO-8601 completion timestamp.",
-            },
-        },
-        "required": ["rule_id", "status"],
-    },
-    risk_tier="write_local",
-    trust="trusted",
-    data_flows=DataFlows(allowed_hosts=(), data_sensitivity="restricted"),
-    executor=execute_update_preventive_status,
-    metadata={
-        "action": "update_preventive_status",
-        "entity": "preventive_record",
-        "undoable": True,
-        "risk": "write_local",
-    },
-    scopes={"health.clinical"},
-)
+def __getattr__(name: str) -> Any:
+    if name in _SPEC_ATTRS:
+        from carefold.tools import get_health_tool_spec
+
+        return get_health_tool_spec(_SPEC_ATTRS[name])
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

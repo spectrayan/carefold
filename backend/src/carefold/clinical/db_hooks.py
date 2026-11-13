@@ -435,6 +435,9 @@ async def _hook_fhir_operation_registry(
     except FhirOperationError as err:
         return {
             "status": "error",
+            "code": err.error_code,
+            "error_code": err.error_code,
+            "retryable": err.retryable,
             "tool": tool_name,
             "operation_id": op_spec.operation_id,
             "annotations": annotations_dict,
@@ -444,6 +447,9 @@ async def _hook_fhir_operation_registry(
                 "annotations": annotations_dict,
             },
             "error": {
+                "code": err.error_code,
+                "error_code": err.error_code,
+                "retryable": err.retryable,
                 "status_code": err.status_code,
                 "issue_code": err.issue_code,
                 "diagnostics": err.diagnostics,

@@ -20,6 +20,7 @@ import { UndoConfirmPopover } from '@/components/activity/UndoConfirmPopover';
 import { ProfileActivityClient } from '@/app/p/[profileId]/activity/ProfileActivityClient';
 import { ExecutionPlanCard } from '@/components/chat/ExecutionPlanCard';
 import { EmergencyEscalationCard } from '@/components/chat/EmergencyEscalationCard';
+import { stripReferencePreamble } from '@/components/ChatMessageItem';
 import { AppRail } from '@/components/layout/AppRail';
 import * as activityApi from '@/lib/activity';
 import type { ActivityItemResponse, ActivityUndoResponse, ExecutionPlan } from '@/types/activity';
@@ -529,6 +530,18 @@ describe('Activity and Chat Components Suite', () => {
       const activityLink = screen.getByRole('link', { name: /activity/i });
       expect(activityLink).toHaveAttribute('href', '/p/patient-42/activity');
       expect(activityLink.className).toContain('min-h-[44px]');
+    });
+
+    it('preserves leading Markdown bold in stripReferencePreamble unless a reference preamble matched', () => {
+      expect(stripReferencePreamble('**Coordinated Visit Plan:**\n- Ask about labs.')).toBe(
+        '**Coordinated Visit Plan:**\n- Ask about labs.'
+      );
+      expect(
+        stripReferencePreamble('Based on the provided reference document, **ask** about fasting labs.')
+      ).toBe('Ask** about fasting labs.'.startsWith('Ask') ? 'Ask** about fasting labs.' : '');
+      expect(
+        stripReferencePreamble('Based on the provided reference document, ask your cardiologist about home BP logs.')
+      ).toBe('Ask your cardiologist about home BP logs.');
     });
   });
 });
