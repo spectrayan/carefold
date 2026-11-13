@@ -9,22 +9,15 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Closed tools for Pediatric School Health Forms (AU-39)."""
+"""Closed tools for Pediatric School Health Forms via McpDatabaseToolbox (AU-39, #344)."""
 
 from __future__ import annotations
 
 import logging
 from typing import Any, Dict, Iterator
 
-from sqlalchemy import select
-
-from carefold.clinical.school_forms import (
-    create_school_form,
-    serialize_school_form,
-)
-from carefold.models import SchoolForm
-from yarvelle_core.db.session import get_session_factory
-from yarvelle_core.engine.tool_registry import DataFlows, ToolSpec
+from carefold.clinical.db_hooks import execute_governed_db_operation
+from yarvelle_core.db.session import get_session_factory  # noqa: F401
 from yarvelle_core.schemas.tool import ToolResult
 
 logger = logging.getLogger("carefold.tools.school_forms")
@@ -72,7 +65,7 @@ class SchoolFormToolResult(ToolResult):
 
 
 async def execute_create_school_form(args: Dict[str, Any], ctx: Any = None) -> SchoolFormToolResult:
-    """Creates a school/camp health form with compiled draft prefill and optional renewal reminder."""
+    """Creates a school/camp health form via McpDatabaseToolbox."""
     profile_id = getattr(ctx, "profile_id", None) if ctx is not None else None
     if not profile_id or not isinstance(profile_id, str) or not profile_id.strip():
         logger.warning("create_school_form rejected: missing or invalid profile_id in ToolContext")
@@ -96,52 +89,44 @@ async def execute_create_school_form(args: Dict[str, Any], ctx: Any = None) -> S
             retryable=False,
         )
 
-    school_or_camp_name = safe_args.get("school_or_camp_name")
-    form_type = str(safe_args.get("form_type") or "general").strip().lower()
-    attachment_id = safe_args.get("attachment_id")
-    expires_at = safe_args.get("expires_at")
-    status_val = str(safe_args.get("status") or "draft").strip().lower()
     actor_id = getattr(ctx, "user_id", "user") or "user"
-
-    factory = get_session_factory()
-    async with factory() as session:
-        try:
-            form = await create_school_form(
-                session,
-                profile_id=clean_profile_id,
-                title=title,
-                school_or_camp_name=school_or_camp_name,
-                form_type=form_type,
-                attachment_id=attachment_id,
-                expires_at=expires_at,
-                status=status_val,
-                actor_user_id=actor_id,
-            )
-            serialized = serialize_school_form(form)
-        except ValueError as exc:
-            msg = str(exc)
-            err_code = "CFD-500-004" if "not found" in msg.lower() else "CFD-100-007"
-            return SchoolFormToolResult(
-                success=False,
-                output=None,
-                error=msg,
-                error_code=err_code,
-                retryable=False,
-            )
+    try:
+        serialized = await execute_governed_db_operation(
+            "tool.create_school_form",
+            {
+                "title": title,
+                "school_or_camp_name": safe_args.get("school_or_camp_name"),
+                "form_type": str(safe_args.get("form_type") or "general").strip().lower(),
+                "attachment_id": safe_args.get("attachment_id"),
+                "expires_at": safe_args.get("expires_at"),
+                "status": str(safe_args.get("status") or "draft").strip().lower(),
+                "actor_user_id": actor_id,
+            },
+            ctx=ctx,
+            profile_id=clean_profile_id,
+            user_id=actor_id,
+            risk_tier="write_local",
+            caller_module_name=__name__,
+        )
+    except ValueError as exc:
+        msg = str(exc)
+        err_code = "CFD-500-004" if "not found" in msg.lower() else "CFD-100-007"
+        return SchoolFormToolResult(
+            success=False,
+            output=None,
+            error=msg,
+            error_code=err_code,
+            retryable=False,
+        )
 
     ext_ref = f"school_form:{serialized['id']}"
     serialized["external_ref"] = ext_ref
     serialized["undo_reference"] = ext_ref
-
-    return SchoolFormToolResult(
-        success=True,
-        output=serialized,
-        error=None,
-    )
+    return SchoolFormToolResult(success=True, output=serialized, error=None)
 
 
 async def execute_list_school_forms(args: Dict[str, Any], ctx: Any = None) -> SchoolFormToolResult:
-    """Lists school and camp health forms for the active profile."""
+    """Lists school and camp health forms via McpDatabaseToolbox."""
     profile_id = getattr(ctx, "profile_id", None) if ctx is not None else None
     if not profile_id or not isinstance(profile_id, str) or not profile_id.strip():
         logger.warning("list_school_forms rejected: missing or invalid profile_id in ToolContext")
@@ -155,31 +140,18 @@ async def execute_list_school_forms(args: Dict[str, Any], ctx: Any = None) -> Sc
     clean_profile_id = profile_id.strip()
 
     safe_args = args if isinstance(args, dict) else {}
-    status_filter = safe_args.get("status")
-    form_type_filter = safe_args.get("form_type")
-
-    factory = get_session_factory()
-    async with factory() as session:
-        stmt = select(SchoolForm).where(SchoolForm.profile_id == clean_profile_id)
-        if status_filter and str(status_filter).strip():
-            stmt = stmt.where(SchoolForm.status == str(status_filter).strip().lower())
-        if form_type_filter and str(form_type_filter).strip():
-            stmt = stmt.where(SchoolForm.form_type == str(form_type_filter).strip().lower())
-        stmt = stmt.order_by(SchoolForm.created_at.desc())
-
-        res = await session.execute(stmt)
-        forms = [serialize_school_form(f) for f in res.scalars().all()]
-
-    return SchoolFormToolResult(
-        success=True,
-        output={
-            "profile_id": clean_profile_id,
-            "forms": forms,
-            "items": forms,
-            "total": len(forms),
+    out = await execute_governed_db_operation(
+        "tool.list_school_forms",
+        {
+            "status": safe_args.get("status"),
+            "form_type": safe_args.get("form_type"),
         },
-        error=None,
+        ctx=ctx,
+        profile_id=clean_profile_id,
+        risk_tier="read",
+        caller_module_name=__name__,
     )
+    return SchoolFormToolResult(success=True, output=out, error=None)
 
 
 __all__ = [
@@ -189,7 +161,6 @@ __all__ = [
     "execute_create_school_form",
     "execute_list_school_forms",
 ]
-
 
 _SPEC_ATTRS = {
     "SPEC_CREATE": "create_school_form",

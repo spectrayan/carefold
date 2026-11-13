@@ -9,29 +9,19 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Closed tool: create_typed_note (AU-35).
-
-Creates and persists a typed clinical or navigation note across 7 canonical categories
-with optional appointment linking, tag categorization, search indexing, and audit logging.
-"""
+"""Closed tool: create_typed_note routed via McpDatabaseToolbox (AU-35, #344)."""
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import hashlib
-import json
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 import uuid
 
-from sqlalchemy import select
-
-from carefold.clinical.notes import VALID_NOTE_TYPES, validate_note_type
-from carefold.models import Appointment
-from yarvelle_core.db.models import Job, Note
-from yarvelle_core.db.session import get_session_factory
-from yarvelle_core.engine.tool_registry import DataFlows, ToolSpec
+from carefold.clinical.db_hooks import execute_governed_db_operation
+from carefold.clinical.notes import VALID_NOTE_TYPES, validate_note_type  # noqa: F401
+from yarvelle_core.db.session import get_session_factory  # noqa: F401
 from yarvelle_core.schemas.tool import ToolResult
 
 logger = logging.getLogger("carefold.tools.notes")
@@ -45,8 +35,7 @@ def _slugify(text: str) -> str:
 
 
 async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> ToolResult:
-    """Creates a typed note with fail-closed security, appointment linking, and indexing."""
-    # 1. Fail-closed profile verification
+    """Creates a typed note via McpDatabaseToolbox with appointment linking and indexing."""
     profile_id = getattr(ctx, "profile_id", None) if ctx is not None else None
     if not profile_id or not isinstance(profile_id, str) or not profile_id.strip():
         logger.warning("create_typed_note rejected: invalid or missing profile_id in ToolContext")
@@ -59,7 +48,6 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
         )
     clean_profile_id = profile_id.strip()
 
-    # 2. Parameter validation
     if not isinstance(args, dict):
         return ToolResult(
             success=False,
@@ -99,9 +87,7 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
     raw_tags = args.get("tags") or []
     if isinstance(raw_tags, str):
         raw_tags = [raw_tags]
-    tags_list: List[str] = [
-        str(t).strip().lower() for t in raw_tags if str(t).strip()
-    ]
+    tags_list: List[str] = [str(t).strip().lower() for t in raw_tags if str(t).strip()]
 
     user_id = getattr(ctx, "user_id", None) if ctx is not None else None
     note_id = str(uuid.uuid4())
@@ -110,106 +96,67 @@ async def execute_create_typed_note(args: Dict[str, Any], ctx: Any = None) -> To
     unique_slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
 
     try:
-        factory = get_session_factory()
-        async with factory() as session:
-            # 3. Validate appointment belongs to profile if linked
-            if linked_appt_id:
-                appt_stmt = select(Appointment).where(
-                    Appointment.id == linked_appt_id,
-                    Appointment.profile_id == clean_profile_id,
-                )
-                appt_res = await session.execute(appt_stmt)
-                if appt_res.scalar_one_or_none() is None:
-                    return ToolResult(
-                        success=False,
-                        output=None,
-                        error="Security violation: Linked appointment does not exist or does not belong to profile.",
-                        error_code="CFD-100-003",
-                        retryable=False,
-                    )
-
-            # 4. Insert Note
-            new_note = Note(
-                id=note_id,
-                type=note_type,
-                user_id=user_id,
-                profile_id=clean_profile_id,
-                slug=unique_slug,
-                title=title,
-                content=content,
-                tags_json=json.dumps(tags_list),
-                linked_appointment_id=linked_appt_id,
-                created_at=now,
-                updated_at=now,
-            )
-            session.add(new_note)
-
-            # 5. Enqueue search index job (AU-27)
-            content_hash = hashlib.sha256((new_note.content or "").encode("utf-8")).hexdigest()[:12]
-            index_job = Job(
-                id=str(uuid.uuid4()),
-                profile_id=clean_profile_id,
-                kind="index_doc",
-                payload=json.dumps({
-                    "document_id": new_note.id,
-                    "profile_id": clean_profile_id,
-                    "doc_type": "note",
-                }),
-                timezone="UTC",
-                next_run_at=now,
-                idempotency_key=f"index:note:{new_note.id}:{content_hash}",
-                status="pending",
-            )
-            session.add(index_job)
-
-            await session.commit()
-
-            # 6. Audit Logging for Undoability
-            try:
-                from yarvelle_core.audit.logger import record_audit
-                await record_audit(
-                    {
-                        "profile_id": clean_profile_id,
-                        "action": "create",
-                        "tool": "create_typed_note",
-                        "risk": "write_local",
-                        "external_ref": f"note:{new_note.id}",
-                        "details": {
-                            "note_id": new_note.id,
-                            "title": new_note.title,
-                            "type": new_note.type,
-                            "linked_appointment_id": new_note.linked_appointment_id,
-                        },
-                    },
-                    actor_user_id=user_id or "user",
-                    risk="write_local",
-                )
-            except Exception as audit_err:
-                logger.debug("Audit logging failed during typed note creation: %s", audit_err)
-
+        res = await execute_governed_db_operation(
+            "tool.create_typed_note",
+            {
+                "note_id": note_id,
+                "note_type": note_type,
+                "unique_slug": unique_slug,
+                "title": title,
+                "content": content,
+                "tags_list": tags_list,
+                "linked_appointment_id": linked_appt_id,
+                "now": now.isoformat(),
+            },
+            ctx=ctx,
+            profile_id=clean_profile_id,
+            user_id=user_id,
+            risk_tier="write_local",
+            caller_module_name=__name__,
+        )
+        if not res.get("ok"):
             return ToolResult(
-                success=True,
-                output={
-                    "id": new_note.id,
-                    "profile_id": clean_profile_id,
-                    "slug": new_note.slug,
-                    "title": new_note.title,
-                    "type": new_note.type,
-                    "content": new_note.content,
-                    "linked_appointment_id": new_note.linked_appointment_id,
-                    "tags": tags_list,
-                    "created_at": new_note.created_at.isoformat(),
-                    "updated_at": new_note.updated_at.isoformat(),
-                    "undo_reference": f"note:{new_note.id}",
-                },
-                metadata={
-                    "entity": "note",
-                    "id": new_note.id,
-                    "undoable": True,
-                    "risk": "write_local",
-                },
+                success=False,
+                output=None,
+                error=res["error"],
+                error_code=res["error_code"],
+                retryable=False,
             )
 
+        out = res["output"]
+        try:
+            from yarvelle_core.audit.logger import record_audit
+
+            await record_audit(
+                {
+                    "profile_id": clean_profile_id,
+                    "action": "create",
+                    "tool": "create_typed_note",
+                    "risk": "write_local",
+                    "external_ref": f"note:{out['id']}",
+                    "details": {
+                        "note_id": out["id"],
+                        "title": out["title"],
+                        "type": out["type"],
+                        "linked_appointment_id": out["linked_appointment_id"],
+                    },
+                },
+                actor_user_id=user_id or "user",
+                risk="write_local",
+            )
+        except Exception as audit_err:
+            logger.debug("Audit logging failed during typed note creation: %s", audit_err)
+
+        return ToolResult(
+            success=True,
+            output=out,
+            metadata={
+                "entity": "note",
+                "id": out["id"],
+                "undoable": True,
+                "risk": "write_local",
+            },
+        )
     except Exception as exc:
         logger.exception("create_typed_note failed: %s", exc)
         return ToolResult(

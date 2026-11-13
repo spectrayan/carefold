@@ -17,6 +17,7 @@ from dataclasses import replace
 from typing import List, Optional, Sequence, Tuple
 from yarvelle_core.engine.tool_registry import *  # noqa: F401, F403
 import yarvelle_core.engine.tool_registry as _core_tr
+from carefold.clinical.db_hooks import register_carefold_db_toolbox
 from carefold.tools import get_health_tool_specs as _make_health_builtin_specs
 from carefold.tools.web_search import execute_web_search as _cf_web_search
 
@@ -24,6 +25,7 @@ HEALTH_TOOL_NAMES: Tuple[str, ...] = tuple(s.name for s in _make_health_builtin_
 
 
 def create_default_registry(enabled_packs: Optional[Sequence[str]] = None) -> ToolSpecRegistry:
+    register_carefold_db_toolbox()
     registry = _core_tr.create_default_registry(enabled_packs=enabled_packs)
     ws = registry.get("web_search")
     if ws is not None:

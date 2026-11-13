@@ -9,28 +9,22 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Closed tool: generate_prep_pack (AU-33, AU-34).
-
-Compiles and persists a consultation visit prep pack dossier linking to an
-optional appointment with fail-closed profile verification and audit logging.
-"""
+"""Closed tool: generate_prep_pack routed via McpDatabaseToolbox (AU-33, AU-34, #344)."""
 
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from carefold.clinical.prep_pack import generate_and_persist_prep_pack
-from yarvelle_core.db.session import get_session_factory
-from yarvelle_core.engine.tool_registry import DataFlows, ToolSpec
+from carefold.clinical.db_hooks import execute_governed_db_operation
+from yarvelle_core.db.session import get_session_factory  # noqa: F401
 from yarvelle_core.schemas.tool import ToolResult
 
 logger = logging.getLogger("carefold.tools.prep_pack")
 
 
 async def execute_generate_prep_pack(args: Dict[str, Any], ctx: Any = None) -> ToolResult:
-    """Executes consultation prep pack compilation and persistence with fail-closed security."""
-    # 1. Fail-closed profile verification
+    """Executes consultation prep pack compilation and persistence via McpDatabaseToolbox."""
     profile_id = getattr(ctx, "profile_id", None) if ctx is not None else None
     if not profile_id or not isinstance(profile_id, str) or not profile_id.strip():
         logger.warning("generate_prep_pack rejected: invalid or missing profile_id in ToolContext")
@@ -43,35 +37,34 @@ async def execute_generate_prep_pack(args: Dict[str, Any], ctx: Any = None) -> T
         )
     clean_profile_id = profile_id.strip()
 
-    appointment_id = args.get("appointment_id") if isinstance(args, dict) else None
-    specialty = args.get("specialty") if isinstance(args, dict) else None
-    visit_reason = args.get("visit_reason") if isinstance(args, dict) else None
-    doctor_questions = args.get("doctor_questions") if isinstance(args, dict) else None
-
+    safe_args = args if isinstance(args, dict) else {}
     user_id = getattr(ctx, "user_id", None) if ctx is not None else None
 
     try:
-        factory = get_session_factory()
-        async with factory() as session:
-            res = await generate_and_persist_prep_pack(
-                session=session,
-                profile_id=clean_profile_id,
-                appointment_id=appointment_id,
-                specialty=specialty,
-                visit_reason=visit_reason,
-                doctor_questions=doctor_questions,
-                user_id=user_id,
-            )
-            return ToolResult(
-                success=True,
-                output=res,
-                metadata={
-                    "entity": "note",
-                    "id": res["note_id"],
-                    "undoable": True,
-                    "risk": "write_local",
-                },
-            )
+        res = await execute_governed_db_operation(
+            "tool.generate_prep_pack",
+            {
+                "appointment_id": safe_args.get("appointment_id"),
+                "specialty": safe_args.get("specialty"),
+                "visit_reason": safe_args.get("visit_reason"),
+                "doctor_questions": safe_args.get("doctor_questions"),
+            },
+            ctx=ctx,
+            profile_id=clean_profile_id,
+            user_id=user_id,
+            risk_tier="write_local",
+            caller_module_name=__name__,
+        )
+        return ToolResult(
+            success=True,
+            output=res,
+            metadata={
+                "entity": "note",
+                "id": res["note_id"],
+                "undoable": True,
+                "risk": "write_local",
+            },
+        )
     except ValueError as val_err:
         logger.warning("generate_prep_pack validation error: %s", val_err)
         msg = str(val_err)

@@ -9,25 +9,17 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Tool executors for clinical and wearable file import staging and commit (AU-38).
-
-Provides:
-- `execute_stage_clinical_import`: Stages a FHIR R4 Bundle, C-CDA XML, or Apple Health
-  export into `import_batches` for user review before saving.
-- `execute_commit_clinical_import`: Commits a staged `ImportBatch` into `health_resources`
-  with idempotency, search indexing, and audit logging.
-"""
+"""Tool executors for clinical and wearable file import staging and commit via McpDatabaseToolbox (AU-38, #344)."""
 
 from __future__ import annotations
 
-import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from yarvelle_core.db.session import get_session_factory
-from yarvelle_core.engine.tool_registry import DataFlows, ToolSpec
+from carefold.clinical.db_hooks import execute_governed_db_operation
 from carefold.errors import CarefoldToolError
-from carefold.importers.service import commit_import_batch, stage_import
+from yarvelle_core.db.session import get_session_factory  # noqa: F401
+from yarvelle_core.tools.sql_ast_sandbox import SqlValidationError
 
 logger = logging.getLogger("carefold.tools.imports")
 
@@ -58,7 +50,7 @@ def _mark_tainted(ctx: Any) -> None:
 
 
 async def execute_stage_clinical_import(args: Dict[str, Any], ctx: Any = None) -> Dict[str, Any]:
-    """Stages a clinical or wearable import file for Review-Before-Save confirmation."""
+    """Stages a clinical or wearable import file via McpDatabaseToolbox."""
     clean_profile_id = _require_profile_context(ctx, "stage_clinical_import")
     if not isinstance(args, dict):
         raise CarefoldToolError("CFD-100-006", detail="Arguments must be provided as a dictionary.")
@@ -71,60 +63,35 @@ async def execute_stage_clinical_import(args: Dict[str, Any], ctx: Any = None) -
     fmt = args.get("format") or args.get("fmt")
     source_name = args.get("source_name")
     user_id = getattr(ctx, "user_id", None)
-
     explicit_session = args.get("session") or getattr(ctx, "session", None)
+
     try:
-        if explicit_session is not None:
-            batch = await stage_import(
-                session=explicit_session,
-                profile_id=clean_profile_id,
-                filename=filename,
-                content=content,
-                source_name=source_name,
-                fmt=fmt,
-                user_id=user_id,
-            )
-        else:
-            session_factory = getattr(ctx, "session_factory", None) or (
-                ctx.extra.get("session_factory") if isinstance(getattr(ctx, "extra", None), dict) else None
-            ) or get_session_factory()
-            async with session_factory() as session:
-                batch = await stage_import(
-                    session=session,
-                    profile_id=clean_profile_id,
-                    filename=filename,
-                    content=content,
-                    source_name=source_name,
-                    fmt=fmt,
-                    user_id=user_id,
-                )
+        out = await execute_governed_db_operation(
+            "tool.stage_clinical_import",
+            {
+                "filename": filename,
+                "content": content,
+                "source_name": source_name,
+                "fmt": fmt,
+            },
+            ctx=ctx,
+            profile_id=clean_profile_id,
+            user_id=user_id,
+            risk_tier="write_local",
+            explicit_session=explicit_session,
+            caller_module_name=__name__,
+        )
     except CarefoldToolError:
         raise
-    except ValueError as exc:
+    except (ValueError, SqlValidationError) as exc:
         raise CarefoldToolError("CFD-100-006", detail=str(exc), cause=exc) from exc
 
     _mark_tainted(ctx)
-
-    summary = json.loads(batch.summary_json or "{}")
-    staged_records = json.loads(batch.staged_records_json or "[]")
-
-    return {
-        "id": batch.id,
-        "batch_id": batch.id,
-        "profile_id": batch.profile_id,
-        "attachment_id": batch.attachment_id,
-        "format": batch.format,
-        "source_name": batch.source_name,
-        "status": batch.status,
-        "summary": summary,
-        "staged_records": staged_records,
-        "created_at": batch.created_at.isoformat() if batch.created_at else None,
-        "trust": "untrusted",
-    }
+    return out
 
 
 async def execute_commit_clinical_import(args: Dict[str, Any], ctx: Any = None) -> Dict[str, Any]:
-    """Commits a staged `ImportBatch` into `HealthResource` rows."""
+    """Commits a staged ImportBatch into HealthResource rows via McpDatabaseToolbox."""
     clean_profile_id = _require_profile_context(ctx, "commit_clinical_import")
     if not isinstance(args, dict):
         raise CarefoldToolError("CFD-100-006", detail="Arguments must be provided as a dictionary.")
@@ -138,32 +105,25 @@ async def execute_commit_clinical_import(args: Dict[str, Any], ctx: Any = None) 
         [int(i) for i in raw_indices] if isinstance(raw_indices, (list, tuple)) else None
     )
     actor_user_id = getattr(ctx, "user_id", None)
-
     explicit_session = args.get("session") or getattr(ctx, "session", None)
-    try:
-        if explicit_session is not None:
-            return await commit_import_batch(
-                session=explicit_session,
-                profile_id=clean_profile_id,
-                batch_id=batch_id,
-                selected_indices=selected_indices,
-                actor_user_id=actor_user_id,
-            )
 
-        session_factory = getattr(ctx, "session_factory", None) or (
-            ctx.extra.get("session_factory") if isinstance(getattr(ctx, "extra", None), dict) else None
-        ) or get_session_factory()
-        async with session_factory() as session:
-            return await commit_import_batch(
-                session=session,
-                profile_id=clean_profile_id,
-                batch_id=batch_id,
-                selected_indices=selected_indices,
-                actor_user_id=actor_user_id,
-            )
+    try:
+        return await execute_governed_db_operation(
+            "tool.commit_clinical_import",
+            {
+                "batch_id": batch_id,
+                "selected_indices": selected_indices,
+            },
+            ctx=ctx,
+            profile_id=clean_profile_id,
+            user_id=actor_user_id,
+            risk_tier="write_local",
+            explicit_session=explicit_session,
+            caller_module_name=__name__,
+        )
     except CarefoldToolError:
         raise
-    except ValueError as exc:
+    except (ValueError, SqlValidationError) as exc:
         msg = str(exc)
         err_code = "CFD-500-003" if "not found" in msg.lower() else "CFD-100-006"
         raise CarefoldToolError(err_code, detail=msg, cause=exc) from exc
@@ -175,7 +135,6 @@ __all__ = [
     "execute_commit_clinical_import",
     "execute_stage_clinical_import",
 ]
-
 
 _SPEC_ATTRS = {
     "SPEC_STAGE": "stage_clinical_import",

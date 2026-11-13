@@ -9,34 +9,27 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Closed tools for clinical appointments: create, list, and update status (AU-29)."""
+"""Closed tools for clinical appointments routed via McpDatabaseToolbox (AU-29, #344)."""
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 import uuid
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, select
-
+from carefold.clinical.appointments import AppointmentStatus
+from carefold.clinical.db_hooks import execute_governed_db_operation
 from yarvelle_core.audit.logger import record_audit
-from carefold.clinical.appointments import (
-    AppointmentStatus,
-    InvalidStatusTransitionError,
-    validate_status_transition,
-)
-from carefold.models import Appointment
-from yarvelle_core.db.session import get_session_factory
-from yarvelle_core.engine.tool_registry import DataFlows, ToolSpec
+from yarvelle_core.db.session import get_session_factory  # noqa: F401
 from yarvelle_core.schemas.tool import ToolResult
 
 logger = logging.getLogger("carefold.tools.appointments")
 
 
 async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> ToolResult:
-    """Creates a new clinical appointment for a patient profile with fail-closed security."""
+    """Creates a new clinical appointment for a patient profile via McpDatabaseToolbox."""
     profile_id = getattr(ctx, "profile_id", None) if ctx is not None else None
     if not profile_id or not isinstance(profile_id, str) or not profile_id.strip():
         logger.warning("create_appointment rejected: missing or invalid profile_id in ToolContext")
@@ -123,27 +116,28 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
     appt_id = str(uuid.uuid4())
     now_utc = datetime.now(timezone.utc)
 
-    factory = get_session_factory()
-    async with factory() as session:
-        appt = Appointment(
-            id=appt_id,
-            profile_id=clean_profile_id,
-            title=title,
-            provider_name=args.get("provider_name"),
-            specialty=args.get("specialty"),
-            location=args.get("location"),
-            clinic_phone=args.get("clinic_phone"),
-            start_time=start_dt.astimezone(timezone.utc),
-            end_time=end_dt.astimezone(timezone.utc),
-            timezone=tz_str,
-            status=valid_status,
-            reason=args.get("reason"),
-            preparation_notes=args.get("preparation_notes"),
-            created_at=now_utc,
-            updated_at=now_utc,
-        )
-        session.add(appt)
-        await session.commit()
+    await execute_governed_db_operation(
+        "tool.create_appointment",
+        {
+            "id": appt_id,
+            "title": title,
+            "provider_name": args.get("provider_name"),
+            "specialty": args.get("specialty"),
+            "location": args.get("location"),
+            "clinic_phone": args.get("clinic_phone"),
+            "start_time": start_dt.isoformat(),
+            "end_time": end_dt.isoformat(),
+            "timezone": tz_str,
+            "status": valid_status,
+            "reason": args.get("reason"),
+            "preparation_notes": args.get("preparation_notes"),
+            "now_utc": now_utc.isoformat(),
+        },
+        ctx=ctx,
+        profile_id=clean_profile_id,
+        risk_tier="write_local",
+        caller_module_name=__name__,
+    )
 
     actor_id = getattr(ctx, "user_id", "user") or "user"
     try:
@@ -189,7 +183,7 @@ async def execute_create_appointment(args: Dict[str, Any], ctx: Any = None) -> T
 
 
 async def execute_list_appointments(args: Dict[str, Any], ctx: Any = None) -> ToolResult:
-    """Queries scheduled and historical clinical appointments for a profile."""
+    """Queries scheduled and historical clinical appointments via McpDatabaseToolbox."""
     profile_id = getattr(ctx, "profile_id", None) if ctx is not None else None
     if not profile_id or not isinstance(profile_id, str) or not profile_id.strip():
         logger.warning("list_appointments rejected: missing or invalid profile_id in ToolContext")
@@ -211,72 +205,25 @@ async def execute_list_appointments(args: Dict[str, Any], ctx: Any = None) -> To
     limit = max(1, min(100, limit))
     offset = max(0, offset)
 
-    factory = get_session_factory()
-    async with factory() as session:
-        query = select(Appointment).where(Appointment.profile_id == clean_profile_id)
-
-        if status_filter:
-            query = query.where(Appointment.status == str(status_filter).strip().lower())
-        if start_after:
-            try:
-                dt_after = datetime.fromisoformat(str(start_after))
-                if dt_after.tzinfo is None:
-                    dt_after = dt_after.replace(tzinfo=timezone.utc)
-                query = query.where(Appointment.start_time >= dt_after.astimezone(timezone.utc))
-            except Exception:
-                pass
-        if start_before:
-            try:
-                dt_before = datetime.fromisoformat(str(start_before))
-                if dt_before.tzinfo is None:
-                    dt_before = dt_before.replace(tzinfo=timezone.utc)
-                query = query.where(Appointment.start_time <= dt_before.astimezone(timezone.utc))
-            except Exception:
-                pass
-
-        # Total count
-        count_stmt = select(func.count()).select_from(query.subquery())
-        count_res = await session.execute(count_stmt)
-        total_count = count_res.scalar_one()
-
-        query = query.order_by(Appointment.start_time.asc()).limit(limit).offset(offset)
-        res = await session.execute(query)
-        records = list(res.scalars().all())
-
-    appointments_list = [
+    out = await execute_governed_db_operation(
+        "tool.list_appointments",
         {
-            "id": a.id,
-            "profile_id": a.profile_id,
-            "title": a.title,
-            "provider_name": a.provider_name,
-            "specialty": a.specialty,
-            "location": a.location,
-            "clinic_phone": a.clinic_phone,
-            "start_time": a.start_time.isoformat() if a.start_time else None,
-            "end_time": a.end_time.isoformat() if a.end_time else None,
-            "timezone": a.timezone,
-            "status": a.status,
-            "reason": a.reason,
-            "preparation_notes": a.preparation_notes,
-            "created_at": a.created_at.isoformat() if a.created_at else None,
-            "updated_at": a.updated_at.isoformat() if a.updated_at else None,
-        }
-        for a in records
-    ]
-
-    return ToolResult(
-        success=True,
-        output={
-            "appointments": appointments_list,
-            "total": total_count,
+            "status": status_filter,
+            "start_after": start_after,
+            "start_before": start_before,
             "limit": limit,
             "offset": offset,
         },
+        ctx=ctx,
+        profile_id=clean_profile_id,
+        risk_tier="read",
+        caller_module_name=__name__,
     )
+    return ToolResult(success=True, output=out)
 
 
 async def execute_update_appointment_status(args: Dict[str, Any], ctx: Any = None) -> ToolResult:
-    """Updates the lifecycle status of an appointment with state machine transition checks."""
+    """Updates the lifecycle status of an appointment via McpDatabaseToolbox."""
     profile_id = getattr(ctx, "profile_id", None) if ctx is not None else None
     if not profile_id or not isinstance(profile_id, str) or not profile_id.strip():
         logger.warning("update_appointment_status rejected: missing or invalid profile_id in ToolContext")
@@ -310,48 +257,28 @@ async def execute_update_appointment_status(args: Dict[str, Any], ctx: Any = Non
         )
 
     now_utc = datetime.now(timezone.utc)
-    factory = get_session_factory()
-    async with factory() as session:
-        stmt = select(Appointment).where(
-            Appointment.id == appointment_id,
-            Appointment.profile_id == clean_profile_id,
+    res = await execute_governed_db_operation(
+        "tool.update_appointment_status",
+        {
+            "appointment_id": appointment_id,
+            "status": target_status,
+            "now_utc": now_utc.isoformat(),
+        },
+        ctx=ctx,
+        profile_id=clean_profile_id,
+        risk_tier="write_local",
+        caller_module_name=__name__,
+    )
+    if not res.get("ok"):
+        return ToolResult(
+            success=False,
+            output=None,
+            error=res["error"],
+            error_code=res["error_code"],
+            retryable=False,
         )
-        res = await session.execute(stmt)
-        appt = res.scalar_one_or_none()
 
-        if appt is None:
-            return ToolResult(
-                success=False,
-                output=None,
-                error=f"Appointment '{appointment_id}' not found for profile '{clean_profile_id}'.",
-                error_code="CFD-500-002",
-                retryable=False,
-            )
-
-        previous_status = appt.status
-        try:
-            validate_status_transition(previous_status, target_status)
-        except InvalidStatusTransitionError as err:
-            return ToolResult(
-                success=False,
-                output=None,
-                error=str(err),
-                error_code="CFD-100-003",
-                retryable=False,
-            )
-        except ValueError as val_err:
-            return ToolResult(
-                success=False,
-                output=None,
-                error=str(val_err),
-                error_code="CFD-100-003",
-                retryable=False,
-            )
-
-        appt.status = target_status
-        appt.updated_at = now_utc
-        await session.commit()
-
+    previous_status = res["previous_status"]
     actor_id = getattr(ctx, "user_id", "user") or "user"
     try:
         await record_audit(
@@ -380,7 +307,7 @@ async def execute_update_appointment_status(args: Dict[str, Any], ctx: Any = Non
             "profile_id": clean_profile_id,
             "previous_status": previous_status,
             "status": target_status,
-            "updated_at": now_utc.isoformat(),
+            "updated_at": res["updated_at"],
             "undo_reference": f"appointment:{appointment_id}",
         },
     )
@@ -394,7 +321,6 @@ __all__ = [
     "execute_list_appointments",
     "execute_update_appointment_status",
 ]
-
 
 _SPEC_ATTRS = {
     "SPEC_CREATE": "create_appointment",

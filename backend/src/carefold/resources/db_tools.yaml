@@ -460,18 +460,6 @@ tools:
         required: false
         default: "general"
 
-  fhir_get_capabilities:
-    kind: sqlite-sql
-    source: carefold-sqlite
-    risk_tier: read
-    entity: health_resource
-    description: >-
-      Return Carefold's HL7 FHIR R4 (4.0.1) CapabilityStatement declaring supported clinical resource types,
-      search parameters, and system/patient operations ($everything, $summary IPS, $export).
-    statement: |
-      SELECT id, profile_id, resource_type FROM health_resources WHERE profile_id = :profile_id LIMIT 1;
-    parameters: []
-
   fhir_search_resources:
     kind: sqlite-sql
     source: carefold-sqlite
@@ -660,17 +648,14 @@ tools:
     entity: health_resource
     description: >-
       Persist a user-intended creation or update of a validated FHIR R4 resource in the active profile's
-      repository with version history, optimistic concurrency (If-Match ETag), idempotency key support,
-      and hash-chained audit logging. Requires explicit user confirmation.
+      repository through Carefold's canonical FHIR Operation Registry (fhir/operations.py) with immutable
+      version history, weak ETag (If-Match -> 412 CFD-500-011), idempotency key replay, content-hash
+      deduplication, and hash-chained audit logging. Requires explicit user confirmation.
     statement: |
-      INSERT INTO health_resources (
-        id, profile_id, resource_type, source_type, source_ref, source_id,
-        content_hash, data, status, locale, effective_at, recorded_at, created_at, updated_at
-      ) VALUES (
-        :id, :profile_id, :resource_type, 'manual', 'fhir_r4_api', :resource_id,
-        :content_hash, :resource_json, 'active', :locale, :now, :now, :now, :now
-      )
-      RETURNING id, profile_id, resource_type, status;
+      SELECT id, profile_id, resource_type, source_id, content_hash, status
+      FROM health_resources
+      WHERE profile_id = :profile_id AND resource_type = :resource_type AND source_id = :resource_id
+      LIMIT 1;
     parameters:
       - name: resource_type
         type: string
@@ -679,7 +664,8 @@ tools:
       - name: resource_json
         type: string
         description: Complete FHIR R4 resource serialized as a JSON string.
-        required: true
+        required: false
+        default: ""
       - name: resource_id
         type: string
         description: Optional logical FHIR resource ID.
@@ -767,6 +753,58 @@ tools:
         description: FHIR R4 resource type (e.g. 'Observation', 'Patient').
         required: true
 
+  carefold_domain_read:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: health_resource
+    description: >-
+      Execute a governed read-only Carefold domain query inside McpDatabaseToolbox with
+      profile-access verification, scope isolation, and shared Pydantic schema validation.
+    statement: |
+      SELECT id FROM profiles WHERE id = :profile_id LIMIT 1;
+    parameters:
+      - name: operation_id
+        type: string
+        description: Registered Carefold read operation identifier.
+        required: true
+      - name: target_profile_id
+        type: string
+        description: Optional target profile ID validated via require_profile_access.
+        required: false
+        default: ""
+      - name: payload_json
+        type: string
+        description: Canonical JSON-serialized operation parameters.
+        required: false
+        default: "{}"
+
+  carefold_domain_write:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: write_local
+    entity: health_resource
+    description: >-
+      Execute a governed Carefold domain mutation inside McpDatabaseToolbox with
+      profile-access verification, shared Pydantic schema validation, undo metadata, and audit logging.
+    statement: |
+      SELECT id FROM profiles WHERE id = :profile_id LIMIT 1;
+    parameters:
+      - name: operation_id
+        type: string
+        description: Registered Carefold write operation identifier.
+        required: true
+      - name: target_profile_id
+        type: string
+        description: Optional target profile ID validated via require_profile_access.
+        required: false
+        default: ""
+      - name: payload_json
+        type: string
+        description: Canonical JSON-serialized operation parameters.
+        required: false
+        default: "{}"
+
 toolsets:
   assist_db:
     - upsert_clinical_note
@@ -780,7 +818,6 @@ toolsets:
     - list_profile_reminders
     - update_preventive_record
     - list_preventive_records
-    - fhir_get_capabilities
     - fhir_search_resources
     - fhir_read_resource
     - fhir_get_resource_history
@@ -798,7 +835,6 @@ toolsets:
     - list_profile_reminders
     - update_preventive_record
     - list_preventive_records
-    - fhir_get_capabilities
     - fhir_search_resources
     - fhir_read_resource
     - fhir_get_resource_history
@@ -841,7 +877,6 @@ toolsets:
     - update_preventive_record
     - list_preventive_records
     - create_email_draft_record
-    - fhir_get_capabilities
     - fhir_search_resources
     - fhir_read_resource
     - fhir_get_resource_history
@@ -851,3 +886,5 @@ toolsets:
     - fhir_start_bulk_export
     - fhir_get_bulk_export_status
     - fhir_download_bulk_export_file
+    - carefold_domain_read
+    - carefold_domain_write

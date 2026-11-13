@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -98,6 +98,17 @@ class TypedNoteDetailResponse(_BaseTypedNoteDetailResponse):
 
 class TypedNoteListResponse(_BaseTypedNoteListResponse):
     notes: List[TypedNoteSummaryResponse]
+
+
+class AdhocNoteExtractRequest(BaseModel):
+    """Shared request contract for ad-hoc clinical note entity extraction (#344)."""
+
+    model_config = ConfigDict(extra="allow")
+
+    content: str = Field(
+        default="",
+        description="Raw clinical note markdown or text content to extract entities from.",
+    )
 
 
 logger = get_logger("carefold.api.notes")
@@ -1300,7 +1311,7 @@ async def extract_profile_note(
 )
 async def extract_profile_adhoc_note(
     profile_id: str,
-    payload: Dict[str, Any],
+    payload: AdhocNoteExtractRequest,
     user: UserProfile = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> AfterVisitExtractionResponse:
@@ -1308,7 +1319,7 @@ async def extract_profile_adhoc_note(
     clean_pid = profile_id.strip()
     await _verify_profile_access(clean_pid, user, db, required_level="manage")
 
-    content = str(payload.get("content", ""))
+    content = str(payload.content or "")
     res_dict = extract_after_visit_summary(content)
     return AfterVisitExtractionResponse(
         note_id="adhoc",
@@ -1323,6 +1334,7 @@ async def extract_profile_adhoc_note(
 
 
 __all__ = [
+    "AdhocNoteExtractRequest",
     "create_note",
     "create_profile_typed_note",
     "delete_note",
