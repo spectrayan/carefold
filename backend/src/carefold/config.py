@@ -41,6 +41,9 @@ from carefold.constants.models import (
 from carefold.constants.paths import (
     AGENTS_DIR,
     ATTACHMENTS_DIR,
+    CAREFOLD_DATA_DIR,
+    DAEMON_LOCK_FILENAME,
+    DAEMON_MANIFEST_FILENAME,
     DEFAULT_AUDIT_LOG_FILE,
     DEFAULT_CATALOG_DB,
     DEFAULT_CHECKPOINTS_DB,
@@ -54,6 +57,7 @@ from carefold.constants.paths import (
     SKILLS_DIR,
     SQL_DB_FILENAME,
     UPLOADS_DIR,
+    WEBVIEW_DIR,
     WORKSPACE_DIR,
     WORKSPACE_NOTES_DIR,
 )
@@ -76,42 +80,25 @@ def get_default_workspace_root() -> Path:
     return current
 
 
-def resolve_carefold_home() -> Path:
-    """Resolves the canonical Carefold home storage directory (~/.carefold).
+def resolve_carefold_home(cli_data_dir: Optional[Path | str] = None) -> Path:
+    """Resolves the canonical Carefold local data directory (~/.carefold).
 
     Resolution Precedence:
-    1. CAREFOLD_HOME environment variable (or CAREFOLD_HOME_DIR)
-    2. CAREFOLD_WORKSPACE_ROOT environment variable (if explicitly pointing to
-       a .carefold directory or non-repository test sandbox)
-    3. Cross-platform user home default: Path.home() / DEFAULT_HOME_DIR
+    1. Explicit `--data-dir <path>` CLI override (`cli_data_dir` or CLI runtime state)
+    2. CAREFOLD_DATA_DIR environment variable
+    3. CAREFOLD_HOME or CAREFOLD_HOME_DIR environment variable
+    4. CAREFOLD_WORKSPACE_ROOT environment variable (legacy fallback)
+    5. Cross-platform user home default: <user_home>/.carefold
        - Linux:   /home/<user>/.carefold
        - macOS:   /Users/<user>/.carefold
        - Windows: C:\\Users\\<user>\\.carefold (via %USERPROFILE%)
 
     Returns:
-        Path: Absolute resolved filesystem path to the Carefold home directory.
+        Path: Absolute resolved filesystem path to the Carefold data directory.
     """
-    # 1. Primary override: CAREFOLD_HOME or CAREFOLD_HOME_DIR
-    env_home = os.getenv("CAREFOLD_HOME") or os.getenv("CAREFOLD_HOME_DIR")
-    if env_home and env_home.strip():
-        return Path(env_home.strip()).expanduser().resolve()
+    from carefold.data_dir import resolve_data_dir
 
-    # 2. Secondary override: CAREFOLD_WORKSPACE_ROOT
-    env_ws = os.getenv("CAREFOLD_WORKSPACE_ROOT")
-    if env_ws and env_ws.strip():
-        ws_path = Path(env_ws.strip()).expanduser().resolve()
-        # If explicitly pointed at a .carefold folder
-        if ws_path.name == DEFAULT_HOME_DIR:
-            return ws_path
-        # If containing a .carefold subfolder
-        if (ws_path / DEFAULT_HOME_DIR).is_dir():
-            return (ws_path / DEFAULT_HOME_DIR).resolve()
-        # If pointing to an isolated sandbox/test path (does not contain repository agents/skills)
-        if not (ws_path / AGENTS_DIR).is_dir() and not (ws_path / "backend").is_dir():
-            return ws_path
-
-    # 3. Default: cross-platform user home directory
-    return (Path.home() / DEFAULT_HOME_DIR).resolve()
+    return resolve_data_dir(cli_override=cli_data_dir)
 
 
 def get_default_ollama_url() -> str:
@@ -132,15 +119,6 @@ class Settings(BaseSettings):
 
     # Product Brand Customization
     _brand_config: BrandConfig = PrivateAttr(default_factory=BrandConfig)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        super().__setattr__(name, value)
-        try:
-            import yarvelle_core.config
-            if hasattr(yarvelle_core.config.settings, name):
-                setattr(yarvelle_core.config.settings, name, value)
-        except Exception:
-            pass
 
     @property
     def brand_config(self) -> BrandConfig:
@@ -235,6 +213,26 @@ class Settings(BaseSettings):
         """Returns the resolved root home storage directory (~/.carefold)."""
         return self.home_dir
 
+    def get_data_dir(self) -> Path:
+        """Returns the resolved canonical local data directory (~/.carefold)."""
+        return self.home_dir
+
+    def get_webview_dir(self) -> Path:
+        """Returns the isolated desktop WebView profile directory (<data-dir>/webview)."""
+        return self.home_dir / WEBVIEW_DIR
+
+    def get_cas_dir(self) -> Path:
+        """Returns the content-addressed file storage root (<data-dir>/data/files)."""
+        return self.home_dir / "data" / "files"
+
+    def get_daemon_manifest_path(self) -> Path:
+        """Returns the runtime discovery manifest path (<data-dir>/daemon.json)."""
+        return self.home_dir / DAEMON_MANIFEST_FILENAME
+
+    def get_daemon_lock_path(self) -> Path:
+        """Returns the advisory instance lock path (<data-dir>/daemon.lock)."""
+        return self.home_dir / DAEMON_LOCK_FILENAME
+
     def get_uploads_dir(self) -> Path:
         """Returns the uploads directory (~/.carefold/uploads) managed via StoragePort."""
         return self.home_dir / UPLOADS_DIR
@@ -301,8 +299,10 @@ class Settings(BaseSettings):
         """Returns notes directory, rooted under home_dir to prevent writing to repository."""
         if not (self.workspace_root / "backend").is_dir() and (self.workspace_root / WORKSPACE_NOTES_DIR).is_dir():
             return self.workspace_root / WORKSPACE_NOTES_DIR
+        from carefold.data_dir import ensure_private_dir
+
         notes_path = self.home_dir / NOTES_DIR
-        notes_path.mkdir(parents=True, exist_ok=True)
+        ensure_private_dir(notes_path)
         return notes_path
 
     def __setattr__(self, name: str, value: Any) -> None:

@@ -353,7 +353,12 @@ async def audit_node(state: AgentState) -> Dict[str, Any]:
         }
         accumulated_events.append(run_ev)
 
-    resolved_log_path = settings.audit_log_path if settings.audit_log_path else (Path(ws_root) / LOGS_DIR / DEFAULT_AUDIT_LOG_FILE)
+    if settings.audit_log_path:
+        resolved_log_path = settings.audit_log_path
+    elif state.get("workspace_root") and not (Path(ws_root) / "backend").is_dir():
+        resolved_log_path = Path(ws_root) / LOGS_DIR / DEFAULT_AUDIT_LOG_FILE
+    else:
+        resolved_log_path = settings.get_audit_log_path()
 
     # Flush all events to disk
     for ev in accumulated_events:
@@ -420,7 +425,10 @@ def resolve_checkpointer_path(
     else:
         db_path = settings.get_checkpointer_path()
 
-    db_path.parent.mkdir(parents=True, exist_ok=True)
+    from carefold.data_dir import ensure_private_dir, harden_private_file
+
+    ensure_private_dir(db_path.parent)
+    harden_private_file(db_path)
     return db_path
 
 

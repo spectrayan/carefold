@@ -52,6 +52,8 @@ export interface OllamaHealthStatus {
   error?: string;
 }
 
+export type RuntimeMode = 'desktop' | 'local' | 'server' | 'dev';
+
 export interface HealthResponse {
   status: 'ok' | 'degraded' | 'error';
   version: string;
@@ -59,6 +61,9 @@ export interface HealthResponse {
   timestamp: string; // ISO 8601 string
   modelReachable?: boolean; // convenience alias for tests
   backendReachable?: boolean;
+  runtimeMode?: RuntimeMode;
+  isGitWorkspace?: boolean;
+  dataDirReady?: boolean;
   workspace: {
     root: string;
     agentsCount: number;

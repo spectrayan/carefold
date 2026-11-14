@@ -250,12 +250,19 @@ async def _file_lock(db_path: Optional[Path]):
 
 async def init_db(engine: Optional[AsyncEngine] = None) -> None:
     import carefold.db.models  # noqa: F401
+    from carefold.data_dir import ensure_private_dir, harden_private_file
 
     target_engine = engine or get_engine()
     db_path = _sqlite_db_file(target_engine)
+    if db_path is not None and db_path.parent == settings.home_dir.resolve():
+        ensure_private_dir(db_path.parent)
     async with _get_init_lock():
         async with _file_lock(db_path):
             async with target_engine.begin() as conn:
                 await conn.run_sync(run_all_migrations)
                 await conn.run_sync(Base.metadata.create_all)
+    if db_path is not None:
+        harden_private_file(db_path)
+        for suffix in ("-wal", "-shm", "-journal", ".lock"):
+            harden_private_file(Path(f"{db_path}{suffix}"))
     logger.info("database_initialized", dialect=target_engine.dialect.name, url=sanitize_db_url(target_engine.url))
