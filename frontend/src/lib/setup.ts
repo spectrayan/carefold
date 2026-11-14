@@ -12,7 +12,7 @@
  */
 
 import { loadSettings, type CarefoldUserSettings } from './settings';
-import type { HealthResponse } from '../types/api';
+import type { HealthResponse, RuntimeMode } from '../types/api';
 
 export const CAREFOLD_SETUP_STORAGE_KEY = 'carefold_setup_complete';
 
@@ -20,6 +20,7 @@ export type SetupCheckStatus = 'checking' | 'pass' | 'warn' | 'fail';
 
 export type SetupCheckBadge =
   | '[READY]'
+  | '[STARTING]'
   | '[OFFLINE]'
   | '[MISSING MODEL]'
   | '[API KEY MISSING]'
@@ -34,6 +35,7 @@ export interface SetupCheckItem {
   message: string;
   fixCommand?: string;
   secondaryCommand?: string;
+  retryLabel?: string;
   docsLink?: string;
   docsLabel?: string;
   details?: string[];
@@ -46,10 +48,63 @@ export interface SetupDiagnosticsResult {
   model: SetupCheckItem;
   starters: SetupCheckItem;
   allPassed: boolean;
+  isDesktopMode: boolean;
+  runtimeMode: RuntimeMode;
   isCloudActive: boolean;
   cloudProvider?: string;
   detectedModels: string[];
   timestamp: string;
+}
+
+export interface SetupDiagnosticsOptions {
+  forceDesktopMode?: boolean;
+}
+
+/**
+ * Detects whether Carefold is running inside an installed Mode L desktop/local
+ * environment (e.g., Tauri shell or packaged non-git bundle) rather than a
+ * developer source checkout.
+ */
+export function isDesktopOrInstalledMode(healthData?: HealthResponse | null): boolean {
+  if (typeof window !== 'undefined') {
+    const w = window as unknown as Record<string, unknown>;
+    if ('__TAURI_INTERNALS__' in w || '__TAURI__' in w) {
+      return true;
+    }
+    const protocol = window.location?.protocol || '';
+    const hostname = window.location?.hostname || '';
+    if (protocol === 'tauri:' || hostname === 'tauri.localhost') {
+      return true;
+    }
+  }
+
+  const publicMode = (process.env.NEXT_PUBLIC_CAREFOLD_RUNTIME_MODE || '').trim().toLowerCase();
+  if (
+    publicMode === 'desktop' ||
+    publicMode === 'tauri' ||
+    publicMode === 'local' ||
+    publicMode === 'installed' ||
+    publicMode === 'mode_l'
+  ) {
+    return true;
+  }
+  if (publicMode === 'dev' || publicMode === 'development') {
+    return false;
+  }
+
+  if (healthData) {
+    if (healthData.runtimeMode === 'desktop' || healthData.runtimeMode === 'local') {
+      return true;
+    }
+    if (healthData.isGitWorkspace === false && healthData.runtimeMode !== 'server') {
+      return true;
+    }
+    if (healthData.runtimeMode === 'dev' || healthData.isGitWorkspace === true) {
+      return false;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -90,7 +145,8 @@ export function resetSetupStatus(): void {
  * Probes the local backend and configured model provider to diagnose runtime readiness.
  */
 export async function runSetupDiagnostics(
-  customSettings?: CarefoldUserSettings
+  customSettings?: CarefoldUserSettings,
+  options?: SetupDiagnosticsOptions
 ): Promise<SetupDiagnosticsResult> {
   const settings = customSettings || loadSettings();
   const provider = settings.provider || 'ollama';
@@ -124,16 +180,42 @@ export async function runSetupDiagnostics(
     backendOnline = false;
   }
 
+  const desktopMode =
+    typeof options?.forceDesktopMode === 'boolean'
+      ? options.forceDesktopMode
+      : isDesktopOrInstalledMode(backendHealthData);
+
+  const runtimeMode: RuntimeMode = desktopMode
+    ? backendHealthData?.runtimeMode === 'local'
+      ? 'local'
+      : 'desktop'
+    : backendHealthData?.runtimeMode || 'dev';
+
   if (backendOnline) {
     const agentsCount = backendHealthData?.workspace?.agentsCount ?? 22;
     const skillsCount = backendHealthData?.workspace?.skillsCount ?? 24;
     backendItem = {
       id: 'backend',
-      title: 'Backend API Status',
+      title: desktopMode ? 'Local Carefold Runtime' : 'Backend API Status',
       status: 'pass',
       badge: '[READY]',
-      message: 'Backend API is online and responding on :8010.',
+      message: desktopMode
+        ? 'Local Carefold health runtime is online and ready on this device.'
+        : 'Backend API is online and responding on :8010.',
       details: [`Workspace loaded: ${agentsCount} agents, ${skillsCount} skills`]
+    };
+  } else if (desktopMode) {
+    backendItem = {
+      id: 'backend',
+      title: 'Local Carefold Runtime',
+      status: 'fail',
+      badge: '[STARTING]',
+      message:
+        'Carefold’s local health runtime is still starting up or temporarily unavailable on this device.',
+      details: [
+        'Wait a moment while local storage initializes, then select Retry connection below.'
+      ],
+      retryLabel: 'Retry connection'
     };
   } else {
     backendItem = {
@@ -195,31 +277,65 @@ export async function runSetupDiagnostics(
     }
 
     if (!reachable) {
-      modelItem = {
-        id: 'model',
-        title: 'Local Ollama Daemon',
-        status: 'fail',
-        badge: '[OFFLINE]',
-        message: `Ollama inference daemon is unreachable at ${endpoint}.`,
-        fixCommand: 'ollama serve',
-        docsLink: 'docs/getting-started/installation.md#step-4-install-and-configure-ollama-local-inference',
-        docsLabel: 'Ollama Setup Guide'
-      };
+      if (desktopMode) {
+        modelItem = {
+          id: 'model',
+          title: 'Local AI Model Service (Ollama)',
+          status: 'fail',
+          badge: '[OFFLINE]',
+          message: 'Local AI model service (Ollama) is not running yet on this device.',
+          details: [
+            'Open the Ollama app on your computer (or choose a cloud model in Settings), then select Retry connection.'
+          ],
+          retryLabel: 'Retry connection',
+          ctaLink: '/settings/model',
+          ctaLabel: 'Open Model Settings'
+        };
+      } else {
+        modelItem = {
+          id: 'model',
+          title: 'Local Ollama Daemon',
+          status: 'fail',
+          badge: '[OFFLINE]',
+          message: `Ollama inference daemon is unreachable at ${endpoint}.`,
+          fixCommand: 'ollama serve',
+          docsLink:
+            'docs/getting-started/installation.md#step-4-install-and-configure-ollama-local-inference',
+          docsLabel: 'Ollama Setup Guide'
+        };
+      }
     } else if (modelsList.length === 0) {
-      modelItem = {
-        id: 'model',
-        title: 'Ollama Model Availability',
-        status: 'warn',
-        badge: '[MISSING MODEL]',
-        message: 'Ollama daemon is running, but no chat models are installed locally.',
-        fixCommand: 'ollama pull llama3.2',
-        details: [
-          'Recommended default: llama3.2',
-          'Supported alternatives: mistral, deepseek-r1'
-        ],
-        docsLink: 'docs/getting-started/installation.md#step-4-install-and-configure-ollama-local-inference',
-        docsLabel: 'Model Installation Guide'
-      };
+      if (desktopMode) {
+        modelItem = {
+          id: 'model',
+          title: 'Local AI Model Availability',
+          status: 'warn',
+          badge: '[MISSING MODEL]',
+          message: 'Ollama is running, but no local chat model has been downloaded yet.',
+          details: [
+            'Download a recommended local model such as llama3.2 in Ollama, then select Retry connection.'
+          ],
+          retryLabel: 'Retry connection',
+          ctaLink: '/settings/model',
+          ctaLabel: 'Open Model Settings'
+        };
+      } else {
+        modelItem = {
+          id: 'model',
+          title: 'Ollama Model Availability',
+          status: 'warn',
+          badge: '[MISSING MODEL]',
+          message: 'Ollama daemon is running, but no chat models are installed locally.',
+          fixCommand: 'ollama pull llama3.2',
+          details: [
+            'Recommended default: llama3.2',
+            'Supported alternatives: mistral, deepseek-r1'
+          ],
+          docsLink:
+            'docs/getting-started/installation.md#step-4-install-and-configure-ollama-local-inference',
+          docsLabel: 'Model Installation Guide'
+        };
+      }
     } else {
       for (const m of modelsList) {
         detectedModels.push(m.name || m.id);
@@ -295,6 +411,8 @@ export async function runSetupDiagnostics(
     model: modelItem,
     starters: startersItem,
     allPassed,
+    isDesktopMode: desktopMode,
+    runtimeMode,
     isCloudActive,
     cloudProvider: cloudProviderName,
     detectedModels,

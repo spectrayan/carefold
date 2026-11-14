@@ -9,15 +9,18 @@
 #
 # Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
 
-"""Re-export shim delegating to yarvelle_core.api.health."""
+"""Health endpoint shim delegating to yarvelle_core.api.health with Carefold Mode L metadata."""
 
 from __future__ import annotations
 
-import sys as _sys
-
-from carefold.constants.defaults import DEFAULT_VERSION as _CF_VERSION
 from yarvelle_core.api.health import *  # noqa: F401, F403
 import yarvelle_core.api.health as _target_module
 
+from carefold.constants.defaults import DEFAULT_VERSION as _CF_VERSION
+from carefold.data_dir import get_carefold_health_components
+
+HealthResponse, get_health, router = get_carefold_health_components()
+
 _target_module.DEFAULT_VERSION = _CF_VERSION
-_sys.modules[__name__] = _target_module
+
+__all__ = ["DEFAULT_VERSION", "HealthResponse", "START_TIME", "get_health", "router"]

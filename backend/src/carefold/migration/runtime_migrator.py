@@ -25,6 +25,7 @@ from pathlib import Path
 import re
 import shutil
 import sqlite3
+import threading
 from typing import Any, Dict, List, Optional, Tuple
 import uuid
 import yaml
@@ -38,6 +39,18 @@ SENTINEL_FILENAME = ".migration_done"
 FRONTMATTER_PATTERN = re.compile(r"^---\s*\r?\n(.*?)\r?\n---\s*\r?\n?(.*)$", re.DOTALL)
 HEADING_PATTERN = re.compile(r"^#\s+(.+)$", re.MULTILINE)
 REQUIRED_DISK_HEADROOM_BYTES = 2_500_000_000  # 2.5 GB safety buffer
+
+_MIGRATION_LOCKS_GUARD = threading.Lock()
+_MIGRATION_LOCKS: Dict[Path, threading.Lock] = {}
+
+
+def _get_migration_lock(home_dir: Path) -> threading.Lock:
+    with _MIGRATION_LOCKS_GUARD:
+        lock = _MIGRATION_LOCKS.get(home_dir)
+        if lock is None:
+            lock = threading.Lock()
+            _MIGRATION_LOCKS[home_dir] = lock
+        return lock
 
 
 def run_first_launch_migration(home_dir: Path, workspace_root: Path) -> bool:
@@ -53,8 +66,14 @@ def run_first_launch_migration(home_dir: Path, workspace_root: Path) -> bool:
     home_dir = Path(home_dir).resolve()
     workspace_root = Path(workspace_root).resolve()
 
+    with _get_migration_lock(home_dir):
+        return _run_first_launch_migration_locked(home_dir, workspace_root)
+
+
+def _run_first_launch_migration_locked(home_dir: Path, workspace_root: Path) -> bool:
     sentinel_path = home_dir / SENTINEL_FILENAME
     if sentinel_path.is_file():
+        _ensure_directory_tree(home_dir)
         logger.debug("migration_sentinel_present_skipping", sentinel=str(sentinel_path))
         return False
 
@@ -140,15 +159,10 @@ def run_first_launch_migration(home_dir: Path, workspace_root: Path) -> bool:
 
 
 def _ensure_directory_tree(home_dir: Path) -> None:
-    """Pre-creates ~/.carefold directory structure with secure permissions."""
-    home_dir.mkdir(parents=True, exist_ok=True)
-    (home_dir / "uploads").mkdir(exist_ok=True)
-    (home_dir / "logs").mkdir(exist_ok=True)
-    try:
-        # Enforce user-only read/write/execute where supported
-        os.chmod(home_dir, 0o700)
-    except OSError:
-        pass
+    """Pre-creates ~/.carefold directory structure with 0700/0600 secure permissions."""
+    from carefold.data_dir import harden_data_dir_tree
+
+    harden_data_dir_tree(home_dir)
 
 
 def _checkpoint_sqlite_database(db_path: Path) -> Tuple[int, int, int]:
@@ -572,8 +586,12 @@ def _migrate_attachments(workspace_root: Path, home_dir: Path) -> Dict[str, Any]
 
 
 def _write_sentinel_file(sentinel_path: Path, metadata: Dict[str, Any]) -> None:
-    """Atomically writes the migration completion sentinel marker."""
-    tmp_sentinel = sentinel_path.with_suffix(".tmp")
+    """Atomically writes the migration completion sentinel marker with 0600 permissions."""
+    from carefold.data_dir import harden_data_dir_tree, write_private_file_atomic
+
+    legacy_tmp = sentinel_path.with_name(f"{sentinel_path.name}.tmp")
+    if legacy_tmp.exists():
+        legacy_tmp.unlink(missing_ok=True)
     content = json.dumps(metadata, indent=2) + "\n"
-    tmp_sentinel.write_text(content, encoding="utf-8")
-    tmp_sentinel.replace(sentinel_path)
+    write_private_file_atomic(sentinel_path, content)
+    harden_data_dir_tree(sentinel_path.parent)

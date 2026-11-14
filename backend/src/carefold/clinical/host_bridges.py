@@ -645,9 +645,11 @@ async def record_audit_compat(
                 if hasattr(gen, "__anext__"):
                     session = await gen.__anext__()
                     try:
-                        return await _yc_audit_logger.record_audit(
+                        res = await _yc_audit_logger.record_audit(
                             event, *args, db=session, **kwargs
                         )
+                        _harden_audit_target(kwargs.get("log_path"))
+                        return res
                     finally:
                         try:
                             await gen.__anext__()
@@ -656,6 +658,21 @@ async def record_audit_compat(
         except Exception:
             pass
 
-    return await _yc_audit_logger.record_audit(
+    res = await _yc_audit_logger.record_audit(
         event, *args, db=db, session_factory=session_factory, **kwargs
     )
+    _harden_audit_target(kwargs.get("log_path"))
+    return res
+
+
+def _harden_audit_target(explicit_log_path: Any = None) -> None:
+    try:
+        from carefold.config import settings as _cf_settings
+        from carefold.data_dir import ensure_private_dir, harden_private_file
+
+        target = Path(explicit_log_path) if explicit_log_path else _cf_settings.get_audit_log_path()
+        if target.parent.exists():
+            ensure_private_dir(target.parent)
+        harden_private_file(target)
+    except Exception:
+        pass

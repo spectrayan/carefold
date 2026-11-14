@@ -103,7 +103,11 @@ function StepBadge({ badge }: { badge: SetupCheckItem['badge'] }) {
     badgeStyles = 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
   } else if (badge === '[CLOUD ACTIVE]') {
     badgeStyles = 'bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800';
-  } else if (badge === '[MISSING MODEL]' || badge === '[API KEY MISSING]') {
+  } else if (
+    badge === '[STARTING]' ||
+    badge === '[MISSING MODEL]' ||
+    badge === '[API KEY MISSING]'
+  ) {
     badgeStyles = 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800';
   } else if (badge === '[OFFLINE]') {
     badgeStyles = 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800';
@@ -238,6 +242,8 @@ export function SetupChecklist({
           <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
             {isSettingsView
               ? 'Verify local runtime health and Ollama model availability anytime'
+              : diagnostics?.isDesktopMode
+              ? 'Checking local Carefold runtime and AI model readiness on this device'
               : 'Ensure local backend and inference services are active before clinical consultation'}
           </p>
         </div>
@@ -290,12 +296,12 @@ export function SetupChecklist({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">
-                  1. Backend API Runtime
+                  1. {diagnostics?.backend.title || 'Backend API Runtime'}
                 </span>
                 <StepBadge badge={diagnostics?.backend.badge ?? '[CHECKING]'} />
               </div>
               <p className="text-xs text-slate-600 dark:text-zinc-300 mt-1">
-                {diagnostics?.backend.message ?? 'Probing backend runtime on port 8010...'}
+                {diagnostics?.backend.message ?? 'Probing local Carefold runtime...'}
               </p>
 
               {diagnostics?.backend.details && (
@@ -308,6 +314,24 @@ export function SetupChecklist({
             </div>
           </div>
         </div>
+
+        {/* Desktop/installed Mode L one-click retry when backend is still starting */}
+        {diagnostics?.backend.status === 'fail' &&
+          !diagnostics.backend.fixCommand &&
+          diagnostics.backend.retryLabel && (
+            <div className="mt-3 pt-2.5 border-t border-rose-200/60 dark:border-rose-800/40 flex items-center gap-2">
+              <button
+                type="button"
+                data-testid="setup-step-backend-retry-btn"
+                disabled={isChecking}
+                onClick={checkConnectivity}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 border border-rose-200 dark:border-rose-800/60 hover:bg-slate-50 dark:hover:bg-zinc-800 transition cursor-pointer disabled:opacity-60"
+              >
+                <RotateCcw className={cn('w-3.5 h-3.5', isChecking && 'animate-spin')} />
+                <span>{diagnostics.backend.retryLabel}</span>
+              </button>
+            </div>
+          )}
 
         {/* Remediation code box if backend is failing */}
         {diagnostics?.backend.status === 'fail' && diagnostics.backend.fixCommand && (
@@ -382,6 +406,43 @@ export function SetupChecklist({
             </div>
           </div>
         </div>
+
+        {/* Desktop/installed Mode L one-click retry & model settings link */}
+        {diagnostics?.model.status !== 'pass' &&
+          !diagnostics?.model.fixCommand &&
+          (diagnostics?.model.retryLabel || diagnostics?.model.ctaLink) && (
+            <div
+              className={cn(
+                'mt-3 pt-2.5 border-t flex flex-wrap items-center gap-2',
+                diagnostics?.model.status === 'fail'
+                  ? 'border-rose-200/60 dark:border-rose-800/40'
+                  : 'border-amber-200/60 dark:border-amber-800/40'
+              )}
+            >
+              {diagnostics?.model.retryLabel && (
+                <button
+                  type="button"
+                  data-testid="setup-step-model-retry-btn"
+                  disabled={isChecking}
+                  onClick={checkConnectivity}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 transition cursor-pointer disabled:opacity-60"
+                >
+                  <RotateCcw className={cn('w-3.5 h-3.5', isChecking && 'animate-spin')} />
+                  <span>{diagnostics.model.retryLabel}</span>
+                </button>
+              )}
+              {diagnostics?.model.ctaLink && (
+                <Link
+                  href={diagnostics.model.ctaLink}
+                  data-testid="setup-step-model-cta"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline"
+                >
+                  <span>{diagnostics.model.ctaLabel || 'Open Settings'}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              )}
+            </div>
+          )}
 
         {/* Remediation code box if Ollama is failing or models missing */}
         {diagnostics?.model.fixCommand && (

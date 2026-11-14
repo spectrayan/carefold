@@ -70,6 +70,10 @@ def isolate_test_carefold_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     test_db_url = f"sqlite+aiosqlite:///{test_home}/carefold.db"
 
+    from carefold.data_dir import clear_cli_data_dir_override
+
+    clear_cli_data_dir_override()
+    monkeypatch.delenv("CAREFOLD_DATA_DIR", raising=False)
     monkeypatch.setenv("CAREFOLD_HOME", str(test_home))
     monkeypatch.delenv(ENV_DATABASE_URL, raising=False)
     monkeypatch.delenv(ENV_DB_PATH, raising=False)
