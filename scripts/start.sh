@@ -64,6 +64,8 @@ CAREFOLD_BACKEND_PORT="${CAREFOLD_BACKEND_PORT:-${PORT:-8010}}"
 CAREFOLD_BACKEND_HOST="${CAREFOLD_HOST:-${CAREFOLD_BACKEND_HOST:-${HOST:-127.0.0.1}}}"
 CAREFOLD_WEB_PORT="${CAREFOLD_WEB_PORT:-3010}"
 CAREFOLD_WEB_HOST="${CAREFOLD_WEB_HOST:-localhost}"
+# Local dev: save chat checkpoints unencrypted unless overridden (no vault key required)
+CAREFOLD_CHECKPOINT_ENCRYPTION="${CAREFOLD_CHECKPOINT_ENCRYPTION:-false}"
 
 CAREFOLD_HOME_DIR="${CAREFOLD_HOME:-${HOME:-${PROJECT_ROOT}}/.carefold}"
 LOG_DIR="${CAREFOLD_LOG_DIR:-${CAREFOLD_HOME_DIR}/logs}"
@@ -196,6 +198,7 @@ start_backend() {
             CAREFOLD_BACKEND_HOST="${CAREFOLD_BACKEND_HOST}" \
             CAREFOLD_BACKEND_PORT="${CAREFOLD_BACKEND_PORT}" \
             PORT="${CAREFOLD_BACKEND_PORT}" \
+            CAREFOLD_CHECKPOINT_ENCRYPTION="${CAREFOLD_CHECKPOINT_ENCRYPTION}" \
             "${py_bin}" -m uvicorn carefold.main:app \
             --host "${CAREFOLD_BACKEND_HOST}" \
             --port "${CAREFOLD_BACKEND_PORT}" \
@@ -209,6 +212,7 @@ start_backend() {
             CAREFOLD_BACKEND_HOST="${CAREFOLD_BACKEND_HOST}" \
             CAREFOLD_BACKEND_PORT="${CAREFOLD_BACKEND_PORT}" \
             PORT="${CAREFOLD_BACKEND_PORT}" \
+            CAREFOLD_CHECKPOINT_ENCRYPTION="${CAREFOLD_CHECKPOINT_ENCRYPTION}" \
             "${py_bin}" -m uvicorn carefold.main:app \
             --host "${CAREFOLD_BACKEND_HOST}" \
             --port "${CAREFOLD_BACKEND_PORT}"
