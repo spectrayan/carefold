@@ -261,6 +261,9 @@ disclaimer_clauses:
 - id: first_person_missed_dose_disclosure
   description: The patient telling the doctor they have skipped or missed doses ("I've had to skip doses because of the cost")
   pattern: '\bi(?:\s+(?:have|had|sometimes|often|occasionally|already|also|been)|[''\u2019]ve)(?:\s+(?:have|had|to|sometimes|often|occasionally|already|also|been)){0,3}\s+(?:skip(?:ping)?|miss(?:ing)?)\b'
+- id: condition_care_plan_or_log
+  description: Questions or references to having a written condition action plan, care plan, symptom log, diary, or tracker — not a clinical diagnosis
+  pattern: "\\b(?:(?:do|does|if|whether|when)\\s+(?:i|you|we|they|he|she|y['\u2019]?all|one|someone|somebody|anyone|anybody)|(?:i|you|we|they|he|she))\\s+(?:have|has)\\s+(?:(?:a|an|the|your|their|his|her|my|our|any|written|current|updated|personal|home|daily)\\s+){0,3}(?:(?:acute|chronic|severe|mild|pediatric|adult|seasonal)\\s+){0,2}(?:<CONDITION_TAIL>)\\s+(?:action\\s+plans?|care\\s+plans?|management\\s+plans?|self[- ]management\\s+plans?|logs?|diar(?:y|ies)|journals?|trackers?|checklists?|worksheets?|questionnaires?|care\\s+teams?)\\b"
 refusal_patterns:
 - category: diagnose
   description: Direct diagnostic assertion with condition

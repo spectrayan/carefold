@@ -42,6 +42,7 @@ from yarvelle_core.engine.service import (
     strip_internal_suggestion_leakage,
 )
 
+from carefold.clinical.host_bridges import CarefoldInputGuardrailNode
 from carefold.engine.output_guardrail import (
     CarefoldOutputGuardrailNode,
     extract_latest_turn_messages,
@@ -388,6 +389,10 @@ class CarefoldAgentExecutionService(CoreAgentExecutionService):
         builder = (
             builder.with_node("refusal", CarefoldRefusalNode())
             .with_node(
+                "input_guardrail",
+                CarefoldInputGuardrailNode(safety_policy=self.safety_policy),
+            )
+            .with_node(
                 "response_synthesizer",
                 CarefoldResponseSynthesizerNode(
                     model=active_model,
@@ -414,6 +419,7 @@ def create_execution_service(**kwargs: Any) -> CarefoldAgentExecutionService:
 
 __all__ = [
     "CarefoldAgentExecutionService",
+    "CarefoldInputGuardrailNode",
     "create_execution_service",
     "serialized_sqlite_saver",
 ]

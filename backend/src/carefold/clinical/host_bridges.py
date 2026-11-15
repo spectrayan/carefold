@@ -387,12 +387,125 @@ class CarefoldWorkflowRefusalNode(_CoreRefusalNode):
         return res
 
 
+def _is_refusal_assistant_message(msg: Any) -> bool:
+    """Returns True when an assistant message represents a completed refusal or emergency barrier."""
+    if isinstance(msg, dict):
+        is_ai = msg.get("role") in ("assistant", "ai")
+        content = str(msg.get("content") or "")
+    else:
+        is_ai = getattr(msg, "type", "") in ("ai", "assistant") or type(msg).__name__ in (
+            "AIMessage",
+            "AIMessageChunk",
+        )
+        content = str(getattr(msg, "content", "") or "")
+    if not is_ai or not content:
+        return False
+
+    from carefold.safety.template import SAFE_REFUSAL_TEMPLATE
+
+    low = content.lower()
+    if SAFE_REFUSAL_TEMPLATE.lower() in low:
+        return True
+    if "cannot diagnose conditions, prescribe medications" in low:
+        return True
+    if "emergency warning:" in low:
+        return True
+    if "call 911" in low and "988" in low:
+        return True
+    return False
+
+
+def _extract_recent_user_messages(messages: Sequence[Any], max_turns: int = 4) -> List[str]:
+    """Extracts recent user message contents in chronological order from state messages.
+
+    Stops at any prior assistant refusal barrier once the current turn's user prompt has been
+    captured so already-refused turns do not contaminate subsequent benign follow-ups.
+    """
+    user_texts: List[str] = []
+    for m in reversed(messages or []):
+        if user_texts and _is_refusal_assistant_message(m):
+            break
+        text = ""
+        if isinstance(m, dict):
+            if m.get("role") in ("user", "human"):
+                text = str(m.get("content") or "").strip()
+        elif hasattr(m, "type") and getattr(m, "type") in ("human", "user"):
+            text = str(getattr(m, "content", "") or "").strip()
+        elif hasattr(m, "content") and type(m).__name__ in ("HumanMessage", "UserMessage"):
+            text = str(getattr(m, "content", "") or "").strip()
+        if text:
+            user_texts.append(text)
+            if len(user_texts) >= max_turns:
+                break
+    user_texts.reverse()
+    return user_texts
+
+
 class CarefoldInputGuardrailNode(_CoreInputGuardrailNode):
-    """InputGuardrailNode gating clinical domain on strict allow_assist===True and formatting patient recall."""
+    """InputGuardrailNode gating clinical domain on strict allow_assist===True, split-turn emergencies, and formatting patient recall."""
 
     async def execute(
         self, state: Dict[str, Any], *, store: Optional[BaseStore] = None, **kwargs: Any
     ) -> Dict[str, Any]:
+        messages = state.get("messages", [])
+        recent_user_texts = _extract_recent_user_messages(messages, max_turns=4)
+        if not recent_user_texts and state.get("prompt"):
+            recent_user_texts = [str(state.get("prompt")).strip()]
+
+        # Split-turn acute emergency red-flag gating
+        if len(recent_user_texts) > 1 and self.safety_policy:
+            emergency_flag = self.safety_policy.check_emergency(recent_user_texts)
+            if emergency_flag is not None:
+                referral_msg = emergency_flag.referral_message or (
+                    "EMERGENCY WARNING: Acute symptoms detected. Please call 911 or visit the nearest emergency room immediately."
+                )
+                flag_dict = emergency_flag.to_dict() if hasattr(emergency_flag, "to_dict") else dict(emergency_flag)
+                combined_text = ". ".join(recent_user_texts)
+                safety_check = self.safety_policy.check_input(combined_text)
+                if safety_check.refused and safety_check.reason and "replace_emergency_care" in safety_check.reason:
+                    refusal_reason = "emergency_red_flag:replace_emergency_care"
+                else:
+                    refusal_reason = "emergency_red_flag"
+
+                return {
+                    "guardrail_flags": ["red_flag"],
+                    "is_refusal": True,
+                    "refused": True,
+                    "refusal_reason": refusal_reason,
+                    "refusal_message": referral_msg,
+                    "emergency_red_flags": flag_dict,
+                    "next_step": "refusal",
+                    "tool_calls": [],
+                    "recalled_memories": [],
+                    "safety_metadata": {
+                        "checked": True,
+                        "refused": True,
+                        "reason": refusal_reason,
+                        "category": emergency_flag.category,
+                        "emergency": flag_dict,
+                    },
+                }
+
+            # Split-turn hard safety boundaries (prescriptions, dosing, stopping meds)
+            safety_check = self.safety_policy.check_input(recent_user_texts)
+            if safety_check.refused and getattr(safety_check, "is_hard", False):
+                refusal_reason = safety_check.reason or "forbidden_intent"
+                return {
+                    "guardrail_flags": [],
+                    "is_refusal": True,
+                    "refused": True,
+                    "refusal_reason": refusal_reason,
+                    "refusal_message": safety_check.safe_response or "Clinical safety refusal.",
+                    "next_step": "refusal",
+                    "tool_calls": [],
+                    "recalled_memories": [],
+                    "safety_metadata": {
+                        "checked": True,
+                        "refused": True,
+                        "reason": refusal_reason,
+                    },
+                }
+
         orig_domain = state.get("target_domain") or state.get("domain")
         call_state = dict(state)
         if orig_domain == "clinical":
