@@ -82,10 +82,10 @@ def test_redos_refusal_patterns_pathological_inputs():
 
 
 def test_redos_disclaimer_clauses_pathological_inputs():
-    """Stress tests all 21 disclaimer clauses against pathological backtracking inputs."""
+    """Stress tests all 22 disclaimer clauses against pathological backtracking inputs."""
     loader = get_resource_loader()
     clauses = loader.get_compiled_disclaimer_clauses()
-    assert len(clauses) == 21, f"Expected exactly 21 disclaimer clauses, found {len(clauses)}"
+    assert len(clauses) == 22, f"Expected exactly 22 disclaimer clauses, found {len(clauses)}"
 
     pathological_samples = [
         "since I was diagnosed with " * 500,
@@ -106,6 +106,7 @@ def test_redos_disclaimer_clauses_pathological_inputs():
         "ask your doctor whether you can reduce " * 300,
         "enough to reduce my medication " * 300,
         "i have had to have had to " * 300 + "skip",
+        "do you have an asthma " * 500,
         " " * 10000,
         "\n" * 10000,
         "\t" * 10000,
@@ -256,13 +257,13 @@ def test_smart_quote_contraction_resilience():
 # =========================================================================
 
 def test_pattern_and_clause_counts_exact():
-    """Systematically verifies that exactly 35 refusal patterns and 21 disclaimer clauses are compiled."""
+    """Systematically verifies that exactly 35 refusal patterns and 22 disclaimer clauses are compiled."""
     loader = get_resource_loader()
     patterns = loader.get_compiled_refusal_patterns()
     clauses = loader.get_compiled_disclaimer_clauses()
 
     assert len(patterns) == 35, f"Expected 35 refusal patterns, got {len(patterns)}"
-    assert len(clauses) == 21, f"Expected 21 disclaimer clauses, got {len(clauses)}"
+    assert len(clauses) == 22, f"Expected 22 disclaimer clauses, got {len(clauses)}"
 
     categories = {}
     for p in patterns:
@@ -277,7 +278,7 @@ def test_pattern_and_clause_counts_exact():
 
 
 def test_disclaimer_clauses_neutralization_all_15():
-    """Systematically verifies that all 15 disclaimer clauses neutralize legitimate disclosures with 0 false positives."""
+    """Systematically verifies that disclaimer clauses neutralize legitimate disclosures with 0 false positives."""
     disclaimers = [
         "Since I was diagnosed with asthma 5 years ago, how should I prepare for my visit?",
         "Questions for my doctor regarding my diagnosis of hypertension.",
@@ -294,6 +295,7 @@ def test_disclaimer_clauses_neutralization_all_15():
         "Please consult your physician before tapering down any medications.",
         "Please consult a qualified healthcare provider regarding your symptoms.",
         "Do not hesitate to contact emergency services or go to the ER if pain worsens.",
+        "Do you have an Asthma Action Plan?",
     ]
 
     for idx, d in enumerate(disclaimers):

@@ -232,16 +232,26 @@ async def test_symptom_log_template_present_and_readable():
 
 
 @pytest.mark.asyncio
-async def test_skill_docs_dynamically_synthesizes_missing_doc_instead_of_failing(tmp_path):
-    """Verifies that when a reference doc is missing, skill-docs synthesizes it instead of returning an error."""
+async def test_skill_docs_missing_doc_returns_error_with_available_docs(tmp_path):
+    """Verifies that missing docs return an error listing real reference filenames rather than synthesizing placeholders."""
+    import yarvelle_core.tools.skill_docs as _yc_skill_docs
+
+    if not hasattr(_yc_skill_docs, "_list_available_skill_docs"):
+        pytest.skip("Requires yarvelle-core > 0.2.5 skill-docs resolution without placeholder synthesis")
+
     ws = tmp_path / "workspace"
     skills_dir = ws / "skills"
     test_skill = skills_dir / "therapy-prep"
-    test_skill.mkdir(parents=True, exist_ok=True)
+    ref_dir = test_skill / "references"
+    ref_dir.mkdir(parents=True, exist_ok=True)
     (test_skill / "SKILL.md").write_text(
         "---\nname: therapy-prep\ndescription: Mental health and therapy preparation skill\n---\n\n"
         "## Intended Use & Safety Disclosures\n- Not a clinician and not emergency care\n"
         "- If this is an emergency, contact local emergency services\n- Do not change medication without the prescribing clinician\n",
+        encoding="utf-8",
+    )
+    (ref_dir / "session_agenda.md").write_text(
+        "# Session Agenda\n\n- Topics to prioritize with your therapist.\n",
         encoding="utf-8",
     )
 
@@ -259,14 +269,31 @@ async def test_skill_docs_dynamically_synthesizes_missing_doc_instead_of_failing
         ctx,
     )
 
-    assert res.success is True
-    assert res.output["doc"] == "anxiety_trigger_log.md"
-    assert res.output["skill_id"] == "therapy-prep"
-    assert "Anxiety Trigger Log" in res.output["content"]
-    assert "Tracking Log Matrix" in res.output["content"]
-    # Check that it was returned in-memory and NOT persisted to disk
-    cached_file = test_skill / "references" / "anxiety_trigger_log.md"
-    assert not cached_file.exists()
+    assert res.success is False
+    assert res.output is None
+    assert "not found" in (res.error or "").lower()
+    assert "session_agenda.md" in (res.error or "")
+    # Check that nothing was synthesized or persisted to disk
+    assert not (ref_dir / "anxiety_trigger_log.md").exists()
+
+    # Hyphenated alias resolves real underscore reference file on disk
+    alias_res = await execute_skill_docs(
+        {"skill_id": "therapy-prep", "doc": "session-agenda.md"},
+        ctx,
+    )
+    assert alias_res.success is True
+    assert alias_res.output is not None
+    assert alias_res.output["doc"] == "session_agenda.md"
+    assert "Topics to prioritize" in alias_res.output["content"]
+
+    # Direct SKILL.md request reads the skill manifest
+    skill_md_res = await execute_skill_docs(
+        {"skill_id": "therapy-prep", "doc": "SKILL.md"},
+        ctx,
+    )
+    assert skill_md_res.success is True
+    assert skill_md_res.output is not None
+    assert skill_md_res.output["doc"] == "SKILL.md"
 
 
 @pytest.mark.asyncio
