@@ -340,6 +340,7 @@ def test_production_graph_wires_carefold_nodes() -> None:
     """The routed production graph uses Carefold's refusal and synthesizer nodes."""
     from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
+    from carefold.clinical.host_bridges import CarefoldInputGuardrailNode
     from carefold.engine.refusal_node import CarefoldRefusalNode
     from carefold.engine.response_synthesizer import CarefoldResponseSynthesizerNode
 
@@ -362,7 +363,7 @@ def test_production_graph_wires_carefold_nodes() -> None:
 
     assert isinstance(captured.get("refusal"), CarefoldRefusalNode)
     assert isinstance(captured.get("response_synthesizer"), CarefoldResponseSynthesizerNode)
-    assert "input_guardrail" not in captured  # core guardrail reads policy check_flags
+    assert isinstance(captured.get("input_guardrail"), CarefoldInputGuardrailNode)
     nodes = set(graph.get_graph().nodes)
     assert {"input_guardrail", "supervisor", "refusal", "response_synthesizer"} <= nodes
 

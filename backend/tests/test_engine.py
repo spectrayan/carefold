@@ -232,10 +232,15 @@ async def test_engine_undeclared_tool_interception(temp_workspace: Path):
 @pytest.mark.asyncio
 async def test_engine_undeclared_phase0_tool_boundary(temp_workspace: Path):
     """Verifies that an agent cannot invoke a Phase 0 tool not in union(agent.tools, skill.tools).
-    
-    'benefits-coordinator' declares skill 'benefits-explainer' (effective tools: ['skill-docs']).
-    Calling 'workspace-note' must be denied.
+
+    When 'benefits-coordinator' omits 'workspace-note', calling 'workspace-note' must be denied.
     """
+    agent_yaml = temp_workspace / "agents" / "benefits-coordinator" / "agent.yaml"
+    agent_yaml.write_text(
+        agent_yaml.read_text().replace("  - workspace-note\n", ""),
+        encoding="utf-8",
+    )
+
     mock = MockModelClient()
     mock.queue_response({
         "type": "tool_call",

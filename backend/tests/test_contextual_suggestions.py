@@ -214,7 +214,12 @@ async def test_heart_care_coordinator_skill_alias_resolution(tmp_path):
 
 @pytest.mark.asyncio
 async def test_skill_docs_dynamic_synthesis_on_missing_reference(tmp_path):
-    """Verifies that missing documents or directories are dynamically synthesized rather than returning hard errors."""
+    """Verifies missing reference documents fail grounded without fabricating template content."""
+    import yarvelle_core.tools.skill_docs as _yc_skill_docs
+
+    if not hasattr(_yc_skill_docs, "_list_available_skill_docs"):
+        pytest.skip("Requires yarvelle-core > 0.2.5 skill-docs resolution without placeholder synthesis")
+
     from carefold.schemas.manifest import AgentManifest
     from carefold.tools.skill_docs import execute_skill_docs
 
@@ -235,12 +240,23 @@ async def test_skill_docs_dynamic_synthesis_on_missing_reference(tmp_path):
     )
     ctx = MockContext(ws, agent)
 
-    # Request a document that does not exist on disk
+    # Request a document that does not exist on disk (no references installed yet)
     res = await execute_skill_docs(
         {"skill_id": "cardiology-prep", "doc": "untracked_guideline.md"},
         ctx,
     )
-    assert res.success is True
-    assert "Cardiology Prep" in res.output["content"]
-    assert "Carefold Boundary & Safety Disclosures" in res.output["content"]
+    assert res.success is False
+    assert 'Reference document "untracked_guideline.md" not found in skill "cardiology-prep"' in (res.error or "")
+
+    # Install a reference file and verify error surfaces available installed documents
+    ref_dir = ws / "skills" / "cardiology-prep" / "references"
+    ref_dir.mkdir(parents=True, exist_ok=True)
+    (ref_dir / "cardiology_visit_agenda.md").write_text("# Cardiology Visit Agenda\n", encoding="utf-8")
+
+    res_with_available = await execute_skill_docs(
+        {"skill_id": "cardiology-prep", "doc": "untracked_guideline.md"},
+        ctx,
+    )
+    assert res_with_available.success is False
+    assert "Available documents: cardiology_visit_agenda.md" in (res_with_available.error or "")
 

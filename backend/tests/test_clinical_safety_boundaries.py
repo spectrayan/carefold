@@ -14,7 +14,7 @@
 Tests and documents:
 1. Tool Allow-List Enforcement & Bounding:
    - Arbitrary system tool invocation attempts (bash, sh, subprocess, rm_rf).
-   - Phase 0 tool allow-list boundaries per agent (habit-coordinator blocking attach-read/skill-docs; benefits-coordinator blocking workspace-note; _template blocking all tools).
+   - Phase 0 tool allow-list boundaries per agent (habit-coordinator blocking attach-read/skill-docs; doc-only-agent blocking workspace-note/create_workspace_note; zero-tools-agent blocking all tools).
    - Loop bounds enforcement on repeated undeclared tool calls via MAX_TOOL_ITERATIONS = 5.
    - Trace generation (status='denied', allowed=False) and audit logging of rejections.
 2. Clinical Safety Refusal & Stealth Evasion Vulnerabilities:
@@ -112,8 +112,9 @@ class TestToolAllowListEnforcement:
             # habit-coordinator declares only workspace-note
             ("habit-coordinator", "attach-read"),
             ("habit-coordinator", "skill-docs"),
-            # benefits-coordinator declares attach-read and skill-docs, but NOT workspace-note
-            ("benefits-coordinator", "workspace-note"),
+            # doc-only-agent declares attach-read and skill-docs, but NOT workspace-note
+            ("doc-only-agent", "workspace-note"),
+            ("doc-only-agent", "create_workspace_note"),
             # Public zero-tool agent (underscore templates are hidden by core)
             ("zero-tools-agent", "attach-read"),
             ("zero-tools-agent", "workspace-note"),
@@ -142,6 +143,27 @@ class TestToolAllowListEnforcement:
             )
             (agent_dir / "persona.md").write_text(
                 "You are a zero-tool test agent.\n", encoding="utf-8"
+            )
+        elif agent_id == "doc-only-agent":
+            agent_dir = temp_workspace / "agents" / "doc-only-agent"
+            agent_dir.mkdir(parents=True, exist_ok=True)
+            (agent_dir / "agent.yaml").write_text(
+                "id: doc-only-agent\n"
+                "title: Doc Only Agent\n"
+                "version: 0.1.0\n"
+                "domain: clinical\n"
+                "category: health.test\n"
+                "hidden: false\n"
+                "can_delegate: false\n"
+                "description: Public doc-only agent without note tools\n"
+                "tools:\n"
+                "  - attach-read\n"
+                "  - skill-docs\n"
+                "skills: []\n",
+                encoding="utf-8",
+            )
+            (agent_dir / "persona.md").write_text(
+                "You are a doc-only test agent.\n", encoding="utf-8"
             )
         mock = MockModelClient()
         mock.queue_response({
