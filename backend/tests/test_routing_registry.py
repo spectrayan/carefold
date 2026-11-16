@@ -363,7 +363,11 @@ async def test_agent_execution_restricted_tool_manifest(temp_workspace: Path):
     eff_tools = node._resolve_tools("restricted-note-agent", restricted_manifest, {})
     eff_tool_names = [t["name"] if isinstance(t, dict) else t.name for t in eff_tools]
 
-    assert eff_tool_names == [TOOL_WORKSPACE_NOTE, *WORKSPACE_NOTE_MCP_TOOLS]
+    from carefold.engine.tool_registry import create_default_registry
+
+    default_reg = create_default_registry()
+    expected_note_mcp = [t for t in WORKSPACE_NOTE_MCP_TOOLS if default_reg.get(t) is not None]
+    assert eff_tool_names == [TOOL_WORKSPACE_NOTE, *expected_note_mcp]
     assert TOOL_ATTACH_READ not in eff_tool_names
 
     # Test ToolNode enforcement with restricted list

@@ -32,34 +32,5 @@ ALL_BUNDLED_AGENT_IDS = BUNDLED_AGENT_IDS
 
 import yarvelle_core.constants.agents as _yc_mod
 
-_FALLBACK_WORKSPACE_NOTE_MCP_TOOLS: tuple[str, ...] = (
-    "create_workspace_note",
-    "get_workspace_note",
-    "list_workspace_notes",
-    "update_workspace_note",
-    "delete_workspace_note",
-    "upsert_workspace_note",
-)
-if not hasattr(_yc_mod, "WORKSPACE_NOTE_MCP_TOOLS"):
-    setattr(_yc_mod, "WORKSPACE_NOTE_MCP_TOOLS", _FALLBACK_WORKSPACE_NOTE_MCP_TOOLS)
-WORKSPACE_NOTE_MCP_TOOLS = getattr(_yc_mod, "WORKSPACE_NOTE_MCP_TOOLS")
-
-if not hasattr(_yc_mod, "expand_workspace_note_tools"):
-
-    def _expand_workspace_note_tools(tool_names):
-        names = list(tool_names or ())
-        if "workspace-note" not in names and not any(
-            t in WORKSPACE_NOTE_MCP_TOOLS for t in names
-        ):
-            return names
-        for note_tool in WORKSPACE_NOTE_MCP_TOOLS:
-            if note_tool not in names:
-                names.append(note_tool)
-        return names
-
-    setattr(_yc_mod, "expand_workspace_note_tools", _expand_workspace_note_tools)
-expand_workspace_note_tools = getattr(_yc_mod, "expand_workspace_note_tools")
-
-
 def __getattr__(name: str):
     return getattr(_yc_mod, name)

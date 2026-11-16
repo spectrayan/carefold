@@ -23,16 +23,6 @@ from carefold.clinical.db_hooks import register_carefold_db_toolbox
 
 register_carefold_db_toolbox()
 
-from carefold.constants.agents import (
-    WORKSPACE_NOTE_MCP_TOOLS as _CF_NOTE_MCP_TOOLS,
-    expand_workspace_note_tools as _cf_expand_note_tools,
-)
-
-if not hasattr(_target_module, "WORKSPACE_NOTE_MCP_TOOLS"):
-    setattr(_target_module, "WORKSPACE_NOTE_MCP_TOOLS", _CF_NOTE_MCP_TOOLS)
-if not hasattr(_target_module, "expand_workspace_note_tools"):
-    setattr(_target_module, "expand_workspace_note_tools", _cf_expand_note_tools)
-
 sys.modules[__name__] = _target_module
 
 
