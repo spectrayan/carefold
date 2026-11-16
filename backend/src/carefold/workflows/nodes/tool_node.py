@@ -97,6 +97,10 @@ class ToolNode(BaseNode):
         else:
             allowed = set(CLOSED_TOOL_DEFINITIONS.keys())
 
+        from carefold.tools.mcp_db_toolbox import expand_workspace_note_tools
+
+        allowed = set(expand_workspace_note_tools(list(allowed)))
+
         # Extract tool calls
         tool_calls = list(state.get("tool_calls", []))
         if not tool_calls:

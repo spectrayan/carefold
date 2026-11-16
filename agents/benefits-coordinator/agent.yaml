@@ -22,4 +22,5 @@ skills:
 tools:
   - attach-read
   - skill-docs
+  - workspace-note
 persona: persona.md

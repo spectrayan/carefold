@@ -471,14 +471,16 @@ def check_emergency_red_flags(prompt: Optional[Union[str, Sequence[str]]]) -> Op
         return None
 
     if isinstance(prompt, (list, tuple)):
+        if len(prompt) < 2 or not all(isinstance(turn, str) for turn in prompt):
+            return None
         # Check individual turns first
         for turn in prompt:
-            if isinstance(turn, str) and turn.strip():
+            if turn.strip():
                 hit = check_emergency_red_flags(turn)
                 if hit is not None:
                     return hit
         # If no individual turn triggered, check concatenated recent turns for split-turn emergency
-        non_empty = [str(t).strip() for t in prompt if str(t).strip()]
+        non_empty = [turn.strip() for turn in prompt if turn.strip()]
         if not non_empty:
             return None
         combined = ". ".join(non_empty)

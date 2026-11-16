@@ -91,6 +91,15 @@ try:
         RiskClass.ASSIST = RiskClass.register("assist")
     if hasattr(RiskClass, "register") and not hasattr(RiskClass, "CLINICAL_ASSIST"):
         RiskClass.CLINICAL_ASSIST = RiskClass.register("clinical_assist")
+
+    import yarvelle_core.loaders.agent_loader as _yc_agent_loader
+    import yarvelle_core.loaders.union as _yc_union
+    import yarvelle_core.schemas.manifest as _yc_manifest
+
+    _extra_phase0 = {"create_workspace_note", "update_workspace_note"}
+    for _mod in (_yc_manifest, _yc_union, _yc_agent_loader):
+        if hasattr(_mod, "PHASE_0_REGISTRY"):
+            setattr(_mod, "PHASE_0_REGISTRY", frozenset(set(_mod.PHASE_0_REGISTRY) | _extra_phase0))
 except Exception:
     pass
 
