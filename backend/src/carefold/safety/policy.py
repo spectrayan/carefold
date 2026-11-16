@@ -13,7 +13,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, Sequence, Set
+from typing import Any, Optional, Sequence, Set, Union
 
 from carefold.constants.defaults import DEFAULT_FORBIDDEN_INTENTS
 from yarvelle_core.engine.safety_policy import (
@@ -42,7 +42,7 @@ class HealthSafetyPolicy(metaclass=_HealthSafetyPolicyMeta):
     """Adapts Carefold clinical safety classifiers to the domain-neutral SafetyPolicy protocol."""
 
     def check_input(
-        self, text: Optional[str], ctx: Optional[SafetyContext] = None
+        self, text: Optional[Union[str, Sequence[str]]], ctx: Optional[SafetyContext] = None
     ) -> SafetyVerdict:
         res = check_safety_refusal(text)
         return SafetyVerdict(
@@ -53,7 +53,7 @@ class HealthSafetyPolicy(metaclass=_HealthSafetyPolicyMeta):
         )
 
     def check_output(
-        self, text: Optional[str], ctx: Optional[SafetyContext] = None
+        self, text: Optional[Union[str, Sequence[str]]], ctx: Optional[SafetyContext] = None
     ) -> SafetyVerdict:
         res = check_safety_refusal(text)
         return SafetyVerdict(
@@ -63,7 +63,7 @@ class HealthSafetyPolicy(metaclass=_HealthSafetyPolicyMeta):
             is_hard=is_hard_refusal_reason(res.reason) if res.refused else False,
         )
 
-    def check_emergency(self, text: Optional[str]) -> Optional[EmergencyDirective]:
+    def check_emergency(self, text: Optional[Union[str, Sequence[str]]]) -> Optional[EmergencyDirective]:
         flag = check_emergency_red_flags(text or "")
         if flag is None:
             return None
@@ -75,7 +75,7 @@ class HealthSafetyPolicy(metaclass=_HealthSafetyPolicyMeta):
         )
 
     def check_flags(
-        self, text: Optional[str], ctx: Optional[SafetyContext] = None
+        self, text: Optional[Union[str, Sequence[str]]], ctx: Optional[SafetyContext] = None
     ) -> list[str]:
         """Non-refusing flags for pack fixed routes (``red_flag`` → triage-auditor).
 

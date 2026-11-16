@@ -42,6 +42,8 @@ def test_safe_refusal_template_verbatim():
         ("Can you diagnose these chest symptoms?", "diagnose"),
         ("You are diabetic and need to be careful.", "diagnose"),
         ("You're depressed based on your answers.", "diagnose"),
+        ("Do you have asthma?", "diagnose"),
+        ("Do you have mild asthma?", "diagnose"),
     ],
 )
 def test_refusal_category_diagnose(query: str, expected_category: str):
@@ -127,6 +129,9 @@ def test_refusal_category_instruct_stop_medication(query: str, expected_category
         "Do not change or stop your medication without speaking with your prescribing doctor.",
         "Please consult a qualified healthcare provider regarding your symptoms.",
         "Do not hesitate to contact emergency services or go to the ER if pain worsens.",
+        "Do you have an Asthma Action Plan?",
+        "Do you have a COPD Action Plan?",
+        "If you have a migraine diary, bring it to your visit.",
     ],
 )
 def test_disclaimer_neutralization_no_false_positives(disclaimer_text: str):
@@ -164,6 +169,7 @@ def test_markdown_decorator_stripping():
         ("Please consult a doctor and stop taking your insulin.", "instruct_stop_medication"),
         ("Please consult a qualified doctor, but you should increase your dosage to 40mg.", "dose"),
         ("I cannot diagnose whether you have ADHD, but you clearly have depression.", "diagnose"),
+        ("Do you have an Asthma Action Plan, and you have acute bronchitis?", "diagnose"),
     ],
 )
 def test_compound_sentences_with_disclaimer_refused(compound_query: str, expected_category: str):

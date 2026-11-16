@@ -40,7 +40,7 @@ When in doubt it errs toward safety: a bare symptom statement triggers.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, Iterable, List, Optional, Pattern, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Pattern, Sequence, Tuple, Union
 
 
 class EmergencyFlag(dict):
@@ -107,8 +107,8 @@ _CONTRACTIONS: Tuple[Tuple[str, str], ...] = (
 # Key symptom words; a token one edit away (same first letter) is read as the word.
 _VOCABULARY: Tuple[str, ...] = (
     "anaphylactic", "anaphylaxis", "bleeding", "breath", "breathe", "breathing", "chest",
-    "choking", "collapsed", "convulsing", "drooping", "overdose", "overdosed",
-    "overdosing", "seizing", "seizure", "seizures", "slurred", "slurring",
+    "choking", "collapsed", "convulsing", "crushing", "drooping", "overdose", "overdosed",
+    "overdosing", "radiating", "seizing", "seizure", "seizures", "slurred", "slurring",
     "stroke", "suicidal", "suicide", "swelling", "swollen", "unconscious",
     "unresponsive",
 )
@@ -291,12 +291,16 @@ _SELF = r"(?:my|him|her|them|your|our)sel(?:f|ves)"
 
 CHEST_PATTERNS: List[str] = [
     r"\bchest\s+(?:pains?|pressure|tightness|discomfort|heaviness)\b",
-    rf"\b(?:pain|pressure|tightness|heaviness)\s+in\s+{_POSS}\s+chest\b",
+    rf"\b(?:pain|pressure|tightness|heaviness|discomfort)\s+in\s+{_POSS}\s+chest\b",
     r"\bchest\s+(?:hurts?|is\s+hurting|feels\s+(?:tight|heavy))\b",
     r"\bhaving\s+(?:a\s+)?heart\s+attack\b",
     r"\b(?:just|recently)\s+had\s+(?:a\s+)?heart\s+attack\b",
     r"\bcardiac\s+arrest\b",
     r"\b(?:no|doesn't\s+have\s+a|does\s+not\s+have\s+a|can't\s+find\s+a)\s+pulse\b",
+    r"\b(?:crushing|severe)\s+(?:chest\s+)?(?:pains?|pressure|tightness|discomfort)\b",
+    rf"\b(?:crushing|pain|pressure|tightness)(?:\s+(?:pain|pressure|tightness))?\s+(?:and\s+)?(?:spreading|radiating)\s+(?:in|to)\s+{_POSS}?\s*(?:neck|arm|jaw|back|shoulder)\b",
+    rf"\b(?:spreading|radiating)\s+(?:in|to)\s+{_POSS}?\s*(?:neck|arm|jaw|back|shoulder)\b",
+    r"\bcrushing\s+(?:and\s+)?(?:spreading|radiating)\b",
 ]
 
 RESPIRATORY_PATTERNS: List[str] = [
@@ -458,9 +462,31 @@ def _acute_match(clause: str, patterns: Iterable[Pattern[str]]) -> Optional[str]
     return None
 
 
-def check_emergency_red_flags(prompt: str) -> Optional[EmergencyFlag]:
-    """Returns an EmergencyFlag when ``prompt`` describes an acute emergency, else None."""
-    if not prompt or not isinstance(prompt, str):
+def check_emergency_red_flags(prompt: Optional[Union[str, Sequence[str]]]) -> Optional[EmergencyFlag]:
+    """Returns an EmergencyFlag when ``prompt`` describes an acute emergency, else None.
+
+    Accepts either a single string or a sequence of recent turn strings (for split-turn detection).
+    """
+    if not prompt:
+        return None
+
+    if isinstance(prompt, (list, tuple)):
+        if len(prompt) < 2 or not all(isinstance(turn, str) for turn in prompt):
+            return None
+        # Check individual turns first
+        for turn in prompt:
+            if turn.strip():
+                hit = check_emergency_red_flags(turn)
+                if hit is not None:
+                    return hit
+        # If no individual turn triggered, check concatenated recent turns for split-turn emergency
+        non_empty = [turn.strip() for turn in prompt if turn.strip()]
+        if not non_empty:
+            return None
+        combined = ". ".join(non_empty)
+        return check_emergency_red_flags(combined)
+
+    if not isinstance(prompt, str):
         return None
     clauses = _clauses(normalize(prompt))
     for category, trigger, patterns, message in _COMPILED:

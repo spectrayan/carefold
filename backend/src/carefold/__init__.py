@@ -91,6 +91,53 @@ try:
         RiskClass.ASSIST = RiskClass.register("assist")
     if hasattr(RiskClass, "register") and not hasattr(RiskClass, "CLINICAL_ASSIST"):
         RiskClass.CLINICAL_ASSIST = RiskClass.register("clinical_assist")
+
+    import yarvelle_core.loaders.agent_loader as _yc_agent_loader
+    import yarvelle_core.loaders.union as _yc_union
+    import yarvelle_core.schemas.manifest as _yc_manifest
+
+    _extra_phase0 = {"create_workspace_note", "update_workspace_note"}
+    for _mod in (_yc_manifest, _yc_union, _yc_agent_loader):
+        if hasattr(_mod, "PHASE_0_REGISTRY"):
+            setattr(_mod, "PHASE_0_REGISTRY", frozenset(set(_mod.PHASE_0_REGISTRY) | _extra_phase0))
+
+    import yarvelle_core.constants.agents as _yc_agents_const
+    import yarvelle_core.tools.mcp_db_toolbox as _yc_mcp_toolbox
+
+    _note_mcp_tools = (
+        "create_workspace_note",
+        "get_workspace_note",
+        "list_workspace_notes",
+        "update_workspace_note",
+        "delete_workspace_note",
+        "upsert_workspace_note",
+    )
+    if not hasattr(_yc_agents_const, "WORKSPACE_NOTE_MCP_TOOLS"):
+        setattr(_yc_agents_const, "WORKSPACE_NOTE_MCP_TOOLS", _note_mcp_tools)
+    if not hasattr(_yc_agents_const, "expand_workspace_note_tools"):
+
+        def _expand_note_tools(tool_names: Any) -> list[str]:
+            names = list(tool_names or ())
+            if "workspace-note" not in names and not any(t in _note_mcp_tools for t in names):
+                return names
+            for nt in _note_mcp_tools:
+                if nt not in names:
+                    names.append(nt)
+            return names
+
+        setattr(_yc_agents_const, "expand_workspace_note_tools", _expand_note_tools)
+    if not hasattr(_yc_mcp_toolbox, "WORKSPACE_NOTE_MCP_TOOLS"):
+        setattr(
+            _yc_mcp_toolbox,
+            "WORKSPACE_NOTE_MCP_TOOLS",
+            getattr(_yc_agents_const, "WORKSPACE_NOTE_MCP_TOOLS"),
+        )
+    if not hasattr(_yc_mcp_toolbox, "expand_workspace_note_tools"):
+        setattr(
+            _yc_mcp_toolbox,
+            "expand_workspace_note_tools",
+            getattr(_yc_agents_const, "expand_workspace_note_tools"),
+        )
 except Exception:
     pass
 

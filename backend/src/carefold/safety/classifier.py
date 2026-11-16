@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from yarvelle_core.constants.defaults import FORBIDDEN_INTENT_PREFIX
 from carefold.resources.loader import RefusalPattern, get_resource_loader
@@ -153,9 +153,29 @@ def is_hard_refusal_reason(reason: Optional[str]) -> bool:
     return any(lower.startswith(prefix) or prefix in lower for prefix in HARD_REFUSAL_PREFIXES)
 
 
-def check_safety_refusal(text: Optional[str]) -> SafetyCheckResult:
-    """Evaluates whether the given text triggers the medical safety refusal gate."""
-    if not text or not isinstance(text, str):
+def check_safety_refusal(text: Optional[Union[str, Sequence[str]]]) -> SafetyCheckResult:
+    """Evaluates whether the given text triggers the medical safety refusal gate.
+
+    Accepts either a single string or a sequence of recent turn strings (for split-turn detection).
+    """
+    if not text:
+        return SafetyCheckResult(refused=False)
+
+    if isinstance(text, (list, tuple)):
+        # Check individual turns first
+        for turn in text:
+            if isinstance(turn, str) and turn.strip():
+                res = check_safety_refusal(turn)
+                if res.refused:
+                    return res
+        # Check concatenated recent turns for split-turn triggers
+        non_empty = [str(t).strip() for t in text if str(t).strip()]
+        if not non_empty:
+            return SafetyCheckResult(refused=False)
+        combined = ". ".join(non_empty)
+        return check_safety_refusal(combined)
+
+    if not isinstance(text, str):
         return SafetyCheckResult(refused=False)
 
     # 1. Normalize formatting decorators:

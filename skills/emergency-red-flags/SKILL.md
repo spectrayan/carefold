@@ -64,3 +64,7 @@ Use the `skill-docs` tool with `skill_id: "emergency-red-flags"` and `doc: "acut
 1. **Never Triage Down**: Never reassure a user who presents with red-flag emergency symptoms that they can safely wait.
 2. **Never Suggest Home Remedies for Crises**: Never suggest resting, drinking fluids, or home remedies when acute emergency symptoms are active.
 3. **Always Prioritize Emergency Activation**: Emergency referral must take absolute precedence over routine agenda drafting or record analysis.
+
+## Multi-Turn & Cumulative Emergency Detection
+1. **Split-Turn Emergency Awareness**: Users frequently disclose emergency symptoms incrementally over multiple conversational turns (e.g., reporting mild discomfort first, then noting crushing intensity or radiation to the neck, arm, or jaw in a subsequent turn). As soon as the cumulative symptom profile indicates an acute red flag, trigger emergency diversion immediately.
+2. **Immediate Interruption of Routine Workflows**: When an acute emergency symptom emerges in any turn of a multi-turn conversation, immediately halt routine visit prep, agenda building, or history logging, and direct the user to call 911 or visit the nearest emergency department.
