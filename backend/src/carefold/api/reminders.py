@@ -208,9 +208,130 @@ class ReminderListResponse(BaseModel):
     total: int
 
 
+class StandaloneReminderCreateRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
+    profile_id: Optional[str] = None
+    due_date: Optional[datetime] = None
+    next_due_at: Optional[datetime] = None
+    description: Optional[str] = None
+    category: Optional[str] = "general"
+    rrule: Optional[str] = None
+    timezone: str = "UTC"
+
+
 # ============================================================================
 # Section 3: REST API Endpoints
 # ============================================================================
+
+
+@router.post(
+    "/reminders",
+    response_model=ReminderResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new reminder via standalone body payload",
+)
+async def create_standalone_reminder(
+    payload: StandaloneReminderCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    user: UserProfile = Depends(get_current_user),
+) -> ReminderResponse:
+    target_pid = payload.profile_id
+    if target_pid:
+        clean_pid = target_pid.strip()
+        stmt = select(Profile).where(Profile.id == clean_pid)
+        prof = (await db.execute(stmt)).scalar_one_or_none()
+        if prof is None:
+            raise YarvelleError(
+                "YRV-500-002",
+                detail=f"Profile '{clean_pid}' not found.",
+                context={"profile_id": clean_pid},
+            )
+        access = await get_user_profile_access(prof, user, db)
+        if access is None:
+            raise YarvelleError(
+                "YRV-500-002",
+                detail=f"Profile '{clean_pid}' not found.",
+                context={"profile_id": clean_pid},
+            )
+        if access != "manage":
+            raise YarvelleError(
+                "CFD-300-003",
+                detail="Management permissions required to create reminders for this profile.",
+                context={"profile_id": clean_pid},
+            )
+        target_pid = prof.id
+    else:
+        target_pid = getattr(user, "default_profile_id", None)
+        if not target_pid:
+            res = await db.execute(select(Profile).where(Profile.user_id == user.id).limit(1))
+            p = res.scalar_one_or_none()
+            if p is not None:
+                target_pid = p.id
+            else:
+                target_pid = user.id
+
+    due_dt = payload.due_date or payload.next_due_at or (datetime.now(timezone.utc) + timedelta(days=1))
+    if due_dt.tzinfo is None:
+        due_utc = due_dt.replace(tzinfo=timezone.utc)
+    else:
+        due_utc = due_dt.astimezone(timezone.utc)
+
+    now_utc = datetime.now(timezone.utc)
+    rem_id = str(uuid.uuid4())
+    job_id = str(uuid.uuid4())
+    cat = payload.category or "general"
+    if cat not in ("medication", "vitals", "appointment", "prep", "general", "lab"):
+        cat = "general"
+
+    reminder = Reminder(
+        id=rem_id,
+        profile_id=target_pid,
+        title=payload.title.strip(),
+        description=payload.description,
+        category=cat,
+        rrule=payload.rrule,
+        timezone=payload.timezone or "UTC",
+        next_due_at=due_utc,
+        status="pending",
+        created_at=now_utc,
+        updated_at=now_utc,
+    )
+    db.add(reminder)
+
+    job = Job(
+        id=job_id,
+        profile_id=target_pid,
+        kind="reminder",
+        payload=json.dumps({"reminder_id": rem_id}),
+        timezone=payload.timezone or "UTC",
+        rrule=payload.rrule,
+        next_run_at=due_utc,
+        status="pending",
+        idempotency_key=f"reminder:{rem_id}",
+        attempts=0,
+        created_at=now_utc,
+        updated_at=now_utc,
+    )
+    db.add(job)
+    await db.commit()
+    await db.refresh(reminder)
+
+    return ReminderResponse(
+        id=reminder.id,
+        profile_id=reminder.profile_id,
+        title=reminder.title,
+        description=reminder.description,
+        category=reminder.category,
+        rrule=reminder.rrule,
+        timezone=reminder.timezone,
+        next_due_at=reminder.next_due_at,
+        status=reminder.status,
+        last_triggered_at=reminder.last_triggered_at,
+        snooze_until=reminder.snooze_until,
+        job_id=job.id,
+        created_at=reminder.created_at,
+        updated_at=reminder.updated_at,
+    )
 
 
 @router.post(

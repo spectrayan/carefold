@@ -12,8 +12,8 @@
 """Typed notes architecture, category validation, and after-visit extraction engine (AU-35).
 
 Delivers:
-- 7 canonical note categories: visit, symptom, question, after_visit, school, scratchpad, general
-- Strict note category validation with optional legacy mapping
+- 11 canonical note categories: visit, visit_prep, symptom, symptom_log, question, after_visit, medication_notes, insurance_call, school, scratchpad, general
+- Strict note category validation with bidirectional aliasing and legacy mapping
 - After-visit clinical extraction engine parsing diagnoses, medications, tests, and follow-ups
 - 1-indexed source line citations ([Note Line X]) grounded against original note content
 - Mandatory non-clinical disclaimer: "Extracted from your notes, not formal medical advice."
@@ -34,24 +34,78 @@ NON_CLINICAL_DISCLAIMER: str = "Extracted from your notes, not formal medical ad
 class NoteType(str, Enum):
     """Canonical categories for clinical and personal workspace notes (AU-35)."""
 
-    VISIT = "visit"              # Clinical consultation, provider encounter, or exam notes
-    SYMPTOM = "symptom"          # Patient symptom journal, flare-ups, severity, triggers
-    QUESTION = "question"        # Patient-prepared questions for doctor or upcoming visit
-    AFTER_VISIT = "after_visit"  # Encounter debrief, discharge summary, plan takeaways
-    SCHOOL = "school"            # School health forms, sports clearance, excuse letters
-    SCRATCHPAD = "scratchpad"    # Ephemeral rough drafts, temporary notes
-    GENERAL = "general"          # General medical history, family notes, administrative
+    VISIT = "visit"                      # Clinical consultation, provider encounter, or exam notes
+    VISIT_PREP = "visit_prep"            # Visit preparation checklist and consultation agenda
+    SYMPTOM = "symptom"                  # Patient symptom journal, flare-ups, severity, triggers
+    SYMPTOM_LOG = "symptom_log"          # Patient symptom tracking log and history
+    QUESTION = "question"                # Patient-prepared questions for doctor or upcoming visit
+    AFTER_VISIT = "after_visit"          # Encounter debrief, discharge summary, plan takeaways
+    MEDICATION_NOTES = "medication_notes"# Medication reconciliation, adjustments, and notes
+    INSURANCE_CALL = "insurance_call"    # Insurance benefits inquiries and call debriefs
+    SCHOOL = "school"                    # School health forms, sports clearance, excuse letters
+    SCRATCHPAD = "scratchpad"            # Ephemeral rough drafts, temporary notes
+    GENERAL = "general"                  # General medical history, family notes, administrative
 
 
 VALID_NOTE_TYPES: frozenset[str] = frozenset(t.value for t in NoteType)
 
+NOTE_TYPE_ALIASES: dict[str, str] = {
+    # Direct bidirectional alias pairings
+    "visit": NoteType.VISIT_PREP.value,
+    "visit_prep": NoteType.VISIT.value,
+    "symptom": NoteType.SYMPTOM_LOG.value,
+    "symptom_log": NoteType.SYMPTOM.value,
+    # Legacy and colloquial mappings
+    "clinical_prep": NoteType.QUESTION.value,
+    "visit_summary": NoteType.AFTER_VISIT.value,
+    "medication": NoteType.MEDICATION_NOTES.value,
+    "medications": NoteType.MEDICATION_NOTES.value,
+    "insurance": NoteType.INSURANCE_CALL.value,
+    "insurance_notes": NoteType.INSURANCE_CALL.value,
+    "symptoms": NoteType.SYMPTOM_LOG.value,
+    "questions": NoteType.QUESTION.value,
+    "scratch": NoteType.SCRATCHPAD.value,
+}
+
+
+def resolve_note_type_alias(note_type: str) -> str:
+    """Resolves an alias to its paired counterpart or canonical form (e.g. visit <-> visit_prep)."""
+    if not note_type or not str(note_type).strip():
+        raise ValueError("Note type must be a non-empty string.")
+    clean = str(note_type).strip().lower()
+    return NOTE_TYPE_ALIASES.get(clean, clean)
+
+
+def get_note_type_family(note_type: str) -> set[str]:
+    """Returns the set of equivalent note type identifiers and aliases for filtering queries."""
+    if not note_type or not str(note_type).strip():
+        return set()
+    clean = str(note_type).strip().lower()
+    family = {clean}
+    if clean in ("visit", "visit_prep"):
+        family.update({"visit", "visit_prep"})
+    elif clean in ("symptom", "symptom_log", "symptoms"):
+        family.update({"symptom", "symptom_log", "symptoms"})
+    elif clean in ("medication_notes", "medication", "medications"):
+        family.update({"medication_notes", "medication", "medications"})
+    elif clean in ("insurance_call", "insurance", "insurance_notes"):
+        family.update({"insurance_call", "insurance", "insurance_notes"})
+    elif clean in ("after_visit", "visit_summary"):
+        family.update({"after_visit", "visit_summary"})
+    elif clean in ("question", "questions", "clinical_prep"):
+        family.update({"question", "questions", "clinical_prep"})
+    elif clean in ("scratchpad", "scratch"):
+        family.update({"scratchpad", "scratch"})
+    return family
+
 
 def validate_note_type(note_type: str, allow_legacy: bool = False) -> str:
-    """Validates note category against canonical 7 categories.
+    """Validates note category against canonical 11 categories and supported aliases.
 
     Args:
         note_type: Raw note type string.
-        allow_legacy: If True, maps legacy types (clinical_prep -> question, visit_summary -> after_visit).
+        allow_legacy: If True, maps legacy/informal types (e.g. clinical_prep -> question,
+            visit_summary -> after_visit, medication -> medication_notes, insurance -> insurance_call).
 
     Returns:
         Normalized lower-case note type string.
@@ -71,6 +125,14 @@ def validate_note_type(note_type: str, allow_legacy: bool = False) -> str:
         legacy_mappings = {
             "clinical_prep": NoteType.QUESTION.value,
             "visit_summary": NoteType.AFTER_VISIT.value,
+            "medication": NoteType.MEDICATION_NOTES.value,
+            "medications": NoteType.MEDICATION_NOTES.value,
+            "insurance": NoteType.INSURANCE_CALL.value,
+            "insurance_notes": NoteType.INSURANCE_CALL.value,
+            "symptoms": NoteType.SYMPTOM_LOG.value,
+            "questions": NoteType.QUESTION.value,
+            "scratch": NoteType.SCRATCHPAD.value,
+            "visit_notes": NoteType.VISIT.value,
         }
         if clean in legacy_mappings:
             return legacy_mappings[clean]
@@ -244,8 +306,11 @@ __all__ = [
     "AfterVisitSummary",
     "ExtractedClinicalItem",
     "NON_CLINICAL_DISCLAIMER",
+    "NOTE_TYPE_ALIASES",
     "NoteType",
     "VALID_NOTE_TYPES",
     "extract_after_visit_summary",
+    "get_note_type_family",
+    "resolve_note_type_alias",
     "validate_note_type",
 ]

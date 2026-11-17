@@ -70,6 +70,7 @@ from carefold.fhir.registry import (
     validate_and_normalize_fhir_resource,
 )
 from carefold.fhir.repository import (
+    delete_fhir_resource_with_history,
     ensure_canonical_patient_resource,
     get_outbound_references,
     get_resource_version_history,
@@ -316,7 +317,7 @@ class FhirOperationSpec:
     mcp_tool_name: str
     summary: str
     description: str
-    rest_method: Literal["GET", "POST", "PUT"]
+    rest_method: Literal["GET", "POST", "PUT", "DELETE"]
     rest_path: str
     annotations: FhirMcpAnnotations
     risk_tier: Literal["read", "write_local"]
@@ -1672,6 +1673,93 @@ async def handle_fhir_upsert_resource(
     return result
 
 
+async def handle_fhir_delete_resource(
+    session: AsyncSession,
+    ctx: FhirExecutionContext,
+    params: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Deletes or tombstones a FHIR R4 clinical resource with full version history and audit log."""
+    check_fhir_rate_limit(ctx.profile_id)
+    await _verify_profile_exists(session, ctx.profile_id)
+
+    raw_rt = str(params.get("resource_type") or "").strip()
+    resource_id = str(params.get("resource_id") or "").strip()
+    if not resource_id:
+        raise FhirOperationError(400, "required", "resource_id is required for FHIR delete.")
+    resource_type = _resolve_canonical_resource_type(raw_rt)
+    _enforce_resource_type_scope(resource_type, ctx)
+
+    dialect = get_session_dialect_name(session)
+    filter_expr = build_logical_id_sql_filter(resource_type, resource_id, dialect_name=dialect)
+    stmt = select(HealthResource).where(
+        HealthResource.profile_id == ctx.profile_id,
+        HealthResource.status != "deleted",
+        HealthResource.status != "tombstone",
+        filter_expr,
+    )
+    rows = (await session.execute(stmt)).scalars().all()
+    target_hr: Optional[HealthResource] = None
+    for row in rows:
+        clean_d, _ = _load_clean_fhir_from_row(row)
+        if resource_id in (clean_d.get("id"), row.id, row.source_id):
+            target_hr = row
+            break
+    if target_hr is None and rows:
+        target_hr = rows[0]
+
+    if target_hr is None:
+        direct_stmt = select(HealthResource).where(
+            HealthResource.profile_id == ctx.profile_id,
+            HealthResource.id == resource_id,
+            HealthResource.status != "deleted",
+            HealthResource.status != "tombstone",
+        )
+        target_hr = (await session.execute(direct_stmt)).scalar_one_or_none()
+
+    if target_hr is None:
+        raise FhirOperationError(
+            status_code=404,
+            issue_code="not-found",
+            diagnostics=f"Resource {resource_type}/{resource_id} was not found.",
+        )
+
+    del_version = await delete_fhir_resource_with_history(
+        session,
+        profile_id=ctx.profile_id,
+        resource_id=target_hr.id,
+        actor_user_id=ctx.user_id,
+    )
+
+    await _append_hash_chained_fhir_audit_event(
+        session,
+        ctx=ctx,
+        operation_id="fhir_delete_resource",
+        risk_tier="write_local",
+        external_ref=f"{resource_type}/{resource_id}",
+        details={
+            "operation": "fhir_delete_resource",
+            "resource_type": resource_type,
+            "resource_id": resource_id,
+            "version_id": del_version.version_id if del_version else 0,
+            "action": "deleted",
+        },
+    )
+    await session.commit()
+
+    return {
+        "resourceType": "OperationOutcome",
+        "id": str(uuid.uuid4()),
+        "issue": [
+            {
+                "severity": "information",
+                "code": "informational",
+                "diagnostics": f"Successfully deleted {resource_type}/{resource_id}.",
+            }
+        ],
+        "status": "deleted",
+    }
+
+
 async def handle_fhir_bulk_export_start(
     session: AsyncSession,
     ctx: FhirExecutionContext,
@@ -2097,6 +2185,33 @@ FHIR_OPERATION_SPECS: Tuple[FhirOperationSpec, ...] = (
         },
         output_schema={"type": "object", "required": ["resource", "etag", "action"]},
         handler=handle_fhir_upsert_resource,
+    ),
+    FhirOperationSpec(
+        operation_id="fhir_delete_resource",
+        mcp_tool_name="fhir_delete_resource",
+        summary="Delete FHIR R4 Resource by ID",
+        description=(
+            "Delete or tombstone a FHIR R4 clinical resource by resource_type and logical id within the active "
+            "patient profile with full version history and audit trail."
+        ),
+        rest_method="DELETE",
+        rest_path="/{resource_type}/{id}",
+        annotations=FhirMcpAnnotations(readOnlyHint=False, destructiveHint=True, idempotentHint=True),
+        risk_tier="write_local",
+        requires_confirmation=True,
+        scopes=("health.clinical",),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "resource_type": {"type": "string", "description": "FHIR R4 resource type (e.g. 'Condition', 'MedicationStatement')."},
+                "resource_id": {"type": "string", "description": "Logical FHIR resource identifier."},
+            },
+            "required": ["resource_type", "resource_id"],
+            "additionalProperties": False,
+        },
+        output_schema={"type": "object"},
+        handler=handle_fhir_delete_resource,
+        mcp_resource_uri_template="fhir://profiles/{profile_id}/{resource_type}/{id}",
     ),
     FhirOperationSpec(
         operation_id="fhir_bulk_export_start",

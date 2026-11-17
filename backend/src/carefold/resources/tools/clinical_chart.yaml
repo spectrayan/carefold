@@ -266,9 +266,9 @@ tools:
     kind: handler
     entrypoint: carefold.tools.prep_pack:execute_generate_prep_pack
 - name: create_typed_note
-  description: Create and persist a typed clinical or navigation note across 7 canonical categories ('visit',
-    'symptom', 'question', 'after_visit', 'school', 'scratchpad', 'general') with optional appointment
-    linking, tag categorization, search indexing, and audit logging.
+  description: Create and persist a typed clinical or navigation note across canonical categories ('visit',
+    'visit_prep', 'symptom', 'symptom_log', 'question', 'after_visit', 'medication_notes', 'insurance_call',
+    'school', 'scratchpad', 'general') with optional appointment linking, tag categorization, search indexing, and audit logging.
   category: notes
   pack_id: health
   risk_tier: write_local
@@ -298,9 +298,13 @@ tools:
         type: string
         enum:
         - visit
+        - visit_prep
         - symptom
+        - symptom_log
         - question
         - after_visit
+        - medication_notes
+        - insurance_call
         - school
         - scratchpad
         - general

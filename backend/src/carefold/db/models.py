@@ -32,16 +32,20 @@ import yarvelle_core.db.models as _core_models
 # 2. Re-export all 7 health pack models from carefold.models.health
 try:
     from carefold.models.health import (
+        Appeal,
+        Appointment,
+        Claim,
+        CompanionDevice,
+        CoveragePlan,
         HealthResource,
-        HealthResourceVersion,
         HealthResourceCoding,
         HealthResourceReference,
-        Appointment,
-        PreventiveRecord,
+        HealthResourceVersion,
         ImportBatch,
+        PreventiveRecord,
+        PriorAuthorization,
         SchoolForm,
         SchoolIcsFeed,
-        CompanionDevice,
     )
     import carefold.models.health as _health_models
 except ImportError:
@@ -50,7 +54,7 @@ except ImportError:
 if _health_models is not None:
     from sqlalchemy.orm import foreign, synonym
 
-    # 3. Attach 7 health relationships onto Profile dynamically for Carefold runtime compatibility
+    # 3. Attach health relationships onto Profile dynamically for Carefold runtime compatibility
     _HEALTH_RELATIONSHIPS = [
         ("health_resources", HealthResource),
         ("appointments", Appointment),
@@ -59,6 +63,10 @@ if _health_models is not None:
         ("school_forms", SchoolForm),
         ("school_ics_feeds", SchoolIcsFeed),
         ("companion_devices", CompanionDevice),
+        ("coverage_plans", CoveragePlan),
+        ("claims", Claim),
+        ("appeals", Appeal),
+        ("prior_authorizations", PriorAuthorization),
     ]
 
     for rel_name, target in _HEALTH_RELATIONSHIPS:

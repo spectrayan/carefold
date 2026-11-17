@@ -1195,6 +1195,310 @@ class HealthResourceReference(Base, ScopedMixin):
         )
 
 
+class CoveragePlan(Base, ScopedMixin):
+    """Health insurance plan and benefits coverage model."""
+
+    __tablename__ = "coverage_plans"
+    __table_args__ = ({"extend_existing": True},)
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique coverage plan identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    payer_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Insurance carrier or health plan payer name",
+    )
+    policy_number: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        doc="Member policy or subscriber ID",
+    )
+    group_number: Mapped[Optional[str]] = mapped_column(
+        String(128),
+        nullable=True,
+        doc="Employer or group identification number",
+    )
+    deductible_individual: Mapped[Optional[float]] = mapped_column(
+        nullable=True,
+        default=0.0,
+        doc="Individual annual deductible amount in dollars",
+    )
+    deductible_family: Mapped[Optional[float]] = mapped_column(
+        nullable=True,
+        default=0.0,
+        doc="Family annual deductible amount in dollars",
+    )
+    oop_max_individual: Mapped[Optional[float]] = mapped_column(
+        nullable=True,
+        default=0.0,
+        doc="Individual out-of-pocket maximum in dollars",
+    )
+    oop_max_family: Mapped[Optional[float]] = mapped_column(
+        nullable=True,
+        default=0.0,
+        doc="Family out-of-pocket maximum in dollars",
+    )
+    copay_pcp: Mapped[Optional[float]] = mapped_column(
+        nullable=True,
+        default=0.0,
+        doc="Primary care physician visit copay in dollars",
+    )
+    copay_specialist: Mapped[Optional[float]] = mapped_column(
+        nullable=True,
+        default=0.0,
+        doc="Specialist visit copay in dollars",
+    )
+    coinsurance_pct: Mapped[Optional[float]] = mapped_column(
+        nullable=True,
+        default=0.0,
+        doc="Coinsurance percentage after deductible",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="active",
+        nullable=False,
+        doc="Plan status: active, expired, pending",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+    )
+
+    profile: Mapped[Any] = relationship("Profile")
+
+
+class Claim(Base, ScopedMixin):
+    """Medical insurance claim tracking entity."""
+
+    __tablename__ = "claims"
+    __table_args__ = ({"extend_existing": True},)
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique claim identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    service_date: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        doc="Date of medical service (YYYY-MM-DD)",
+    )
+    billed_amount: Mapped[float] = mapped_column(
+        nullable=False,
+        doc="Total provider billed charge amount in dollars",
+    )
+    allowed_amount: Mapped[Optional[float]] = mapped_column(
+        nullable=True,
+        default=0.0,
+        doc="Payer allowed negotiated fee amount in dollars",
+    )
+    patient_responsibility: Mapped[Optional[float]] = mapped_column(
+        nullable=True,
+        default=0.0,
+        doc="Patient out-of-pocket responsibility (copay, coinsurance, deductible)",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="submitted",
+        nullable=False,
+        doc="Claim status: submitted, pending, paid, denied, appealed",
+    )
+    denial_reason: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Explanation of denial from payer explanation of benefits (EOB)",
+    )
+    denial_code: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        doc="Denial reason code",
+    )
+    provider_name: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="Billing healthcare provider or facility name",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+    )
+
+    profile: Mapped[Any] = relationship("Profile")
+
+
+class Appeal(Base, ScopedMixin):
+    """Insurance claim or prior-authorization denial appeal dossier entity."""
+
+    __tablename__ = "appeals"
+    __table_args__ = ({"extend_existing": True},)
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique appeal identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    claim_id: Mapped[Optional[str]] = mapped_column(
+        String(128),
+        nullable=True,
+        doc="Referenced claim ID being appealed",
+    )
+    prior_auth_id: Mapped[Optional[str]] = mapped_column(
+        String(128),
+        nullable=True,
+        doc="Referenced prior-authorization ID being appealed",
+    )
+    denial_code: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        doc="Payer standard denial code or reason identifier",
+    )
+    clinical_justification: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        doc="Clinical guidelines and evidence supporting medical necessity",
+    )
+    deadline_date: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        doc="Timely filing appeal deadline (ISO-8601 string)",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="draft",
+        nullable=False,
+        doc="Appeal status: draft, submitted, pending, approved, upheld",
+    )
+    letter_content: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Draft appeal letter text prepared for patient and clinician review",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+    )
+
+    profile: Mapped[Any] = relationship("Profile")
+
+
+class PriorAuthorization(Base, ScopedMixin):
+    """Prior authorization request tracker entity."""
+
+    __tablename__ = "prior_authorizations"
+    __table_args__ = ({"extend_existing": True},)
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        doc="Unique prior-authorization identifier (UUID v4 string)",
+    )
+    profile_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        doc="Referenced Profile identifier (strictly scoped, non-nullable)",
+    )
+    procedure_code: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        doc="CPT or HCPCS procedure code (e.g. 72148)",
+    )
+    procedure_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Procedure or service name (e.g. MRI Lumbar Spine)",
+    )
+    provider_name: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        doc="Ordering or servicing healthcare provider",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default="pending",
+        nullable=False,
+        doc="Status: pending, approved, denied, expired, not_required",
+    )
+    submitted_date: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        doc="Submission date or timestamp string",
+    )
+    decision_date: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        doc="Decision date or timestamp string",
+    )
+    notes: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Clinical justifications or review notes",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+    )
+
+    profile: Mapped[Any] = relationship("Profile")
+
+
 from yarvelle_core.db.models import Note
 from sqlalchemy.orm import synonym
 
@@ -1218,4 +1522,8 @@ __all__ = [
     "SchoolForm",
     "SchoolIcsFeed",
     "CompanionDevice",
+    "CoveragePlan",
+    "Claim",
+    "Appeal",
+    "PriorAuthorization",
 ]

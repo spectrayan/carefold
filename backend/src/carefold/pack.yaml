@@ -3,7 +3,7 @@ id: health
 name: Carefold Health Pack
 version: 0.5.0b1
 domain: health
-requires_core: ">=0.2.5,<0.3.0"
+requires_core: ">=0.2.6,<0.3.0"
 requires_packs: []
 license: "PolyForm Noncommercial License 1.0.0 and Carefold Additional Terms"
 maintainers:
@@ -286,6 +286,21 @@ provides:
       entry: carefold.tools.mcp_api_wrappers:SPEC_VITALS_GET_TRENDS
       scopes: {read: [health.clinical]}
       tier: read
+      data_flows: {egress: []}
+    - id: vitals_get
+      entry: carefold.tools.mcp_api_wrappers:SPEC_VITALS_GET
+      scopes: {read: [health.clinical]}
+      tier: read
+      data_flows: {egress: []}
+    - id: vitals_update
+      entry: carefold.tools.mcp_api_wrappers:SPEC_VITALS_UPDATE
+      scopes: {write: [health.clinical]}
+      tier: write_local
+      data_flows: {egress: []}
+    - id: vitals_delete
+      entry: carefold.tools.mcp_api_wrappers:SPEC_VITALS_DELETE
+      scopes: {write: [health.clinical]}
+      tier: write_local
       data_flows: {egress: []}
     - id: appointments_create
       entry: carefold.tools.mcp_api_wrappers:SPEC_APPOINTMENTS_CREATE
@@ -862,6 +877,11 @@ provides:
       scopes: {write: [health.clinical]}
       tier: write_local
       data_flows: {egress: []}
+    - id: fhir_delete_resource
+      entry: carefold.tools.mcp_api_wrappers:SPEC_FHIR_DELETE_RESOURCE
+      scopes: {write: [health.clinical]}
+      tier: write_local
+      data_flows: {egress: []}
     - id: fhir_get_resource_history
       entry: carefold.tools.mcp_api_wrappers:SPEC_FHIR_GET_RESOURCE_HISTORY
       scopes: {read: [health.clinical]}
@@ -891,6 +911,101 @@ provides:
       entry: carefold.tools.mcp_api_wrappers:SPEC_FHIR_DOWNLOAD_BULK_EXPORT_FILE
       scopes: {read: [health.clinical]}
       tier: read
+      data_flows: {egress: []}
+    - id: coverage_create
+      entry: carefold.tools.mcp_api_wrappers:SPEC_COVERAGE_CREATE
+      scopes: {write: [health.clinical]}
+      tier: write_local
+      data_flows: {egress: []}
+    - id: coverage_list
+      entry: carefold.tools.mcp_api_wrappers:SPEC_COVERAGE_LIST
+      scopes: {read: [health.clinical]}
+      tier: read
+      data_flows: {egress: []}
+    - id: coverage_get
+      entry: carefold.tools.mcp_api_wrappers:SPEC_COVERAGE_GET
+      scopes: {read: [health.clinical]}
+      tier: read
+      data_flows: {egress: []}
+    - id: coverage_delete
+      entry: carefold.tools.mcp_api_wrappers:SPEC_COVERAGE_DELETE
+      scopes: {write: [health.clinical]}
+      tier: write_local
+      data_flows: {egress: []}
+    - id: claims_create
+      entry: carefold.tools.mcp_api_wrappers:SPEC_CLAIMS_CREATE
+      scopes: {write: [health.clinical]}
+      tier: write_local
+      data_flows: {egress: []}
+    - id: claims_list
+      entry: carefold.tools.mcp_api_wrappers:SPEC_CLAIMS_LIST
+      scopes: {read: [health.clinical]}
+      tier: read
+      data_flows: {egress: []}
+    - id: claims_get
+      entry: carefold.tools.mcp_api_wrappers:SPEC_CLAIMS_GET
+      scopes: {read: [health.clinical]}
+      tier: read
+      data_flows: {egress: []}
+    - id: claims_update
+      entry: carefold.tools.mcp_api_wrappers:SPEC_CLAIMS_UPDATE
+      scopes: {write: [health.clinical]}
+      tier: write_local
+      data_flows: {egress: []}
+    - id: claims_delete
+      entry: carefold.tools.mcp_api_wrappers:SPEC_CLAIMS_DELETE
+      scopes: {write: [health.clinical]}
+      tier: write_local
+      data_flows: {egress: []}
+    - id: appeals_create
+      entry: carefold.tools.mcp_api_wrappers:SPEC_APPEALS_CREATE
+      scopes: {write: [health.clinical]}
+      tier: write_local
+      data_flows: {egress: []}
+    - id: appeals_list
+      entry: carefold.tools.mcp_api_wrappers:SPEC_APPEALS_LIST
+      scopes: {read: [health.clinical]}
+      tier: read
+      data_flows: {egress: []}
+    - id: appeals_get
+      entry: carefold.tools.mcp_api_wrappers:SPEC_APPEALS_GET
+      scopes: {read: [health.clinical]}
+      tier: read
+      data_flows: {egress: []}
+    - id: appeals_update
+      entry: carefold.tools.mcp_api_wrappers:SPEC_APPEALS_UPDATE
+      scopes: {write: [health.clinical]}
+      tier: write_local
+      data_flows: {egress: []}
+    - id: appeals_delete
+      entry: carefold.tools.mcp_api_wrappers:SPEC_APPEALS_DELETE
+      scopes: {write: [health.clinical]}
+      tier: write_local
+      data_flows: {egress: []}
+    - id: prior_auth_create
+      entry: carefold.tools.mcp_api_wrappers:SPEC_PRIOR_AUTH_CREATE
+      scopes: {write: [health.clinical]}
+      tier: write_local
+      data_flows: {egress: []}
+    - id: prior_auth_list
+      entry: carefold.tools.mcp_api_wrappers:SPEC_PRIOR_AUTH_LIST
+      scopes: {read: [health.clinical]}
+      tier: read
+      data_flows: {egress: []}
+    - id: prior_auth_get
+      entry: carefold.tools.mcp_api_wrappers:SPEC_PRIOR_AUTH_GET
+      scopes: {read: [health.clinical]}
+      tier: read
+      data_flows: {egress: []}
+    - id: prior_auth_update
+      entry: carefold.tools.mcp_api_wrappers:SPEC_PRIOR_AUTH_UPDATE
+      scopes: {write: [health.clinical]}
+      tier: write_local
+      data_flows: {egress: []}
+    - id: prior_auth_delete
+      entry: carefold.tools.mcp_api_wrappers:SPEC_PRIOR_AUTH_DELETE
+      scopes: {write: [health.clinical]}
+      tier: write_local
       data_flows: {egress: []}
   routers:
     - entry: carefold.routers.appointments:router

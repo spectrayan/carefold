@@ -20,7 +20,7 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
@@ -37,6 +37,7 @@ from carefold.auth.ports import UserProfile
 from carefold.clinical.notes import (
     VALID_NOTE_TYPES,
     extract_after_visit_summary,
+    get_note_type_family,
     validate_note_type,
 )
 from carefold.config import settings
@@ -80,11 +81,28 @@ class NoteUpdateRequest(_BaseNoteUpdateRequest):
     locale: Optional[str] = Field(default=None, max_length=16, description="Optional IETF BCP 47 locale tag")
 
 
+NoteTypeLiteral = Literal[
+    "visit",
+    "visit_prep",
+    "symptom",
+    "symptom_log",
+    "question",
+    "after_visit",
+    "medication_notes",
+    "insurance_call",
+    "school",
+    "scratchpad",
+    "general",
+]
+
+
 class TypedNoteCreateRequest(_BaseTypedNoteCreateRequest):
+    type: NoteTypeLiteral = Field(default="general", description="Canonical note category")
     locale: Optional[str] = Field(default=None, max_length=16, description="Optional IETF BCP 47 locale tag")
 
 
 class TypedNoteUpdateRequest(_BaseTypedNoteUpdateRequest):
+    type: Optional[NoteTypeLiteral] = Field(default=None, description="Canonical note category")
     locale: Optional[str] = Field(default=None, max_length=16, description="Optional IETF BCP 47 locale tag")
 
 
@@ -327,9 +345,13 @@ async def _verify_profile_access(
             context={'parameter': "profile_id"},
         )
 
-    stmt = select(Profile).where(Profile.id == clean_id)
-    res = await db.execute(stmt)
-    prof = res.scalar_one_or_none()
+    if clean_id.lower() == "me":
+        from carefold.api.profiles import auto_provision_primary_me_profile
+        prof = await auto_provision_primary_me_profile(user, db)
+    else:
+        stmt = select(Profile).where(Profile.id == clean_id)
+        res = await db.execute(stmt)
+        prof = res.scalar_one_or_none()
     if prof is None:
         raise YarvelleError(
             "YRV-500-002",
@@ -375,32 +397,25 @@ async def list_notes(
         prof = await _verify_profile_access(profile_id, user, db, required_level="view_records")
         stmt = select(Note).where(Note.profile_id == prof.id).order_by(Note.updated_at.desc())
     else:
-        if is_admin or owner_id is None:
-            # Admin or offline desktop single-user mode sees all notes
-            stmt = select(Note).order_by(Note.updated_at.desc())
-        else:
-            # Find all profiles user owns or has clinical/management access to
-            accessible_profiles_stmt = (
-                select(Profile.id)
-                .outerjoin(ProfileAccess, Profile.id == ProfileAccess.profile_id)
-                .where(
-                    (Profile.user_id == owner_id)
-                    | (
-                        (ProfileAccess.user_id == effective_user_id)
-                        & ProfileAccess.access_level.in_(("manage", "view_records"))
-                    )
-                )
-                .distinct()
-            )
-            accessible_res = await db.execute(accessible_profiles_stmt)
-            accessible_profile_ids = list(accessible_res.scalars().all())
-
+        # Enforce active/primary profile or scope to user's primary profile so cross-profile records don't leak
+        stmt_prof = select(Profile).where(Profile.is_primary.is_(True))
+        if owner_id:
+            stmt_prof = stmt_prof.where(Profile.user_id == owner_id)
+        res_prof = await db.execute(stmt_prof)
+        primary_prof = res_prof.scalar_one_or_none()
+        if primary_prof:
             stmt = select(Note).where(
-                (
-                    (Note.user_id == owner_id)
+                (Note.profile_id == primary_prof.id)
+                | (
+                    (Note.user_id == effective_user_id)
                     & (Note.profile_id.is_(None))
                 )
-                | (Note.profile_id.in_(accessible_profile_ids))
+            ).order_by(Note.updated_at.desc())
+        else:
+            # If no primary profile exists, only return unscoped notes for this user/session
+            stmt = select(Note).where(
+                (Note.user_id == effective_user_id) & (Note.profile_id.is_(None))
+                if owner_id else Note.profile_id.is_(None)
             ).order_by(Note.updated_at.desc())
 
     res = await db.execute(stmt)
@@ -904,7 +919,7 @@ async def create_profile_typed_note(
         note_locale = getattr(prof, "preferred_locale", None) or DEFAULT_LOCALE
 
     try:
-        note_type = validate_note_type(payload.type)
+        note_type = validate_note_type(payload.type, allow_legacy=True)
     except ValueError as type_err:
         raise YarvelleError("CFD-100-014", detail=str(type_err), cause=type_err) from type_err
     title_nfc = normalize_text_nfc(payload.title)
@@ -1030,8 +1045,13 @@ async def list_profile_typed_notes(
 
     if type is not None:
         clean_type = type.strip().lower()
-        query = query.where(Note.type == clean_type)
-        count_query = count_query.where(Note.type == clean_type)
+        family = get_note_type_family(clean_type)
+        if len(family) > 1:
+            query = query.where(Note.type.in_(family))
+            count_query = count_query.where(Note.type.in_(family))
+        else:
+            query = query.where(Note.type == clean_type)
+            count_query = count_query.where(Note.type == clean_type)
 
     if linked_appointment_id is not None:
         clean_aid = linked_appointment_id.strip()

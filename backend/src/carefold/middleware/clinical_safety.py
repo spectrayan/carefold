@@ -80,12 +80,26 @@ class ClinicalSafetyMiddleware(AgentMiddleware):
                 return self._registry.get(tool_name) is not None
             if hasattr(self._registry, "__contains__"):
                 return tool_name in self._registry
-        return tool_name in PHASE_0_REGISTRY
+        if tool_name in PHASE_0_REGISTRY:
+            return True
+        try:
+            from carefold.engine.tool_registry import create_default_registry
+
+            return create_default_registry().get(tool_name) is not None
+        except Exception:
+            return False
 
     def _allowed_tools_display(self) -> List[str]:
         if self._registry is not None and hasattr(self._registry, "list_all"):
             return sorted([spec.name for spec in self._registry.list_all()])
-        return sorted(list(PHASE_0_REGISTRY))
+        allowed = set(PHASE_0_REGISTRY)
+        try:
+            from carefold.engine.tool_registry import create_default_registry
+
+            allowed.update(spec.name for spec in create_default_registry().list_all())
+        except Exception:
+            pass
+        return sorted(allowed)
 
     def before_agent(
         self,

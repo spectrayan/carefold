@@ -1,14 +1,3 @@
-# Carefold — Healthcare AI Agent Marketplace & Runtime
-# Copyright 2026 Spectrayan (https://spectrayan.com)
-#
-# Licensed under the PolyForm Noncommercial License 1.0.0 and the
-# Carefold Additional Terms (see LICENSE and ADDITIONAL-TERMS.md).
-# Personal and household local use only. Commercial use, hosted service
-# offering, rebranding, white-labeling, and redistribution of modified
-# forks are prohibited without a written commercial license from Spectrayan.
-#
-# Required Notice: Copyright 2026 Spectrayan (https://spectrayan.com)
-
 api_version: yarvelle.tools/v1
 kind: ToolSet
 pack_id: health
@@ -147,8 +136,8 @@ tools:
       target_user_id:
         type: string
       allowed_sections:
-        description: Permitted viewer sections (vitals, preventive, appointments, reminders, connections,
-          school_forms, notes, documents)
+        description: Permitted viewer sections (vitals, preventive, appointments, reminders, connections, school_forms, notes,
+          documents)
         items:
           type: string
         type: array
@@ -160,8 +149,8 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_handover_update_viewer_sections
 - name: handover_execute_teen_handover
-  description: Promotes `teen_user_id` to profile steward, revokes rejected connections, and re-encrypts
-    kept credentials under a rotated DEK (`E12.4`).
+  description: Promotes `teen_user_id` to profile steward, revokes rejected connections, and re-encrypts kept credentials
+    under a rotated DEK (`E12.4`).
   category: handover
   pack_id: health
   risk_tier: write_local
@@ -254,8 +243,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_companion_revoke_device
 - name: companion_pair_initiate
-  description: Enforces Mode S network guard and creates a `pending_pair` `CompanionDevice` with a 10-minute
-    code.
+  description: Enforces Mode S network guard and creates a `pending_pair` `CompanionDevice` with a 10-minute code.
   category: companion
   pack_id: health
   risk_tier: write_local
@@ -336,8 +324,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_companion_pair_initiate
 - name: companion_pair_complete
-  description: Verifies the one-time pairing code and pinned TLS fingerprint, issuing a scoped companion
-    token.
+  description: Verifies the one-time pairing code and pinned TLS fingerprint, issuing a scoped companion token.
   category: companion
   pack_id: health
   risk_tier: write_local
@@ -409,8 +396,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_companion_list_reminders
 - name: companion_sync_records
-  description: Validates and ingests HealthKit / Android Health Connect `Observation` readings and clinical
-    resources.
+  description: Validates and ingests HealthKit / Android Health Connect `Observation` readings and clinical resources.
   category: companion
   pack_id: health
   risk_tier: write_local
@@ -449,15 +435,14 @@ tools:
           type: object
         type: array
       clinical_records:
-        description: HKClinicalRecord FHIR R4 resources (Condition, MedicationRequest, AllergyIntolerance,
-          Immunization, Observation)
+        description: HKClinicalRecord FHIR R4 resources (Condition, MedicationRequest, AllergyIntolerance, Immunization, Observation)
         items:
           additionalProperties: true
           type: object
         type: array
       health_connect_records:
-        description: Android Health Connect records (StepsRecord, HeartRateRecord, BloodPressureRecord,
-          WeightRecord, BloodGlucoseRecord, OxygenSaturationRecord, SleepSessionRecord, MedicalResource)
+        description: Android Health Connect records (StepsRecord, HeartRateRecord, BloodPressureRecord, WeightRecord, BloodGlucoseRecord,
+          OxygenSaturationRecord, SleepSessionRecord, MedicalResource)
         items:
           additionalProperties: true
           type: object
@@ -597,8 +582,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_routines_update
 - name: routines_run
-  description: Executes `execute_standing_routine` with fire-time permission, expiry, and taint checks
-    (`E1.10`).
+  description: Executes `execute_standing_routine` with fire-time permission, expiry, and taint checks (`E1.10`).
   category: routines
   pack_id: health
   risk_tier: write_local
@@ -631,8 +615,8 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_routines_run
 - name: connectors_get_v2_catalog
-  description: Lists the 7 Batch 7 v2 starter connectors (`zocdoc`, `oracle-health`, `athenahealth`, `cms-blue-button`,
-    `oura`, `google-health`, `microsoft-graph`).
+  description: Lists the 7 Batch 7 v2 starter connectors (`zocdoc`, `oracle-health`, `athenahealth`, `cms-blue-button`, `oura`,
+    `google-health`, `microsoft-graph`).
   category: coordinated
   pack_id: health
   risk_tier: read
@@ -682,8 +666,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_coordinated_verify_audit_chain
 - name: coordinated_send_email_draft
-  description: Executes `execute_gmail_send_message` when `approval_id` is provided, or creates a pending
-    `Approval` row (`AU-76`).
+  description: Executes `execute_gmail_send_message` when `approval_id` is provided, or creates a pending `Approval` row (`AU-76`).
   category: coordinated
   pack_id: health
   risk_tier: write_external
@@ -719,8 +702,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_coordinated_send_email_draft
 - name: coordinated_discover_smart_slots
-  description: Discovers free SMART Scheduling Links slots and marks calendar conflicts against profile
-    appointments (`AU-72`).
+  description: Discovers free SMART Scheduling Links slots and marks calendar conflicts against profile appointments (`AU-72`).
   category: coordinated
   pack_id: health
   risk_tier: read
@@ -765,8 +747,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_coordinated_discover_smart_slots
 - name: coordinated_zocdoc_preview
-  description: Prepares a canonical Zocdoc booking payload and creates a pending `irreversible` `Approval`
-    row (`AU-71`).
+  description: Prepares a canonical Zocdoc booking payload and creates a pending `irreversible` `Approval` row (`AU-71`).
   category: coordinated
   pack_id: health
   risk_tier: write_local
@@ -822,8 +803,8 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_coordinated_zocdoc_preview
 - name: approvals_list
-  description: Lists pending tool execution approvals for a given profile.  Requires explicit 'manage'
-    access on the target profile. Admin bypass is denied.
+  description: Lists pending tool execution approvals for a given profile.  Requires explicit 'manage' access on the target
+    profile. Admin bypass is denied.
   category: approvals
   pack_id: health
   risk_tier: read
@@ -848,8 +829,7 @@ tools:
         - type: string
         - type: 'null'
         default: pending
-        description: 'Filter status: ''pending'', ''approved'', ''rejected'', ''consumed'', ''expired'',
-          or ''all'''
+        description: 'Filter status: ''pending'', ''approved'', ''rejected'', ''consumed'', ''expired'', or ''all'''
     type: object
   binding:
     kind: handler
@@ -884,10 +864,10 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_approvals_get
 - name: approvals_decide
-  description: 'Decides (approves or rejects) a pending tool approval request.  - decision: ''approved''
-    or ''rejected'' - edited_args: optional dictionary of modified tool arguments.   If supplied, recomputes
-    and updates payload_hash = compute_payload_hash(edited_args)   and updates args_redacted = canonical_json(edited_args).
-    - Requires explicit ''manage'' permission on the profile. Admin bypass is denied.'
+  description: 'Decides (approves or rejects) a pending tool approval request.  - decision: ''approved'' or ''rejected'' -
+    edited_args: optional dictionary of modified tool arguments.   If supplied, recomputes and updates payload_hash = compute_payload_hash(edited_args)   and
+    updates args_redacted = canonical_json(edited_args). - Requires explicit ''manage'' permission on the profile. Admin bypass
+    is denied.'
   category: approvals
   pack_id: health
   risk_tier: write_local
@@ -1159,8 +1139,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_memory_delete
 - name: vitals_create
-  description: Records a new vital signs observation with FHIR normalization, safety evaluation, and BMI
-    calculation.
+  description: Records a new vital signs observation with FHIR normalization, safety evaluation, and BMI calculation.
   category: vitals
   pack_id: health
   risk_tier: write_local
@@ -1181,7 +1160,7 @@ tools:
     additionalProperties: false
     properties:
       vitals:
-        description: Key-value dictionary of vital signs
+        description: 'Object of numeric vital signs using exact keys: systolic (mmHg), diastolic (mmHg), heart_rate (bpm), spo2 (%), blood_glucose, weight, height, temperature, respiratory_rate.'
         properties:
           systolic:
             anyOf:
@@ -1211,7 +1190,7 @@ tools:
             anyOf:
             - type: string
             - type: 'null'
-            default: mg/dL
+            default: null
             description: 'Unit: mg/dL, mmol/L, kg, lbs, cm, in'
           spo2:
             anyOf:
@@ -1237,6 +1216,24 @@ tools:
             - type: 'null'
             default: null
             description: Body height in cm or inches
+          temperature:
+            anyOf:
+            - type: number
+            - type: 'null'
+            default: null
+            description: "Body temperature in \xB0F or \xB0C"
+          temp_unit:
+            anyOf:
+            - type: string
+            - type: 'null'
+            default: null
+            description: 'Body temperature unit: degF, F, Cel, C'
+          respiratory_rate:
+            anyOf:
+            - type: number
+            - type: 'null'
+            default: null
+            description: Respiratory rate in breaths/min
         type: object
       reported_symptoms:
         anyOf:
@@ -1244,7 +1241,7 @@ tools:
             type: string
           type: array
         - type: 'null'
-        description: Concurrent symptoms
+        description: Optional list of concurrent symptom strings (pass [] if none).
       effective_at:
         anyOf:
         - format: date-time
@@ -1266,14 +1263,14 @@ tools:
           type: string
         - type: 'null'
         default: null
-        description: Source URI or document reference
+        description: Optional external source URI; leave null for manual entries.
       source_id:
         anyOf:
         - maxLength: 255
           type: string
         - type: 'null'
         default: null
-        description: External reading ID for idempotency
+        description: Optional external reading ID for device sync idempotency; leave null for manual entries.
     required:
     - vitals
     type: object
@@ -1375,6 +1372,189 @@ tools:
   binding:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_vitals_get_trends
+- name: vitals_get
+  description: Retrieves a single vital sign observation by ID with privacy suppression.
+  category: vitals
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: vitals_get
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/vitals/{vital_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      vital_id:
+        type: string
+    required:
+    - vital_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_vitals_get
+- name: vitals_update
+  description: Updates an existing vital observation record.
+  category: vitals
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: vitals_update
+    http_method: PATCH
+    http_path: /api/v1/profiles/{profile_id}/vitals/{vital_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      vital_id:
+        type: string
+      vitals:
+        anyOf:
+        - description: Input payload containing physiological measurement values.
+          properties:
+            systolic:
+              anyOf:
+              - type: number
+              - type: 'null'
+              default: null
+              description: Systolic blood pressure in mmHg
+            diastolic:
+              anyOf:
+              - type: number
+              - type: 'null'
+              default: null
+              description: Diastolic blood pressure in mmHg
+            heart_rate:
+              anyOf:
+              - type: number
+              - type: 'null'
+              default: null
+              description: Heart rate in beats per minute
+            blood_glucose:
+              anyOf:
+              - type: number
+              - type: 'null'
+              default: null
+              description: Blood glucose concentration
+            unit:
+              anyOf:
+              - type: string
+              - type: 'null'
+              default: null
+              description: 'Unit: mg/dL, mmol/L, kg, lbs, cm, in'
+            spo2:
+              anyOf:
+              - type: number
+              - type: 'null'
+              default: null
+              description: Oxygen saturation %
+            oxygen_saturation:
+              anyOf:
+              - type: number
+              - type: 'null'
+              default: null
+              description: Alias for spo2
+            weight:
+              anyOf:
+              - type: number
+              - type: 'null'
+              default: null
+              description: Body weight in kg or lbs
+            height:
+              anyOf:
+              - type: number
+              - type: 'null'
+              default: null
+              description: Body height in cm or inches
+            temperature:
+              anyOf:
+              - type: number
+              - type: 'null'
+              default: null
+              description: "Body temperature in \xB0F or \xB0C"
+            temp_unit:
+              anyOf:
+              - type: string
+              - type: 'null'
+              default: null
+              description: 'Body temperature unit: degF, F, Cel, C'
+            respiratory_rate:
+              anyOf:
+              - type: number
+              - type: 'null'
+              default: null
+              description: Respiratory rate in breaths/min
+          type: object
+        - type: 'null'
+        default: null
+      data:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+      status:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      effective_at:
+        anyOf:
+        - format: date-time
+          type: string
+        - type: 'null'
+        default: null
+    required:
+    - vital_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_vitals_update
+- name: vitals_delete
+  description: Deletes a vital observation from health_resources.
+  category: vitals
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: vitals_delete
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/vitals/{vital_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      vital_id:
+        type: string
+    required:
+    - vital_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_vitals_delete
 - name: appointments_create
   description: Creates a new appointment for a profile with validation and audit logging.
   category: appointments
@@ -1529,8 +1709,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_appointments_list
 - name: appointments_draft_booking
-  description: Generates structured call script, portal draft, and creates appointment row with status
-    'requested'.
+  description: Generates structured call script, portal draft, and creates appointment row with status 'requested'.
   category: appointments
   pack_id: health
   risk_tier: write_local
@@ -1886,8 +2065,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_notes_create_workspace
 - name: notes_get_workspace
-  description: Reads a note from carefold.db by slug with strict access validation and zero filesystem
-    fallback.
+  description: Reads a note from carefold.db by slug with strict access validation and zero filesystem fallback.
   category: notes
   pack_id: health
   risk_tier: read
@@ -2073,12 +2251,16 @@ tools:
         type: string
       type:
         default: general
-        description: Note category (one of 7 valid types)
+        description: Note category (one of 11 valid types)
         enum:
         - visit
+        - visit_prep
         - symptom
+        - symptom_log
         - question
         - after_visit
+        - medication_notes
+        - insurance_call
         - school
         - scratchpad
         - general
@@ -2259,9 +2441,13 @@ tools:
         anyOf:
         - enum:
           - visit
+          - visit_prep
           - symptom
+          - symptom_log
           - question
           - after_visit
+          - medication_notes
+          - insurance_call
           - school
           - scratchpad
           - general
@@ -3216,8 +3402,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_school_forms_list
 - name: school_forms_create
-  description: Creates a school form, compiles draft prefill from health_resources, and schedules renewal
-    reminder.
+  description: Creates a school form, compiles draft prefill from health_resources, and schedules renewal reminder.
   category: school
   pack_id: health
   risk_tier: write_local
@@ -3632,8 +3817,8 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_list
 - name: connections_create
-  description: Creates a `Connection` + `ConsentGrant`, schedules a recurring `sync` `Job` (at most 1
-    per connection), and returns the OAuth 2.0 PKCE authorization URL and signed `state`.
+  description: Creates a `Connection` + `ConsentGrant`, schedules a recurring `sync` `Job` (at most 1 per connection), and
+    returns the OAuth 2.0 PKCE authorization URL and signed `state`.
   category: connections
   pack_id: health
   risk_tier: write_local
@@ -3813,8 +3998,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_list_mcp_pins
 - name: connections_reapprove_mcp_pin
-  description: Re-approves an `McpToolPin` after upstream schema drift and restores connection status
-    (`Titan S7`).
+  description: Re-approves an `McpToolPin` after upstream schema drift and restores connection status (`Titan S7`).
   category: connections
   pack_id: health
   risk_tier: write_local
@@ -3887,8 +4071,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_revoke
 - name: connections_trigger_sync
-  description: Triggers `run_connection_sync` for `(profile_id, connection_id)` and returns the `SyncRun`
-    summary.
+  description: Triggers `run_connection_sync` for `(profile_id, connection_id)` and returns the `SyncRun` summary.
   category: connections
   pack_id: health
   risk_tier: write_local
@@ -3917,8 +4100,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_trigger_sync
 - name: connections_list_sync_runs
-  description: Returns `SyncRun` history for `(profile_id, connection_id)` ordered by `started_at` descending
-    (`AU-52`).
+  description: Returns `SyncRun` history for `(profile_id, connection_id)` ordered by `started_at` descending (`AU-52`).
   category: connections
   pack_id: health
   risk_tier: read
@@ -3972,8 +4154,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_connections_list_consents
 - name: connections_get_data_flows
-  description: Returns the Settings › Data Flows inventory (`model_provider`, `search_provider`, `connections`)
-    (`AU-53`).
+  description: "Returns the Settings \u203A Data Flows inventory (`model_provider`, `search_provider`, `connections`) (`AU-53`)."
   category: connections
   pack_id: health
   risk_tier: read
@@ -4098,8 +4279,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_create
 - name: profiles_list_all_invites
-  description: Lists all active viewer invitations for all profiles managed or issued by the authenticated
-    user.
+  description: Lists all active viewer invitations for all profiles managed or issued by the authenticated user.
   category: profiles
   pack_id: health
   risk_tier: read
@@ -4127,8 +4307,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_list_all_invites
 - name: profiles_accept_invite
-  description: Accepts a viewer invitation code, validating expiration and creating ProfileAccess with
-    role='viewer'.
+  description: Accepts a viewer invitation code, validating expiration and creating ProfileAccess with role='viewer'.
   category: profiles
   pack_id: health
   risk_tier: write_local
@@ -4260,8 +4439,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_update
 - name: profiles_delete
-  description: Deletes a secondary care profile and associated data. Primary 'Me' profile deletion is
-    strictly blocked.
+  description: Deletes a secondary care profile and associated data. Primary 'Me' profile deletion is strictly blocked.
   category: profiles
   pack_id: health
   risk_tier: write_local
@@ -4469,8 +4647,7 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_profiles_list_invites
 - name: profiles_create_invite
-  description: Creates a cryptographically secure viewer invite with 7-day expiration (requires 'manage'
-    access).
+  description: Creates a cryptographically secure viewer invite with 7-day expiration (requires 'manage' access).
   category: profiles
   pack_id: health
   risk_tier: write_local
@@ -4743,8 +4920,8 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_email_drafts_export_eml
 - name: search_profile_records
-  description: Searches notes, uploaded attachments, and extracted records for a specific profile.  Enforces
-    fail-closed multi-profile isolation and permissions via get_user_profile_access.
+  description: Searches notes, uploaded attachments, and extracted records for a specific profile.  Enforces fail-closed multi-profile
+    isolation and permissions via get_user_profile_access.
   category: search
   pack_id: health
   risk_tier: read
@@ -5891,8 +6068,8 @@ tools:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_audit_list_events
 - name: models_list
-  description: Lists available models for a given provider.  Dynamically queries Ollama /api/tags when
-    provider is 'ollama', filtering out embedding-only models.
+  description: Lists available models for a given provider.  Dynamically queries Ollama /api/tags when provider is 'ollama',
+    filtering out embedding-only models.
   category: models
   pack_id: health
   risk_tier: read
@@ -6315,6 +6492,40 @@ tools:
   binding:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_upsert_resource
+- name: fhir_delete_resource
+  description: Delete FHIR R4 Resource by ID
+  category: fhir
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: fhir_delete_resource
+    http_method: DELETE
+    http_path: /api/v1/fhir/r4/{resource_type}/{id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      resource_type:
+        description: FHIR R4 resource type
+        type: string
+      id:
+        description: Logical FHIR resource ID
+        type: string
+    required:
+    - resource_type
+    - id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_delete_resource
 - name: fhir_get_resource_history
   description: Get FHIR R4 Resource Version History (_history)
   category: fhir
@@ -6563,3 +6774,827 @@ tools:
   binding:
     kind: handler
     entrypoint: carefold.tools.mcp_api_wrappers:execute_fhir_download_bulk_export_file
+- name: coverage_create
+  description: Create or update insurance coverage plan
+  category: insurance
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: coverage_create
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/coverage
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      payer_name:
+        description: Insurance carrier or health plan payer name
+        maxLength: 255
+        minLength: 1
+        type: string
+      policy_number:
+        description: Member policy or subscriber ID
+        maxLength: 128
+        minLength: 1
+        type: string
+      group_number:
+        anyOf:
+        - maxLength: 128
+          type: string
+        - type: 'null'
+        default: null
+      deductible_individual:
+        anyOf:
+        - minimum: 0.0
+          type: number
+        - type: 'null'
+        default: 0.0
+      deductible_family:
+        anyOf:
+        - minimum: 0.0
+          type: number
+        - type: 'null'
+        default: 0.0
+      oop_max_individual:
+        anyOf:
+        - minimum: 0.0
+          type: number
+        - type: 'null'
+        default: 0.0
+      oop_max_family:
+        anyOf:
+        - minimum: 0.0
+          type: number
+        - type: 'null'
+        default: 0.0
+      copay_pcp:
+        anyOf:
+        - minimum: 0.0
+          type: number
+        - type: 'null'
+        default: 0.0
+      copay_specialist:
+        anyOf:
+        - minimum: 0.0
+          type: number
+        - type: 'null'
+        default: 0.0
+      coinsurance_pct:
+        anyOf:
+        - maximum: 100.0
+          minimum: 0.0
+          type: number
+        - type: 'null'
+        default: 0.0
+      status:
+        anyOf:
+        - maxLength: 32
+          type: string
+        - type: 'null'
+        default: active
+    required:
+    - payer_name
+    - policy_number
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_coverage_create
+- name: coverage_list
+  description: Get active coverage plans for profile
+  category: insurance
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: coverage_list
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/coverage
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_coverage_list
+- name: coverage_get
+  description: Get specific coverage plan by ID
+  category: insurance
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: coverage_get
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/coverage/{plan_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      plan_id:
+        type: string
+    required:
+    - plan_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_coverage_get
+- name: coverage_delete
+  description: Delete coverage plan
+  category: insurance
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: coverage_delete
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/coverage/{plan_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      plan_id:
+        type: string
+    required:
+    - plan_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_coverage_delete
+- name: claims_create
+  description: Submit or track medical insurance claim
+  category: insurance
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: claims_create
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/claims
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      service_date:
+        description: Date of medical service (YYYY-MM-DD)
+        type: string
+      billed_amount:
+        description: Total billed charge amount in dollars
+        minimum: 0.0
+        type: number
+      allowed_amount:
+        anyOf:
+        - minimum: 0.0
+          type: number
+        - type: 'null'
+        default: 0.0
+      patient_responsibility:
+        anyOf:
+        - minimum: 0.0
+          type: number
+        - type: 'null'
+        default: 0.0
+      status:
+        anyOf:
+        - maxLength: 32
+          type: string
+        - type: 'null'
+        default: submitted
+      denial_reason:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      denial_code:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      provider_name:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    required:
+    - service_date
+    - billed_amount
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_claims_create
+- name: claims_list
+  description: List insurance claims for profile
+  category: insurance
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: claims_list
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/claims
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      status_filter:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_claims_list
+- name: claims_get
+  description: Get claim detail by ID
+  category: insurance
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: claims_get
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/claims/{claim_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      claim_id:
+        type: string
+    required:
+    - claim_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_claims_get
+- name: claims_update
+  description: Update claim status or amounts
+  category: insurance
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: claims_update
+    http_method: PATCH
+    http_path: /api/v1/profiles/{profile_id}/claims/{claim_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      claim_id:
+        type: string
+      service_date:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      billed_amount:
+        anyOf:
+        - minimum: 0.0
+          type: number
+        - type: 'null'
+        default: null
+      allowed_amount:
+        anyOf:
+        - minimum: 0.0
+          type: number
+        - type: 'null'
+        default: null
+      patient_responsibility:
+        anyOf:
+        - minimum: 0.0
+          type: number
+        - type: 'null'
+        default: null
+      status:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      denial_reason:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      denial_code:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      provider_name:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    required:
+    - claim_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_claims_update
+- name: claims_delete
+  description: Delete claim
+  category: insurance
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: claims_delete
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/claims/{claim_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      claim_id:
+        type: string
+    required:
+    - claim_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_claims_delete
+- name: appeals_create
+  description: Create appeal dossier for denied claim or prior-authorization
+  category: insurance
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: appeals_create
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/appeals
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      clinical_justification:
+        description: Clinical evidence supporting medical necessity
+        minLength: 1
+        type: string
+      claim_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      prior_auth_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      denial_code:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      deadline_date:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      status:
+        anyOf:
+        - maxLength: 32
+          type: string
+        - type: 'null'
+        default: draft
+      letter_content:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    required:
+    - clinical_justification
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_appeals_create
+- name: appeals_list
+  description: List appeal dossiers for profile
+  category: insurance
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: appeals_list
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/appeals
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_appeals_list
+- name: appeals_get
+  description: Get appeal detail by ID
+  category: insurance
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: appeals_get
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/appeals/{appeal_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      appeal_id:
+        type: string
+    required:
+    - appeal_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_appeals_get
+- name: appeals_update
+  description: Update appeal status or letter content
+  category: insurance
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: appeals_update
+    http_method: PATCH
+    http_path: /api/v1/profiles/{profile_id}/appeals/{appeal_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      appeal_id:
+        type: string
+      clinical_justification:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      claim_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      prior_auth_id:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      denial_code:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      deadline_date:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      status:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      letter_content:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    required:
+    - appeal_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_appeals_update
+- name: appeals_delete
+  description: Delete appeal dossier
+  category: insurance
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: appeals_delete
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/appeals/{appeal_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      appeal_id:
+        type: string
+    required:
+    - appeal_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_appeals_delete
+- name: prior_auth_create
+  description: Create prior-authorization request
+  category: insurance
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: prior_auth_create
+    http_method: POST
+    http_path: /api/v1/profiles/{profile_id}/prior-auths
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      procedure_code:
+        description: CPT or HCPCS procedure code
+        maxLength: 64
+        minLength: 1
+        type: string
+      procedure_name:
+        description: Procedure or service name
+        maxLength: 255
+        minLength: 1
+        type: string
+      provider_name:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      status:
+        anyOf:
+        - maxLength: 32
+          type: string
+        - type: 'null'
+        default: pending
+      submitted_date:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      decision_date:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      notes:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    required:
+    - procedure_code
+    - procedure_name
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_prior_auth_create
+- name: prior_auth_list
+  description: List prior authorization requests for profile
+  category: insurance
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: prior_auth_list
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/prior-auths
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties: {}
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_prior_auth_list
+- name: prior_auth_get
+  description: Get prior authorization by ID
+  category: insurance
+  pack_id: health
+  risk_tier: read
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: prior_auth_get
+    http_method: GET
+    http_path: /api/v1/profiles/{profile_id}/prior-auths/{prior_auth_id}
+    risk: read
+  input_schema:
+    additionalProperties: false
+    properties:
+      prior_auth_id:
+        type: string
+    required:
+    - prior_auth_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_prior_auth_get
+- name: prior_auth_update
+  description: Update prior authorization request
+  category: insurance
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: prior_auth_update
+    http_method: PATCH
+    http_path: /api/v1/profiles/{profile_id}/prior-auths/{prior_auth_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      prior_auth_id:
+        type: string
+      procedure_code:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      procedure_name:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      provider_name:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      status:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      submitted_date:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      decision_date:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+      notes:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+    required:
+    - prior_auth_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_prior_auth_update
+- name: prior_auth_delete
+  description: Delete prior authorization request
+  category: insurance
+  pack_id: health
+  risk_tier: write_local
+  trust: trusted
+  data_sensitivity: restricted
+  scopes:
+  - health.clinical
+  allowed_hosts: []
+  context_params:
+  - profile_id
+  - user_id
+  metadata:
+    action: prior_auth_delete
+    http_method: DELETE
+    http_path: /api/v1/profiles/{profile_id}/prior-auths/{prior_auth_id}
+    risk: write_local
+  input_schema:
+    additionalProperties: false
+    properties:
+      prior_auth_id:
+        type: string
+    required:
+    - prior_auth_id
+    type: object
+  binding:
+    kind: handler
+    entrypoint: carefold.tools.mcp_api_wrappers:execute_prior_auth_delete
