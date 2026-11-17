@@ -129,6 +129,8 @@ class TestMultiTurnSmokeMedGemma:
 
     @pytest.fixture(autouse=True)
     def check_ollama(self) -> None:
+        if not os.getenv("CAREFOLD_RUN_OLLAMA_TESTS"):
+            pytest.skip("Live Ollama tests run on-demand only (set CAREFOLD_RUN_OLLAMA_TESTS=1)")
         if not probe_ollama_daemon():
             pytest.skip("Local Ollama daemon is not responding at " + DEFAULT_BASE_URL)
 

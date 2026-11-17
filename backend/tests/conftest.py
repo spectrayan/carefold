@@ -233,6 +233,14 @@ def default_test_model_client(request: pytest.FixtureRequest, monkeypatch):
     import carefold.engine.runner as runner_mod
     monkeypatch.setattr(runner_mod, "create_chat_model", lambda *args, **kwargs: MockChatModel())
 
+    # Core execution paths resolve their own model factory reference; patch those too so no
+    # test silently reaches a live local model daemon (slow locally, connection errors in CI).
+    import yarvelle_core.engine.runner as yc_runner_mod
+    import yarvelle_core.engine.service as yc_service_mod
+
+    monkeypatch.setattr(yc_runner_mod, "create_chat_model", lambda *args, **kwargs: MockChatModel())
+    monkeypatch.setattr(yc_service_mod, "create_chat_model", lambda *args, **kwargs: MockChatModel())
+
 
 @pytest.fixture
 def live_ollama_client():
@@ -555,3 +563,29 @@ def auth_async_client(async_db_session_factory, user_factory):
     return _make_client
 
 
+def pytest_collection_modifyitems(config, items):
+    """Keeps only this shard's tests when CAREFOLD_TEST_SHARD="<index>/<total>" is set (1-based).
+
+    Assignment hashes each test node id, so every shard gets a stable, evenly sized slice
+    of every file and all xdist workers in a shard agree on the same selection.
+    """
+    spec = os.getenv("CAREFOLD_TEST_SHARD", "").strip()
+    if not spec:
+        return
+    import zlib
+
+    try:
+        index_text, total_text = spec.split("/", 1)
+        index, total = int(index_text), int(total_text)
+    except ValueError as exc:
+        raise pytest.UsageError(f"CAREFOLD_TEST_SHARD must look like '1/3', got {spec!r}") from exc
+    if total < 1 or not 1 <= index <= total:
+        raise pytest.UsageError(f"CAREFOLD_TEST_SHARD index out of range: {spec!r}")
+
+    selected, deselected = [], []
+    for item in items:
+        bucket = zlib.crc32(item.nodeid.encode("utf-8")) % total
+        (selected if bucket == index - 1 else deselected).append(item)
+    if deselected:
+        config.hook.pytest_deselected(items=deselected)
+        items[:] = selected

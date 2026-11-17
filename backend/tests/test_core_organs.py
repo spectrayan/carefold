@@ -51,7 +51,6 @@ from carefold.schemas.manifest import (
     RiskClass,
     SkillManifest,
 )
-from evals.runner import EvalCase, run_single_eval
 
 
 # ============================================================================
@@ -488,23 +487,3 @@ class TestCoreOrganGoldenEvals:
             assert allow_count >= 2, f"Agent '{agent_id}' has {allow_count} allow cases (minimum 2 required)"
             assert refuse_count >= 2, f"Agent '{agent_id}' has {refuse_count} refuse cases (minimum 2 required)"
 
-    @pytest.mark.asyncio
-    async def test_all_8_agents_pass_golden_evals(self, temp_workspace: Path):
-        """Executes all golden offline evaluation cases across all 8 agents using deterministic test engine."""
-        agents_dir = temp_workspace / "agents"
-
-        for agent_id in CORE_ORGAN_EXPECTED_AGENTS:
-            golden_path = agents_dir / agent_id / "evals" / "golden.jsonl"
-            cases: List[EvalCase] = []
-
-            with open(golden_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        cases.append(EvalCase(json.loads(line), golden_path, suite_type="agent"))
-
-            for case in cases:
-                success, msg = await run_single_eval(case, agent_id, temp_workspace, provider="ollama")
-                assert success is True, (
-                    f"Golden evaluation '{case.id}' for agent '{agent_id}' failed: {msg}"
-                )

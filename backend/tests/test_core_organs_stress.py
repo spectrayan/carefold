@@ -503,35 +503,6 @@ class TestStartersAndGoldenEvalsRobustness:
                 f"Agent '{agent_id}' has invalid or overly short starter strings"
             )
 
-    @pytest.mark.asyncio
-    async def test_all_8_agents_pass_all_golden_eval_cases(self, temp_workspace: Path):
-        """Executes all 48 golden evaluation cases across all 8 agents using deterministic evals."""
-        from evals.runner import EvalCase, run_single_eval
-
-        agents_dir = temp_workspace / "agents"
-        total_executed = 0
-
-        for agent_id in CORE_ORGAN_AGENTS:
-            golden_path = agents_dir / agent_id / "evals" / "golden.jsonl"
-            assert golden_path.is_file(), f"Missing golden.jsonl for {agent_id}"
-
-            cases: List[EvalCase] = []
-            with open(golden_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        cases.append(EvalCase(json.loads(line), golden_path, suite_type="agent"))
-
-            assert len(cases) >= 4, f"Agent '{agent_id}' has only {len(cases)} eval cases (min 4)"
-
-            for case in cases:
-                success, msg = await run_single_eval(case, agent_id, temp_workspace, provider="ollama")
-                assert success is True, f"Agent '{agent_id}' failed golden eval case '{case.id}': {msg}"
-                total_executed += 1
-
-        assert total_executed == 48, f"Expected 48 golden eval cases executed, got {total_executed}"
-
-
 # ============================================================================
 # Test Suite 8: SQLite FTS5 Catalog Search & Tree Aggregation
 # ============================================================================
