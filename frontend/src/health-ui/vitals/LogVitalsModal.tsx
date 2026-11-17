@@ -53,7 +53,12 @@ export function LogVitalsModal({
   const [glucose, setGlucose] = useState<string>('');
   const [spo2, setSpo2] = useState<string>('');
   const [weight, setWeight] = useState<string>('');
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>('kg');
   const [height, setHeight] = useState<string>('');
+  const [temperature, setTemperature] = useState<string>('');
+  const [tempUnit, setTempUnit] = useState<'°F' | '°C'>('°F');
+  const [respiratoryRate, setRespiratoryRate] = useState<string>('');
+  const [effectiveAt, setEffectiveAt] = useState<string>('');
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -64,8 +69,12 @@ export function LogVitalsModal({
   const numHr = heartRate ? parseInt(heartRate, 10) : undefined;
   const numGluc = glucose ? parseFloat(glucose) : undefined;
   const numSpo2 = spo2 ? parseFloat(spo2) : undefined;
-  const numWt = weight ? parseFloat(weight) : undefined;
+  const rawWt = weight ? parseFloat(weight) : undefined;
+  const numWt = rawWt !== undefined ? (weightUnit === 'lbs' ? parseFloat((rawWt / 2.20462).toFixed(2)) : rawWt) : undefined;
   const numHt = height ? parseFloat(height) : undefined;
+  const rawTemp = temperature ? parseFloat(temperature) : undefined;
+  const numTemp = rawTemp !== undefined ? rawTemp : undefined;
+  const numResp = respiratoryRate ? parseInt(respiratoryRate, 10) : undefined;
 
   // Real-time clinical safety screening
   const safetyEval: ClientSafetyEvaluation = useMemo(() => {
@@ -83,16 +92,20 @@ export function LogVitalsModal({
   // Validation rules
   const bpIncomplete = (numSys !== undefined && numDia === undefined) || (numDia !== undefined && numSys === undefined);
   const bpInvalidOrder = numSys !== undefined && numDia !== undefined && numSys <= numDia;
-  const weightInvalid = numWt !== undefined && numWt <= 0;
+  const weightInvalid = rawWt !== undefined && rawWt <= 0;
   const heightInvalid = numHt !== undefined && numHt <= 0;
+  const tempInvalid = numTemp !== undefined && numTemp <= 0;
+  const respInvalid = numResp !== undefined && numResp <= 0;
   const hasAtLeastOne =
     (numSys !== undefined && numDia !== undefined) ||
     numHr !== undefined ||
     numGluc !== undefined ||
     numSpo2 !== undefined ||
-    numWt !== undefined;
+    numWt !== undefined ||
+    numTemp !== undefined ||
+    numResp !== undefined;
 
-  const isFormValid = hasAtLeastOne && !bpIncomplete && !bpInvalidOrder && !weightInvalid && !heightInvalid;
+  const isFormValid = hasAtLeastOne && !bpIncomplete && !bpInvalidOrder && !weightInvalid && !heightInvalid && !tempInvalid && !respInvalid;
 
   const handleToggleSymptom = (sym: string) => {
     setSymptoms((prev) =>
@@ -107,7 +120,12 @@ export function LogVitalsModal({
     setGlucose('');
     setSpo2('');
     setWeight('');
+    setWeightUnit('kg');
     setHeight('');
+    setTemperature('');
+    setTempUnit('°F');
+    setRespiratoryRate('');
+    setEffectiveAt('');
     setSymptoms([]);
     setSubmitError(null);
     setSubmitSuccess(false);
@@ -130,8 +148,12 @@ export function LogVitalsModal({
           spo2: numSpo2,
           weight: numWt,
           height: numHt,
+          temperature: numTemp,
+          temp_unit: tempUnit === '°F' ? 'degF' : 'Cel',
+          respiratory_rate: numResp,
         },
         reported_symptoms: symptoms,
+        effective_at: effectiveAt ? new Date(effectiveAt).toISOString() : undefined,
         source_type: 'manual',
       });
 
@@ -305,14 +327,26 @@ export function LogVitalsModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[var(--cf-fg)] mb-1">
-                Body Weight (kg)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-[var(--cf-fg)]">
+                  Body Weight ({weightUnit})
+                </label>
+                <div className="flex items-center rounded-md border border-[var(--cf-border)] overflow-hidden text-[10px]">
+                  <button
+                    type="button"
+                    data-testid="select-weight-unit"
+                    onClick={() => setWeightUnit(weightUnit === 'kg' ? 'lbs' : 'kg')}
+                    className="px-2 py-0.5 font-medium bg-[var(--cf-surface-2)] text-[var(--cf-fg)] hover:bg-[var(--cf-surface-3)]"
+                  >
+                    Switch to {weightUnit === 'kg' ? 'lbs' : 'kg'}
+                  </button>
+                </div>
+              </div>
               <input
                 type="number"
                 step="0.1"
                 data-testid="input-weight"
-                placeholder="e.g. 74.5"
+                placeholder={weightUnit === 'kg' ? 'e.g. 74.5' : 'e.g. 164.2'}
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 min={1}
@@ -321,21 +355,84 @@ export function LogVitalsModal({
             </div>
           </div>
 
-          {/* Height (for BMI) */}
-          <div>
-            <label className="block text-xs font-semibold text-[var(--cf-fg)] mb-1">
-              Body Height (cm) <span className="text-[var(--cf-fg-subtle)] font-normal">(optional, for BMI calculation)</span>
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              data-testid="input-height"
-              placeholder="e.g. 175"
-              value={height}
-              onChange={(e) => setHeight(e.target.value)}
-              min={30}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--cf-border)] bg-[var(--cf-surface)] text-[var(--cf-fg)] focus:outline-none focus:ring-2 focus:ring-[var(--cf-focus)] font-mono"
-            />
+          {/* Temperature & Respiratory Rate */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-[var(--cf-fg)]">
+                  Body Temperature ({tempUnit})
+                </label>
+                <div className="flex items-center rounded-md border border-[var(--cf-border)] overflow-hidden text-[10px]">
+                  <button
+                    type="button"
+                    data-testid="select-temp-unit"
+                    onClick={() => setTempUnit(tempUnit === '°F' ? '°C' : '°F')}
+                    className="px-2 py-0.5 font-medium bg-[var(--cf-surface-2)] text-[var(--cf-fg)] hover:bg-[var(--cf-surface-3)]"
+                  >
+                    Switch to {tempUnit === '°F' ? '°C' : '°F'}
+                  </button>
+                </div>
+              </div>
+              <input
+                type="number"
+                step="0.1"
+                data-testid="input-temperature"
+                placeholder={tempUnit === '°F' ? 'e.g. 98.6' : 'e.g. 37.0'}
+                value={temperature}
+                onChange={(e) => setTemperature(e.target.value)}
+                min={tempUnit === '°F' ? 85 : 30}
+                max={tempUnit === '°F' ? 115 : 45}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--cf-border)] bg-[var(--cf-surface)] text-[var(--cf-fg)] focus:outline-none focus:ring-2 focus:ring-[var(--cf-focus)] font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[var(--cf-fg)] mb-1">
+                Respiratory Rate (breaths/min)
+              </label>
+              <input
+                type="number"
+                data-testid="input-respiratory-rate"
+                placeholder="e.g. 16"
+                value={respiratoryRate}
+                onChange={(e) => setRespiratoryRate(e.target.value)}
+                min={4}
+                max={80}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--cf-border)] bg-[var(--cf-surface)] text-[var(--cf-fg)] focus:outline-none focus:ring-2 focus:ring-[var(--cf-focus)] font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Height (for BMI) & Historical Timestamp */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-[var(--cf-fg)] mb-1">
+                Body Height (cm) <span className="text-[var(--cf-fg-subtle)] font-normal">(optional)</span>
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                data-testid="input-height"
+                placeholder="e.g. 175"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                min={30}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--cf-border)] bg-[var(--cf-surface)] text-[var(--cf-fg)] focus:outline-none focus:ring-2 focus:ring-[var(--cf-focus)] font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[var(--cf-fg)] mb-1">
+                Observation Date & Time <span className="text-[var(--cf-fg-subtle)] font-normal">(optional)</span>
+              </label>
+              <input
+                type="datetime-local"
+                data-testid="input-effective-at"
+                value={effectiveAt}
+                onChange={(e) => setEffectiveAt(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--cf-border)] bg-[var(--cf-surface)] text-[var(--cf-fg)] focus:outline-none focus:ring-2 focus:ring-[var(--cf-focus)]"
+              />
+            </div>
           </div>
 
           {/* Active Symptoms Checklist */}

@@ -85,6 +85,12 @@ export interface PaperworkDossierSummary {
   billedAmount: string;
   planPaidAmount: string;
   patientOwedAmount: string;
+  planName?: string;
+  payerName?: string;
+  deductibleMet?: string;
+  deductibleSummary?: string;
+  copaySpecialist?: string;
+  copaySummary?: string;
 }
 
 export interface RoutineHabitItem {
@@ -642,7 +648,9 @@ export function HomeDashboardClient({
                   <h3 className="text-sm font-semibold text-[var(--cf-fg)]">
                     {paperwork.title}
                   </h3>
-                  <span className="text-xs text-[var(--cf-fg-muted)]">Blue Shield Silver PPO</span>
+                  <span className="text-xs text-[var(--cf-fg-muted)]">
+                    {paperwork.planName || paperwork.payerName || 'Active Coverage'}
+                  </span>
                 </div>
                 <p className="text-xs text-[var(--cf-fg-muted)]">
                   {paperwork.facility}
@@ -652,11 +660,15 @@ export function HomeDashboardClient({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 rounded-xl bg-[var(--cf-surface-2)] text-xs border border-[var(--cf-border)] mt-2">
                   <div>
                     <span className="text-xs text-[var(--cf-fg-subtle)] block">Deductible</span>
-                    <span className="font-semibold text-[var(--cf-fg)]">$450 / $1,500</span>
+                    <span className="font-semibold text-[var(--cf-fg)]">
+                      {paperwork.deductibleMet || paperwork.deductibleSummary || '$450 / $1,500'}
+                    </span>
                   </div>
                   <div>
                     <span className="text-xs text-[var(--cf-fg-subtle)] block">Copay</span>
-                    <span className="font-semibold text-[var(--cf-fg)]">$35 Specialist</span>
+                    <span className="font-semibold text-[var(--cf-fg)]">
+                      {paperwork.copaySpecialist || paperwork.copaySummary || '$35 Specialist'}
+                    </span>
                   </div>
                   <div>
                     <span className="text-xs text-[var(--cf-fg-subtle)] block">You may owe</span>

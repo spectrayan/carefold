@@ -316,6 +316,46 @@ export function extractLatestVitals(observations: VitalsObservationItem[]): Late
     }
   }
 
+  // Find Temperature (8310-5)
+  const tempObs = sorted.filter((o) => o.data?.code?.coding?.[0]?.code === '8310-5');
+  if (tempObs.length > 0) {
+    const latest = tempObs[0];
+    const val = latest.data?.valueQuantity?.value;
+    const unit = latest.data?.valueQuantity?.unit || '°F';
+    let delta: number | undefined;
+    if (tempObs.length > 1) {
+      const pVal = tempObs[1].data?.valueQuantity?.value;
+      if (pVal !== undefined && val !== undefined) delta = val - pVal;
+    }
+    if (val !== undefined) {
+      result.temperature = {
+        value: val,
+        unit,
+        effectiveAt: latest.effective_at,
+        delta,
+      };
+    }
+  }
+
+  // Find Respiratory Rate (9279-1)
+  const respObs = sorted.filter((o) => o.data?.code?.coding?.[0]?.code === '9279-1');
+  if (respObs.length > 0) {
+    const latest = respObs[0];
+    const val = latest.data?.valueQuantity?.value;
+    let delta: number | undefined;
+    if (respObs.length > 1) {
+      const pVal = respObs[1].data?.valueQuantity?.value;
+      if (pVal !== undefined && val !== undefined) delta = val - pVal;
+    }
+    if (val !== undefined) {
+      result.respiratoryRate = {
+        value: val,
+        effectiveAt: latest.effective_at,
+        delta,
+      };
+    }
+  }
+
   return result;
 }
 
@@ -345,10 +385,12 @@ export async function fetchVitalsObservations(
 
 export async function fetchVitalsTrends(
   profileId: string,
+  metric = 'blood_pressure',
   timezone?: string,
   days = 90
 ): Promise<VitalsTrendsResponse> {
   const query = new URLSearchParams();
+  query.set('metric', metric);
   const tz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   query.set('timezone', tz);
   query.set('days', String(days));
@@ -358,6 +400,57 @@ export async function fetchVitalsTrends(
   });
   if (!res.ok) throw new Error(`Failed to fetch vitals trends (${res.status})`);
   return res.json();
+}
+
+export async function getVitalReading(
+  profileId: string,
+  vitalId: string
+): Promise<VitalsObservationItem> {
+  const res = await fetch(`/api/profiles/${encodeURIComponent(profileId)}/vitals/${encodeURIComponent(vitalId)}`, {
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to fetch vital observation (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateVitalReading(
+  profileId: string,
+  vitalId: string,
+  payload: {
+    vitals?: VitalMeasurements;
+    data?: Record<string, any>;
+    status?: string;
+    effective_at?: string;
+  }
+): Promise<VitalsObservationItem> {
+  const res = await fetch(`/api/profiles/${encodeURIComponent(profileId)}/vitals/${encodeURIComponent(vitalId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to update vital observation (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteVitalReading(
+  profileId: string,
+  vitalId: string
+): Promise<void> {
+  const res = await fetch(`/api/profiles/${encodeURIComponent(profileId)}/vitals/${encodeURIComponent(vitalId)}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to delete vital observation (${res.status})`);
+  }
 }
 
 export async function recordVitals(

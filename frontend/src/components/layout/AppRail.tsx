@@ -243,6 +243,12 @@ export function AppRail({
       aliasPrefixes: [`/p/${derivedProfile.id}/appointments`, `/p/${derivedProfile.id}/schedule`]
     },
     {
+      href: profilePath(derivedProfile.id, '/preventive'),
+      label: t('nav.preventive') || 'Preventive',
+      icon: ShieldCheck,
+      aliasPrefixes: [`/p/${derivedProfile.id}/preventive`]
+    },
+    {
       href: profilePath(derivedProfile.id, '/library'),
       label: t('nav.library'),
       icon: BookOpen,
@@ -269,6 +275,12 @@ export function AppRail({
       label: t('nav.family'),
       icon: Users,
       badge: counts?.family
+    },
+    {
+      href: '/connections',
+      label: t('nav.connections') || 'Connections',
+      icon: Cpu,
+      aliasPrefixes: ['/connections', `/p/${derivedProfile.id}/connections`]
     },
     {
       href: '/settings',

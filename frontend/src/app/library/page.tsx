@@ -18,7 +18,7 @@ import type { AttachmentItem, WorkspaceNoteSummary } from '@/types/api';
 
 export const dynamic = 'force-dynamic';
 
-async function getInitialLibraryData(): Promise<{
+async function getInitialLibraryData(profileId?: string): Promise<{
   attachments: AttachmentItem[];
   notes: WorkspaceNoteSummary[];
 }> {
@@ -34,12 +34,14 @@ async function getInitialLibraryData(): Promise<{
     // Static or test context without request headers
   }
 
+  const queryParam = profileId ? `?profile_id=${encodeURIComponent(profileId)}` : '';
+
   const [attachmentsRes, notesRes] = await Promise.allSettled([
-    fetch(`${backendUrl}/api/v1/attachments`, {
+    fetch(`${backendUrl}/api/v1/attachments${queryParam}`, {
       headers: reqHeaders,
       cache: 'no-store'
     }),
-    fetch(`${backendUrl}/api/v1/notes`, {
+    fetch(`${backendUrl}/api/v1/notes${queryParam}`, {
       headers: reqHeaders,
       cache: 'no-store'
     })
@@ -67,6 +69,6 @@ async function getInitialLibraryData(): Promise<{
 }
 
 export default async function LibraryPage({ profileId }: { profileId?: string } = {}) {
-  const { attachments, notes } = await getInitialLibraryData();
+  const { attachments, notes } = await getInitialLibraryData(profileId);
   return <LibraryClient initialAttachments={attachments} initialNotes={notes} profileId={profileId || 'me'} />;
 }

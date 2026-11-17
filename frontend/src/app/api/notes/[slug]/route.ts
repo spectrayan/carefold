@@ -144,6 +144,57 @@ export async function PUT(
   }
 }
 
+export async function PATCH(
+  req: NextRequest,
+  context: { params: Promise<{ slug: string }> }
+): Promise<NextResponse> {
+  const resolvedParams = await context.params;
+  const validation = validateNoteSlug(resolvedParams.slug || '');
+  if ('error' in validation) {
+    return NextResponse.json({ error: validation.error, code: 'INVALID_SLUG' }, { status: validation.status });
+  }
+  const cleanSlug = validation.cleanSlug;
+
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8010';
+  const url = new URL(req.url);
+
+  const forwardHeaders = new Headers();
+  const incomingCookie = req.headers.get('cookie');
+  if (incomingCookie) forwardHeaders.set('cookie', incomingCookie);
+  const authHeader = req.headers.get('authorization');
+  if (authHeader) forwardHeaders.set('authorization', authHeader);
+  forwardHeaders.set('content-type', 'application/json');
+  forwardHeaders.set('accept', 'application/json');
+
+  let body = '';
+  try {
+    body = await req.text();
+  } catch {
+    body = '{}';
+  }
+
+  try {
+    const targetUrl = `${backendUrl}/api/v1/notes/${encodeURIComponent(cleanSlug)}${url.search}`;
+    const res = await fetch(targetUrl, {
+      method: 'PATCH',
+      headers: forwardHeaders,
+      body,
+      cache: 'no-store'
+    });
+
+    const data = await res.json().catch(() => ({}));
+    return NextResponse.json(data, { status: res.status });
+  } catch (err: any) {
+    return NextResponse.json(
+      {
+        error: `Carefold Python backend is unreachable at ${backendUrl}: ${err.message}`,
+        code: 'BACKEND_UNREACHABLE'
+      },
+      { status: 503 }
+    );
+  }
+}
+
 export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ slug: string }> }
