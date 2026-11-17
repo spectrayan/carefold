@@ -24,5 +24,16 @@ tools:
   - attach-read
   - skill-docs
   - workspace-note
+  - fhir_r4_search_resources
+  - fhir_read_resource
+  - fhir_create_resource
+  - fhir_upsert_resource
+  - fhir_delete_resource
+  - fhir_get_resource_history
+  - fhir_r4_patient_summary
+  - school_forms_list
+  - school_forms_create
+  - school_forms_update
+  - school_forms_delete
 persona: persona.md
 max_iterations: 3

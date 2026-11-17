@@ -23,5 +23,15 @@ tools:
   - attach-read
   - skill-docs
   - workspace-note
+  - coverage_list
+  - coverage_get
+  - prior_auth_create
+  - prior_auth_list
+  - prior_auth_get
+  - prior_auth_update
+  - prior_auth_delete
+  - appeals_create
+  - appeals_list
+  - fhir_r4_search_resources
 persona: persona.md
 max_iterations: 3
