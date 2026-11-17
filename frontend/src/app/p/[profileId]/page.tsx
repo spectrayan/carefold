@@ -65,7 +65,7 @@ export default async function ProfileHomePage({ params }: PageProps) {
   let initialNotes: RecentClinicalNoteItem[] | null = null;
 
   try {
-    const [apptsRes, routinesRes, notesRes] = await Promise.all([
+    const [apptsRes, routinesRes, notesRes, coverageRes] = await Promise.all([
       fetch(`${backendUrl}/api/v1/profiles/${encodeURIComponent(profileId)}/appointments`, {
         headers: reqHeaders,
         cache: 'no-store',
@@ -75,6 +75,10 @@ export default async function ProfileHomePage({ params }: PageProps) {
         cache: 'no-store',
       }).catch(() => null),
       fetch(`${backendUrl}/api/v1/notes?profile_id=${encodeURIComponent(profileId)}`, {
+        headers: reqHeaders,
+        cache: 'no-store',
+      }).catch(() => null),
+      fetch(`${backendUrl}/api/v1/profiles/${encodeURIComponent(profileId)}/coverage`, {
         headers: reqHeaders,
         cache: 'no-store',
       }).catch(() => null),
@@ -164,6 +168,27 @@ export default async function ProfileHomePage({ params }: PageProps) {
             patientOwedAmount: '$30.00',
           };
         }
+      }
+    }
+
+    if (!initialPaperwork && coverageRes?.ok) {
+      const covData = await coverageRes.json();
+      const plans = Array.isArray(covData) ? covData : (covData.plans || covData.items || []);
+      if (plans.length > 0) {
+        const primaryPlan = plans[0];
+        initialPaperwork = {
+          id: primaryPlan.id,
+          title: 'Health Insurance Plan',
+          facility: primaryPlan.policy_number ? `Policy: ${primaryPlan.policy_number}` : 'Active Coverage',
+          statusBadge: primaryPlan.status || 'Active',
+          billedAmount: '$0.00',
+          planPaidAmount: '$0.00',
+          patientOwedAmount: '$0.00',
+          planName: primaryPlan.payer_name,
+          payerName: primaryPlan.payer_name,
+          deductibleMet: `$${primaryPlan.deductible_individual ?? 0} Indiv / $${primaryPlan.deductible_family ?? 0} Fam`,
+          copaySpecialist: `$${primaryPlan.copay_specialist ?? 0} Specialist`,
+        };
       }
     }
   } catch {

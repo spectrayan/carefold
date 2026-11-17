@@ -690,3 +690,266 @@ def test_get_vitals_trends_invalid_timezone(vitals_test_env):
     )
     assert resp.status_code == 400
     assert "Invalid IANA timezone identifier" in resp.json()["detail"]
+
+
+def test_post_vitals_single_measurement_temperature(vitals_test_env):
+    """POST /vitals succeeds when submitting only temperature with default degF."""
+    client = TestClient(app)
+    pid = vitals_test_env["alice_profile_id"]
+    token = vitals_test_env["alice_token"]
+
+    payload = {"vitals": {"temperature": 98.6}}
+    resp = client.post(
+        f"/api/profiles/{pid}/vitals",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["profile_id"] == pid
+    assert "data" in data
+    vq = data["data"]["valueQuantity"]
+    assert vq["value"] == 98.6
+    assert vq["unit"] == "degF"
+    assert vq["code"] == "[degF]"
+    assert vq["unit"] != "mg/dL"
+
+
+def test_post_vitals_temperature_with_celsius(vitals_test_env):
+    """POST /vitals with temperature and temp_unit='C' generates Cel FHIR observation."""
+    client = TestClient(app)
+    pid = vitals_test_env["alice_profile_id"]
+    token = vitals_test_env["alice_token"]
+
+    payload = {"vitals": {"temperature": 37.0, "temp_unit": "C"}}
+    resp = client.post(
+        f"/api/profiles/{pid}/vitals",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["profile_id"] == pid
+    assert "data" in data
+    vq = data["data"]["valueQuantity"]
+    assert vq["value"] == 37.0
+    assert vq["unit"] == "Cel"
+    assert vq["code"] == "Cel"
+    assert vq["unit"] != "mg/dL"
+
+
+def test_post_vitals_temperature_zero_value(vitals_test_env):
+    """POST /vitals with temperature=0.0 succeeds without KeyError."""
+    client = TestClient(app)
+    pid = vitals_test_env["alice_profile_id"]
+    token = vitals_test_env["alice_token"]
+
+    payload = {"vitals": {"temperature": 0.0}}
+    resp = client.post(
+        f"/api/profiles/{pid}/vitals",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["profile_id"] == pid
+    assert data["data"]["valueQuantity"]["value"] == 0.0
+    assert data["data"]["valueQuantity"]["unit"] == "degF"
+
+
+def test_post_vitals_single_measurement_respiratory_rate(vitals_test_env):
+    """POST /vitals succeeds when submitting only respiratory rate."""
+    client = TestClient(app)
+    pid = vitals_test_env["alice_profile_id"]
+    token = vitals_test_env["alice_token"]
+
+    payload = {"vitals": {"respiratory_rate": 16.0}}
+    resp = client.post(
+        f"/api/profiles/{pid}/vitals",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["profile_id"] == pid
+    assert "data" in data
+    vq = data["data"]["valueQuantity"]
+    assert vq["value"] == 16.0
+    assert vq["unit"] == "breaths/min"
+    assert vq["code"] == "/min"
+
+
+def test_post_vitals_respiratory_rate_zero_value(vitals_test_env):
+    """POST /vitals with respiratory_rate=0.0 succeeds without KeyError."""
+    client = TestClient(app)
+    pid = vitals_test_env["alice_profile_id"]
+    token = vitals_test_env["alice_token"]
+
+    payload = {"vitals": {"respiratory_rate": 0.0}}
+    resp = client.post(
+        f"/api/profiles/{pid}/vitals",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["profile_id"] == pid
+    assert data["data"]["valueQuantity"]["value"] == 0.0
+    assert data["data"]["valueQuantity"]["unit"] == "breaths/min"
+
+
+def test_get_vitals_trends_non_bp_metrics(vitals_test_env):
+    """GET /vitals/trends calculates trends for non-BP metrics with database observations."""
+    client = TestClient(app)
+    pid = vitals_test_env["alice_profile_id"]
+    token = vitals_test_env["alice_token"]
+
+    # Seed observations for each metric
+    now = datetime.now(timezone.utc)
+    for metric_name, val in [
+        ("heart_rate", 72.0),
+        ("spo2", 98.0),
+        ("blood_glucose", 105.0),
+        ("weight", 70.0),
+        ("temperature", 98.6),
+        ("respiratory_rate", 16.0),
+    ]:
+        v_dict = {metric_name: val}
+        if metric_name == "weight":
+            v_dict["height"] = 175.0
+        client.post(
+            f"/api/profiles/{pid}/vitals",
+            json={"vitals": v_dict, "effective_at": (now - timedelta(hours=2)).isoformat()},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    # Query trends for each supported metric
+    charlie_token = vitals_test_env["charlie_token"]
+    for query_metric in ["heart_rate", "spo2", "blood_glucose", "weight", "temperature", "respiratory_rate"]:
+        resp = client.get(
+            f"/api/profiles/{pid}/vitals/trends?metric={query_metric}&timezone=UTC",
+            headers={"Authorization": f"Bearer {charlie_token}"},
+        )
+        assert resp.status_code == 200, f"Trends for {query_metric} returned {resp.status_code}: {resp.text}"
+        data = resp.json()
+        assert data["metric"] == query_metric
+        assert "7_day" in data["trends"]
+        assert data["trends"]["7_day"]["count"] >= 1
+        assert data["trends"]["7_day"]["mean"] is not None
+
+
+def test_post_vitals_normalizes_aliased_keys_units_and_empty_symptoms(vitals_test_env, monkeypatch):
+    """POST /vitals & execute_vitals_create normalize hyphenated/aliased keys, units, and reported_symptoms={}."""
+    import carefold.db.session as cf_db_session
+    import carefold.tools.mcp_db_toolbox as cf_toolbox_mod
+    from carefold.tools.mcp_api_wrappers import execute_vitals_create
+    import yarvelle_core.audit.logger as yc_audit_logger
+    import yarvelle_core.db.session as yc_db_session
+    from yarvelle_core.engine.tool_exec import ToolContext
+    import yarvelle_core.tools.mcp_db_toolbox as yc_toolbox_mod
+
+    factory = vitals_test_env["session_factory"]
+    monkeypatch.setattr(cf_db_session, "get_session_factory", lambda _e=None: factory)
+    monkeypatch.setattr(yc_db_session, "get_session_factory", lambda _e=None: factory)
+    monkeypatch.setattr(cf_toolbox_mod, "get_session_factory", lambda: factory)
+    monkeypatch.setattr(yc_toolbox_mod, "get_session_factory", lambda: factory)
+    monkeypatch.setattr(yc_audit_logger, "get_session_factory", lambda _e=None: factory)
+
+    client = TestClient(app)
+    pid = vitals_test_env["alice_profile_id"]
+    token = vitals_test_env["alice_token"]
+
+    async def _get_owner_uid() -> str:
+        async with factory() as session:
+            row = (await session.execute(select(Profile).where(Profile.id == pid))).scalar_one()
+            return str(row.user_id)
+
+    uid = run_async(_get_owner_uid())
+
+    # 1. REST call with compound blood-pressure string, unit-suffixed strings, casing alias, and reported_symptoms={}
+    r1 = client.post(
+        f"/api/profiles/{pid}/vitals",
+        json={
+            "vitals": {
+                "blood-pressure": "128/82 mmHg",
+                "heart-rate": "72 bpm",
+                "spO2": "98%",
+            },
+            "reported_symptoms": {},
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r1.status_code == 201, r1.text
+
+    # 2. REST call with hyphenated systolic/diastolic aliases & rejected empty vitals
+    r2 = client.post(
+        f"/api/profiles/{pid}/vitals",
+        json={
+            "vitals": {
+                "systolic-blood-pressure": 124,
+                "diastolic-blood-pressure": 78,
+            },
+            "reported_symptoms": None,
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r2.status_code == 201, r2.text
+
+    r_empty = client.post(
+        f"/api/profiles/{pid}/vitals",
+        json={"vitals": {}, "reported_symptoms": {}},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r_empty.status_code == 400
+    assert "At least one vital measurement must be provided" in r_empty.json()["detail"]
+
+    r_partial_bp = client.post(
+        f"/api/profiles/{pid}/vitals",
+        json={"vitals": {"systolic-blood-pressure": 130}},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r_partial_bp.status_code == 400
+    assert "together" in r_partial_bp.json()["detail"]
+
+    r_inverted_bp = client.post(
+        f"/api/profiles/{pid}/vitals",
+        json={"vitals": {"blood-pressure": "78/122 mmHg"}},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r_inverted_bp.status_code == 400
+    assert "strictly greater" in r_inverted_bp.json()["detail"]
+
+    # 3. Direct MCP execute_vitals_create with LLM-style aliased arguments
+    async def _run_mcp() -> dict:
+        ctx = ToolContext(
+            user_id=uid,
+            profile_id=pid,
+            principal="agent",
+            run_id="run-vitals-norm",
+        )
+        return await execute_vitals_create(
+            {
+                "vitals": {
+                    "blood-pressure": "132/84 mmHg",
+                    "heart-rate": "76 bpm",
+                    "spO2": "97%",
+                },
+                "reported_symptoms": {},
+                "source_type": "manual",
+            },
+            ctx,
+        )
+
+    mcp_res = run_async(_run_mcp())
+    assert mcp_res["profile_id"] == pid
+    assert mcp_res["status"] == "active"
+
+    # Verify DB persisted BP, HR, SpO2 observations for each multi-metric request
+    listed = client.get(
+        f"/api/profiles/{pid}/vitals?limit=50",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert listed.status_code == 200
+    assert listed.json()["total"] >= 7  # 3 from r1 + 1 from r2 + 3 from mcp_res
+
+

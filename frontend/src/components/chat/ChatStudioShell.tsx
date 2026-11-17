@@ -737,6 +737,11 @@ export function ChatStudioShell({
                     msg.id === assistantMsgId ? applyOrchestrationEvent(msg, eventType, data) : msg
                   )
                 );
+              } else if (eventType === 'entity_changed') {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('carefold:entity_changed', { detail: data }));
+                  window.dispatchEvent(new CustomEvent('carefold:entity-changed', { detail: data }));
+                }
               } else if (eventType === 'approval_required') {
                 const approvalRecord: ApprovalRecord = {
                   id: data.approval_id || data.id,

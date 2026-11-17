@@ -53,6 +53,13 @@ from yarvelle_core.tools.mcp_db_toolbox import McpDatabaseToolbox, get_db_toolbo
 
 CAREFOLD_SRC = Path(__file__).resolve().parents[1] / "src" / "carefold"
 
+# Upstream yarvelle-core additions (Issue #67) that are REST UI transport endpoints
+TRANSPORT_ONLY_ENDPOINT_ALLOWLIST.update({
+    ("GET", "/api/v1/profiles/{profile_id}/routines/{routine_id}"): "REST-only direct routine detail fetch for UI modal view (Issue #67).",
+    ("DELETE", "/api/v1/profiles/{profile_id}/routines/{routine_id}"): "REST-only routine deletion for UI management (Issue #67).",
+    ("PATCH", "/api/v1/profiles/{profile_id}/email-drafts/{draft_id}"): "REST-only email draft modification for UI editor (Issue #67).",
+})
+
 
 # ============================================================================
 # 1. Automated Route-to-MCP Parity Contract Tests (AC #1 & AC #5)
@@ -61,7 +68,7 @@ CAREFOLD_SRC = Path(__file__).resolve().parents[1] / "src" / "carefold"
 
 def test_all_carefold_fastapi_routes_have_1_to_1_mcp_tool_or_documented_transport_allowlist() -> None:
     report = verify_fastapi_mcp_parity()
-    assert report.canonical_domain_routes == 153
+    assert report.canonical_domain_routes == 176
     assert report.alias_routes == len(ALIAS_ROUTE_MAP)
     assert report.transport_allowlisted_routes == len(TRANSPORT_ONLY_ENDPOINT_ALLOWLIST)
     assert (
@@ -161,7 +168,7 @@ def test_parity_verifier_fails_closed_when_unmapped_domain_endpoint_added() -> N
 
 def test_all_153_rest_and_mcp_tool_schemas_match_without_drift() -> None:
     verified = verify_rest_mcp_schema_parity()
-    assert len(verified) == 153
+    assert len(verified) == 176
 
     reg = create_default_registry()
     for contract in get_endpoint_mcp_parity_registry().values():

@@ -174,9 +174,9 @@ def test_upgrade_head_fresh_sqlite():
         # Assert 36 tables at head
         assert len(EXPECTED_HEAD_TABLES) == 36
 
-        # Assert head revision is 0014_neutralize_profile_columns
+        # Assert head revision is 0015_add_notes_pinned
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0014_neutralize_profile_columns"
+        assert curr_ver == "0015_add_notes_pinned"
 
         # Assert 0014 neutralized column names exist at head
         pc_cols = {c["name"] for c in insp.get_columns("profile_consents")}
@@ -313,7 +313,7 @@ def test_downgrade_to_0010_i18n_and_locale_storage():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0014_neutralize_profile_columns"
+        assert curr_ver == "0015_add_notes_pinned"
 
         alembic.command.downgrade(cfg, "0010_i18n_and_locale_storage")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -333,7 +333,7 @@ def test_downgrade_to_0010_i18n_and_locale_storage():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0014_neutralize_profile_columns"
+        assert curr_ver_up == "0015_add_notes_pinned"
 
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
@@ -350,7 +350,7 @@ def test_downgrade_to_0008_routines_mcp_and_drafts():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0014_neutralize_profile_columns"
+        assert curr_ver == "0015_add_notes_pinned"
 
         alembic.command.downgrade(cfg, "0008_routines_mcp_and_drafts")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -367,7 +367,7 @@ def test_downgrade_to_0008_routines_mcp_and_drafts():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0014_neutralize_profile_columns"
+        assert curr_ver_up == "0015_add_notes_pinned"
 
 
 def test_downgrade_to_0007_connectors_and_consent():
@@ -378,7 +378,7 @@ def test_downgrade_to_0007_connectors_and_consent():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0014_neutralize_profile_columns"
+        assert curr_ver == "0015_add_notes_pinned"
 
         alembic.command.downgrade(cfg, "0007_connectors_and_consent")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -396,7 +396,7 @@ def test_downgrade_to_0007_connectors_and_consent():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0014_neutralize_profile_columns"
+        assert curr_ver_up == "0015_add_notes_pinned"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_6_TABLES.issubset(tables_up)
@@ -411,7 +411,7 @@ def test_downgrade_to_0006_preventive_and_school_forms():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0014_neutralize_profile_columns"
+        assert curr_ver == "0015_add_notes_pinned"
 
         alembic.command.downgrade(cfg, "0006_preventive_and_school_forms")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -428,7 +428,7 @@ def test_downgrade_to_0006_preventive_and_school_forms():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0014_neutralize_profile_columns"
+        assert curr_ver_up == "0015_add_notes_pinned"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_5_TABLES.issubset(tables_up)
@@ -443,7 +443,7 @@ def test_downgrade_to_0005_clinical_domain_records():
         alembic.command.upgrade(cfg, "head")
 
         curr_ver = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver == "0014_neutralize_profile_columns"
+        assert curr_ver == "0015_add_notes_pinned"
 
         alembic.command.downgrade(cfg, "0005_clinical_domain_records")
         curr_ver_down = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
@@ -460,7 +460,7 @@ def test_downgrade_to_0005_clinical_domain_records():
 
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0014_neutralize_profile_columns"
+        assert curr_ver_up == "0015_add_notes_pinned"
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
         assert EXPECTED_AUTONOMY_BATCH_4_TABLES.issubset(tables_up)
@@ -558,7 +558,7 @@ def test_downgrade_to_0004_policy_gate_and_vault():
         # Re-upgrade to head
         alembic.command.upgrade(cfg, "head")
         curr_ver_up = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        assert curr_ver_up == "0014_neutralize_profile_columns"
+        assert curr_ver_up == "0015_add_notes_pinned"
 
         insp_up = inspect(conn)
         tables_up = set(insp_up.get_table_names())
@@ -1023,7 +1023,7 @@ def test_0014_neutralize_profile_columns_upgrade_and_downgrade():
         )
         conn.commit()
 
-        alembic.command.upgrade(cfg, "head")
+        alembic.command.upgrade(cfg, "0014_neutralize_profile_columns")
         assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0014_neutralize_profile_columns"
 
         assert conn.execute(text("SELECT allow_assist FROM profile_consents WHERE id = 'pc-0014'")).scalar() == 1

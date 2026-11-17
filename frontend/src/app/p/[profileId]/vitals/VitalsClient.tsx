@@ -29,6 +29,8 @@ import {
   DiurnalTrendTable,
   BloodPressureTrendChart,
   LogVitalsModal,
+  MetricTrendChart,
+  VitalsHistoryTable,
 } from '@/components/vitals';
 import {
   fetchVitalsObservations,
@@ -100,6 +102,23 @@ export function VitalsClient({ profileId }: VitalsClientProps) {
 
   useEffect(() => {
     loadData();
+  }, [loadData]);
+
+  // Live SSE auto-refresh on entity change
+  useEffect(() => {
+    const handleEntityChanged = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const entity = customEvent.detail?.entity || customEvent.detail?.type;
+      if (!entity || entity === 'vital' || entity === 'vitals' || entity === 'observation') {
+        loadData();
+      }
+    };
+    window.addEventListener('carefold:entity_changed', handleEntityChanged);
+    window.addEventListener('carefold:entity-changed', handleEntityChanged);
+    return () => {
+      window.removeEventListener('carefold:entity_changed', handleEntityChanged);
+      window.removeEventListener('carefold:entity-changed', handleEntityChanged);
+    };
   }, [loadData]);
 
   const handleRefresh = () => {
@@ -222,6 +241,17 @@ export function VitalsClient({ profileId }: VitalsClientProps) {
 
           {/* Diurnal Trend Table */}
           <DiurnalTrendTable trends={trends} />
+
+          {/* Non-BP Multi-Metric Trend Visualizations */}
+          <MetricTrendChart observations={observations} />
+
+          {/* Readings History Table with Filters, Edit & Delete */}
+          <VitalsHistoryTable
+            observations={observations}
+            profileId={profileId}
+            onRefresh={loadData}
+            hideWeight={hideWeight}
+          />
         </>
       )}
 

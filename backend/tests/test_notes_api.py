@@ -325,3 +325,211 @@ async def test_get_note_detail_dot_slugs_raise_400():
         assert "Invalid note slug" in exc_info.value.detail
 
 
+ALL_NOTE_CATEGORIES = [
+    "visit_prep",
+    "medication_notes",
+    "insurance_call",
+    "symptom_log",
+    "after_visit",
+    "scratchpad",
+    "general",
+    "visit",
+    "symptom",
+    "question",
+    "school",
+]
+
+
+@pytest.mark.parametrize("category", ALL_NOTE_CATEGORIES)
+def test_notes_creation_all_categories_201(client: TestClient, test_profile_id: str, category: str):
+    """Verifies notes creation across all 11 categories succeeds with 201 for both /api/notes and /api/profiles/{id}/notes."""
+    # 1. Test POST /api/notes (workspace notes endpoint)
+    slug1 = f"note-ws-{category}"
+    res1 = client.post(
+        "/api/notes",
+        json={
+            "slug": slug1,
+            "title": f"Workspace Note {category}",
+            "content": f"# Header\nContent for {category}",
+            "type": category,
+            "profile_id": test_profile_id,
+        },
+    )
+    assert res1.status_code == 201, f"Failed creating /api/notes with category {category}: {res1.text}"
+    data1 = res1.json()
+    assert data1["type"] == category
+    assert data1["agent"] == category
+    assert data1["profile_id"] == test_profile_id
+
+    # Verify retrieval
+    get_res1 = client.get(f"/api/notes/{slug1}")
+    assert get_res1.status_code == 200
+    assert get_res1.json()["type"] == category
+
+    # 2. Test POST /api/profiles/{profile_id}/notes (profile typed notes endpoint)
+    slug2 = f"note-prof-{category}"
+    res2 = client.post(
+        f"/api/profiles/{test_profile_id}/notes",
+        json={
+            "slug": slug2,
+            "title": f"Profile Note {category}",
+            "content": f"Detailed content for {category}",
+            "type": category,
+        },
+    )
+    assert res2.status_code == 201, f"Failed creating /api/profiles/{{id}}/notes with category {category}: {res2.text}"
+    data2 = res2.json()
+    assert data2["type"] == category
+    assert data2["profile_id"] == test_profile_id
+
+    # Verify retrieval
+    get_res2 = client.get(f"/api/profiles/{test_profile_id}/notes/{slug2}")
+    assert get_res2.status_code == 200
+    assert get_res2.json()["type"] == category
+
+
+def test_notes_filtering_by_category_and_family_aliases(client: TestClient, test_profile_id: str):
+    """Verifies filtering by category and bidirectional alias families (visit <-> visit_prep, symptom <-> symptom_log)."""
+    # Create notes in profile
+    notes_data = [
+        ("filter-vp", "Visit Prep Agenda", "visit_prep"),
+        ("filter-v", "Visit Clinical Exam", "visit"),
+        ("filter-sl", "Symptom Tracking Log", "symptom_log"),
+        ("filter-s", "Symptom Flare", "symptom"),
+        ("filter-med", "Medication List Review", "medication_notes"),
+        ("filter-ins", "Insurance Denial Call", "insurance_call"),
+    ]
+    for slug, title, ntype in notes_data:
+        res = client.post(
+            f"/api/profiles/{test_profile_id}/notes",
+            json={"slug": slug, "title": title, "content": f"Content for {title}", "type": ntype},
+        )
+        assert res.status_code == 201
+
+    # 1. Filter by visit_prep -> returns both visit_prep and visit
+    res_vp = client.get(f"/api/profiles/{test_profile_id}/notes?type=visit_prep")
+    assert res_vp.status_code == 200
+    vp_slugs = {n["slug"] for n in res_vp.json()["notes"]}
+    assert "filter-vp" in vp_slugs
+    assert "filter-v" in vp_slugs
+    assert "filter-sl" not in vp_slugs
+
+    # 2. Filter by visit -> returns both visit and visit_prep
+    res_v = client.get(f"/api/profiles/{test_profile_id}/notes?type=visit")
+    assert res_v.status_code == 200
+    v_slugs = {n["slug"] for n in res_v.json()["notes"]}
+    assert "filter-vp" in v_slugs
+    assert "filter-v" in v_slugs
+
+    # 3. Filter by symptom_log -> returns both symptom_log and symptom
+    res_sl = client.get(f"/api/profiles/{test_profile_id}/notes?type=symptom_log")
+    assert res_sl.status_code == 200
+    sl_slugs = {n["slug"] for n in res_sl.json()["notes"]}
+    assert "filter-sl" in sl_slugs
+    assert "filter-s" in sl_slugs
+    assert "filter-vp" not in sl_slugs
+
+    # 4. Filter by symptom -> returns both symptom and symptom_log
+    res_s = client.get(f"/api/profiles/{test_profile_id}/notes?type=symptom")
+    assert res_s.status_code == 200
+    s_slugs = {n["slug"] for n in res_s.json()["notes"]}
+    assert "filter-sl" in s_slugs
+    assert "filter-s" in s_slugs
+
+    # 5. Filter by medication_notes on /api/profiles/{id}/notes
+    res_med = client.get(f"/api/profiles/{test_profile_id}/notes?type=medication_notes")
+    assert res_med.status_code == 200
+    med_slugs = {n["slug"] for n in res_med.json()["notes"]}
+    assert "filter-med" in med_slugs
+    assert "filter-ins" not in med_slugs
+
+    # 6. Filter by insurance_call on /api/profiles/{id}/notes
+    res_ins = client.get(f"/api/profiles/{test_profile_id}/notes?type=insurance_call")
+    assert res_ins.status_code == 200
+    ins_slugs = {n["slug"] for n in res_ins.json()["notes"]}
+    assert "filter-ins" in ins_slugs
+    assert "filter-med" not in ins_slugs
+
+
+def test_notes_update_and_patch_lifecycle(client: TestClient, test_profile_id: str):
+    """Verifies updating and patching notes with new note categories, legacy aliases, and deletion."""
+    # Create initial note
+    slug = "lifecycle-note"
+    res = client.post(
+        f"/api/profiles/{test_profile_id}/notes",
+        json={"slug": slug, "title": "Lifecycle Note", "content": "Initial content", "type": "visit_prep"},
+    )
+    assert res.status_code == 201
+
+    # 1. Update via PUT /api/notes/{slug} with medication_notes
+    put_res = client.put(
+        f"/api/notes/{slug}",
+        json={"title": "Updated Lifecycle Note", "content": "New content", "type": "medication_notes"},
+    )
+    assert put_res.status_code == 200
+    assert put_res.json()["type"] == "medication_notes"
+
+    # 2. Update via PUT with legacy alias clinical_prep -> maps to question
+    put_legacy = client.put(
+        f"/api/notes/{slug}",
+        json={"type": "clinical_prep"},
+    )
+    assert put_legacy.status_code == 200
+    assert put_legacy.json()["type"] == "question"
+
+    # 3. Patch via PATCH /api/profiles/{profile_id}/notes/{slug} with insurance_call
+    patch_res = client.patch(
+        f"/api/profiles/{test_profile_id}/notes/{slug}",
+        json={"type": "insurance_call", "content": "Insurance details"},
+    )
+    assert patch_res.status_code == 200
+    assert patch_res.json()["type"] == "insurance_call"
+
+    # 4. Delete via DELETE /api/profiles/{profile_id}/notes/{slug}
+    del_res = client.delete(f"/api/profiles/{test_profile_id}/notes/{slug}")
+    assert del_res.status_code == 200
+    assert del_res.json()["deleted"] is True
+
+    # 5. Subsequent GET returns 404
+    get_res = client.get(f"/api/profiles/{test_profile_id}/notes/{slug}")
+    assert get_res.status_code == 404
+
+
+def test_notes_profile_scoping_rules_preserved(client: TestClient, test_profile_id: str):
+    """Verifies that profile isolation and scoping rules are preserved across new note categories."""
+    # Create second profile
+    resp2 = client.post("/api/profiles", json={"name": "Second Profile", "relationship": "child"})
+    assert resp2.status_code == 201
+    profile_b_id = resp2.json()["id"]
+
+    # Create note in Profile A
+    slug = "profile-a-secret-note"
+    create_res = client.post(
+        f"/api/profiles/{test_profile_id}/notes",
+        json={"slug": slug, "title": "Profile A Note", "content": "Strictly confidential", "type": "visit_prep"},
+    )
+    assert create_res.status_code == 201
+
+    # Profile B cannot get Profile A's note
+    get_res = client.get(f"/api/profiles/{profile_b_id}/notes/{slug}")
+    assert get_res.status_code == 404
+
+    # Profile B cannot patch Profile A's note
+    patch_res = client.patch(
+        f"/api/profiles/{profile_b_id}/notes/{slug}",
+        json={"title": "Hacked Title", "type": "medication_notes"},
+    )
+    assert patch_res.status_code == 404
+
+    # Profile B cannot delete Profile A's note
+    del_res = client.delete(f"/api/profiles/{profile_b_id}/notes/{slug}")
+    assert del_res.status_code == 404
+
+    # Listing notes for Profile B does not leak Profile A's note
+    list_res = client.get(f"/api/profiles/{profile_b_id}/notes")
+    assert list_res.status_code == 200
+    b_slugs = [n["slug"] for n in list_res.json()["notes"]]
+    assert slug not in b_slugs
+
+
+

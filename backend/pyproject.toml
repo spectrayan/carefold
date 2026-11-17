@@ -9,7 +9,7 @@ description = "Carefold local-first AI and agentic runtime backend"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "yarvelle-core>=0.2.5,<0.3.0",
+    "yarvelle-core>=0.2.6,<0.3.0",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
     "pydantic>=2.8.0",
@@ -91,7 +91,7 @@ include = [
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-addopts = "-ra -q --asyncio-mode=auto -n auto --disable-warnings"
+addopts = "-ra -q --asyncio-mode=auto -n auto --dist worksteal --disable-warnings"
 testpaths = ["tests"]
 pythonpath = [
     "src",

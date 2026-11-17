@@ -37,7 +37,7 @@ from typing import (
 )
 
 from fastapi.routing import APIRoute
-from pydantic import BaseModel, ConfigDict, Field, create_model
+from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
 from yarvelle_core.schemas.tool_spec import (
@@ -226,6 +226,9 @@ CANONICAL_DOMAIN_ROUTE_SPECS: Tuple[CanonicalRouteSpec, ...] = (
     CanonicalRouteSpec("POST", "/api/v1/profiles/{profile_id}/vitals", "vitals_create", "vitals", "write_local"),
     CanonicalRouteSpec("GET", "/api/v1/profiles/{profile_id}/vitals", "vitals_list", "vitals", "read"),
     CanonicalRouteSpec("GET", "/api/v1/profiles/{profile_id}/vitals/trends", "vitals_get_trends", "vitals", "read"),
+    CanonicalRouteSpec("GET", "/api/v1/profiles/{profile_id}/vitals/{vital_id}", "vitals_get", "vitals", "read"),
+    CanonicalRouteSpec("PATCH", "/api/v1/profiles/{profile_id}/vitals/{vital_id}", "vitals_update", "vitals", "write_local"),
+    CanonicalRouteSpec("DELETE", "/api/v1/profiles/{profile_id}/vitals/{vital_id}", "vitals_delete", "vitals", "write_local"),
     # --- Appointments ---
     CanonicalRouteSpec("POST", "/api/v1/profiles/{profile_id}/appointments", "appointments_create", "appointments", "write_local"),
     CanonicalRouteSpec("GET", "/api/v1/profiles/{profile_id}/appointments", "appointments_list", "appointments", "read"),
@@ -439,6 +442,14 @@ CANONICAL_DOMAIN_ROUTE_SPECS: Tuple[CanonicalRouteSpec, ...] = (
         },
     ),
     CanonicalRouteSpec(
+        "DELETE",
+        "/api/v1/fhir/r4/{resource_type}/{id}",
+        "fhir_delete_resource",
+        "fhir",
+        "write_local",
+        fhir_toolbox_tool="fhir_delete_resource",
+    ),
+    CanonicalRouteSpec(
         "GET",
         "/api/v1/fhir/r4/{resource_type}/{id}/_history",
         "fhir_get_resource_history",
@@ -489,6 +500,29 @@ CANONICAL_DOMAIN_ROUTE_SPECS: Tuple[CanonicalRouteSpec, ...] = (
         "read",
         fhir_toolbox_tool="fhir_download_bulk_export_file",
     ),
+    # --- Insurance Coverage, Claims, Appeals, and Prior-Authorizations (Issue #359) ---
+    CanonicalRouteSpec("POST", "/api/v1/profiles/{profile_id}/coverage", "coverage_create", "insurance", "write_local"),
+    CanonicalRouteSpec("GET", "/api/v1/profiles/{profile_id}/coverage", "coverage_list", "insurance", "read"),
+    CanonicalRouteSpec("GET", "/api/v1/profiles/{profile_id}/coverage/{plan_id}", "coverage_get", "insurance", "read"),
+    CanonicalRouteSpec("DELETE", "/api/v1/profiles/{profile_id}/coverage/{plan_id}", "coverage_delete", "insurance", "write_local"),
+
+    CanonicalRouteSpec("POST", "/api/v1/profiles/{profile_id}/claims", "claims_create", "insurance", "write_local"),
+    CanonicalRouteSpec("GET", "/api/v1/profiles/{profile_id}/claims", "claims_list", "insurance", "read"),
+    CanonicalRouteSpec("GET", "/api/v1/profiles/{profile_id}/claims/{claim_id}", "claims_get", "insurance", "read"),
+    CanonicalRouteSpec("PATCH", "/api/v1/profiles/{profile_id}/claims/{claim_id}", "claims_update", "insurance", "write_local"),
+    CanonicalRouteSpec("DELETE", "/api/v1/profiles/{profile_id}/claims/{claim_id}", "claims_delete", "insurance", "write_local"),
+
+    CanonicalRouteSpec("POST", "/api/v1/profiles/{profile_id}/appeals", "appeals_create", "insurance", "write_local"),
+    CanonicalRouteSpec("GET", "/api/v1/profiles/{profile_id}/appeals", "appeals_list", "insurance", "read"),
+    CanonicalRouteSpec("GET", "/api/v1/profiles/{profile_id}/appeals/{appeal_id}", "appeals_get", "insurance", "read"),
+    CanonicalRouteSpec("PATCH", "/api/v1/profiles/{profile_id}/appeals/{appeal_id}", "appeals_update", "insurance", "write_local"),
+    CanonicalRouteSpec("DELETE", "/api/v1/profiles/{profile_id}/appeals/{appeal_id}", "appeals_delete", "insurance", "write_local"),
+
+    CanonicalRouteSpec("POST", "/api/v1/profiles/{profile_id}/prior-auths", "prior_auth_create", "insurance", "write_local"),
+    CanonicalRouteSpec("GET", "/api/v1/profiles/{profile_id}/prior-auths", "prior_auth_list", "insurance", "read"),
+    CanonicalRouteSpec("GET", "/api/v1/profiles/{profile_id}/prior-auths/{prior_auth_id}", "prior_auth_get", "insurance", "read"),
+    CanonicalRouteSpec("PATCH", "/api/v1/profiles/{profile_id}/prior-auths/{prior_auth_id}", "prior_auth_update", "insurance", "write_local"),
+    CanonicalRouteSpec("DELETE", "/api/v1/profiles/{profile_id}/prior-auths/{prior_auth_id}", "prior_auth_delete", "insurance", "write_local"),
 )
 
 
@@ -529,6 +563,18 @@ def _safe_model_field_key(name: str) -> Tuple[str, Optional[str]]:
     if name.startswith("_"):
         return f"fhir{name}", name
     return name, None
+
+
+def _make_body_before_validator(fns: Tuple[Any, ...]) -> Any:
+    """Wraps body_model `mode="before"` validators onto a dynamically created InputContract."""
+
+    def _apply_body_before(_cls: Any, raw_val: Any) -> Any:
+        cur = raw_val
+        for fn in fns:
+            cur = fn(cur)
+        return cur
+
+    return model_validator(mode="before")(classmethod(_apply_body_before))
 
 
 def _build_contract_for_spec(
@@ -604,9 +650,21 @@ def _build_contract_for_spec(
         field_defs[extra_name] = extra_pair
 
     model_cls_name = "".join(part.capitalize() for part in spec.tool_name.split("_")) + "InputContract"
+    validators_map: Optional[Dict[str, Any]] = None
+    if body_model is not None:
+        decs = getattr(body_model, "__pydantic_decorators__", None)
+        before_fns = tuple(
+            dec.func
+            for dec in (getattr(decs, "model_validators", {}) or {}).values()
+            if getattr(getattr(dec, "info", None), "mode", None) == "before"
+        )
+        if before_fns:
+            validators_map = {"_apply_body_before": _make_body_before_validator(before_fns)}
+
     input_model = create_model(
         model_cls_name,
         __config__=ConfigDict(extra="forbid", populate_by_name=True),
+        __validators__=validators_map,
         **field_defs,
     )
     input_schema = build_mcp_input_schema(input_model)

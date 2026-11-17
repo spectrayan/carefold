@@ -327,6 +327,8 @@ export interface WorkspaceNoteSummary {
   id?: string;
   slug: string;
   title: string;
+  type?: string;
+  tags?: string[];
   agent?: string | null;
   profile_id?: string | null;
   created_at: string;

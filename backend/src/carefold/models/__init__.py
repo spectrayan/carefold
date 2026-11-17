@@ -12,27 +12,35 @@
 """Carefold health pack database models re-export."""
 
 from carefold.models.health import (
+    Appeal,
     Appointment,
+    Claim,
     CompanionDevice,
+    CoveragePlan,
     HealthResource,
     HealthResourceCoding,
     HealthResourceReference,
     HealthResourceVersion,
     ImportBatch,
     PreventiveRecord,
+    PriorAuthorization,
     SchoolForm,
     SchoolIcsFeed,
 )
 
 __all__ = [
+    "Appeal",
     "Appointment",
+    "Claim",
     "CompanionDevice",
+    "CoveragePlan",
     "HealthResource",
     "HealthResourceCoding",
     "HealthResourceReference",
     "HealthResourceVersion",
     "ImportBatch",
     "PreventiveRecord",
+    "PriorAuthorization",
     "SchoolForm",
     "SchoolIcsFeed",
 ]

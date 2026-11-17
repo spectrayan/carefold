@@ -21,4 +21,11 @@ skills:
   - habit-checkin
 tools:
   - workspace-note
+  - vitals_create
+  - vitals_list
+  - vitals_get_trends
+  - reminders_create
+  - reminders_list
+  - reminders_update
+  - reminders_delete
 persona: persona.md

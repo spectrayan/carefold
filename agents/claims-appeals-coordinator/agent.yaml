@@ -23,5 +23,17 @@ tools:
   - attach-read
   - skill-docs
   - workspace-note
+  - coverage_list
+  - coverage_get
+  - claims_create
+  - claims_list
+  - claims_get
+  - claims_update
+  - claims_delete
+  - appeals_create
+  - appeals_list
+  - appeals_get
+  - appeals_update
+  - appeals_delete
 persona: persona.md
 max_iterations: 3

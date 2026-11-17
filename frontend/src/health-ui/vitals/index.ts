@@ -15,3 +15,5 @@ export * from './VitalsSummaryCards';
 export * from './DiurnalTrendTable';
 export * from './BloodPressureTrendChart';
 export * from './LogVitalsModal';
+export * from './MetricTrendChart';
+export * from './VitalsHistoryTable';

@@ -1060,6 +1060,70 @@
       }
     },
     "/api/v1/fhir/r4/{resource_type}/{id}": {
+      "delete": {
+        "operationId": "fhir_r4_delete_resource",
+        "parameters": [
+          {
+            "description": "FHIR R4 resource type",
+            "in": "path",
+            "name": "resource_type",
+            "required": true,
+            "schema": {
+              "description": "FHIR R4 resource type",
+              "title": "Resource Type",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Logical FHIR resource ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Logical FHIR resource ID",
+              "title": "Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional active profile ID",
+            "in": "query",
+            "name": "profile_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional active profile ID",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete FHIR R4 Resource by ID",
+        "tags": [
+          "FHIR R4"
+        ]
+      },
       "get": {
         "operationId": "fhir_r4_read_resource",
         "parameters": [
@@ -1415,6 +1479,21 @@
       "mcp_resource_uri_template": null,
       "mcp_tool_name": "fhir_upsert_resource",
       "operation_id": "fhir_upsert_resource",
+      "requires_confirmation": true,
+      "rest_path": "/{resource_type}/{id}",
+      "risk_tier": "write_local"
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "http_method": "DELETE",
+      "mcp_resource_uri_template": "fhir://profiles/{profile_id}/{resource_type}/{id}",
+      "mcp_tool_name": "fhir_delete_resource",
+      "operation_id": "fhir_delete_resource",
       "requires_confirmation": true,
       "rest_path": "/{resource_type}/{id}",
       "risk_tier": "write_local"

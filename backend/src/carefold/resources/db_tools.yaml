@@ -196,6 +196,69 @@ tools:
         required: false
         default: 20
 
+  get_vital_reading:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: read
+    entity: health_resource
+    description: >-
+      Retrieve a specific vital sign observation by ID for the active profile.
+    statement: |
+      SELECT id, profile_id, resource_type, source_type, data, status, locale, effective_at, recorded_at
+      FROM health_resources
+      WHERE profile_id = :profile_id
+        AND id = :vital_id
+        AND LOWER(resource_type) = 'observation'
+      LIMIT 1;
+    parameters:
+      - name: vital_id
+        type: string
+        description: Unique identifier of the vital sign observation.
+        required: true
+
+  update_vital_reading:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: write_local
+    entity: health_resource
+    description: >-
+      Update an existing vital sign observation in the patient's health_resources table.
+    statement: |
+      UPDATE health_resources
+      SET data = :data,
+          updated_at = :now
+      WHERE profile_id = :profile_id
+        AND id = :vital_id
+        AND LOWER(resource_type) = 'observation'
+      RETURNING id, profile_id, resource_type, status, effective_at, updated_at;
+    parameters:
+      - name: vital_id
+        type: string
+        description: Unique identifier of the vital sign observation to update.
+        required: true
+      - name: data
+        type: object
+        description: Updated FHIR R4 observation resource dictionary.
+        required: true
+
+  delete_vital_reading:
+    kind: sqlite-sql
+    source: carefold-sqlite
+    risk_tier: write_local
+    entity: health_resource
+    description: >-
+      Delete an existing vital sign observation from the patient's health_resources table.
+    statement: |
+      DELETE FROM health_resources
+      WHERE profile_id = :profile_id
+        AND id = :vital_id
+        AND LOWER(resource_type) = 'observation';
+    parameters:
+      - name: vital_id
+        type: string
+        description: Unique identifier of the vital sign observation to delete.
+        required: true
+
   create_appointment_record:
     kind: sql
     source: carefold-sqlite
@@ -812,6 +875,9 @@ toolsets:
     - get_clinical_note
     - record_vital_reading
     - list_vital_readings
+    - get_vital_reading
+    - update_vital_reading
+    - delete_vital_reading
     - create_appointment_record
     - list_appointment_records
     - create_profile_reminder
@@ -829,6 +895,9 @@ toolsets:
     - get_clinical_note
     - record_vital_reading
     - list_vital_readings
+    - get_vital_reading
+    - update_vital_reading
+    - delete_vital_reading
     - create_appointment_record
     - list_appointment_records
     - create_profile_reminder
@@ -858,6 +927,9 @@ toolsets:
     - get_clinical_note
     - record_vital_reading
     - list_vital_readings
+    - get_vital_reading
+    - update_vital_reading
+    - delete_vital_reading
     - create_profile_reminder
     - list_profile_reminders
     - update_preventive_record
@@ -870,6 +942,9 @@ toolsets:
     - get_clinical_note
     - record_vital_reading
     - list_vital_readings
+    - get_vital_reading
+    - update_vital_reading
+    - delete_vital_reading
     - create_appointment_record
     - list_appointment_records
     - create_profile_reminder

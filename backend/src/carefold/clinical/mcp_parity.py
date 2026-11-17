@@ -84,6 +84,10 @@ TRANSPORT_ONLY_ENDPOINT_ALLOWLIST: Dict[Tuple[str, str], str] = {
         "GET",
         "/api/v1/profiles/{profile_id}/reminders/feed.ics",
     ): "External calendar client WebCal (text/calendar) subscription feed.",
+    (
+        "POST",
+        "/api/v1/reminders",
+    ): "Convenience endpoint for creating a clinical reminder with profile_id in the JSON body.",
 }
 
 # Explicit alias routes mapping hidden/trailing-slash/secondary-mount routes to their canonical (method, path).
@@ -137,6 +141,26 @@ ALIAS_ROUTE_MAP: Dict[Tuple[str, str], Tuple[str, str]] = {
     ("GET", "/api/v1/fhir/r4/Patient/{id}/$export"): (
         "POST",
         "/api/v1/fhir/r4/Patient/{id}/$export",
+    ),
+    ("POST", "/api/v1/profiles/{profile_id}/prior-authorizations"): (
+        "POST",
+        "/api/v1/profiles/{profile_id}/prior-auths",
+    ),
+    ("GET", "/api/v1/profiles/{profile_id}/prior-authorizations"): (
+        "GET",
+        "/api/v1/profiles/{profile_id}/prior-auths",
+    ),
+    ("GET", "/api/v1/profiles/{profile_id}/prior-authorizations/{prior_auth_id}"): (
+        "GET",
+        "/api/v1/profiles/{profile_id}/prior-auths/{prior_auth_id}",
+    ),
+    ("PATCH", "/api/v1/profiles/{profile_id}/prior-authorizations/{prior_auth_id}"): (
+        "PATCH",
+        "/api/v1/profiles/{profile_id}/prior-auths/{prior_auth_id}",
+    ),
+    ("DELETE", "/api/v1/profiles/{profile_id}/prior-authorizations/{prior_auth_id}"): (
+        "DELETE",
+        "/api/v1/profiles/{profile_id}/prior-auths/{prior_auth_id}",
     ),
 }
 

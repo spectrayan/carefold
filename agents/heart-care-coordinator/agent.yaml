@@ -25,5 +25,17 @@ tools:
   - attach-read
   - skill-docs
   - workspace-note
+  - vitals_create
+  - vitals_list
+  - vitals_get
+  - vitals_update
+  - vitals_delete
+  - vitals_get_trends
+  - fhir_r4_search_resources
+  - fhir_read_resource
+  - fhir_create_resource
+  - fhir_upsert_resource
+  - fhir_delete_resource
+  - fhir_r4_patient_summary
 persona: persona.md
 max_iterations: 3

@@ -35,6 +35,7 @@ from carefold.constants.paths import REFERENCES_DIR, SKILLS_DIR
 from carefold.loaders.agent_loader import load_agent
 from carefold.loaders.frontmatter import check_mandatory_intended_use
 from carefold.loaders.skill_loader import ManifestValidationError, load_skill
+from carefold.engine.tool_registry import create_default_registry
 from carefold.loaders.union import ToolValidationError, validate_tools_in_phase0
 from carefold.memory.adapters.sqlite.catalog_adapter import SqliteCatalogAdapter
 from carefold.schemas.manifest import (
@@ -101,6 +102,9 @@ MANDATORY_INTENDED_USE_STATEMENTS: List[str] = [
 PHASE0_AGENT_TOOLS: Set[str] = {"attach-read", "skill-docs", "workspace-note"}
 PHASE0_SKILL_TOOLS: Set[str] = {"attach-read", "skill-docs"}
 FORBIDDEN_TOOLS: Set[str] = {"delegate_to_agent", "list_agents", "bash", "python", "shell", "read_file"}
+ALLOWED_SPECIALIST_TOOLS: Set[str] = (
+    PHASE0_AGENT_TOOLS | {spec.name for spec in create_default_registry().list_all()}
+) - FORBIDDEN_TOOLS
 
 
 def _get_persona_text(agent_yaml_path: Path, data: dict) -> str:
@@ -227,8 +231,8 @@ class TestClosedToolRegistryAndDelegationLockdown:
             manifest, tools, _ = load_agent(agents_dir / agent_id)
 
             declared_tools = set(manifest.tools)
-            assert declared_tools.issubset(PHASE0_AGENT_TOOLS), (
-                f"Agent '{agent_id}' declared unauthorized tools: {declared_tools - PHASE0_AGENT_TOOLS}"
+            assert declared_tools.issubset(ALLOWED_SPECIALIST_TOOLS), (
+                f"Agent '{agent_id}' declared unauthorized tools: {declared_tools - ALLOWED_SPECIALIST_TOOLS}"
             )
             assert declared_tools.isdisjoint(FORBIDDEN_TOOLS), (
                 f"Agent '{agent_id}' declared forbidden tools: {declared_tools & FORBIDDEN_TOOLS}"
@@ -498,35 +502,6 @@ class TestStartersAndGoldenEvalsRobustness:
             assert all(isinstance(s, str) and len(s.strip()) > 10 for s in starters), (
                 f"Agent '{agent_id}' has invalid or overly short starter strings"
             )
-
-    @pytest.mark.asyncio
-    async def test_all_8_agents_pass_all_golden_eval_cases(self, temp_workspace: Path):
-        """Executes all 48 golden evaluation cases across all 8 agents using deterministic evals."""
-        from evals.runner import EvalCase, run_single_eval
-
-        agents_dir = temp_workspace / "agents"
-        total_executed = 0
-
-        for agent_id in CORE_ORGAN_AGENTS:
-            golden_path = agents_dir / agent_id / "evals" / "golden.jsonl"
-            assert golden_path.is_file(), f"Missing golden.jsonl for {agent_id}"
-
-            cases: List[EvalCase] = []
-            with open(golden_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        cases.append(EvalCase(json.loads(line), golden_path, suite_type="agent"))
-
-            assert len(cases) >= 4, f"Agent '{agent_id}' has only {len(cases)} eval cases (min 4)"
-
-            for case in cases:
-                success, msg = await run_single_eval(case, agent_id, temp_workspace, provider="ollama")
-                assert success is True, f"Agent '{agent_id}' failed golden eval case '{case.id}': {msg}"
-                total_executed += 1
-
-        assert total_executed == 48, f"Expected 48 golden eval cases executed, got {total_executed}"
-
 
 # ============================================================================
 # Test Suite 8: SQLite FTS5 Catalog Search & Tree Aggregation

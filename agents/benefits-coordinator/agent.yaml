@@ -23,4 +23,13 @@ tools:
   - attach-read
   - skill-docs
   - workspace-note
+  - coverage_create
+  - coverage_list
+  - coverage_get
+  - coverage_delete
+  - claims_list
+  - claims_get
+  - prior_auth_list
+  - prior_auth_get
+  - fhir_r4_search_resources
 persona: persona.md

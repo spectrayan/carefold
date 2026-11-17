@@ -28,6 +28,9 @@ LOINC_CODES: Dict[str, str] = {
     "oxygen_saturation": "2708-6",
     "body_weight": "29463-7",
     "body_height": "8302-2",
+    "temperature": "8310-5",
+    "body_temperature": "8310-5",
+    "respiratory_rate": "9279-1",
 }
 
 # Unit conversion constants
@@ -114,8 +117,9 @@ def normalize_fhir_vitals(
             ]
         }
         resource["component"] = components
-    elif "heart_rate" in raw_vitals or "hr" in raw_vitals:
-        val = float(raw_vitals.get("heart_rate") or raw_vitals["hr"])
+    elif any(k in raw_vitals and raw_vitals[k] is not None for k in ("heart_rate", "hr")):
+        raw_val = next((raw_vitals[k] for k in ("heart_rate", "hr") if k in raw_vitals and raw_vitals[k] is not None), None)
+        val = float(raw_val) if raw_val is not None else 0.0
         resource["code"] = {
             "coding": [
                 {
@@ -131,9 +135,10 @@ def normalize_fhir_vitals(
             "system": "http://unitsofmeasure.org",
             "code": "/min",
         }
-    elif "blood_glucose" in raw_vitals or "glucose" in raw_vitals:
-        val = float(raw_vitals.get("blood_glucose") or raw_vitals["glucose"])
-        unit = str(raw_vitals.get("unit", "mg/dL")).strip()
+    elif any(k in raw_vitals and raw_vitals[k] is not None for k in ("blood_glucose", "glucose")):
+        raw_val = next((raw_vitals[k] for k in ("blood_glucose", "glucose") if k in raw_vitals and raw_vitals[k] is not None), None)
+        val = float(raw_val) if raw_val is not None else 0.0
+        unit = str(raw_vitals.get("glucose_unit") or raw_vitals.get("unit") or "mg/dL").strip()
         val_mgdl = val * MMOL_TO_MGDL if unit in ("mmol/L", "mmol") else val
         resource["code"] = {
             "coding": [
@@ -150,8 +155,9 @@ def normalize_fhir_vitals(
             "system": "http://unitsofmeasure.org",
             "code": "mg/dL",
         }
-    elif "spo2" in raw_vitals or "oxygen_saturation" in raw_vitals:
-        val = float(raw_vitals.get("spo2") or raw_vitals["oxygen_saturation"])
+    elif any(k in raw_vitals and raw_vitals[k] is not None for k in ("spo2", "oxygen_saturation")):
+        raw_val = next((raw_vitals[k] for k in ("spo2", "oxygen_saturation") if k in raw_vitals and raw_vitals[k] is not None), None)
+        val = float(raw_val) if raw_val is not None else 0.0
         resource["code"] = {
             "coding": [
                 {
@@ -167,9 +173,10 @@ def normalize_fhir_vitals(
             "system": "http://unitsofmeasure.org",
             "code": "%",
         }
-    elif "weight" in raw_vitals or "body_weight" in raw_vitals:
-        val = float(raw_vitals.get("weight") or raw_vitals["body_weight"])
-        unit = str(raw_vitals.get("unit", "kg")).strip().lower()
+    elif any(k in raw_vitals and raw_vitals[k] is not None for k in ("weight", "body_weight")):
+        raw_val = next((raw_vitals[k] for k in ("weight", "body_weight") if k in raw_vitals and raw_vitals[k] is not None), None)
+        val = float(raw_val) if raw_val is not None else 0.0
+        unit = str(raw_vitals.get("weight_unit") or raw_vitals.get("unit") or "kg").strip().lower()
         val_kg = val / LBS_TO_KG if unit in ("lbs", "lb", "pound", "pounds") else val
         resource["code"] = {
             "coding": [
@@ -186,9 +193,10 @@ def normalize_fhir_vitals(
             "system": "http://unitsofmeasure.org",
             "code": "kg",
         }
-    elif "height" in raw_vitals or "body_height" in raw_vitals:
-        val = float(raw_vitals.get("height") or raw_vitals["body_height"])
-        unit = str(raw_vitals.get("unit", "cm")).strip().lower()
+    elif any(k in raw_vitals and raw_vitals[k] is not None for k in ("height", "body_height")):
+        raw_val = next((raw_vitals[k] for k in ("height", "body_height") if k in raw_vitals and raw_vitals[k] is not None), None)
+        val = float(raw_val) if raw_val is not None else 0.0
+        unit = str(raw_vitals.get("height_unit") or raw_vitals.get("unit") or "cm").strip().lower()
         val_cm = val * INCHES_TO_CM if unit in ("in", "inches", "inch") else val
         resource["code"] = {
             "coding": [
@@ -205,6 +213,52 @@ def normalize_fhir_vitals(
             "system": "http://unitsofmeasure.org",
             "code": "cm",
         }
+    elif any(k in raw_vitals and raw_vitals[k] is not None for k in ("temperature", "body_temperature", "temp")):
+        raw_val = next((raw_vitals[k] for k in ("temperature", "body_temperature", "temp") if k in raw_vitals and raw_vitals[k] is not None), None)
+        val = float(raw_val) if raw_val is not None else 0.0
+        u = raw_vitals.get("temp_unit") or raw_vitals.get("unit")
+        if not u or u == "mg/dL":
+            u = "degF"
+        u_str = str(u).strip()
+        if u_str.lower() in ("c", "celsius", "degc", "°c", "cel"):
+            unit = "Cel"
+            unit_code = "Cel"
+        else:
+            unit = "degF"
+            unit_code = "[degF]"
+        resource["code"] = {
+            "coding": [
+                {
+                    "system": "http://loinc.org",
+                    "code": LOINC_CODES["temperature"],
+                    "display": "Body temperature",
+                }
+            ]
+        }
+        resource["valueQuantity"] = {
+            "value": round(val, 1),
+            "unit": unit,
+            "system": "http://unitsofmeasure.org",
+            "code": unit_code,
+        }
+    elif any(k in raw_vitals and raw_vitals[k] is not None for k in ("respiratory_rate", "resp_rate", "rr")):
+        raw_val = next((raw_vitals[k] for k in ("respiratory_rate", "resp_rate", "rr") if k in raw_vitals and raw_vitals[k] is not None), None)
+        val = float(raw_val) if raw_val is not None else 0.0
+        resource["code"] = {
+            "coding": [
+                {
+                    "system": "http://loinc.org",
+                    "code": LOINC_CODES["respiratory_rate"],
+                    "display": "Respiratory rate",
+                }
+            ]
+        }
+        resource["valueQuantity"] = {
+            "value": round(val, 1),
+            "unit": "breaths/min",
+            "system": "http://unitsofmeasure.org",
+            "code": "/min",
+        }
 
     return resource
 
@@ -217,50 +271,75 @@ def parse_all_vitals_observations(
     observations: List[Dict[str, Any]] = []
 
     # Blood pressure
-    if "systolic" in raw_vitals and "diastolic" in raw_vitals:
+    if raw_vitals.get("systolic") is not None and raw_vitals.get("diastolic") is not None:
         observations.append(normalize_fhir_vitals(
             {"systolic": raw_vitals["systolic"], "diastolic": raw_vitals["diastolic"]},
             effective_dt=effective_dt,
         ))
 
     # Heart rate
-    if "heart_rate" in raw_vitals or "hr" in raw_vitals:
+    hr_val = next((raw_vitals[k] for k in ("heart_rate", "hr") if k in raw_vitals and raw_vitals[k] is not None), None)
+    if hr_val is not None:
         observations.append(normalize_fhir_vitals(
-            {"heart_rate": raw_vitals.get("heart_rate") or raw_vitals["hr"]},
+            {"heart_rate": hr_val},
             effective_dt=effective_dt,
         ))
 
     # Blood glucose
-    if "blood_glucose" in raw_vitals or "glucose" in raw_vitals:
-        glucose_val = raw_vitals.get("blood_glucose") or raw_vitals["glucose"]
-        glucose_unit = raw_vitals.get("glucose_unit") or raw_vitals.get("unit", "mg/dL")
+    glucose_val = next((raw_vitals[k] for k in ("blood_glucose", "glucose") if k in raw_vitals and raw_vitals[k] is not None), None)
+    if glucose_val is not None:
+        glucose_unit = raw_vitals.get("glucose_unit") or raw_vitals.get("unit") or "mg/dL"
         observations.append(normalize_fhir_vitals(
             {"blood_glucose": glucose_val, "unit": glucose_unit},
             effective_dt=effective_dt,
         ))
 
     # Oxygen saturation
-    if "spo2" in raw_vitals or "oxygen_saturation" in raw_vitals:
+    spo2_val = next((raw_vitals[k] for k in ("spo2", "oxygen_saturation") if k in raw_vitals and raw_vitals[k] is not None), None)
+    if spo2_val is not None:
         observations.append(normalize_fhir_vitals(
-            {"spo2": raw_vitals.get("spo2") or raw_vitals["oxygen_saturation"]},
+            {"spo2": spo2_val},
             effective_dt=effective_dt,
         ))
 
     # Weight
-    if "weight" in raw_vitals or "body_weight" in raw_vitals:
-        wt_val = raw_vitals.get("weight") or raw_vitals["body_weight"]
-        wt_unit = raw_vitals.get("weight_unit") or raw_vitals.get("unit", "kg")
+    wt_val = next((raw_vitals[k] for k in ("weight", "body_weight") if k in raw_vitals and raw_vitals[k] is not None), None)
+    if wt_val is not None:
+        wt_unit = raw_vitals.get("weight_unit") or raw_vitals.get("unit") or "kg"
         observations.append(normalize_fhir_vitals(
             {"weight": wt_val, "unit": wt_unit},
             effective_dt=effective_dt,
         ))
 
     # Height
-    if "height" in raw_vitals or "body_height" in raw_vitals:
-        ht_val = raw_vitals.get("height") or raw_vitals["body_height"]
-        ht_unit = raw_vitals.get("height_unit") or raw_vitals.get("unit", "cm")
+    ht_val = next((raw_vitals[k] for k in ("height", "body_height") if k in raw_vitals and raw_vitals[k] is not None), None)
+    if ht_val is not None:
+        ht_unit = raw_vitals.get("height_unit") or raw_vitals.get("unit") or "cm"
         observations.append(normalize_fhir_vitals(
             {"height": ht_val, "unit": ht_unit},
+            effective_dt=effective_dt,
+        ))
+
+    # Temperature
+    temp_val = next((raw_vitals[k] for k in ("temperature", "body_temperature", "temp") if k in raw_vitals and raw_vitals[k] is not None), None)
+    if temp_val is not None:
+        temp_unit = raw_vitals.get("temp_unit")
+        if not temp_unit or temp_unit == "mg/dL":
+            raw_u = raw_vitals.get("unit")
+            if raw_u in ("degF", "F", "Cel", "C", "°F", "°C", "fahrenheit", "celsius"):
+                temp_unit = raw_u
+            else:
+                temp_unit = "degF"
+        observations.append(normalize_fhir_vitals(
+            {"temperature": temp_val, "unit": temp_unit, "temp_unit": temp_unit},
+            effective_dt=effective_dt,
+        ))
+
+    # Respiratory rate
+    resp_val = next((raw_vitals[k] for k in ("respiratory_rate", "resp_rate", "rr") if k in raw_vitals and raw_vitals[k] is not None), None)
+    if resp_val is not None:
+        observations.append(normalize_fhir_vitals(
+            {"respiratory_rate": resp_val},
             effective_dt=effective_dt,
         ))
 

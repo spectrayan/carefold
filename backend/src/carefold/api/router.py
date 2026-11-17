@@ -45,6 +45,7 @@ from carefold.api.reminders import router as reminders_router
 from carefold.api.routines import router as routines_router
 from carefold.api.search import router as search_router
 from carefold.api.skills import router as skills_router
+from carefold.routers.insurance import router as insurance_router
 from carefold.routers import get_health_router_contributions
 
 
@@ -95,6 +96,7 @@ def get_default_router_contributions() -> List[RouterContribution]:
         RouterContribution(models_router, pack_id="core"),
         RouterContribution(attachments_router, pack_id="core"),
         RouterContribution(notes_router, pack_id="core"),
+        RouterContribution(insurance_router, pack_id="core"),
         health_by_router_id[id(prep_pack_router)],
         RouterContribution(profiles_router, prefix="/profiles", tags=["profiles"], pack_id="core"),
         RouterContribution(search_router, pack_id="core"),

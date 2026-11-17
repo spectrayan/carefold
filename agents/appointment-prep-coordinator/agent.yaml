@@ -23,4 +23,23 @@ tools:
   - attach-read
   - skill-docs
   - workspace-note
+  - appointments_create
+  - appointments_list
+  - appointments_get
+  - appointments_update
+  - appointments_delete
+  - reminders_create
+  - reminders_list
+  - reminders_update
+  - reminders_delete
+  - preventive_get_checklist
+  - preventive_update_rule_status
+  - school_forms_list
+  - school_forms_create
+  - school_forms_update
+  - school_forms_delete
+  - vitals_create
+  - vitals_list
+  - vitals_get_trends
+  - fhir_r4_patient_summary
 persona: persona.md

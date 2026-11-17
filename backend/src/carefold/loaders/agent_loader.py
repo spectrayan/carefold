@@ -17,7 +17,7 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 import yaml
 from pydantic import ValidationError
 
@@ -155,9 +155,23 @@ def find_agent_dir(agents_dir: Union[Path, str], agent_id: str) -> Optional[Path
     return None
 
 
+def _get_allowed_manifest_tools() -> set[str]:
+    """Returns Phase 0 closed tools plus all registered Carefold pack and DB tools."""
+    from carefold.engine.tool_registry import create_default_registry
+
+    allowed = set(PHASE_0_REGISTRY)
+    try:
+        allowed.update(spec.name for spec in create_default_registry().list_all())
+    except Exception:
+        pass
+    return allowed
+
+
 def load_agent(
     agent_dir: Union[Path, str],
     skills_dir: Optional[Union[Path, str]] = None,
+    *,
+    allowed_tools: Optional[Iterable[str]] = None,
 ) -> Tuple[AgentManifest, List[str], List[SkillManifest]]:
     """Loads and validates an agent directory containing agent.yaml and resolves declared skills.
 
@@ -308,8 +322,18 @@ def load_agent(
             f'Agent ID mismatch: Directory name "{agent_path.name}" does not match manifest ID "{agent.id}".'
         )
 
-    # Validate agent-declared tools against Phase 0 closed registry
-    validate_tools_in_phase0(agent.tools, f'agent "{agent.id}"')
+    # Validate agent-declared tools against Phase 0 closed registry and registered pack tools
+    effective_allowed = _get_allowed_manifest_tools() if allowed_tools is None else set(allowed_tools)
+    for tool in agent.tools:
+        if tool not in effective_allowed:
+            allowed_display = ", ".join(sorted(effective_allowed))
+            if allowed_tools is None:
+                raise ToolValidationError(
+                    f"Tool '{tool}' in agent \"{agent.id}\" is not in Phase 0 closed registry or registered pack toolset [{allowed_display}]"
+                )
+            raise ToolValidationError(
+                f"Tool '{tool}' in agent \"{agent.id}\" is not in registered toolset [{allowed_display}]"
+            )
 
     # Resolve skills directory
     if skills_dir:
@@ -343,8 +367,12 @@ def load_agent(
         skill = load_skill(skill_path)
         loaded_skills.append(skill)
 
-    # Compute effective tools union: unique(agent.tools ∪ skill.tools) ∩ Phase0Registry
-    effective_tools = compute_effective_tools(agent.tools, loaded_skills)
+    # Compute effective tools union: unique(agent.tools ∪ skill.tools) ∩ effective_allowed
+    effective_tools = compute_effective_tools(
+        agent.tools,
+        loaded_skills,
+        allowed_tools=effective_allowed,
+    )
 
     # Populate domain, category, risk_class from primary skill if not explicit
     primary_skill = loaded_skills[0] if loaded_skills else None
@@ -486,12 +514,24 @@ def load_subagent_from_yaml(
     declared_tools = raw.get("tools", [])
     if not isinstance(declared_tools, list):
         declared_tools = []
-    valid_tools = [t for t in declared_tools if t in PHASE_0_REGISTRY]
+    allowed_set = _get_allowed_manifest_tools()
+    valid_tools = [t for t in declared_tools if t in allowed_set]
 
     if resolve_tools:
+        from carefold.engine.tool_registry import create_default_registry
         from carefold.tools.registry import CLOSED_TOOL_DEFINITIONS
 
-        tools_payload = [CLOSED_TOOL_DEFINITIONS[t] for t in valid_tools if t in CLOSED_TOOL_DEFINITIONS]
+        default_reg = None
+        tools_payload = []
+        for t in valid_tools:
+            if t in CLOSED_TOOL_DEFINITIONS:
+                tools_payload.append(CLOSED_TOOL_DEFINITIONS[t])
+                continue
+            if default_reg is None:
+                default_reg = create_default_registry()
+            spec_obj = default_reg.get(t)
+            if spec_obj is not None:
+                tools_payload.append(spec_obj.to_tool_definition())
     else:
         tools_payload = valid_tools
 

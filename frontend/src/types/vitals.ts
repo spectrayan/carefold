@@ -21,6 +21,9 @@ export interface VitalMeasurements {
   oxygen_saturation?: number | null;
   weight?: number | null;
   height?: number | null;
+  temperature?: number | null;
+  temp_unit?: string;
+  respiratory_rate?: number | null;
 }
 
 export interface EmergencyRedFlag {
@@ -122,6 +125,17 @@ export interface LatestVitalsState {
     percentile?: number;
     effectiveAt: string;
     weightHidden: boolean;
+    delta?: number;
+  };
+  temperature?: {
+    value: number;
+    unit: string;
+    effectiveAt: string;
+    delta?: number;
+  };
+  respiratoryRate?: {
+    value: number;
+    effectiveAt: string;
     delta?: number;
   };
 }

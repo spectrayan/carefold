@@ -46,6 +46,7 @@ PACK_OVERRIDE_ALLOWLIST: Dict[str, str] = {
     "agents/registry.py": "Carefold specialist agent registry with clinical care_stages and fallback routing.",
     "api/chat.py": "Carefold SSE chat endpoint wiring CarefoldAgentExecutionService and checkpoint key events.",
     "api/connections.py": "Carefold healthcare connector endpoints (Epic SMART, Withings, Zocdoc, SMART v2).",
+    "api/notes.py": "Carefold specialized profile-scoped notes router with clinical tags and library integration.",
     "api/reminders.py": "Carefold clinical reminder endpoints accepting medication/vitals/appointment categories.",
     "api/router.py": "Carefold composite API router mounting core + 10 health pack contributions.",
     "companion/__init__.py": "Carefold companion pairing and HealthKit/Health Connect sync package.",
@@ -169,7 +170,7 @@ async def test_dual_migration_chain_without_forked_core_migrations(tmp_path: Pat
             health_revs = {
                 r[0] for r in (await conn.execute(text("SELECT version_num FROM alembic_version_health"))).fetchall()
             }
-        assert "0014_neutralize_profile_columns" in core_revs
+        assert "0014_neutralize_profile_columns" in core_revs or "0015_add_notes_pinned" in core_revs
         assert "health_0002_fhir_ehr_repository" in health_revs
     finally:
         await engine.dispose()

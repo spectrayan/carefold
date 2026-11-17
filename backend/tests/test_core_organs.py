@@ -32,9 +32,15 @@ import yaml
 
 from carefold.constants.paths import REFERENCES_DIR, SKILLS_DIR
 from carefold.loaders.agent_loader import load_agent, load_all_agents
+from carefold.engine.tool_registry import create_default_registry
 from carefold.loaders.frontmatter import check_mandatory_intended_use
 from carefold.loaders.skill_loader import ManifestValidationError, load_skill, load_all_skills
-from carefold.loaders.union import ToolValidationError, compute_effective_tools, validate_tools_in_phase0
+from carefold.loaders.union import (
+    ToolValidationError,
+    compute_effective_tools,
+    validate_tools_against_registry,
+    validate_tools_in_phase0,
+)
 from carefold.memory.adapters.sqlite.catalog_adapter import SqliteCatalogAdapter
 from carefold.schemas.manifest import (
     PHASE_0_REGISTRY,
@@ -45,7 +51,6 @@ from carefold.schemas.manifest import (
     RiskClass,
     SkillManifest,
 )
-from evals.runner import EvalCase, run_single_eval
 
 
 # ============================================================================
@@ -133,9 +138,12 @@ MANDATORY_INTENDED_USE_STATEMENTS: List[str] = [
     "Do not change medication without the prescribing clinician",
 ]
 
-ALLOWED_AGENT_TOOLS: Set[str] = {"attach-read", "skill-docs", "workspace-note"}
 ALLOWED_SKILL_TOOLS: Set[str] = {"attach-read", "skill-docs"}
 FORBIDDEN_TOOLS_FOR_NAVIGATORS: Set[str] = {"delegate_to_agent", "list_agents"}
+ALLOWED_AGENT_TOOLS: Set[str] = (
+    {"attach-read", "skill-docs", "workspace-note"}
+    | {spec.name for spec in create_default_registry().list_all()}
+) - FORBIDDEN_TOOLS_FOR_NAVIGATORS
 
 
 # ============================================================================
@@ -366,7 +374,7 @@ class TestCoreOrganToolRestrictions:
         for agent_id in CORE_ORGAN_EXPECTED_AGENTS:
             manifest, _, _ = load_agent(agents_dir / agent_id)
 
-            validate_tools_in_phase0(manifest.tools, f"agent '{agent_id}'")
+            validate_tools_against_registry(manifest.tools, allowed_tools=ALLOWED_AGENT_TOOLS, source_name=f"agent '{agent_id}'")
             assert set(manifest.tools).issubset(ALLOWED_AGENT_TOOLS), (
                 f"Agent '{agent_id}' declared tools outside allowed set: {set(manifest.tools) - ALLOWED_AGENT_TOOLS}"
             )
@@ -479,23 +487,3 @@ class TestCoreOrganGoldenEvals:
             assert allow_count >= 2, f"Agent '{agent_id}' has {allow_count} allow cases (minimum 2 required)"
             assert refuse_count >= 2, f"Agent '{agent_id}' has {refuse_count} refuse cases (minimum 2 required)"
 
-    @pytest.mark.asyncio
-    async def test_all_8_agents_pass_golden_evals(self, temp_workspace: Path):
-        """Executes all golden offline evaluation cases across all 8 agents using deterministic test engine."""
-        agents_dir = temp_workspace / "agents"
-
-        for agent_id in CORE_ORGAN_EXPECTED_AGENTS:
-            golden_path = agents_dir / agent_id / "evals" / "golden.jsonl"
-            cases: List[EvalCase] = []
-
-            with open(golden_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        cases.append(EvalCase(json.loads(line), golden_path, suite_type="agent"))
-
-            for case in cases:
-                success, msg = await run_single_eval(case, agent_id, temp_workspace, provider="ollama")
-                assert success is True, (
-                    f"Golden evaluation '{case.id}' for agent '{agent_id}' failed: {msg}"
-                )

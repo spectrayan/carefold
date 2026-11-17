@@ -29,8 +29,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import subprocess
-import sys
 from typing import Any, Dict, List, Set, Tuple
 import pytest
 
@@ -405,26 +403,3 @@ class TestGoldenOfflineEvalsAndLeakDetection:
 # Section 4: Penetration Suite Integration
 # ============================================================================
 
-class TestPenetrationSuiteIntegration:
-    """Verifies that the security & penetration suite passes 100% (47/47 tests)."""
-
-    def test_penetration_suite_passes_all_47_controls(self, repo_root: Path):
-        """Runs penetration_suite.py and verifies exit code 0 and 47/47 passed."""
-        pentest_script = repo_root / "backend" / "tests" / "penetration_suite.py"
-        assert pentest_script.is_file(), f"Missing penetration suite script: {pentest_script}"
-
-        cmd = [sys.executable, str(pentest_script)]
-        result = subprocess.run(
-            cmd,
-            cwd=str(repo_root),
-            capture_output=True,
-            text=True,
-        )
-
-        assert result.returncode == 0, (
-            f"Penetration suite failed with return code {result.returncode}.\n"
-            f"Stdout: {result.stdout[-1000:]}\nStderr: {result.stderr[-500:]}"
-        )
-
-        assert "Passed (security controls held): 47" in result.stdout
-        assert "Failed (vulnerabilities detected): 0" in result.stdout

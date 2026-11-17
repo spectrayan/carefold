@@ -43,10 +43,16 @@ import pytest
 import yaml
 
 from carefold.constants.paths import REFERENCES_DIR, SKILLS_DIR
+from carefold.engine.tool_registry import create_default_registry
 from carefold.loaders.agent_loader import load_agent, load_all_agents
 from carefold.loaders.frontmatter import check_mandatory_intended_use
 from carefold.loaders.skill_loader import ManifestValidationError, load_skill, load_all_skills
-from carefold.loaders.union import ToolValidationError, compute_effective_tools, validate_tools_in_phase0
+from carefold.loaders.union import (
+    ToolValidationError,
+    compute_effective_tools,
+    validate_tools_against_registry,
+    validate_tools_in_phase0,
+)
 from carefold.memory.adapters.sqlite.catalog_adapter import SqliteCatalogAdapter
 from carefold.schemas.manifest import (
     PHASE_0_REGISTRY,
@@ -189,10 +195,11 @@ class TestExpansionAgentLoading:
         assert agent.hidden is False
         assert expected["companion_skill"] in agent.skills
 
-        # Validate tools strictly Phase 0
-        validate_tools_in_phase0(agent.tools)
+        # Validate declared tools belong to Phase 0 + registered Carefold pack tools
+        allowed = set(PHASE_0_REGISTRY) | {spec.name for spec in create_default_registry().list_all()}
+        validate_tools_against_registry(agent.tools, allowed_tools=allowed)
         for t in agent.tools:
-            assert t in PHASE_0_REGISTRY
+            assert t in allowed
 
     @pytest.mark.parametrize("agent_id,expected", M4_SYSTEM_AGENTS.items())
     def test_system_agents_load_cleanly(self, repo_root: Path, agent_id: str, expected: Dict[str, Any]):

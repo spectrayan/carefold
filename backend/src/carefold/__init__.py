@@ -314,7 +314,7 @@ def get_pack() -> PackSpec:
         name="Carefold Health Pack",
         version=__version__,
         domain="health",
-        requires_core=">=0.2.5,<0.3.0",
+        requires_core=">=0.2.6,<0.3.0",
         owned_scopes=["health.*", "health.clinical", "health.paperwork"],
         declared_reads=[],
         risk_tier_max="T4",
@@ -352,7 +352,7 @@ def _register_native_pack_resources() -> None:
         name="Carefold Health Pack",
         version=__version__,
         domain="health",
-        requires_core=">=0.2.5,<0.3.0",
+        requires_core=">=0.2.6,<0.3.0",
         routing_hints=RoutingHints(
             domain="health",
             description="Clinical visit preparation, health records management, and insurance navigation",

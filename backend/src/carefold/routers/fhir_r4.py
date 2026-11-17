@@ -633,6 +633,41 @@ async def put_fhir_resource_route(
         return _build_error_response(request, err)
 
 
+@router.delete(
+    "/{resource_type}/{id}",
+    summary="Delete FHIR R4 Resource by ID",
+    operation_id="fhir_r4_delete_resource",
+    status_code=204,
+)
+async def delete_fhir_resource_route(
+    request: Request,
+    resource_type: str = Path(..., description="FHIR R4 resource type"),
+    id: str = Path(..., description="Logical FHIR resource ID"),
+    profile_id: Optional[str] = Query(None, description="Optional active profile ID"),
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    try:
+        ctx = await _resolve_active_profile_and_context(
+            request,
+            user,
+            db,
+            explicit_profile_id=profile_id,
+        )
+        op = FHIR_OPERATION_REGISTRY["fhir_delete_resource"]
+        await op.handler(
+            db,
+            ctx,
+            {
+                "resource_type": resource_type,
+                "resource_id": id,
+            },
+        )
+        return Response(status_code=204)
+    except FhirOperationError as err:
+        return _build_error_response(request, err)
+
+
 @router.post(
     "/{resource_type}",
     summary="Create FHIR R4 Resource (User-Confirmed)",

@@ -13,54 +13,74 @@
 
 'use client';
 
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
-  ShieldCheck,
   FileText,
   BookOpen,
-  Upload,
-  Download,
-  Copy,
-  Check,
   Search,
-  MessageSquare,
-  AlertCircle,
+  Upload,
+  Copy,
+  Download,
   X,
+  Check,
   File,
+  AlertCircle,
+  MessageSquare,
   Bot,
   RefreshCw,
-  Sparkles
+  Plus,
+  Trash2,
+  Edit2,
+  Tag,
 } from 'lucide-react';
-import type { AttachmentItem, WorkspaceNoteDetail, WorkspaceNoteSummary } from '@/types/api';
 import {
   fetchAttachments,
   fetchNotes,
   fetchNoteDetail,
   uploadAttachment,
-  formatDate,
+  createNote,
+  updateNote,
+  deleteNote,
+  deleteAttachment,
   formatFileSize,
-  getFileFormat
+  formatDate,
+  getFileFormat,
+  CreateNoteRequest,
 } from '@/lib/library';
-import { ChatMarkdown } from '@/components/chat/ChatMarkdown';
 import { RecordSearch } from '@/components/library/RecordSearch';
+import { ChatMarkdown } from '@/components/chat/ChatMarkdown';
+import type {
+  AttachmentItem,
+  WorkspaceNoteDetail,
+  WorkspaceNoteSummary
+} from '@/types/api';
 import { useI18n } from '@/i18n';
 
-interface LibraryClientProps {
+export interface LibraryClientProps {
   initialAttachments: AttachmentItem[];
   initialNotes: WorkspaceNoteSummary[];
   profileId?: string;
 }
 
+const NOTE_CATEGORIES = [
+  { id: 'visit_prep', label: 'Visit Preparation' },
+  { id: 'after_visit', label: 'After Visit Summary' },
+  { id: 'medication_notes', label: 'Medication Notes' },
+  { id: 'insurance_call', label: 'Insurance Call' },
+  { id: 'symptom_log', label: 'Symptom Log' },
+  { id: 'scratchpad', label: 'Scratchpad' },
+  { id: 'general', label: 'General Note' },
+];
+
 function deduplicateAttachments(items: AttachmentItem[]): AttachmentItem[] {
   const seen = new Set<string>();
   const result: AttachmentItem[] = [];
   for (const item of items) {
-    const key = item.id || item.path || item.filename;
-    if (!seen.has(key) && !seen.has(item.filename)) {
+    const key = item.filename.toLowerCase();
+    if (!seen.has(key)) {
       seen.add(key);
-      seen.add(item.filename);
       result.push(item);
     }
   }
@@ -71,10 +91,9 @@ function deduplicateNotes(items: WorkspaceNoteSummary[]): WorkspaceNoteSummary[]
   const seen = new Set<string>();
   const result: WorkspaceNoteSummary[] = [];
   for (const item of items) {
-    const key = item.id || item.slug;
-    if (!seen.has(key) && !seen.has(item.slug)) {
+    const key = `${item.slug}-${item.profile_id || ''}`;
+    if (!seen.has(key)) {
       seen.add(key);
-      seen.add(item.slug);
       result.push(item);
     }
   }
@@ -84,14 +103,21 @@ function deduplicateNotes(items: WorkspaceNoteSummary[]): WorkspaceNoteSummary[]
 export function LibraryClient({ initialAttachments, initialNotes, profileId }: LibraryClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { t } = useI18n();
+  useI18n();
   const baseLibraryPath = profileId ? `/p/${encodeURIComponent(profileId)}/library` : '/library';
   const baseChatPath = profileId ? `/p/${encodeURIComponent(profileId)}/chat` : '/chat';
 
   const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState<'documents' | 'notes' | 'search'>(
-    tabParam === 'notes' ? 'notes' : tabParam === 'search' ? 'search' : 'documents'
-  );
+  const noteIdParam = searchParams.get('noteId');
+  const typeParam = searchParams.get('type');
+
+  const [activeTab, setActiveTab] = useState<'documents' | 'notes' | 'search'>(() => {
+    if (tabParam === 'notes' || noteIdParam || typeParam) return 'notes';
+    if (tabParam === 'search') return 'search';
+    return 'documents';
+  });
+
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>(() => typeParam || 'all');
 
   const [attachments, setAttachments] = useState<AttachmentItem[]>(() =>
     deduplicateAttachments(initialAttachments)
@@ -101,37 +127,66 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
   );
   const [searchQuery, setSearchQuery] = useState('');
 
+  const refreshNotes = useCallback(async () => {
+    try {
+      const items = await fetchNotes(profileId);
+      if (Array.isArray(items)) {
+        setNotes(deduplicateNotes(items));
+      }
+    } catch {}
+  }, [profileId]);
+
+  const refreshAttachments = useCallback(async () => {
+    try {
+      const items = await fetchAttachments(profileId);
+      if (Array.isArray(items)) {
+        setAttachments(deduplicateAttachments(items));
+      }
+    } catch {}
+  }, [profileId]);
+
   useEffect(() => {
     if (process.env.NODE_ENV === 'test') return;
     if (initialNotes.length === 0) {
-      fetchNotes()
-        .then((items) => {
-          if (Array.isArray(items) && items.length > 0) {
-            setNotes(deduplicateNotes(items));
-          }
-        })
-        .catch(() => {
-          // Ignore network errors in test/offline environments
-        });
+      refreshNotes();
     }
     if (initialAttachments.length === 0) {
-      fetchAttachments()
-        .then((items) => {
-          if (Array.isArray(items) && items.length > 0) {
-            setAttachments(deduplicateAttachments(items));
-          }
-        })
-        .catch(() => {
-          // Ignore network errors in test/offline environments
-        });
+      refreshAttachments();
     }
-  }, [initialNotes.length, initialAttachments.length]);
+  }, [initialNotes.length, initialAttachments.length, refreshNotes, refreshAttachments]);
 
   // Selected note for modal viewer
   const [selectedNote, setSelectedNote] = useState<WorkspaceNoteDetail | null>(null);
   const [isLoadingNote, setIsLoadingNote] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
   const [copiedNote, setCopiedNote] = useState(false);
+
+  // Note CRUD Modals
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<WorkspaceNoteSummary | WorkspaceNoteDetail | null>(null);
+
+  // Create note form
+  const [newTitle, setNewTitle] = useState('');
+  const [newContent, setNewContent] = useState('');
+  const [newType, setNewType] = useState('general');
+  const [newTags, setNewTags] = useState('');
+  const [newLinkedAppointment, setNewLinkedAppointment] = useState('');
+  const [isCreatingNote, setIsCreatingNote] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  // Edit note form
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editType, setEditType] = useState('general');
+  const [editTags, setEditTags] = useState('');
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Attachment delete state
+  const [attachmentToDelete, setAttachmentToDelete] = useState<AttachmentItem | null>(null);
+  const [isDeletingAttachment, setIsDeletingAttachment] = useState(false);
 
   // Upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -141,6 +196,57 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
     file: File;
     existingName: string;
   } | null>(null);
+
+  // Open note reader
+  const handleOpenNote = useCallback(async (slug: string) => {
+    setIsLoadingNote(true);
+    setNoteError(null);
+    setCopiedNote(false);
+    try {
+      const detail = await fetchNoteDetail(slug, profileId);
+      setSelectedNote(detail);
+    } catch (err: any) {
+      setNoteError(err.message || 'Failed to load note');
+    } finally {
+      setIsLoadingNote(false);
+    }
+  }, [profileId]);
+
+  // Handle Deep Linking
+  useEffect(() => {
+    if (typeParam) {
+      setSelectedTypeFilter(typeParam);
+      setActiveTab('notes');
+    }
+    if (noteIdParam) {
+      setActiveTab('notes');
+      handleOpenNote(noteIdParam);
+    }
+  }, [typeParam, noteIdParam, handleOpenNote]);
+
+  // Live SSE Invalidation Listener
+  useEffect(() => {
+    const handleEntityChanged = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const detail = customEvent?.detail;
+      if (
+        !detail ||
+        !detail.entity_type ||
+        detail.entity_type === 'note' ||
+        detail.entity_type === 'attachment' ||
+        detail.entity_type === 'vitals'
+      ) {
+        refreshNotes();
+        refreshAttachments();
+      }
+    };
+    window.addEventListener('carefold:entity_changed', handleEntityChanged);
+    window.addEventListener('carefold:entity-changed', handleEntityChanged);
+    return () => {
+      window.removeEventListener('carefold:entity_changed', handleEntityChanged);
+      window.removeEventListener('carefold:entity-changed', handleEntityChanged);
+    };
+  }, [refreshNotes, refreshAttachments]);
 
   // Synchronize tab state with URL search param
   const handleTabChange = (tab: 'documents' | 'notes' | 'search') => {
@@ -160,30 +266,20 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
 
   // Filtered notes
   const filteredNotes = useMemo(() => {
+    let list = notes;
+    if (selectedTypeFilter && selectedTypeFilter !== 'all') {
+      list = list.filter((n) => (n.type || '').toLowerCase() === selectedTypeFilter.toLowerCase());
+    }
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return notes;
-    return notes.filter(
+    if (!q) return list;
+    return list.filter(
       (n) =>
         n.title.toLowerCase().includes(q) ||
         n.slug.toLowerCase().includes(q) ||
-        (n.agent && n.agent.toLowerCase().includes(q))
+        (n.agent && n.agent.toLowerCase().includes(q)) ||
+        (n.tags && n.tags.some((t) => t.toLowerCase().includes(q)))
     );
-  }, [notes, searchQuery]);
-
-  // Open note reader
-  const handleOpenNote = async (slug: string) => {
-    setIsLoadingNote(true);
-    setNoteError(null);
-    setCopiedNote(false);
-    try {
-      const detail = await fetchNoteDetail(slug);
-      setSelectedNote(detail);
-    } catch (err: any) {
-      setNoteError(err.message || 'Failed to load note');
-    } finally {
-      setIsLoadingNote(false);
-    }
-  };
+  }, [notes, searchQuery, selectedTypeFilter]);
 
   // Copy note markdown to clipboard
   const handleCopyNote = async () => {
@@ -213,12 +309,122 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
     URL.revokeObjectURL(url);
   };
 
+  // Create Note Submission
+  const handleCreateNoteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newContent.trim()) {
+      setCreateError('Title and content are required.');
+      return;
+    }
+    setIsCreatingNote(true);
+    setCreateError(null);
+    try {
+      const tagList = newTags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+      const payload: CreateNoteRequest = {
+        title: newTitle.trim(),
+        content: newContent.trim(),
+        type: newType,
+        tags: tagList,
+        linked_appointment_id: newLinkedAppointment.trim() || undefined,
+      };
+      await createNote(profileId || 'me', payload);
+      await refreshNotes();
+      setIsCreateModalOpen(false);
+      setNewTitle('');
+      setNewContent('');
+      setNewType('general');
+      setNewTags('');
+      setNewLinkedAppointment('');
+    } catch (err: any) {
+      setCreateError(err.message || 'Failed to create note');
+    } finally {
+      setIsCreatingNote(false);
+    }
+  };
+
+  // Start Note Edit
+  const handleStartEditNote = () => {
+    if (!selectedNote) return;
+    setEditTitle(selectedNote.title || '');
+    setEditContent(selectedNote.content || '');
+    setEditType((selectedNote as any).type || 'general');
+    setEditTags(Array.isArray((selectedNote as any).tags) ? (selectedNote as any).tags.join(', ') : '');
+    setEditError(null);
+    setIsEditModalOpen(true);
+  };
+
+  // Save Note Edit
+  const handleSaveEditNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedNote) return;
+    if (!editTitle.trim() || !editContent.trim()) {
+      setEditError('Title and content are required.');
+      return;
+    }
+    setIsEditingNote(true);
+    setEditError(null);
+    try {
+      const tagList = editTags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+      await updateNote(profileId || 'me', selectedNote.slug, {
+        title: editTitle.trim(),
+        content: editContent.trim(),
+        type: editType,
+        tags: tagList,
+      });
+      await refreshNotes();
+      const updated = await fetchNoteDetail(selectedNote.slug, profileId);
+      setSelectedNote(updated);
+      setIsEditModalOpen(false);
+    } catch (err: any) {
+      setEditError(err.message || 'Failed to update note');
+    } finally {
+      setIsEditingNote(false);
+    }
+  };
+
+  // Delete Note Execution
+  const handleConfirmDeleteNote = async () => {
+    const target = noteToDelete || selectedNote;
+    if (!target) return;
+    try {
+      await deleteNote(profileId || 'me', target.slug);
+      await refreshNotes();
+      setIsDeleteModalOpen(false);
+      setNoteToDelete(null);
+      if (selectedNote && selectedNote.slug === target.slug) {
+        setSelectedNote(null);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete note');
+    }
+  };
+
+  // Delete Attachment Execution
+  const handleConfirmDeleteAttachment = async () => {
+    if (!attachmentToDelete) return;
+    setIsDeletingAttachment(true);
+    try {
+      await deleteAttachment(attachmentToDelete.filename);
+      await refreshAttachments();
+      setAttachmentToDelete(null);
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete document');
+    } finally {
+      setIsDeletingAttachment(false);
+    }
+  };
+
   // Handle file selection for upload
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check for duplicate name
     const existing = attachments.find(
       (a) => a.filename.toLowerCase() === file.name.toLowerCase()
     );
@@ -236,166 +442,180 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
     setIsUploading(true);
     setUploadError(null);
     try {
-      await uploadAttachment(file);
-      // Refresh list
-      const updated = await fetchAttachments();
-      setAttachments(deduplicateAttachments(updated));
+      await uploadAttachment(file, profileId);
+      await refreshAttachments();
       setDuplicateWarning(null);
     } catch (err: any) {
-      setUploadError(err.message || 'Failed to upload document');
+      setUploadError(err.message || 'Upload failed');
     } finally {
       setIsUploading(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
-            {t('library.title')}
-          </h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400">
-            {t('library.subtitle')}
-          </p>
-        </div>
+    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header section */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
+          Library
+        </h1>
+        <p className="text-sm text-slate-600 dark:text-zinc-400">
+          Workspace documents, uploaded clinical records, and structured specialist consultation notes.
+        </p>
 
-        {/* Data Residency Notice */}
+        {/* Local Storage & Data Residency Banner */}
         <div
           data-testid="data-residency-notice"
-          className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm font-medium shadow-sm"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 text-xs text-emerald-800 dark:text-emerald-300 font-medium"
         >
-          <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <span>{t('library.residency_notice')}</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Stored on this computer in your Carefold workspace. Zero telemetry.</span>
         </div>
       </div>
 
-      {/* Tabs Navigation */}
-      <div className="border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between">
-        <nav className="flex gap-8 -mb-px" aria-label="Library tabs">
+      {/* Tabs and Controls */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-800 pb-4">
+        {/* Navigation Tabs */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
             data-testid="tab-documents"
             onClick={() => handleTabChange('documents')}
-            className={`flex items-center gap-2 py-4 px-1 text-sm font-semibold border-b-2 transition ${
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
               activeTab === 'documents'
-                ? 'border-emerald-700 text-emerald-700 dark:border-emerald-400 dark:text-emerald-400'
-                : 'border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:border-slate-300'
+                ? 'bg-emerald-700 text-white dark:bg-emerald-500 dark:text-[#04201a] shadow-sm'
+                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800'
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span>{t('library.tab_documents')}</span>
-            <span className="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
-              {attachments.length}
-            </span>
+            <span>Documents ({attachments.length})</span>
           </button>
 
           <button
             type="button"
             data-testid="tab-notes"
             onClick={() => handleTabChange('notes')}
-            className={`flex items-center gap-2 py-4 px-1 text-sm font-semibold border-b-2 transition ${
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
               activeTab === 'notes'
-                ? 'border-emerald-700 text-emerald-700 dark:border-emerald-400 dark:text-emerald-400'
-                : 'border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:border-slate-300'
+                ? 'bg-emerald-700 text-white dark:bg-emerald-500 dark:text-[#04201a] shadow-sm'
+                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800'
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>{t('library.tab_notes')}</span>
-            <span className="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
-              {notes.length}
-            </span>
+            <span>Consultation Notes ({notes.length})</span>
           </button>
 
           <button
             type="button"
             data-testid="tab-search"
             onClick={() => handleTabChange('search')}
-            className={`flex items-center gap-2 py-4 px-1 text-sm font-semibold border-b-2 transition ${
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
               activeTab === 'search'
-                ? 'border-emerald-700 text-emerald-700 dark:border-emerald-400 dark:text-emerald-400'
-                : 'border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:border-slate-300'
+                ? 'bg-emerald-700 text-white dark:bg-emerald-500 dark:text-[#04201a] shadow-sm'
+                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
-            <span>{t('library.tab_search')}</span>
+            <Search className="w-4 h-4" />
+            <span>Search Records</span>
           </button>
-        </nav>
-      </div>
-
-      {/* Search and Action Bar (Documents and Notes tabs) */}
-      {activeTab !== 'search' && (
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-500" />
-          <input
-            type="text"
-            data-testid="library-search-input"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={
-              activeTab === 'documents'
-                ? t('library.search_documents')
-                : t('library.search_notes')
-            }
-            className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-[#7f8ea3] dark:border-[#657895] bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 placeholder:text-slate-500 dark:placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
         </div>
 
-        {activeTab === 'documents' && (
-          <div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileSelect}
-              className="hidden"
-              accept=".txt,.pdf,.md,.json,.csv,.tsv,.yaml,.yml"
-            />
-            <button
-              type="button"
-              data-testid="upload-document-button"
-              disabled={isUploading}
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] text-white font-medium text-sm transition shadow-sm disabled:opacity-50"
-            >
-              {isUploading ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <Upload className="w-4 h-4" />
-              )}
-              <span>{isUploading ? t('library.uploading') : t('library.upload_document')}</span>
-            </button>
-          </div>
-        )}
-      </div>
-      )}
+        {/* Search, Action, and Filter Controls */}
+        <div className="flex flex-wrap items-center gap-3">
+          {activeTab !== 'search' && (
+            <div className="relative flex-1 sm:w-64">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+              <input
+                type="text"
+                data-testid="library-search-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={
+                  activeTab === 'documents'
+                    ? 'Search documents by filename...'
+                    : 'Search notes by title, slug, tag...'
+                }
+                className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+              />
+            </div>
+          )}
 
-      {/* Upload error alert */}
+          {activeTab === 'notes' && (
+            <div className="flex items-center gap-2">
+              <select
+                data-testid="note-type-filter"
+                value={selectedTypeFilter}
+                onChange={(e) => setSelectedTypeFilter(e.target.value)}
+                className="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              >
+                <option value="all">All Categories</option>
+                {NOTE_CATEGORIES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                data-testid="create-note-button"
+                onClick={() => setIsCreateModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] font-medium text-xs transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Note</span>
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'documents' && (
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                data-testid="file-upload-input"
+                className="hidden"
+                onChange={handleFileSelect}
+                accept=".pdf,.txt,.md,.json,.csv,.tsv,.yaml,.yml"
+              />
+              <button
+                type="button"
+                data-testid="upload-document-button"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] font-medium text-sm transition"
+              >
+                {isUploading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    <span>Upload Document</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {uploadError && (
-        <div
-          data-testid="upload-error-alert"
-          className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-sm flex items-center justify-between"
-        >
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
-            <span>{uploadError}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setUploadError(null)}
-            className="text-rose-600 dark:text-rose-400 hover:text-rose-800"
-          >
+        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-sm flex items-center justify-between">
+          <span>{uploadError}</span>
+          <button type="button" onClick={() => setUploadError(null)} className="text-rose-600 hover:text-rose-800">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* Duplicate warning modal */}
+      {/* Duplicate Warning Dialog */}
       {duplicateWarning && (
         <div
           data-testid="duplicate-warning-modal"
-          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
         >
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
             <div className="flex items-center gap-3">
@@ -440,7 +660,7 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
       {/* TAB CONTENT: SEARCH RECORDS */}
       {activeTab === 'search' && (
         <div data-testid="tab-search-content">
-          <RecordSearch onSelectNote={handleOpenNote} />
+          <RecordSearch profileId={profileId} onSelectNote={handleOpenNote} />
         </div>
       )}
 
@@ -535,14 +755,25 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
                             {formatDate(doc.timestamp)}
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <Link
-                              href={`${baseChatPath}?attach=${encodeURIComponent(doc.filename)}`}
-                              data-testid={`use-in-chat-${doc.filename}`}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition"
-                            >
-                              <MessageSquare className="w-3.5 h-3.5" />
-                              <span>Use in chat</span>
-                            </Link>
+                            <div className="inline-flex items-center gap-2">
+                              <Link
+                                href={`${baseChatPath}?attach=${encodeURIComponent(doc.filename)}`}
+                                data-testid={`use-in-chat-${doc.filename}`}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>Use in chat</span>
+                              </Link>
+                              <button
+                                type="button"
+                                data-testid={`delete-attachment-${doc.filename}`}
+                                onClick={() => setAttachmentToDelete(doc)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+                                title="Delete document"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -567,24 +798,31 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
                 <BookOpen className="w-6 h-6" />
               </div>
               <h3 className="text-base font-semibold text-slate-900 dark:text-zinc-100">
-                {searchQuery ? 'No notes found' : 'No notes saved yet'}
+                {searchQuery || selectedTypeFilter !== 'all' ? 'No matching notes found' : 'No notes saved yet'}
               </h3>
               <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400 max-w-md mx-auto">
-                {searchQuery
-                  ? `No saved notes match "${searchQuery}".`
-                  : 'When Carefold specialist agents (like Appointment Prep Coordinator or Cardiology Guide) prepare visit agendas or checklists, they save them as structured notes in your local workspace.'}
+                {searchQuery || selectedTypeFilter !== 'all'
+                  ? `No notes match your filter or search query.`
+                  : 'When Carefold specialist agents prepare visit dossiers or answer questions, notes appear here.'}
               </p>
-              {!searchQuery && (
-                <div className="mt-6">
-                  <Link
-                    href={baseChatPath}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] font-medium text-sm transition"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span>Start a chat</span>
-                  </Link>
-                </div>
-              )}
+              <div className="mt-6 flex items-center justify-center gap-3">
+                <button
+                  type="button"
+                  data-testid="create-first-note-button"
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] font-medium text-sm transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create note</span>
+                </button>
+                <Link
+                  href={baseChatPath}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-medium text-sm hover:bg-slate-50 dark:hover:bg-zinc-800 transition"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Start a chat</span>
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" data-testid="notes-grid">
@@ -606,13 +844,30 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
                       </h2>
                     </div>
 
-                    {/* Agent badge */}
-                    {note.agent && (
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                        <Bot className="w-3.5 h-3.5" />
-                        <span>@{note.agent}</span>
-                      </div>
-                    )}
+                    {/* Agent / Type Badges */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {note.agent && (
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          <Bot className="w-3.5 h-3.5" />
+                          <span>@{note.agent}</span>
+                        </div>
+                      )}
+                      {note.type && (
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                          <Tag className="w-3 h-3" />
+                          <span>{note.type}</span>
+                        </div>
+                      )}
+                      {note.tags &&
+                        note.tags.slice(0, 3).map((tag, tIdx) => (
+                          <span
+                            key={tIdx}
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                    </div>
                   </div>
 
                   {/* Metadata and action */}
@@ -676,6 +931,26 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
                   <>
                     <button
                       type="button"
+                      data-testid="modal-edit-note"
+                      onClick={handleStartEditNote}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 text-xs font-medium hover:bg-slate-50 dark:hover:bg-zinc-700 transition"
+                      title="Edit note"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="modal-delete-note"
+                      onClick={() => setIsDeleteModalOpen(true)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-900 bg-white dark:bg-zinc-800 text-rose-600 dark:text-rose-400 text-xs font-medium hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                      title="Delete note"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete</span>
+                    </button>
+                    <button
+                      type="button"
                       data-testid="modal-copy-note"
                       onClick={handleCopyNote}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 text-xs font-medium hover:bg-slate-50 dark:hover:bg-zinc-700 transition"
@@ -733,6 +1008,346 @@ export function LibraryClient({ initialAttachments, initialNotes, profileId }: L
                   <ChatMarkdown content={selectedNote.content} />
                 </div>
               ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Direct Notes Create Modal */}
+      {isCreateModalOpen && (
+        <div
+          data-testid="create-note-modal"
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+        >
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">
+                Create Consultation Note
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {createError && (
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs">
+                {createError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateNoteSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                  Title *
+                </label>
+                <input
+                  type="text"
+                  data-testid="note-title-input"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="e.g. Cardiology Pre-Visit Checklist"
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                    Category *
+                  </label>
+                  <select
+                    data-testid="note-type-select"
+                    value={newType}
+                    onChange={(e) => setNewType(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  >
+                    {NOTE_CATEGORIES.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                    Tags (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    data-testid="note-tags-input"
+                    value={newTags}
+                    onChange={(e) => setNewTags(e.target.value)}
+                    placeholder="e.g. cardio, blood-pressure, visit-prep"
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                  Linked Appointment ID (optional)
+                </label>
+                <input
+                  type="text"
+                  data-testid="note-appointment-select"
+                  value={newLinkedAppointment}
+                  onChange={(e) => setNewLinkedAppointment(e.target.value)}
+                  placeholder="e.g. appt-uuid-or-id"
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                  Markdown Content *
+                </label>
+                <textarea
+                  data-testid="note-content-input"
+                  rows={8}
+                  value={newContent}
+                  onChange={(e) => setNewContent(e.target.value)}
+                  placeholder="Enter Markdown notes, questions for your doctor, observations..."
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
+                <button
+                  type="button"
+                  data-testid="cancel-note-button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  data-testid="save-note-button"
+                  disabled={isCreatingNote}
+                  className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] transition flex items-center gap-2"
+                >
+                  {isCreatingNote && <RefreshCw className="w-4 h-4 animate-spin" />}
+                  <span>Save Note</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Note Edit Modal */}
+      {isEditModalOpen && selectedNote && (
+        <div
+          data-testid="edit-note-modal"
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+        >
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">
+                Edit Consultation Note
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {editError && (
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs">
+                {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEditNote} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                  Title *
+                </label>
+                <input
+                  type="text"
+                  data-testid="edit-note-title-input"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                    Category *
+                  </label>
+                  <select
+                    data-testid="edit-note-type-select"
+                    value={editType}
+                    onChange={(e) => setEditType(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  >
+                    {NOTE_CATEGORIES.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                    Tags (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    data-testid="edit-note-tags-input"
+                    value={editTags}
+                    onChange={(e) => setEditTags(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
+                  Markdown Content *
+                </label>
+                <textarea
+                  data-testid="edit-note-content-input"
+                  rows={8}
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
+                <button
+                  type="button"
+                  data-testid="cancel-edit-note-button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  data-testid="save-edit-note-button"
+                  disabled={isEditingNote}
+                  className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-[#04201a] transition flex items-center gap-2"
+                >
+                  {isEditingNote && <RefreshCw className="w-4 h-4 animate-spin" />}
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Note Delete Confirmation Dialog */}
+      {isDeleteModalOpen && (
+        <div
+          data-testid="delete-note-confirm-modal"
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+        >
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/50 flex items-center justify-center text-rose-600 dark:text-rose-400">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 dark:text-zinc-100">
+                  Delete Note
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-zinc-400">
+                  {(noteToDelete || selectedNote)?.title}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-600 dark:text-zinc-300">
+              Are you sure you want to delete this note? This action will remove the note from your workspace permanently.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                data-testid="cancel-delete-note-button"
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setNoteToDelete(null);
+                }}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                data-testid="confirm-delete-note-button"
+                onClick={handleConfirmDeleteNote}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-rose-600 hover:bg-rose-700 text-white transition"
+              >
+                Delete Note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attachment Delete Confirmation Dialog */}
+      {attachmentToDelete && (
+        <div
+          data-testid="delete-attachment-confirm-modal"
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+        >
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/50 flex items-center justify-center text-rose-600 dark:text-rose-400">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 dark:text-zinc-100">
+                  Delete Document
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-zinc-400">
+                  {attachmentToDelete.filename}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-600 dark:text-zinc-300">
+              Are you sure you want to delete <strong>&quot;{attachmentToDelete.filename}&quot;</strong>? This will remove the file from your workspace attachments.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                data-testid="cancel-delete-attachment-button"
+                onClick={() => setAttachmentToDelete(null)}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                data-testid="confirm-delete-attachment-button"
+                disabled={isDeletingAttachment}
+                onClick={handleConfirmDeleteAttachment}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-rose-600 hover:bg-rose-700 text-white transition flex items-center gap-2"
+              >
+                {isDeletingAttachment && <RefreshCw className="w-4 h-4 animate-spin" />}
+                <span>Delete</span>
+              </button>
             </div>
           </div>
         </div>
