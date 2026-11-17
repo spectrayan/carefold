@@ -91,7 +91,7 @@ include = [
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-addopts = "-ra -q --asyncio-mode=auto -n auto --disable-warnings"
+addopts = "-ra -q --asyncio-mode=auto -n auto --dist worksteal --disable-warnings"
 testpaths = ["tests"]
 pythonpath = [
     "src",
