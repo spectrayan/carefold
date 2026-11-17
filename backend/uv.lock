@@ -326,7 +326,7 @@ requires-dist = [
     { name = "sse-starlette", specifier = ">=2.1.0" },
     { name = "structlog", specifier = ">=24.1.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30.0" },
-    { name = "yarvelle-core", specifier = ">=0.2.5,<0.3.0" },
+    { name = "yarvelle-core", specifier = ">=0.2.6,<0.3.0" },
 ]
 provides-extras = ["dev", "ocr"]
 
@@ -3097,7 +3097,7 @@ wheels = [
 
 [[package]]
 name = "yarvelle-core"
-version = "0.2.5"
+version = "0.2.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -3134,9 +3134,9 @@ dependencies = [
     { name = "structlog" },
     { name = "uvicorn", extra = ["standard"] },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e9/40/1e2915a14e358b358bcc0d62ee59aa839611eb2222354f68453697d323c6/yarvelle_core-0.2.5.tar.gz", hash = "sha256:37942e984e0d5b17642939da9d15f458743921d7da66e7799f555d8949813d87", size = 1005076, upload-time = "2026-11-12T17:32:01.218Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/57/83e7ea4be39895cef0505fbcda0182d6e735a47d910185c25ce965923f5f/yarvelle_core-0.2.6.tar.gz", hash = "sha256:4212ba6176d0d23be3ea61a786eb0e1b29d2a65657f3af4a2d3076721ff2bc68", size = 1074703, upload-time = "2026-11-16T23:23:36.281Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2f/2b/87cdd17949b61212a8fc1f9122837b9cec702734752272f6e504391f5700/yarvelle_core-0.2.5-py3-none-any.whl", hash = "sha256:ad21a9fbc8972fc824c5078d3aae84e7652f2b34ae114db269832c3754dbf41f", size = 1097328, upload-time = "2026-11-12T17:31:59.694Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/25/9d73b608681ddb2bb5ee08403c7e4dbe9011e49bb4fab41db07db70785a3/yarvelle_core-0.2.6-py3-none-any.whl", hash = "sha256:5e6eeddf58b3ebdee80cb9bc45687191c9abf0bd8fe1e8e3b95c39bd3c93a0db", size = 1129206, upload-time = "2026-11-16T23:23:33.895Z" },
 ]
 
 [[package]]
