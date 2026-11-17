@@ -35,6 +35,7 @@ from carefold.constants.paths import REFERENCES_DIR, SKILLS_DIR
 from carefold.loaders.agent_loader import load_agent
 from carefold.loaders.frontmatter import check_mandatory_intended_use
 from carefold.loaders.skill_loader import ManifestValidationError, load_skill
+from carefold.engine.tool_registry import create_default_registry
 from carefold.loaders.union import ToolValidationError, validate_tools_in_phase0
 from carefold.memory.adapters.sqlite.catalog_adapter import SqliteCatalogAdapter
 from carefold.schemas.manifest import (
@@ -101,6 +102,9 @@ MANDATORY_INTENDED_USE_STATEMENTS: List[str] = [
 PHASE0_AGENT_TOOLS: Set[str] = {"attach-read", "skill-docs", "workspace-note"}
 PHASE0_SKILL_TOOLS: Set[str] = {"attach-read", "skill-docs"}
 FORBIDDEN_TOOLS: Set[str] = {"delegate_to_agent", "list_agents", "bash", "python", "shell", "read_file"}
+ALLOWED_SPECIALIST_TOOLS: Set[str] = (
+    PHASE0_AGENT_TOOLS | {spec.name for spec in create_default_registry().list_all()}
+) - FORBIDDEN_TOOLS
 
 
 def _get_persona_text(agent_yaml_path: Path, data: dict) -> str:
@@ -227,8 +231,8 @@ class TestClosedToolRegistryAndDelegationLockdown:
             manifest, tools, _ = load_agent(agents_dir / agent_id)
 
             declared_tools = set(manifest.tools)
-            assert declared_tools.issubset(PHASE0_AGENT_TOOLS), (
-                f"Agent '{agent_id}' declared unauthorized tools: {declared_tools - PHASE0_AGENT_TOOLS}"
+            assert declared_tools.issubset(ALLOWED_SPECIALIST_TOOLS), (
+                f"Agent '{agent_id}' declared unauthorized tools: {declared_tools - ALLOWED_SPECIALIST_TOOLS}"
             )
             assert declared_tools.isdisjoint(FORBIDDEN_TOOLS), (
                 f"Agent '{agent_id}' declared forbidden tools: {declared_tools & FORBIDDEN_TOOLS}"

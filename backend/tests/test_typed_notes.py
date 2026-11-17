@@ -51,14 +51,26 @@ def run_async(coro):
 
 
 def test_valid_note_types_canonical_set():
-    """Verifies that VALID_NOTE_TYPES contains all 7 canonical categories."""
-    expected = {"visit", "symptom", "question", "after_visit", "school", "scratchpad", "general"}
+    """Verifies that VALID_NOTE_TYPES contains all 11 canonical categories."""
+    expected = {
+        "visit",
+        "visit_prep",
+        "symptom",
+        "symptom_log",
+        "question",
+        "after_visit",
+        "medication_notes",
+        "insurance_call",
+        "school",
+        "scratchpad",
+        "general",
+    }
     assert VALID_NOTE_TYPES == expected
-    assert len(VALID_NOTE_TYPES) == 7
+    assert len(VALID_NOTE_TYPES) == 11
 
 
 def test_validate_note_type_success():
-    """Verifies all 7 valid categories pass validation and normalize casing/whitespace."""
+    """Verifies all 11 valid categories pass validation and normalize casing/whitespace."""
     for category in VALID_NOTE_TYPES:
         assert validate_note_type(category) == category
         assert validate_note_type(category.upper()) == category
@@ -77,6 +89,24 @@ def test_validate_note_type_legacy_mapping():
     """Verifies legacy type mapping when allow_legacy=True."""
     assert validate_note_type("clinical_prep", allow_legacy=True) == "question"
     assert validate_note_type("visit_summary", allow_legacy=True) == "after_visit"
+    assert validate_note_type("medication", allow_legacy=True) == "medication_notes"
+    assert validate_note_type("insurance", allow_legacy=True) == "insurance_call"
+    assert validate_note_type("symptoms", allow_legacy=True) == "symptom_log"
+
+
+def test_note_type_aliases_and_family():
+    """Verifies bidirectional aliases and filter family resolution."""
+    from carefold.clinical.notes import get_note_type_family, resolve_note_type_alias
+
+    assert resolve_note_type_alias("visit") == "visit_prep"
+    assert resolve_note_type_alias("visit_prep") == "visit"
+    assert resolve_note_type_alias("symptom") == "symptom_log"
+    assert resolve_note_type_alias("symptom_log") == "symptom"
+
+    assert "visit" in get_note_type_family("visit_prep")
+    assert "visit_prep" in get_note_type_family("visit")
+    assert "symptom" in get_note_type_family("symptom_log")
+    assert "symptom_log" in get_note_type_family("symptom")
 
 
 # ============================================================================

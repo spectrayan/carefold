@@ -32,9 +32,15 @@ import yaml
 
 from carefold.constants.paths import REFERENCES_DIR, SKILLS_DIR
 from carefold.loaders.agent_loader import load_agent, load_all_agents
+from carefold.engine.tool_registry import create_default_registry
 from carefold.loaders.frontmatter import check_mandatory_intended_use
 from carefold.loaders.skill_loader import ManifestValidationError, load_skill, load_all_skills
-from carefold.loaders.union import ToolValidationError, compute_effective_tools, validate_tools_in_phase0
+from carefold.loaders.union import (
+    ToolValidationError,
+    compute_effective_tools,
+    validate_tools_against_registry,
+    validate_tools_in_phase0,
+)
 from carefold.memory.adapters.sqlite.catalog_adapter import SqliteCatalogAdapter
 from carefold.schemas.manifest import (
     PHASE_0_REGISTRY,
@@ -133,9 +139,12 @@ MANDATORY_INTENDED_USE_STATEMENTS: List[str] = [
     "Do not change medication without the prescribing clinician",
 ]
 
-ALLOWED_AGENT_TOOLS: Set[str] = {"attach-read", "skill-docs", "workspace-note"}
 ALLOWED_SKILL_TOOLS: Set[str] = {"attach-read", "skill-docs"}
 FORBIDDEN_TOOLS_FOR_NAVIGATORS: Set[str] = {"delegate_to_agent", "list_agents"}
+ALLOWED_AGENT_TOOLS: Set[str] = (
+    {"attach-read", "skill-docs", "workspace-note"}
+    | {spec.name for spec in create_default_registry().list_all()}
+) - FORBIDDEN_TOOLS_FOR_NAVIGATORS
 
 
 # ============================================================================
@@ -366,7 +375,7 @@ class TestCoreOrganToolRestrictions:
         for agent_id in CORE_ORGAN_EXPECTED_AGENTS:
             manifest, _, _ = load_agent(agents_dir / agent_id)
 
-            validate_tools_in_phase0(manifest.tools, f"agent '{agent_id}'")
+            validate_tools_against_registry(manifest.tools, allowed_tools=ALLOWED_AGENT_TOOLS, source_name=f"agent '{agent_id}'")
             assert set(manifest.tools).issubset(ALLOWED_AGENT_TOOLS), (
                 f"Agent '{agent_id}' declared tools outside allowed set: {set(manifest.tools) - ALLOWED_AGENT_TOOLS}"
             )

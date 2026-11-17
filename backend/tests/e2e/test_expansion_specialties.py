@@ -37,6 +37,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from carefold.config import settings
+from carefold.engine.tool_registry import create_default_registry
 from carefold.loaders.agent_loader import load_agent, load_all_agents
 from carefold.loaders.frontmatter import check_mandatory_intended_use, parse_frontmatter
 from carefold.loaders.skill_loader import load_skill, load_all_skills
@@ -781,8 +782,9 @@ class TestExpansionFeatureCoverage:
         assert manifest.domain.value == agent_spec["domain"]
         assert manifest.category == agent_spec["category"]
         assert manifest.risk_class.value == agent_spec["risk_class"]
+        allowed = set(PHASE_0_REGISTRY) | {spec.name for spec in create_default_registry().list_all()}
         for tool in manifest.tools:
-            assert tool in PHASE_0_REGISTRY
+            assert tool in allowed
 
     @pytest.mark.parametrize("skill_spec", EXPANSION_SKILLS, ids=[s["id"] for s in EXPANSION_SKILLS])
     def test_ondisk_skill_validation(self, skill_spec: Dict[str, Any], e2e_repo_root: Path):

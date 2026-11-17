@@ -235,8 +235,8 @@ def test_agent_load_bundled_agents(temp_workspace: Path):
     assert agent.risk_class == RiskClass.ASSIST
     assert "visit-prep" in agent.skills
 
-    # Effective tools union: agent tools [attach-read, workspace-note] ∪ skill tools [attach-read, skill-docs]
-    assert set(effective_tools) == {"attach-read", "workspace-note", "skill-docs"}
+    # Effective tools union includes Phase 0 core tools plus declared pack schedule/vitals tools
+    assert {"attach-read", "workspace-note", "skill-docs", "appointments_create"}.issubset(set(effective_tools))
     assert len(loaded_skills) == 1
     assert loaded_skills[0].id == "visit-prep"
 

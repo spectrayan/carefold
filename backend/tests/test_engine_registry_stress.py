@@ -35,6 +35,7 @@ from carefold.engine.agent_factory import (
     load_all_subagents,
     load_subagent_from_yaml,
 )
+from carefold.engine.tool_registry import create_default_registry
 from carefold.loaders.union import ToolValidationError
 from carefold.middleware.clinical_safety import ClinicalSafetyMiddleware
 from carefold.middleware.skills import (
@@ -176,7 +177,8 @@ class TestAgentRegistrySubagentDiscoveryAndTools:
             assert not name.startswith(("_", ".")), f"Hidden or private agent found: {name}"
 
     def test_list_subagents_tools_strictly_in_phase_0_registry(self, agent_registry: AgentRegistry):
-        """Asserts every declared tool across all 20 subagents is in PHASE_0_REGISTRY."""
+        """Asserts every declared tool across all subagents is in PHASE_0_REGISTRY or registered pack tools."""
+        allowed = set(PHASE_0_REGISTRY) | {spec.name for spec in create_default_registry().list_all()}
         subagents = agent_registry.list_subagents(resolve_tools=True)
         for sub in subagents:
             agent_name = sub["name"]
@@ -184,8 +186,8 @@ class TestAgentRegistrySubagentDiscoveryAndTools:
             assert len(tools) > 0, f"Agent '{agent_name}' has empty tools list"
             for t in tools:
                 tool_name = t.get("name") if isinstance(t, dict) else (getattr(t, "name", None) or str(t))
-                assert tool_name in PHASE_0_REGISTRY, (
-                    f"Agent '{agent_name}' declares tool '{tool_name}' not in PHASE_0_REGISTRY: {PHASE_0_REGISTRY}"
+                assert tool_name in allowed, (
+                    f"Agent '{agent_name}' declares tool '{tool_name}' not in allowed toolset"
                 )
 
     def test_list_subagents_structure_fields(self, agent_registry: AgentRegistry):
@@ -321,12 +323,13 @@ class TestCreateCarefoldAgentStress:
         assert isinstance(agent, CompiledStateGraph)
 
     def test_create_carefold_agent_subagent_tool_schema_resolution(self, workspace_root: Path):
-        """Verifies subagent tool strings are converted into CLOSED_TOOL_DEFINITIONS schemas."""
+        """Verifies subagent tool strings are converted into valid tool definitions."""
+        allowed = set(CLOSED_TOOL_DEFINITIONS) | {spec.name for spec in create_default_registry().list_all()}
         subagents = load_all_subagents(workspace_root / "agents", resolve_tools=True)
         for sub in subagents:
             for t in sub.get("tools", []):
                 t_name = t.get("name") if isinstance(t, dict) else str(t)
-                assert t_name in CLOSED_TOOL_DEFINITIONS
+                assert t_name in allowed
 
 
 # =============================================================================
