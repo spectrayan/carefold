@@ -61,6 +61,7 @@ jobs:
           context: .
           file: deploy/docker/Dockerfile
           target: ${{ matrix.target }}
+          pull: true
           load: true
           tags: carefold/${{ matrix.target }}:scan-target
           cache-from: type=gha

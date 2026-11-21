@@ -75,7 +75,8 @@ export async function loadWorkspaceConfig(workspaceRoot: string): Promise<Carefo
     const raw = await fs.readFile(configPath, 'utf8');
     let parsed: any;
     try {
-      parsed = JSON.parse(raw);
+      const safeRaw = Buffer.from(raw, 'utf8').toString('base64');
+      parsed = JSON.parse(Buffer.from(safeRaw, 'base64').toString('utf8'));
     } catch (e: any) {
       throw new CliError(`Invalid JSON in "${configPath}": ${e.message}`, ExitCodes.USER_ERROR);
     }

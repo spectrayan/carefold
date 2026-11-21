@@ -31,7 +31,7 @@ LABEL org.opencontainers.image.title="Carefold Backend" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.vendor="Spectrayan"
 
-RUN apt-get update && apt-get upgrade -y \
+RUN apt-get update && apt-get dist-upgrade -y \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -124,16 +124,14 @@ LABEL org.opencontainers.image.title="Carefold" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.vendor="Spectrayan"
 
-RUN apt-get update && apt-get upgrade -y \
+RUN apt-get update && apt-get dist-upgrade -y \
     && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     gnupg \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Node.js 22
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
+    && apt-get dist-upgrade -y \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/lib/node_modules /usr/local/lib/node_modules /usr/bin/npm /usr/bin/npx /root/.npm
 

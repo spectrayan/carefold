@@ -20,6 +20,26 @@ import {
   CarefoldModelError
 } from './types.js';
 
+function sanitizeBaseUrl(rawUrl?: string): string {
+  let candidate = (rawUrl || 'http://127.0.0.1:11434/v1').trim();
+  while (candidate.endsWith('/')) {
+    candidate = candidate.slice(0, -1);
+  }
+  if (!candidate.endsWith('/v1')) {
+    candidate = `${candidate}/v1`;
+  }
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return 'http://127.0.0.1:11434/v1';
+    }
+    const cleanPath = parsed.pathname.replace(/\/+$/, '');
+    return `${parsed.origin}${cleanPath}`;
+  } catch {
+    return 'http://127.0.0.1:11434/v1';
+  }
+}
+
 export class OpenAIModelClient implements ModelClient {
   private baseUrl: string;
   private primaryModel: string;
@@ -29,18 +49,11 @@ export class OpenAIModelClient implements ModelClient {
   private timeoutMs: number;
 
   constructor(config: ModelClientConfig = {}) {
-    let base = config.baseUrl || 'http://127.0.0.1:11434/v1';
-    while (base.endsWith('/')) {
-      base = base.slice(0, -1);
-    }
-    if (!base.endsWith('/v1')) {
-      base = `${base}/v1`;
-    }
-    this.baseUrl = base;
-    this.primaryModel = config.model || 'llama3.2';
+    this.baseUrl = sanitizeBaseUrl(config.baseUrl);
+    this.primaryModel = (config.model || 'llama3.2').trim();
     this.fallbackModels = config.fallbackModels || ['llama3.2:latest', 'llama3.1:latest', 'llama3.1'];
     this.activeModel = this.primaryModel;
-    this.apiKey = config.apiKey;
+    this.apiKey = config.apiKey ? config.apiKey.replace(/[\r\n]/g, '').trim() : undefined;
     this.timeoutMs = config.timeoutMs || 30000;
   }
 
