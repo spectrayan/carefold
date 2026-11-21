@@ -250,4 +250,3 @@ Local development uses SQLite under `~/.carefold`. PostgreSQL and Ollama are opt
 - Web: `pnpm --filter web dev` on port `3010`. Open `http://localhost:3010`. Next.js dev blocks client assets when the page is opened as `127.0.0.1`, so the first-run login form will not hydrate on that host.
 - First launch has no user. Register the local administrator from the login page before using household or agent routes.
 - `backend/tests/test_start_script.py` runs `scripts/start.sh stop`, which terminates listeners on ports `8010` and `3010`. Restart those servers after the pytest suite.
-- One frontend unit test, `suppresses the reminder for 30 days once dismissed` in `apps/web/tests/unit/profile-consent.test.ts`, fails when the current date falls inside its hard-coded dismissal window. The rest of `pnpm --filter web test --exclude "**/api/**"` passes.
