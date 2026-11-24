@@ -20,7 +20,16 @@ import {
   CarefoldModelError
 } from './types.js';
 
-function sanitizeBaseUrl(rawUrl?: string): string {
+const MODEL_NAME_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._:/@-';
+const MAX_MODEL_NAME_LENGTH = 128;
+
+const API_KEY_CHARS =
+  '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~';
+const MAX_API_KEY_LENGTH = 512;
+
+const DEFAULT_FALLBACK_MODELS = ['llama3.2:latest', 'llama3.1:latest', 'llama3.1'];
+
+export function sanitizeBaseUrl(rawUrl?: string): string {
   let candidate = (rawUrl || 'http://127.0.0.1:11434/v1').trim();
   while (candidate.endsWith('/')) {
     candidate = candidate.slice(0, -1);
@@ -40,6 +49,55 @@ function sanitizeBaseUrl(rawUrl?: string): string {
   }
 }
 
+export function sanitizeModelName(rawModel?: string, fallback = 'llama3.2'): string {
+  const trimmed = (rawModel || '').trim();
+  if (!trimmed || trimmed.length > MAX_MODEL_NAME_LENGTH) {
+    return fallback;
+  }
+  let validated = '';
+  for (let i = 0; i < trimmed.length; i++) {
+    const idx = MODEL_NAME_CHARS.indexOf(trimmed[i]);
+    if (idx === -1) {
+      return fallback;
+    }
+    validated += MODEL_NAME_CHARS[idx];
+  }
+  return validated;
+}
+
+function sanitizeFallbackModels(models?: string[]): string[] {
+  if (!models) {
+    return [...DEFAULT_FALLBACK_MODELS];
+  }
+  const sanitized: string[] = [];
+  for (const m of models) {
+    const clean = sanitizeModelName(m, '');
+    if (clean) {
+      sanitized.push(clean);
+    }
+  }
+  return sanitized;
+}
+
+export function sanitizeApiKey(rawKey?: string): string | undefined {
+  if (!rawKey) {
+    return undefined;
+  }
+  const trimmed = rawKey.replace(/[\r\n]/g, '').trim();
+  if (!trimmed || trimmed.length > MAX_API_KEY_LENGTH) {
+    return undefined;
+  }
+  let validated = '';
+  for (let i = 0; i < trimmed.length; i++) {
+    const idx = API_KEY_CHARS.indexOf(trimmed[i]);
+    if (idx === -1) {
+      return undefined;
+    }
+    validated += API_KEY_CHARS[idx];
+  }
+  return validated;
+}
+
 export class OpenAIModelClient implements ModelClient {
   private baseUrl: string;
   private primaryModel: string;
@@ -50,10 +108,10 @@ export class OpenAIModelClient implements ModelClient {
 
   constructor(config: ModelClientConfig = {}) {
     this.baseUrl = sanitizeBaseUrl(config.baseUrl);
-    this.primaryModel = (config.model || 'llama3.2').trim();
-    this.fallbackModels = config.fallbackModels || ['llama3.2:latest', 'llama3.1:latest', 'llama3.1'];
+    this.primaryModel = sanitizeModelName(config.model, 'llama3.2');
+    this.fallbackModels = sanitizeFallbackModels(config.fallbackModels);
     this.activeModel = this.primaryModel;
-    this.apiKey = config.apiKey ? config.apiKey.replace(/[\r\n]/g, '').trim() : undefined;
+    this.apiKey = sanitizeApiKey(config.apiKey);
     this.timeoutMs = config.timeoutMs || 30000;
   }
 

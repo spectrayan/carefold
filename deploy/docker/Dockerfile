@@ -31,7 +31,9 @@ LABEL org.opencontainers.image.title="Carefold Backend" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.vendor="Spectrayan"
 
-RUN apt-get update && apt-get dist-upgrade -y \
+ARG OS_UPGRADE_CACHE_BUST=""
+RUN : "${OS_UPGRADE_CACHE_BUST}" \
+    && apt-get update && apt-get dist-upgrade -y \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -92,7 +94,9 @@ ENV NODE_ENV=production \
     PORT=3000
 
 # Remove unneeded npm, yarn, and corepack packages from runtime container image
-RUN apk upgrade --no-cache \
+ARG OS_UPGRADE_CACHE_BUST=""
+RUN : "${OS_UPGRADE_CACHE_BUST}" \
+    && apk upgrade --no-cache \
     && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx /opt/yarn* /usr/local/bin/yarn* /usr/local/bin/corepack
 
 COPY --from=web-builder /app/frontend/package.json ./frontend/
@@ -124,7 +128,9 @@ LABEL org.opencontainers.image.title="Carefold" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.vendor="Spectrayan"
 
-RUN apt-get update && apt-get dist-upgrade -y \
+ARG OS_UPGRADE_CACHE_BUST=""
+RUN : "${OS_UPGRADE_CACHE_BUST}" \
+    && apt-get update && apt-get dist-upgrade -y \
     && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \

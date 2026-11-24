@@ -64,8 +64,10 @@ jobs:
           pull: true
           load: true
           tags: carefold/${{ matrix.target }}:scan-target
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          build-args: |
+            OS_UPGRADE_CACHE_BUST=${{ github.run_id }}
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}
 
       - name: Scan Docker image with Trivy (Console & Step Summary)
         uses: aquasecurity/trivy-action@master
