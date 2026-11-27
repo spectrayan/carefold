@@ -59,7 +59,8 @@ carefold/
 ├── tools/
 │   ├── cli/            # Carefold CLI (@spectrayan/carefold-cli)
 │   └── runner/         # Standalone agent runtime sandbox (@spectrayan/carefold-runner)
-├── deploy/docker/      # Multi-arch Dockerfile and Docker Compose stack
+├── deploy/docker/      # Multi-arch Dockerfile and canonical Docker Compose stack (wrapped by root docker-compose.yml)
+├── docker-compose.yml  # Root Compose wrapper (`name: carefold` + `include: deploy/docker/docker-compose.yml`)
 ├── agents/             # Specialist clinical/navigation/wellness coordinators + _system/ + _template/
 ├── skills/             # Modular clinical & administrative skill packs + _template/
 ├── docs/               # MkDocs Material documentation, Living ADRs (0001–0009) & Compliance Packs
@@ -107,6 +108,7 @@ carefold/
 - **Descriptive test names only**: Never name test files, classes, or functions after internal sprint milestones or teamwork roles (`m1`, `m2`, `batch1`, `c1`, `challenger`, `adversarial`).
 - **Deterministic clocks**: Inject explicit `referenceDate` / clock parameters in time-window tests; never compare hardcoded fixture dates against wall-clock `new Date()` / `datetime.now()`.
 - **Fast, offline backend tests**: Mock model factories in **both** `carefold` and `yarvelle_core` so unit tests never hit live Ollama. Gate live Ollama smoke tests behind `CAREFOLD_RUN_OLLAMA_TESTS=1`. Never duplicate golden eval or penetration suites across test files.
+- **Safety golden eval harness (`evals/runner.py` & `carefold eval`)**: `carefold eval` does not accept `--dataset` and defaults `--provider` to `ollama` — pass `carefold eval --provider mock` (or `PYTHONPATH=backend/src backend/.venv/bin/python evals/runner.py`) for offline runs. `evals/runner.py` always executes `evals/safety.golden.jsonl` first (`--agent <id>` only filters agent suites, never skips the safety suite), and `test_evals_safety_golden.py` enforces unique `safe-<category>-<nn>` IDs and full `REQUIRED_CLINICAL_CATEGORIES` coverage.
 - **Runtime & data-dir isolation**: All persistent runtime state must stay strictly under `~/.carefold` (or `--data-dir` / `CAREFOLD_HOME`). Tests and automated runs must **never** touch `~/.carefold`, the real OS keychain, or running `ollama serve` processes — use a temp `CAREFOLD_HOME`, null keyring / temp KEK, and include `"tmp"` in any custom pytest `--basetemp` path (required by `test_home_isolation_security.py`).
 
 ### 4.4 Verification Matrix
@@ -117,12 +119,15 @@ python3 scripts/check_no_git_deps.py
 node scripts/validate-packs.mjs
 backend/.venv/bin/pytest backend/tests/                # CI shards via CAREFOLD_TEST_SHARD=1/3..3/3
 PYTHONPATH=backend/src backend/.venv/bin/python backend/tests/penetration_suite.py
+PYTHONPATH=backend/src backend/.venv/bin/python evals/runner.py  # or: carefold eval --provider mock
 pnpm --filter @spectrayan/carefold-web typecheck
 pnpm --filter @spectrayan/carefold-web test --exclude "**/api/**"
 pnpm --filter @spectrayan/carefold-web build
+mkdocs build --strict                                  # required when modifying docs/ or mkdocs.yml
 ```
 
-### 4.5 Repository Content Policy (Product & Test Code Only)
+### 4.5 Documentation & Repository Content Policy (Product & Test Code Only)
+- **MkDocs `--strict` link & formatting hygiene**: `mkdocs.yml` builds from `docs_dir: docs` under `mkdocs build --strict` (`.github/workflows/docs.yml`). Never use relative links inside `docs/` that escape `docs/` (e.g., `../../deploy/docker/README.md`) — link repository files outside `docs/` using full GitHub URLs (`https://github.com/spectrayan/carefold/blob/main/...`). Indent fenced code blocks nested under list items by 4 spaces and keep top-level fences at column `0`.
 - Commit only production code, tests/fixtures, agent/skill packs, user/contributor docs (`PROJECT_CONTEXT.md`, `docs/adr/`), and required build/CI/release tooling.
 - Never commit one-off operational scripts, AI session/planning artifacts (plans, walkthroughs, scratch notes, audit reports, `.agents/`), local runtime data (`chats/`, `logs/`, `workspace/`, `attachments/`, `*.db`), or personal configuration.
 
@@ -132,5 +137,6 @@ pnpm --filter @spectrayan/carefold-web build
 
 - **Endpoints**: Backend runs on `http://127.0.0.1:8010` (`/api/health`, `/api/v1/agents`); Web UI runs on `http://localhost:3010` (`allowedDevOrigins: ['127.0.0.1']` is enabled in `frontend/next.config.ts`). Without Ollama, `/api/health` reports `degraded` (`modelReachable: false`).
 - **First launch**: Register the local administrator account on `/login` before using household or agent routes.
+- **Root `docker-compose.yml` (`include:`)**: Docker Compose ignores `name: carefold` inside `deploy/docker/docker-compose.yml` when included from the root wrapper, so always keep top-level `name: carefold` in root `docker-compose.yml` to prevent directory-dependent volume/network prefixes; `secrets.carefold_vault_kek` still resolves from `deploy/docker/.env`.
 - **`pnpm start` (`scripts/start.sh`)**: Defaults `CAREFOLD_CHECKPOINT_ENCRYPTION=false` for local dev and prepends `../yarvelle-core/backend/src` to `PYTHONPATH` when present — keep sibling `../yarvelle-core` synced to `origin/main` to prevent `ModuleNotFoundError`. If `"Missing local runtime token."` appears, check for a stale backend from another worktree holding port `8010`.
 - **Pytest side effect**: `backend/tests/test_start_script.py` runs `scripts/start.sh stop` (stopping listeners on ports `8010` and `3010`); restart dev servers afterward if needed.
